@@ -69,7 +69,8 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                             } else if (it.isViewEvent && !it.isClosingViewEvent && !it.isPeriodicCheckpointFullView) {
                                 // Exclude closing views (is_active=false): they would win in
                                 // reduceViewEvents() and fail the session.is_active=true assertion.
-                                // Exclude periodic checkpoint views (docVersion%4==0, is_active=true):
+                                // Exclude periodic checkpoint views
+                                // (docVersion % FULL_VIEW_EVERY_N_UPDATES == 0, is_active=true):
                                 // they are mid-session snapshots covered by reliability tests.
                                 sentViewEvents += it
                             } else if (it.isViewUpdateEvent) {
@@ -251,6 +252,6 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
         private const val DISABLE_LEAK_CANARY_ARGUMENT = "disableLeakCanary"
 
         // Keep in sync with RumViewEventWriterImpl.FULL_VIEW_EVERY_N_UPDATES.
-        private const val FULL_VIEW_EVERY_N_UPDATES = 4L
+        private const val FULL_VIEW_EVERY_N_UPDATES = 10L
     }
 }
