@@ -1840,6 +1840,25 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `M keep other BAGGAGE members unchanged W intercept { retry, empty value, plus, properties }`() {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader("Baggage", "custom=,user.id=user+id;prop=value,user.anonymous_id=old")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER)).containsExactly("custom=,user.id=user+id;prop=value")
+        }
+    }
+
+    @Test
     fun `M keep existing BAGGAGE W intercept { new values != existing values }`(
         @StringForgery existingBaggageKey: String,
         @StringForgery existingBaggageValue: String,
