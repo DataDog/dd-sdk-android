@@ -13,6 +13,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.trace.core.DDSpan
@@ -69,7 +70,12 @@ class RumContextPropagator(private val sdkCoreProvider: () -> FeatureSdkCore?) {
                     rumContext?.sessionSampleRate
                 )
                 instance.setTag(HttpCodec.RUM_KEY_USER_ID, datadogContext.userInfo.id)
-                instance.setTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID, datadogContext.userInfo.anonymousId)
+                // Propagated in the baggage header, so it is only set with granted consent.
+                instance.setTag(
+                    HttpCodec.RUM_KEY_USER_ANONYMOUS_ID,
+                    datadogContext.userInfo.anonymousId
+                        .takeIf { datadogContext.trackingConsent == TrackingConsent.GRANTED }
+                )
                 instance.setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, datadogContext.accountInfo?.id)
             }
             instance.setTag(DATADOG_INITIAL_CONTEXT, null)
