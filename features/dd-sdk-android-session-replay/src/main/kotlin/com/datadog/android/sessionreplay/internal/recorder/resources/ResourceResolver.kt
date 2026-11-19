@@ -92,6 +92,8 @@ internal class ResourceResolver(
             request.onFailure()
             return
         }
+        // The task must not reference the application's bitmap, which would keep it alive while the task is queued.
+        val isOwnedCopy = capturedBitmap !== bitmap
 
         executeImageTask(request) {
             try {
@@ -110,7 +112,7 @@ internal class ResourceResolver(
                     }
                 )
             } finally {
-                if (capturedBitmap !== bitmap) capturedBitmap.recycle()
+                if (isOwnedCopy) capturedBitmap.recycle()
             }
         }
     }
