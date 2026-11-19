@@ -3160,6 +3160,7 @@ public class com/datadog/trace/core/propagation/ExtractedContext : com/datadog/t
 }
 
 public class com/datadog/trace/core/propagation/HttpCodec {
+	public static final field BAGGAGE_USER_ANONYMOUS_ID Ljava/lang/String;
 	public static final field RUM_KEY_ACCOUNT_ID Ljava/lang/String;
 	public static final field RUM_KEY_USER_ANONYMOUS_ID Ljava/lang/String;
 	public static final field RUM_KEY_USER_ID Ljava/lang/String;

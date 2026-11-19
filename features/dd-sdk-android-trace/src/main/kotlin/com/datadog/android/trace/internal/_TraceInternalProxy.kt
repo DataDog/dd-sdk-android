@@ -14,6 +14,7 @@ import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.trace.core.propagation.Baggage
+import com.datadog.trace.core.propagation.HttpCodec
 
 /**
  * For library usage only.
@@ -113,6 +114,27 @@ object _TraceInternalProxy {
         return Baggage.from(oldHeader)
             .mergeWith(Baggage.from(newHeader))
             .toString()
+    }
+
+    /**
+     * Removes a user anonymous ID entry retained in a baggage header (e.g. from a previous attempt of
+     * the same request) when [span] must not propagate it, for instance because tracking consent is
+     * not granted.
+     *
+     * @param span The span of the request being traced.
+     * @param header The existing baggage header, which may be null.
+     * @return The header without the user anonymous ID entry, null if no entry remains, or
+     * [header] unchanged when it has no such entry or [span] propagates the anonymous ID.
+     */
+    fun removeRetainedUserAnonymousIdBaggage(span: DatadogSpan, header: String?): String? {
+        if (span.getTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID) != null) return header
+        val items = Baggage.from(header).asMap()
+        val remaining = items.filterKeys { it != HttpCodec.BAGGAGE_USER_ANONYMOUS_ID }
+        return when {
+            remaining.size == items.size -> header
+            remaining.isEmpty() -> null
+            else -> Baggage().apply { remaining.forEach { (key, value) -> put(key, value) } }.toString()
+        }
     }
 
     /**

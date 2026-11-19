@@ -53,7 +53,7 @@ public class HttpCodec {
 
   static final String BAGGAGE_SESSION_ID = "session.id";
   static final String BAGGAGE_USER_ID = "user.id";
-  static final String BAGGAGE_USER_ANONYMOUS_ID = "user.anonymous_id";
+  public static final String BAGGAGE_USER_ANONYMOUS_ID = "user.anonymous_id";
   static final String BAGGAGE_ACCOUNT_ID = "account.id";
 
   static final String RUM_KEY_SESSION_ID = "session_id";
