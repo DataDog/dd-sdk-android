@@ -11,6 +11,7 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.utils.CacheUtils
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -301,6 +302,22 @@ internal class BitmapPoolTest {
 
         // Then
         assertThat(called).isTrue()
+    }
+
+    @Test
+    fun `M recycle and not return the bitmap W put() + get() { bitmap larger than the pool }`(
+        @IntForgery(min = 1, max = 1_000_000) fakeExcessBytes: Int
+    ) {
+        // Given
+        whenever(mockBitmap.allocationByteCount).thenReturn(BitmapPool.MAX_CACHE_MEMORY_SIZE_BYTES + fakeExcessBytes)
+
+        // When
+        testedCache.put(mockBitmap)
+        val result = testedCache.getBitmapByProperties(width, height, mockConfig)
+
+        // Then
+        verify(mockBitmap).recycle()
+        assertThat(result).isNull()
     }
 
     @Test

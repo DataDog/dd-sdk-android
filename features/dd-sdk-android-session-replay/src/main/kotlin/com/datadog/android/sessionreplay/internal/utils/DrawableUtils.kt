@@ -8,26 +8,24 @@ package com.datadog.android.sessionreplay.internal.utils
 
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
+import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.internal.thread.NamedRunnable
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ThreadPoolExecutor
 import kotlin.math.sqrt
 
 internal class DrawableUtils(
     private val internalLogger: InternalLogger,
     private val bitmapCachesManager: BitmapCachesManager,
-    private val executorService: ExecutorService,
     private val bitmapWrapper: BitmapWrapper = BitmapWrapper(internalLogger),
     private val canvasWrapper: CanvasWrapper = CanvasWrapper(internalLogger)
 ) {
@@ -54,9 +52,11 @@ internal class DrawableUtils(
             displayMetrics,
             config,
             resizeBitmapCallback = object : ResizeBitmapCallback {
+                // Drawn right away on this worker: a queued drawing would keep the drawable copy, and with it the
+                // source pixels, alive while it waited.
                 @WorkerThread
                 override fun onSuccess(bitmap: Bitmap) {
-                    submitDrawing(bitmap, drawable, bitmapCreationCallback)
+                    drawOnCanvas(bitmap, drawable, bitmapCreationCallback)
                 }
 
                 @WorkerThread
@@ -85,6 +85,23 @@ internal class DrawableUtils(
         return bitmapWrapper.createScaledBitmap(bitmap, width, height, false)
     }
 
+    // Draws a software bitmap scaled to the drawing limit straight into a new ARGB_8888 bitmap, so no scaled copy in
+    // the source's own format is made on the way. A hardware bitmap cannot be drawn this way and is read back first.
+    @AnyThread
+    internal fun createScaledArgb8888Bitmap(bitmap: Bitmap): Bitmap? {
+        val (width, height) = getUniformlyScaledSize(bitmap.width, bitmap.height)
+        val scaledBitmap = bitmapWrapper.createBitmap(width, height, Config.ARGB_8888) ?: return null
+        val isDrawn = canvasWrapper.createCanvas(scaledBitmap)?.let { canvas ->
+            drawScaled(canvas, bitmap, width, height)
+        } ?: false
+        return if (isDrawn) {
+            scaledBitmap
+        } else {
+            scaledBitmap.recycle()
+            null
+        }
+    }
+
     internal interface ResizeBitmapCallback {
         @WorkerThread
         fun onSuccess(bitmap: Bitmap)
@@ -93,38 +110,20 @@ internal class DrawableUtils(
         fun onFailure()
     }
 
-    @WorkerThread
-    private fun submitDrawing(
-        bitmap: Bitmap,
-        drawable: Drawable,
-        bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
-    ) {
-        // SDK executors drop tasks silently when full, which would never complete the capture. Only the single
-        // resource worker submits here, so the queue cannot fill between this check and the submission.
-        if ((executorService as? ThreadPoolExecutor)?.queue?.remainingCapacity() == 0) {
-            bitmapCreationCallback.onFailure()
-            return
-        }
-        val task = NamedRunnable(DRAWING_TASK_NAME) {
-            var isCompleted = false
-            try {
-                drawOnCanvas(bitmap, drawable, bitmapCreationCallback)
-                isCompleted = true
-            } finally {
-                if (!isCompleted) bitmapCreationCallback.onFailure()
-            }
-        }
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here; rejection is handled below.
-            executorService.execute(task)
-        } catch (e: RejectedExecutionException) {
+    @Suppress("TooGenericExceptionCaught") // Drawing a recycled bitmap throws a RuntimeException.
+    private fun drawScaled(canvas: Canvas, bitmap: Bitmap, width: Int, height: Int): Boolean {
+        return try {
+            canvas.drawBitmap(bitmap, null, Rect(0, 0, width, height), null)
+            true
+        } catch (e: RuntimeException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { DRAWING_TASK_REJECTED },
-                e
+                InternalLogger.Target.MAINTAINER,
+                { FAILED_TO_CREATE_SCALED_BITMAP_ERROR },
+                e,
+                onlyOnce = true
             )
-            bitmapCreationCallback.onFailure()
+            false
         }
     }
 
@@ -138,7 +137,7 @@ internal class DrawableUtils(
         val canvas = canvasWrapper.createCanvas(bitmap)
 
         if (canvas == null) {
-            bitmapCreationCallback.onFailure()
+            failDrawing(bitmap, bitmapCreationCallback)
         } else {
             // erase the canvas
             // needed because overdrawing an already used bitmap causes unusual visual artifacts
@@ -149,12 +148,19 @@ internal class DrawableUtils(
                 drawable.draw(canvas)
             } catch (e: RuntimeException) {
                 logDrawableDrawException(drawable, e)
-                bitmapCreationCallback.onFailure()
+                failDrawing(bitmap, bitmapCreationCallback)
                 return
             }
 
             bitmapCreationCallback.onReady(bitmap)
         }
+    }
+
+    // The raster goes back to the pool, which reuses or releases it, before the capture fails and returns its budget.
+    @WorkerThread
+    private fun failDrawing(bitmap: Bitmap, bitmapCreationCallback: ResourceResolver.BitmapCreationCallback) {
+        bitmapCachesManager.putInBitmapPool(bitmap)
+        bitmapCreationCallback.onFailure()
     }
 
     private fun logDrawableDrawException(
@@ -193,6 +199,17 @@ internal class DrawableUtils(
         }
     }
 
+    // Scales both edges by one factor, so the copy keeps the aspect ratio and fills the drawing limit, while keeping
+    // each edge within the WebP encoder's limit.
+    private fun getUniformlyScaledSize(width: Int, height: Int): Pair<Int, Int> {
+        val maxPixels = (MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT / ARGB_8888_PIXEL_SIZE_BYTES).toDouble()
+        val scale = minOf(
+            minOf(1.0, sqrt(maxPixels / (width.toDouble() * height))),
+            MAX_WEBP_DIMENSION.toDouble() / maxOf(width, height)
+        )
+        return Pair((width * scale).toInt().coerceAtLeast(1), (height * scale).toInt().coerceAtLeast(1))
+    }
+
     private fun getScaledWidthAndHeight(
         drawableWidth: Int,
         drawableHeight: Int,
@@ -209,10 +226,12 @@ internal class DrawableUtils(
             width = maxSize
             height = maxSize
 
+            // The long edge stays capped, which also keeps it within the WebP encoder's limits, so the short edge of
+            // a very long image is kept at one pixel instead of rounding to zero.
             if (bitmapRatio > 1) { // width gt height
-                height = (maxSize / bitmapRatio).toInt()
+                height = (maxSize / bitmapRatio).toInt().coerceAtLeast(1)
             } else {
-                width = (maxSize * bitmapRatio).toInt()
+                width = (maxSize * bitmapRatio).toInt().coerceAtLeast(1)
             }
         }
 
@@ -237,10 +256,9 @@ internal class DrawableUtils(
     internal companion object {
         internal const val MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT = 10 * 1024 * 1024 // 10mb
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
+        internal const val MAX_WEBP_DIMENSION = 16383
         internal const val FAILED_TO_CREATE_SCALED_BITMAP_ERROR =
             "Failed to create a scaled bitmap from the drawable"
-        private const val DRAWING_TASK_NAME = "drawOnCanvas"
-        private const val DRAWING_TASK_REJECTED = "Unable to schedule Session Replay image drawing"
         internal const val DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION =
             "Drawable.draw call finished with an exception. Drawable type is"
     }

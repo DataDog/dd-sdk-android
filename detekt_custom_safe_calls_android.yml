@@ -205,6 +205,7 @@ datadog:
       - "android.widget.TextView.setTextColor(kotlin.Int)"
       # endregion
       # region Android Graphics
+      - "android.graphics.Bitmap.hasAlpha()"
       - "android.graphics.Bitmap.recycle()"
       - "android.graphics.Canvas.drawColor(kotlin.Int)"
       - "android.graphics.Canvas.drawColor(kotlin.Int, android.graphics.PorterDuff.Mode)"

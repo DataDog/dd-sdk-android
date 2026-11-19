@@ -9,17 +9,20 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.StateListDrawable
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
+import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -130,6 +133,15 @@ internal class ResourceResolverTest {
     @Mock
     lateinit var mockCopiedBitmap: Bitmap
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
+    @Mock
+    lateinit var mockBitmapWrapper: BitmapWrapper
+
+    @Mock
+    lateinit var mockWrappedBitmap: Bitmap
+
     private var fakeBitmapWidth: Int = 1
 
     private var fakeBitmapHeight: Int = 1
@@ -144,6 +156,7 @@ internal class ResourceResolverTest {
 
     @BeforeEach
     fun setup(forge: Forge) {
+        whenever(mockPendingImageRequests.maxPendingBytes).thenReturn(PendingImageRequests.MAX_PENDING_BYTES)
         whenever(mockDrawableCopier.copy(eq(mockBitmapDrawable), any())).thenReturn(
             mockBitmapDrawable
         )
@@ -151,8 +164,8 @@ internal class ResourceResolverTest {
         whenever(mockDrawableCopier.copy(eq(mockDrawable), any())).thenReturn(mockDrawable)
         fakeImageCompressionByteArray = forge.aString().toByteArray()
 
-        fakeBitmapWidth = forge.anInt(min = 1)
-        fakeBitmapHeight = forge.anInt(min = 1)
+        fakeBitmapWidth = forge.anInt(min = 1, max = 1000)
+        fakeBitmapHeight = forge.anInt(min = 1, max = 1000)
 
         whenever(mockMD5HashGenerator.generate(any())).thenReturn(fakeResourceId)
 
@@ -203,7 +216,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockDrawable,
             drawableCopier = mockDrawableCopier,
@@ -226,7 +238,7 @@ internal class ResourceResolverTest {
         whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
 
         whenever(mockBitmap.isRecycled)
-            .thenReturn(false)
+            .thenReturn(false, false, false)
             .thenReturn(true)
 
         val emptyByteArray = ByteArray(0)
@@ -241,7 +253,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -252,15 +263,18 @@ internal class ResourceResolverTest {
         )
 
         // Then
-        verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
-            drawable = any(),
-            drawableWidth = any(),
-            drawableHeight = any(),
-            displayMetrics = any(),
-            requestedSizeInBytes = anyOrNull(),
-            config = anyOrNull(),
-            bitmapCreationCallback = any()
-        )
+        inOrder(mockWebPImageCompression, mockDrawableUtils) {
+            verify(mockWebPImageCompression).compressBitmap(mockBitmap)
+            verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
+                drawable = any(),
+                drawableWidth = any(),
+                drawableHeight = any(),
+                displayMetrics = any(),
+                requestedSizeInBytes = anyOrNull(),
+                config = anyOrNull(),
+                bitmapCreationCallback = any()
+            )
+        }
     }
 
     @Test
@@ -278,7 +292,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockDrawable,
             drawableCopier = mockDrawableCopier,
@@ -305,7 +318,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockDrawable,
             drawableCopier = mockDrawableCopier,
@@ -320,12 +332,8 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M send onReady W resolveResourceIdFromDrawable(Bitmap) { failed to get image data }`() {
+    fun `M fail the capture W resolveResourceIdFromBitmap() { failed to get image data }`() {
         // Given
-        whenever(mockBitmap.isRecycled)
-            .thenReturn(true)
-            .thenReturn(false)
-
         val emptyByteArray = ByteArray(0)
 
         whenever(mockWebPImageCompression.compressBitmap(any()))
@@ -349,7 +357,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockDrawable,
             drawableCopier = mockDrawableCopier,
@@ -392,7 +399,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockDrawable,
             drawableCopier = mockDrawableCopier,
@@ -444,7 +450,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockStateListDrawable,
             drawableCopier = mockDrawableCopier,
@@ -459,6 +464,21 @@ internal class ResourceResolverTest {
     }
 
     @Test
+    fun `M return the raster to the pool before failing W resolveResourceIdFromDrawable() { compression fails }`() {
+        // Given
+        whenever(mockWebPImageCompression.compressBitmap(mockBitmap)).thenReturn(ByteArray(0))
+
+        // When
+        resolveDrawable(mockSerializerCallback)
+
+        // Then
+        inOrder(mockBitmapCachesManager, mockSerializerCallback) {
+            verify(mockBitmapCachesManager).putInBitmapPool(mockBitmap)
+            verify(mockSerializerCallback).onFailure()
+        }
+    }
+
+    @Test
     fun `M not use bitmap from bitmapDrawable W resolveResourceIdFromDrawable() { no bitmap }`() {
         // Given
         whenever(mockBitmapDrawable.bitmap).thenReturn(null)
@@ -466,7 +486,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -489,33 +508,17 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M not use bitmap from bitmapDrawable W resolveResourceIdFromDrawable() { bitmap was recycled }`() {
+    fun `M fail without drawing W resolveResourceIdFromDrawable() { bitmap was recycled }`() {
         // Given
         whenever(mockBitmap.isRecycled).thenReturn(true)
 
         // When
-        testedResourceResolver.resolveResourceIdFromDrawable(
-            resources = mockResources,
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            originalDrawable = mockBitmapDrawable,
-            drawableCopier = mockDrawableCopier,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            customResourceIdCacheKey = null,
-            resourceResolverCallback = mockSerializerCallback
-        )
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
 
         // Then
-        verify(mockDrawableUtils, times(1)).createBitmapOfApproxSizeFromDrawable(
-            drawable = any(),
-            drawableWidth = any(),
-            drawableHeight = any(),
-            displayMetrics = any(),
-            requestedSizeInBytes = anyOrNull(),
-            config = anyOrNull(),
-            bitmapCreationCallback = any()
-        )
+        verify(mockSerializerCallback).onFailure()
+        verify(mockDrawableUtils, never()).createScaledBitmap(any(), any())
+        verifyNoDrawing()
     }
 
     @Test
@@ -523,7 +526,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -548,7 +550,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -582,7 +583,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -617,7 +617,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -629,6 +628,28 @@ internal class ResourceResolverTest {
 
         // Then
         verify(mockBitmapCachesManager, never()).putInBitmapPool(any())
+    }
+
+    @Test
+    fun `M release a copy made by scaling W resolveResourceIdFromDrawable() { copy not pooled }`(
+        @Mock mockScaledCopy: Bitmap
+    ) {
+        // Given
+        whenever(mockScaledCopy.width).thenReturn(fakeBitmapWidth)
+        whenever(mockScaledCopy.height).thenReturn(fakeBitmapHeight)
+        whenever(mockDrawableUtils.createScaledBitmap(mockBitmap)).thenReturn(mockScaledCopy)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        inOrder(mockWebPImageCompression, mockScaledCopy, mockSerializerCallback) {
+            verify(mockWebPImageCompression).compressBitmap(mockScaledCopy)
+            verify(mockScaledCopy).recycle()
+            verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        }
+        verify(mockBitmapCachesManager, never()).putInBitmapPool(mockScaledCopy)
+        verify(mockBitmap, never()).recycle()
     }
 
     @Test
@@ -650,7 +671,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -662,6 +682,7 @@ internal class ResourceResolverTest {
 
         // Then
         verify(mockBitmapCachesManager).putInBitmapPool(any())
+        verify(mockResizedBitmap, never()).recycle()
     }
 
     @Test
@@ -683,7 +704,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -707,7 +727,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -729,7 +748,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockLayerDrawable,
             drawableCopier = mockDrawableCopier,
@@ -766,7 +784,6 @@ internal class ResourceResolverTest {
         val thread1 = Thread {
             testedResourceResolver.resolveResourceIdFromDrawable(
                 resources = mockResources,
-                applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
                 originalDrawable = mockFirstDrawable,
                 drawableCopier = mockDrawableCopier,
@@ -781,7 +798,6 @@ internal class ResourceResolverTest {
         val thread2 = Thread {
             testedResourceResolver.resolveResourceIdFromDrawable(
                 resources = mockResources,
-                applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
                 originalDrawable = mockSecondDrawable,
                 drawableCopier = mockDrawableCopier,
@@ -880,7 +896,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -932,7 +947,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -947,7 +961,6 @@ internal class ResourceResolverTest {
         // second time
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -966,7 +979,6 @@ internal class ResourceResolverTest {
         // second time
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
@@ -991,7 +1003,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockDrawable,
             drawableCopier = mockDrawableCopier,
@@ -1015,7 +1026,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockDrawable,
             drawableCopier = mockDrawableCopier,
@@ -1039,7 +1049,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockDrawable,
             drawableCopier = mockDrawableCopier,
@@ -1054,7 +1063,7 @@ internal class ResourceResolverTest {
     }
 
     private fun createResourceResolver(
-        pendingImageRequests: PendingImageRequests = PendingImageRequests(),
+        pendingImageRequests: PendingImageRequests = PendingImageRequests(mockLogger, maxHeapBytes = Long.MAX_VALUE),
         drawableReferenceFactory: (Drawable) -> WeakReference<Drawable> = { WeakReference(it) }
     ): ResourceResolver = ResourceResolver(
         applicationContext = mockApplicationContext,
@@ -1069,7 +1078,9 @@ internal class ResourceResolverTest {
         alpha8BitmapConverter = mockAlpha8BitmapConverter,
         alpha8ResourceCache = mockAlpha8ResourceCache,
         pendingImageRequests = pendingImageRequests,
-        drawableReferenceFactory = drawableReferenceFactory
+        drawableReferenceFactory = drawableReferenceFactory,
+        buildSdkVersionProvider = mockBuildSdkVersionProvider,
+        bitmapWrapper = mockBitmapWrapper
     )
 
     private fun resolveBitmap(callback: ResourceResolverCallback) {
@@ -1095,21 +1106,80 @@ internal class ResourceResolverTest {
         return tasks
     }
 
+    // At least 2000x2000, so its ARGB_8888 pixels exceed the copy limit.
+    private fun useLargeBitmap(forge: Forge) {
+        whenever(mockBitmap.width).thenReturn(forge.anInt(min = 2000, max = 100_000))
+        whenever(mockBitmap.height).thenReturn(forge.anInt(min = 2000, max = 100_000))
+    }
+
+    // Above the copy limit but within the budget, so it is read back in full and then scaled.
+    private fun useLargeHardwareBitmap(forge: Forge) {
+        useHardwareBitmap(width = forge.anInt(min = 2000, max = 4096), height = forge.anInt(min = 2000, max = 4096))
+    }
+
+    private fun useHardwareBitmap(width: Int, height: Int) {
+        whenever(mockBitmap.width).thenReturn(width)
+        whenever(mockBitmap.height).thenReturn(height)
+        whenever(mockBuildSdkVersionProvider.isAtLeastO).thenReturn(true)
+        whenever(mockBitmap.config).thenReturn(Bitmap.Config.HARDWARE)
+    }
+
+    // Another capture holds all of the budget but what a capture of the default bitmap drawable reserves.
+    private fun useBusyBudget(otherCallback: ResourceResolverCallback) {
+        val pendingImageRequests = PendingImageRequests(mockLogger, maxHeapBytes = Long.MAX_VALUE)
+        val reservedBytes = fakeBitmapWidth.toLong() * fakeBitmapHeight * 4
+        pendingImageRequests.start(
+            key = "$fakeResourceKey-busy",
+            byteCount = PendingImageRequests.MAX_PENDING_BYTES - reservedBytes,
+            callback = otherCallback
+        )
+        testedResourceResolver = createResourceResolver(pendingImageRequests = pendingImageRequests)
+    }
+
+    private fun verifyNoDrawing() {
+        verify(mockDrawableUtils, never()).createBitmapOfApproxSizeFromDrawable(
+            drawable = any(),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            displayMetrics = any(),
+            requestedSizeInBytes = anyOrNull(),
+            config = anyOrNull(),
+            bitmapCreationCallback = any()
+        )
+    }
+
+    private fun useUnpremultipliedBitmap(bitmap: Bitmap = mockBitmap, width: Int, height: Int) {
+        whenever(bitmap.width).thenReturn(width)
+        whenever(bitmap.height).thenReturn(height)
+        whenever(bitmap.config).thenReturn(Bitmap.Config.ARGB_8888)
+        whenever(bitmap.isPremultiplied).thenReturn(false)
+        whenever(bitmap.hasAlpha()).thenReturn(true)
+    }
+
+    // From API 31 the hardware buffer is wrapped and read back on the worker.
+    private fun useWrappedHardwareBitmap(width: Int, height: Int) {
+        useHardwareBitmap(width = width, height = height)
+        whenever(mockBuildSdkVersionProvider.isAtLeastS).thenReturn(true)
+        whenever(mockBitmapWrapper.wrapHardwareBuffer(mockBitmap)).thenReturn(mockWrappedBitmap)
+        whenever(mockWrappedBitmap.width).thenReturn(width)
+        whenever(mockWrappedBitmap.height).thenReturn(height)
+    }
+
     private fun resolveDrawable(
         callback: ResourceResolverCallback,
         drawable: Drawable = mockDrawable,
         drawableWidth: Int = 0,
-        drawableHeight: Int = 0
+        drawableHeight: Int = 0,
+        customResourceIdCacheKey: String? = null
     ) {
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = drawable,
             drawableCopier = mockDrawableCopier,
             drawableWidth = drawableWidth,
             drawableHeight = drawableHeight,
-            customResourceIdCacheKey = null,
+            customResourceIdCacheKey = customResourceIdCacheKey,
             resourceResolverCallback = callback
         )
     }
@@ -1124,7 +1194,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockDrawable,
             drawableCopier = mockDrawableCopier,
@@ -1148,7 +1217,6 @@ internal class ResourceResolverTest {
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
-            applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockDrawable,
             drawableCopier = mockDrawableCopier,
@@ -1218,6 +1286,289 @@ internal class ResourceResolverTest {
     }
 
     @Test
+    fun `M use the published resource and release the capture W resolveResourceIdFromDrawable() { resolved meanwhile }`(
+        @Mock mockOtherCallback: ResourceResolverCallback
+    ) {
+        // Given
+        whenever(mockBitmapCachesManager.getFromResourceCache(fakeResourceKey)).thenReturn(null, fakeResourceId, null)
+        val tasks = captureTasks()
+
+        // When
+        resolveDrawable(mockSerializerCallback)
+        resolveDrawable(mockOtherCallback)
+
+        // Then
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        assertThat(tasks).hasSize(1)
+    }
+
+    @Test
+    fun `M capture each drawable W resolveResourceIdFromDrawable() twice { custom key of two drawables }`(
+        @StringForgery fakeCacheKey: String,
+        @Mock mockOtherDrawable: Drawable,
+        @Mock mockOtherCallback: ResourceResolverCallback
+    ) {
+        // Given
+        whenever(mockDrawableCopier.copy(eq(mockOtherDrawable), any())).thenReturn(mockOtherDrawable)
+        val tasks = captureTasks()
+
+        // When
+        resolveDrawable(mockSerializerCallback, customResourceIdCacheKey = fakeCacheKey)
+        resolveDrawable(mockOtherCallback, drawable = mockOtherDrawable, customResourceIdCacheKey = fakeCacheKey)
+        tasks.toList().forEach { it.run() }
+
+        // Then
+        assertThat(tasks).hasSize(2)
+        verify(mockDrawableCopier).copy(mockDrawable, mockResources)
+        verify(mockDrawableCopier).copy(mockOtherDrawable, mockResources)
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        verify(mockOtherCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M resolve the image once W resolveResourceIdFromDrawable() twice { custom key of one drawable }`(
+        @StringForgery fakeCacheKey: String,
+        @Mock mockOtherCallback: ResourceResolverCallback
+    ) {
+        // Given
+        val tasks = captureTasks()
+
+        // When
+        resolveDrawable(mockSerializerCallback, customResourceIdCacheKey = fakeCacheKey)
+        resolveDrawable(mockOtherCallback, customResourceIdCacheKey = fakeCacheKey)
+        tasks.toList().forEach { it.run() }
+
+        // Then
+        assertThat(tasks).hasSize(1)
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        verify(mockOtherCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M copy the copier's bitmap W resolveResourceIdFromDrawable() { another bitmap within the reservation }`(
+        @Mock mockCopiedDrawable: BitmapDrawable,
+        @Mock mockOtherBitmap: Bitmap,
+        @Mock mockOtherCopy: Bitmap
+    ) {
+        // Given
+        useUnpremultipliedBitmap(mockOtherBitmap, width = fakeBitmapWidth, height = fakeBitmapHeight)
+        whenever(mockOtherBitmap.copy(Bitmap.Config.ARGB_8888, false)).thenReturn(mockOtherCopy)
+        whenever(mockCopiedDrawable.bitmap).thenReturn(mockOtherBitmap)
+        whenever(mockDrawableCopier.copy(eq(mockBitmapDrawable), any())).thenReturn(mockCopiedDrawable)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        inOrder(mockWebPImageCompression, mockOtherCopy, mockSerializerCallback) {
+            verify(mockWebPImageCompression).compressBitmap(mockOtherCopy)
+            verify(mockOtherCopy).recycle()
+            verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        }
+    }
+
+    @Test
+    fun `M copy the copier's bitmap W resolveResourceIdFromDrawable() { another bitmap beyond the reservation }`(
+        @Mock mockCopiedDrawable: BitmapDrawable,
+        @Mock mockOtherBitmap: Bitmap,
+        @Mock mockOtherCopy: Bitmap
+    ) {
+        // Given
+        useUnpremultipliedBitmap(mockOtherBitmap, width = fakeBitmapWidth + 1, height = fakeBitmapHeight)
+        whenever(mockOtherBitmap.copy(Bitmap.Config.ARGB_8888, false)).thenReturn(mockOtherCopy)
+        whenever(mockCopiedDrawable.bitmap).thenReturn(mockOtherBitmap)
+        whenever(mockDrawableCopier.copy(eq(mockBitmapDrawable), any())).thenReturn(mockCopiedDrawable)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockWebPImageCompression).compressBitmap(mockOtherCopy)
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M draw into the reserved raster W resolveResourceIdFromDrawable() { another bitmap the budget cannot cover }`(
+        @Mock mockCopiedDrawable: BitmapDrawable,
+        @Mock mockOtherBitmap: Bitmap,
+        @Mock mockOtherCallback: ResourceResolverCallback
+    ) {
+        // Given
+        useBusyBudget(mockOtherCallback)
+        whenever(mockOtherBitmap.width).thenReturn(fakeBitmapWidth + 1)
+        whenever(mockOtherBitmap.height).thenReturn(fakeBitmapHeight)
+        whenever(mockCopiedDrawable.bitmap).thenReturn(mockOtherBitmap)
+        whenever(mockDrawableCopier.copy(eq(mockBitmapDrawable), any())).thenReturn(mockCopiedDrawable)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
+            drawable = eq(mockCopiedDrawable),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            displayMetrics = any(),
+            requestedSizeInBytes = anyOrNull(),
+            config = anyOrNull(),
+            bitmapCreationCallback = any()
+        )
+        verify(mockDrawableUtils, never()).createScaledBitmap(eq(mockOtherBitmap), any())
+    }
+
+    @Test
+    fun `M fail without drawing W resolveResourceIdFromDrawable() { unpremultiplied bitmap the budget cannot cover }`(
+        @Mock mockCopiedDrawable: BitmapDrawable,
+        @Mock mockOtherBitmap: Bitmap,
+        @Mock mockOtherCallback: ResourceResolverCallback
+    ) {
+        // Given
+        useBusyBudget(mockOtherCallback)
+        useUnpremultipliedBitmap(mockOtherBitmap, width = fakeBitmapWidth + 1, height = fakeBitmapHeight)
+        whenever(mockCopiedDrawable.bitmap).thenReturn(mockOtherBitmap)
+        whenever(mockDrawableCopier.copy(eq(mockBitmapDrawable), any())).thenReturn(mockCopiedDrawable)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verify(mockOtherBitmap, never()).copy(any(), any())
+        verifyNoDrawing()
+    }
+
+    @Test
+    fun `M draw into the reserved raster W resolveResourceIdFromDrawable() { tiled unpremultiplied bitmap uncovered }`(
+        @Mock mockCopiedDrawable: BitmapDrawable,
+        @Mock mockOtherBitmap: Bitmap,
+        @Mock mockOtherCallback: ResourceResolverCallback,
+        forge: Forge
+    ) {
+        // Given
+        useBusyBudget(mockOtherCallback)
+        useUnpremultipliedBitmap(mockOtherBitmap, width = fakeBitmapWidth + 1, height = fakeBitmapHeight)
+        whenever(mockCopiedDrawable.bitmap).thenReturn(mockOtherBitmap)
+        whenever(mockCopiedDrawable.tileModeX).thenReturn(forge.getForgery<Shader.TileMode>())
+        whenever(mockDrawableCopier.copy(eq(mockBitmapDrawable), any())).thenReturn(mockCopiedDrawable)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
+            drawable = eq(mockCopiedDrawable),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            displayMetrics = any(),
+            requestedSizeInBytes = anyOrNull(),
+            config = anyOrNull(),
+            bitmapCreationCallback = any()
+        )
+        verify(mockOtherBitmap, never()).copy(any(), any())
+    }
+
+    @Test
+    fun `M fail without copying W resolveResourceIdFromDrawable() { copier's bitmap too large to copy in full }`(
+        @Mock mockCopiedDrawable: BitmapDrawable,
+        @Mock mockOtherBitmap: Bitmap,
+        @IntForgery(min = 4097, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 4097, max = 100_000) fakeHeight: Int,
+        forge: Forge
+    ) {
+        // Given
+        useLargeHardwareBitmap(forge)
+        useUnpremultipliedBitmap(mockOtherBitmap, width = fakeWidth, height = fakeHeight)
+        whenever(mockCopiedDrawable.bitmap).thenReturn(mockOtherBitmap)
+        whenever(mockDrawableCopier.copy(eq(mockBitmapDrawable), any())).thenReturn(mockCopiedDrawable)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verify(mockOtherBitmap, never()).copy(any(), any())
+        verifyNoDrawing()
+    }
+
+    @Test
+    fun `M fail without drawing W resolveResourceIdFromDrawable() { hardware bitmap read back fails }`() {
+        // Given
+        useHardwareBitmap(width = fakeBitmapWidth, height = fakeBitmapHeight)
+        whenever(mockBitmap.copy(Bitmap.Config.ARGB_8888, false)).thenReturn(null)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verifyNoDrawing()
+    }
+
+    @Test
+    fun `M copy at full size and release W resolveResourceIdFromDrawable() { unpremultiplied bitmap }`() {
+        // Given
+        useUnpremultipliedBitmap(width = fakeBitmapWidth, height = fakeBitmapHeight)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        inOrder(mockBitmap, mockWebPImageCompression, mockCopiedBitmap, mockSerializerCallback) {
+            verify(mockBitmap).copy(Bitmap.Config.ARGB_8888, false)
+            verify(mockWebPImageCompression).compressBitmap(mockCopiedBitmap)
+            verify(mockCopiedBitmap).recycle()
+            verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        }
+        verify(mockDrawableUtils, never()).createScaledBitmap(any(), any())
+        verify(mockBitmap, never()).recycle()
+    }
+
+    @Test
+    fun `M reserve the full copy W resolveResourceIdFromDrawable() { large unpremultiplied bitmap }`(
+        @IntForgery(min = 2000, max = 4096) fakeWidth: Int,
+        @IntForgery(min = 2000, max = 4096) fakeHeight: Int
+    ) {
+        // Given
+        useUnpremultipliedBitmap(width = fakeWidth, height = fakeHeight)
+        whenever(mockBitmapCachesManager.generateResourceKeyFromDrawable(mockBitmapDrawable))
+            .thenReturn(fakeResourceKey)
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockPendingImageRequests)
+            .start(fakeResourceKey, fakeWidth.toLong() * fakeHeight * 4, mockSerializerCallback)
+    }
+
+    @Test
+    fun `M fail without copying W resolveResourceIdFromDrawable() { unpremultiplied bitmap too large }`(
+        @IntForgery(min = 4097, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 4097, max = 100_000) fakeHeight: Int
+    ) {
+        // Given
+        useUnpremultipliedBitmap(width = fakeWidth, height = fakeHeight)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verify(mockBitmap, never()).copy(any(), any())
+        verifyNoDrawing()
+    }
+
+    @Test
+    fun `M unregister the bitmap caches W unregisterCallbacks()`() {
+        // When
+        testedResourceResolver.unregisterCallbacks()
+
+        // Then
+        verify(mockBitmapCachesManager).unregisterCallbacks(mockApplicationContext)
+    }
+
+    @Test
     fun `M fail the capture W resolveResourceIdFromDrawable() { task rejected }`() {
         // Given
         val fakeRejection = RejectedExecutionException()
@@ -1230,7 +1581,7 @@ internal class ResourceResolverTest {
         verify(mockSerializerCallback).onFailure()
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            InternalLogger.Target.MAINTAINER,
             "Unable to schedule Session Replay image processing",
             throwable = fakeRejection
         )
@@ -1264,7 +1615,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M reserve the source pixels W resolveResourceIdFromDrawable() { bitmap drawable }`(
+    fun `M reserve the source as ARGB_8888 W resolveResourceIdFromDrawable() { bitmap drawable }`(
         @IntForgery(min = 1) fakeAllocationByteCount: Int
     ) {
         // Given
@@ -1278,7 +1629,175 @@ internal class ResourceResolverTest {
 
         // Then
         verify(mockPendingImageRequests)
-            .start(fakeResourceKey, fakeAllocationByteCount.toLong(), mockSerializerCallback)
+            .start(fakeResourceKey, fakeBitmapWidth.toLong() * fakeBitmapHeight * 4, mockSerializerCallback)
+    }
+
+    @Test
+    fun `M reserve the fallback raster W resolveResourceIdFromDrawable() { bitmap drawable drawn larger }`(
+        @IntForgery(min = 1, max = 99) fakeBitmapSide: Int,
+        @IntForgery(min = 100, max = 1000) fakeWidth: Int,
+        @IntForgery(min = 100, max = 1000) fakeHeight: Int
+    ) {
+        // Given
+        whenever(mockBitmap.width).thenReturn(fakeBitmapSide)
+        whenever(mockBitmap.height).thenReturn(fakeBitmapSide)
+        whenever(mockBitmapCachesManager.generateResourceKeyFromDrawable(mockBitmapDrawable))
+            .thenReturn(fakeResourceKey)
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveDrawable(
+            mockSerializerCallback,
+            drawable = mockBitmapDrawable,
+            drawableWidth = fakeWidth,
+            drawableHeight = fakeHeight
+        )
+
+        // Then
+        verify(mockPendingImageRequests)
+            .start(fakeResourceKey, fakeWidth.toLong() * fakeHeight * 4, mockSerializerCallback)
+    }
+
+    @Test
+    fun `M reserve at most the drawing limit W resolveResourceIdFromDrawable() { large bitmap drawable }`(
+        forge: Forge
+    ) {
+        // Given
+        useLargeBitmap(forge)
+        whenever(mockBitmapCachesManager.generateResourceKeyFromDrawable(mockBitmapDrawable))
+            .thenReturn(fakeResourceKey)
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockPendingImageRequests).start(
+            fakeResourceKey,
+            DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT.toLong(),
+            mockSerializerCallback
+        )
+    }
+
+    @Test
+    fun `M draw into ARGB_8888 and release the copy W resolveResourceIdFromDrawable() { RGBA_F16 bitmap }`(
+        @Mock mockScaledBitmap: Bitmap
+    ) {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO).thenReturn(true)
+        whenever(mockBitmap.config).thenReturn(Bitmap.Config.RGBA_F16)
+        whenever(mockDrawableUtils.createScaledArgb8888Bitmap(mockBitmap)).thenReturn(mockScaledBitmap)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        inOrder(mockWebPImageCompression, mockScaledBitmap, mockSerializerCallback) {
+            verify(mockWebPImageCompression).compressBitmap(mockScaledBitmap)
+            verify(mockScaledBitmap).recycle()
+            verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        }
+        verify(mockDrawableUtils, never()).createScaledBitmap(any(), any())
+        verify(mockBitmapCachesManager, never()).putInBitmapPool(mockScaledBitmap)
+        verify(mockBitmap, never()).recycle()
+    }
+
+    @Test
+    fun `M reserve the readback and the scaled copy W resolveResourceIdFromDrawable() { large hardware bitmap }`(
+        forge: Forge
+    ) {
+        // Given
+        useLargeHardwareBitmap(forge)
+        val expectedByteCount = mockBitmap.width.toLong() * mockBitmap.height * 4 +
+            DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT
+        whenever(mockBitmapCachesManager.generateResourceKeyFromDrawable(mockBitmapDrawable))
+            .thenReturn(fakeResourceKey)
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockPendingImageRequests).start(fakeResourceKey, expectedByteCount, mockSerializerCallback)
+    }
+
+    @Test
+    fun `M fail without copying W resolveResourceIdFromDrawable() { hardware bitmap larger than the budget }`(
+        @IntForgery(min = 4097, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 4097, max = 100_000) fakeHeight: Int
+    ) {
+        // Given
+        useHardwareBitmap(width = fakeWidth, height = fakeHeight)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verify(mockBitmap, never()).copy(any(), any())
+        verifyNoDrawing()
+    }
+
+    @Test
+    fun `M capture the copier's drawable W resolveResourceIdFromDrawable() { bitmap too large replaced by the copier }`(
+        @IntForgery(min = 4097, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 4097, max = 100_000) fakeHeight: Int
+    ) {
+        // Given
+        useHardwareBitmap(width = fakeWidth, height = fakeHeight)
+        whenever(mockDrawableCopier.copy(eq(mockBitmapDrawable), any())).thenReturn(mockDrawable)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockBitmap, never()).copy(any(), any())
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M reserve only the raster W resolveResourceIdFromDrawable() { bitmap too large to copy in full }`(
+        @IntForgery(min = 4097, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 4097, max = 100_000) fakeHeight: Int,
+        @IntForgery(min = 1, max = 1000) fakeDrawableWidth: Int,
+        @IntForgery(min = 1, max = 1000) fakeDrawableHeight: Int
+    ) {
+        // Given
+        useHardwareBitmap(width = fakeWidth, height = fakeHeight)
+        whenever(mockBitmapCachesManager.generateResourceKeyFromDrawable(mockBitmapDrawable))
+            .thenReturn(fakeResourceKey)
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveDrawable(
+            mockSerializerCallback,
+            drawable = mockBitmapDrawable,
+            drawableWidth = fakeDrawableWidth,
+            drawableHeight = fakeDrawableHeight
+        )
+
+        // Then
+        verify(mockPendingImageRequests)
+            .start(fakeResourceKey, fakeDrawableWidth.toLong() * fakeDrawableHeight * 4, mockSerializerCallback)
+    }
+
+    @Test
+    fun `M read back, compress and release a copy W resolveResourceIdFromDrawable() { hardware bitmap }`() {
+        // Given
+        useHardwareBitmap(width = fakeBitmapWidth, height = fakeBitmapHeight)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        inOrder(mockWebPImageCompression, mockCopiedBitmap, mockSerializerCallback) {
+            verify(mockWebPImageCompression).compressBitmap(mockCopiedBitmap)
+            verify(mockCopiedBitmap).recycle()
+            verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        }
+        verify(mockDrawableUtils, never()).createScaledBitmap(any(), any())
+        verify(mockBitmapCachesManager, never()).putInBitmapPool(mockCopiedBitmap)
+        verify(mockBitmap, never()).recycle()
     }
 
     @Test
@@ -1330,6 +1849,86 @@ internal class ResourceResolverTest {
         }
         verify(mockBitmap, never()).recycle()
         verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M release the copy before completing W resolveResourceIdFromBitmap()`() {
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        inOrder(mockCopiedBitmap, mockBitmapCachesManager, mockSerializerCallback) {
+            verify(mockCopiedBitmap).recycle()
+            verify(mockBitmapCachesManager).putInResourceCache(any(), eq(fakeResourceId))
+            verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        }
+    }
+
+    @Test
+    fun `M release the copy before failing W resolveResourceIdFromBitmap() { compression fails }`() {
+        // Given
+        whenever(mockWebPImageCompression.compressBitmap(mockCopiedBitmap)).thenReturn(ByteArray(0))
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        inOrder(mockCopiedBitmap, mockSerializerCallback) {
+            verify(mockCopiedBitmap).recycle()
+            verify(mockSerializerCallback).onFailure()
+        }
+    }
+
+    @Test
+    fun `M copy at full size W resolveResourceIdFromBitmap() { large unpremultiplied bitmap }`(
+        @IntForgery(min = 2000, max = 4096) fakeWidth: Int,
+        @IntForgery(min = 2000, max = 4096) fakeHeight: Int
+    ) {
+        // Given
+        useUnpremultipliedBitmap(width = fakeWidth, height = fakeHeight)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockBitmap).copy(Bitmap.Config.ARGB_8888, false)
+        verify(mockDrawableUtils, never()).createScaledArgb8888Bitmap(any())
+        verify(mockWebPImageCompression).compressBitmap(mockCopiedBitmap)
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M reserve the full copy W resolveResourceIdFromBitmap() { large unpremultiplied bitmap }`(
+        @IntForgery(min = 2000, max = 4096) fakeWidth: Int,
+        @IntForgery(min = 2000, max = 4096) fakeHeight: Int
+    ) {
+        // Given
+        useUnpremultipliedBitmap(width = fakeWidth, height = fakeHeight)
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockPendingImageRequests)
+            .start(any(), eq(fakeWidth.toLong() * fakeHeight * 4), eq(mockSerializerCallback))
+    }
+
+    @Test
+    fun `M fail without copying W resolveResourceIdFromBitmap() { unpremultiplied bitmap larger than the budget }`(
+        @IntForgery(min = 4097, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 4097, max = 100_000) fakeHeight: Int
+    ) {
+        // Given
+        useUnpremultipliedBitmap(width = fakeWidth, height = fakeHeight)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verify(mockBitmap, never()).copy(any(), any())
+        verifyNoInteractions(mockExecutorService)
     }
 
     @Test
@@ -1386,6 +1985,24 @@ internal class ResourceResolverTest {
     }
 
     @Test
+    fun `M use the published resource and release the capture W resolveResourceIdFromBitmap() { resolved meanwhile }`(
+        @Mock mockOtherCallback: ResourceResolverCallback
+    ) {
+        // Given
+        whenever(mockBitmapCachesManager.getFromResourceCache(any())).thenReturn(null, fakeResourceId, null)
+        val tasks = captureTasks()
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+        resolveBitmap(mockOtherCallback)
+
+        // Then
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        verify(mockBitmap).copy(Bitmap.Config.ARGB_8888, false)
+        assertThat(tasks).hasSize(1)
+    }
+
+    @Test
     fun `M not copy W resolveResourceIdFromBitmap() { capture joined or refused }`() {
         // Given
         testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
@@ -1401,8 +2018,8 @@ internal class ResourceResolverTest {
 
     @Test
     fun `M reserve the copied pixels W resolveResourceIdFromBitmap()`(
-        @IntForgery(min = 1, max = 10_000) fakeWidth: Int,
-        @IntForgery(min = 1, max = 10_000) fakeHeight: Int
+        @IntForgery(min = 1, max = 1000) fakeWidth: Int,
+        @IntForgery(min = 1, max = 1000) fakeHeight: Int
     ) {
         // Given
         whenever(mockBitmap.width).thenReturn(fakeWidth)
@@ -1419,6 +2036,406 @@ internal class ResourceResolverTest {
     }
 
     @Test
+    fun `M reserve at most the copy limit W resolveResourceIdFromBitmap() { large bitmap }`(forge: Forge) {
+        // Given
+        useLargeBitmap(forge)
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockPendingImageRequests).start(
+            any(),
+            eq(DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT.toLong()),
+            eq(mockSerializerCallback)
+        )
+    }
+
+    @Test
+    fun `M reserve the readback and the scaled copy W resolveResourceIdFromBitmap() { large hardware bitmap }`(
+        forge: Forge
+    ) {
+        // Given
+        useLargeHardwareBitmap(forge)
+        val expectedByteCount = mockBitmap.width.toLong() * mockBitmap.height * 4 +
+            DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockPendingImageRequests).start(any(), eq(expectedByteCount), eq(mockSerializerCallback))
+    }
+
+    @Test
+    fun `M reserve the buffer and its readback W resolveResourceIdFromBitmap() { hardware bitmap, API 31+ }`(
+        @IntForgery(min = 1, max = 8_000_000) fakeAllocationByteCount: Int
+    ) {
+        // Given
+        useWrappedHardwareBitmap(width = fakeBitmapWidth, height = fakeBitmapHeight)
+        whenever(mockBitmap.allocationByteCount).thenReturn(fakeAllocationByteCount)
+        val expectedByteCount = 2L * fakeAllocationByteCount + fakeBitmapWidth.toLong() * fakeBitmapHeight * 4
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockPendingImageRequests).start(any(), eq(expectedByteCount), eq(mockSerializerCallback))
+    }
+
+    @Test
+    fun `M reserve the buffer, readback and scaled copy W resolveResourceIdFromBitmap() { large, API 31+ }`(
+        @IntForgery(min = 2000, max = 4096) fakeWidth: Int,
+        @IntForgery(min = 2000, max = 4096) fakeHeight: Int,
+        @IntForgery(min = 1, max = PendingImageRequests.MAX_PENDING_BYTES.toInt()) fakeAllocationByteCount: Int
+    ) {
+        // Given
+        useWrappedHardwareBitmap(width = fakeWidth, height = fakeHeight)
+        whenever(mockBitmap.allocationByteCount).thenReturn(fakeAllocationByteCount)
+        val expectedByteCount = fakeAllocationByteCount + fakeWidth.toLong() * fakeHeight * 4 +
+            maxOf(fakeAllocationByteCount, DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT)
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockPendingImageRequests).start(any(), eq(expectedByteCount), eq(mockSerializerCallback))
+    }
+
+    @Test
+    fun `M reserve the readback temporary W resolveResourceIdFromBitmap() { large hardware bitmap }`(
+        @IntForgery(min = 2000, max = 4096) fakeWidth: Int,
+        @IntForgery(min = 2000, max = 4096) fakeHeight: Int,
+        @IntForgery(min = 1, max = PendingImageRequests.MAX_PENDING_BYTES.toInt()) fakeAllocationByteCount: Int
+    ) {
+        // Given
+        useHardwareBitmap(width = fakeWidth, height = fakeHeight)
+        whenever(mockBitmap.allocationByteCount).thenReturn(fakeAllocationByteCount)
+        val expectedByteCount = fakeWidth.toLong() * fakeHeight * 4 +
+            maxOf(fakeAllocationByteCount, DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT)
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockPendingImageRequests).start(any(), eq(expectedByteCount), eq(mockSerializerCallback))
+    }
+
+    @Test
+    fun `M fail without copying W resolveResourceIdFromBitmap() { hardware readback larger than the budget }`(
+        @IntForgery(min = 1, max = 4096) fakeWidth: Int,
+        @IntForgery(min = 1, max = 4096) fakeHeight: Int,
+        @IntForgery(min = PendingImageRequests.MAX_PENDING_BYTES.toInt() + 1) fakeAllocationByteCount: Int
+    ) {
+        // Given
+        useHardwareBitmap(width = fakeWidth, height = fakeHeight)
+        whenever(mockBitmap.allocationByteCount).thenReturn(fakeAllocationByteCount)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verify(mockBitmap, never()).copy(any(), any())
+        verifyNoInteractions(mockExecutorService)
+    }
+
+    @Test
+    fun `M scale on the worker W resolveResourceIdFromBitmap() { long hardware bitmap within the copy limit }`(
+        @Mock mockScaledBitmap: Bitmap,
+        @IntForgery(min = DrawableUtils.MAX_WEBP_DIMENSION + 1, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 1, max = 26) fakeHeight: Int
+    ) {
+        // Given
+        useHardwareBitmap(width = fakeWidth, height = fakeHeight)
+        whenever(mockDrawableUtils.createScaledArgb8888Bitmap(mockCopiedBitmap)).thenReturn(mockScaledBitmap)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockWebPImageCompression).compressBitmap(mockScaledBitmap)
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M reserve the readback and the scaled copy W resolveResourceIdFromBitmap() { long hardware bitmap }`(
+        @IntForgery(min = DrawableUtils.MAX_WEBP_DIMENSION + 1, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 1, max = 26) fakeHeight: Int
+    ) {
+        // Given
+        useHardwareBitmap(width = fakeWidth, height = fakeHeight)
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockPendingImageRequests)
+            .start(any(), eq(2L * fakeWidth * fakeHeight * 4), eq(mockSerializerCallback))
+    }
+
+    @Test
+    fun `M scale to the WebP edge limit W resolveResourceIdFromBitmap() { long bitmap within the copy limit }`(
+        @Mock mockScaledBitmap: Bitmap,
+        @IntForgery(min = DrawableUtils.MAX_WEBP_DIMENSION + 1, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 1, max = 26) fakeHeight: Int
+    ) {
+        // Given
+        whenever(mockBitmap.width).thenReturn(fakeWidth)
+        whenever(mockBitmap.height).thenReturn(fakeHeight)
+        whenever(mockDrawableUtils.createScaledArgb8888Bitmap(mockBitmap)).thenReturn(mockScaledBitmap)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockWebPImageCompression).compressBitmap(mockScaledBitmap)
+        verify(mockBitmap, never()).copy(any(), any())
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M fail without copying W resolveResourceIdFromBitmap() { hardware bitmap larger than the budget }`(
+        @IntForgery(min = 4097, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 4097, max = 100_000) fakeHeight: Int
+    ) {
+        // Given
+        useHardwareBitmap(width = fakeWidth, height = fakeHeight)
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verify(mockBitmap, never()).copy(any(), any())
+        verify(mockPendingImageRequests, never()).start(any(), any(), any())
+        verifyNoInteractions(mockExecutorService)
+    }
+
+    @Test
+    fun `M compress a scaled copy and release it W resolveResourceIdFromBitmap() { large bitmap }`(
+        @Mock mockScaledBitmap: Bitmap,
+        forge: Forge
+    ) {
+        // Given
+        useLargeBitmap(forge)
+        whenever(mockBitmap.config).thenReturn(
+            forge.anElementFrom(Bitmap.Config.ARGB_8888, Bitmap.Config.RGB_565, Bitmap.Config.RGBA_F16)
+        )
+        whenever(mockDrawableUtils.createScaledArgb8888Bitmap(mockBitmap)).thenReturn(mockScaledBitmap)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        inOrder(mockWebPImageCompression, mockScaledBitmap) {
+            verify(mockWebPImageCompression).compressBitmap(mockScaledBitmap)
+            verify(mockScaledBitmap).recycle()
+        }
+        verify(mockBitmap, never()).copy(any(), any())
+        verify(mockBitmap, never()).recycle()
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M scale a full copy and release both W resolveResourceIdFromBitmap() { large hardware bitmap }`(
+        @Mock mockScaledBitmap: Bitmap,
+        forge: Forge
+    ) {
+        // Given
+        useLargeHardwareBitmap(forge)
+        whenever(mockDrawableUtils.createScaledArgb8888Bitmap(mockCopiedBitmap)).thenReturn(mockScaledBitmap)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        inOrder(
+            mockBitmap,
+            mockExecutorService,
+            mockDrawableUtils,
+            mockCopiedBitmap,
+            mockWebPImageCompression,
+            mockScaledBitmap,
+            mockSerializerCallback
+        ) {
+            verify(mockBitmap).copy(Bitmap.Config.ARGB_8888, false)
+            verify(mockExecutorService).execute(any())
+            verify(mockDrawableUtils).createScaledArgb8888Bitmap(mockCopiedBitmap)
+            verify(mockCopiedBitmap).recycle()
+            verify(mockWebPImageCompression).compressBitmap(mockScaledBitmap)
+            verify(mockScaledBitmap).recycle()
+            verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        }
+        verify(mockDrawableUtils, never()).createScaledArgb8888Bitmap(mockBitmap)
+        verify(mockBitmap, never()).recycle()
+    }
+
+    @Test
+    fun `M read back on the worker W resolveResourceIdFromBitmap() { hardware bitmap, API 31+ }`() {
+        // Given
+        useWrappedHardwareBitmap(width = fakeBitmapWidth, height = fakeBitmapHeight)
+        whenever(mockWrappedBitmap.copy(Bitmap.Config.ARGB_8888, false)).thenReturn(mockCopiedBitmap)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        inOrder(
+            mockExecutorService,
+            mockWrappedBitmap,
+            mockWebPImageCompression,
+            mockCopiedBitmap,
+            mockSerializerCallback
+        ) {
+            verify(mockExecutorService).execute(any())
+            verify(mockWrappedBitmap).copy(Bitmap.Config.ARGB_8888, false)
+            verify(mockWrappedBitmap).recycle()
+            verify(mockWebPImageCompression).compressBitmap(mockCopiedBitmap)
+            verify(mockCopiedBitmap).recycle()
+            verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        }
+        verify(mockBitmap, never()).copy(any(), any())
+        verify(mockBitmap, never()).recycle()
+    }
+
+    @Test
+    fun `M read back and scale on the worker W resolveResourceIdFromBitmap() { large hardware bitmap, API 31+ }`(
+        @Mock mockScaledBitmap: Bitmap,
+        forge: Forge
+    ) {
+        // Given
+        val fakeWidth = forge.anInt(min = 2000, max = 4096)
+        val fakeHeight = forge.anInt(min = 2000, max = 4096)
+        useWrappedHardwareBitmap(width = fakeWidth, height = fakeHeight)
+        whenever(mockWrappedBitmap.copy(Bitmap.Config.ARGB_8888, false)).thenReturn(mockCopiedBitmap)
+        whenever(mockDrawableUtils.createScaledArgb8888Bitmap(mockCopiedBitmap)).thenReturn(mockScaledBitmap)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        inOrder(
+            mockExecutorService,
+            mockWrappedBitmap,
+            mockCopiedBitmap,
+            mockWebPImageCompression,
+            mockScaledBitmap,
+            mockSerializerCallback
+        ) {
+            verify(mockExecutorService).execute(any())
+            verify(mockWrappedBitmap).copy(Bitmap.Config.ARGB_8888, false)
+            verify(mockCopiedBitmap).recycle()
+            verify(mockWrappedBitmap).recycle()
+            verify(mockWebPImageCompression).compressBitmap(mockScaledBitmap)
+            verify(mockScaledBitmap).recycle()
+            verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        }
+        verify(mockBitmap, never()).copy(any(), any())
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M read back here and scale on the worker W resolveResourceIdFromBitmap() { large, API 31+, wrap fails }`(
+        @Mock mockScaledBitmap: Bitmap,
+        @IntForgery(min = 2000, max = 4096) fakeWidth: Int,
+        @IntForgery(min = 2000, max = 4096) fakeHeight: Int
+    ) {
+        // Given
+        useWrappedHardwareBitmap(width = fakeWidth, height = fakeHeight)
+        whenever(mockBitmapWrapper.wrapHardwareBuffer(mockBitmap)).thenReturn(null)
+        whenever(mockDrawableUtils.createScaledArgb8888Bitmap(mockCopiedBitmap)).thenReturn(mockScaledBitmap)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        inOrder(mockBitmap, mockExecutorService, mockDrawableUtils, mockWebPImageCompression) {
+            verify(mockBitmap).copy(Bitmap.Config.ARGB_8888, false)
+            verify(mockExecutorService).execute(any())
+            verify(mockDrawableUtils).createScaledArgb8888Bitmap(mockCopiedBitmap)
+            verify(mockWebPImageCompression).compressBitmap(mockScaledBitmap)
+        }
+        verify(mockDrawableUtils, never()).createScaledArgb8888Bitmap(mockBitmap)
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M read back instead W resolveResourceIdFromBitmap() { hardware bitmap, API 31+, wrap fails }`() {
+        // Given
+        useWrappedHardwareBitmap(width = fakeBitmapWidth, height = fakeBitmapHeight)
+        whenever(mockBitmapWrapper.wrapHardwareBuffer(mockBitmap)).thenReturn(null)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        inOrder(mockBitmap, mockExecutorService, mockWebPImageCompression, mockCopiedBitmap, mockSerializerCallback) {
+            verify(mockBitmap).copy(Bitmap.Config.ARGB_8888, false)
+            verify(mockExecutorService).execute(any())
+            verify(mockWebPImageCompression).compressBitmap(mockCopiedBitmap)
+            verify(mockCopiedBitmap).recycle()
+            verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        }
+    }
+
+    @Test
+    fun `M release the wrapper and fail W resolveResourceIdFromBitmap() { API 31+ hardware, readback fails }`() {
+        // Given
+        useWrappedHardwareBitmap(width = fakeBitmapWidth, height = fakeBitmapHeight)
+        whenever(mockWrappedBitmap.copy(Bitmap.Config.ARGB_8888, false)).thenReturn(null)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockWrappedBitmap).recycle()
+        verify(mockSerializerCallback).onFailure()
+        verifyNoInteractions(mockWebPImageCompression)
+    }
+
+    @Test
+    fun `M release the full copy and fail W resolveResourceIdFromBitmap() { large hardware bitmap, scaling fails }`(
+        forge: Forge
+    ) {
+        // Given
+        useLargeHardwareBitmap(forge)
+        whenever(mockDrawableUtils.createScaledArgb8888Bitmap(mockCopiedBitmap)).thenReturn(null)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        inOrder(mockCopiedBitmap, mockSerializerCallback) {
+            verify(mockCopiedBitmap).recycle()
+            verify(mockSerializerCallback).onFailure()
+        }
+        verifyNoInteractions(mockWebPImageCompression)
+    }
+
+    @Test
+    fun `M fail the capture W resolveResourceIdFromBitmap() { large bitmap, scaling fails }`(forge: Forge) {
+        // Given
+        useLargeBitmap(forge)
+        whenever(mockDrawableUtils.createScaledArgb8888Bitmap(mockBitmap)).thenReturn(null)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verify(mockBitmap, never()).copy(any(), any())
+        verifyNoInteractions(mockExecutorService)
+    }
+
+    @Test
     fun `M fail the capture W resolveResourceIdFromBitmap() { copy fails }`() {
         // Given
         whenever(mockBitmap.copy(Bitmap.Config.ARGB_8888, false)).thenReturn(null)
@@ -1432,12 +2449,22 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M register the cache for memory callbacks W resolveResourceIdFromBitmap()`() {
+    fun `M register the bitmap caches W registerCallbacks()`() {
         // When
-        resolveBitmap(mockSerializerCallback)
+        testedResourceResolver.registerCallbacks()
 
         // Then
         verify(mockBitmapCachesManager).registerCallbacks(mockApplicationContext)
+    }
+
+    @Test
+    fun `M not register the bitmap caches W resolveResourceIdFromBitmap() + resolveResourceIdFromDrawable()`() {
+        // When
+        resolveBitmap(mockSerializerCallback)
+        resolveDrawable(mockSerializerCallback)
+
+        // Then
+        verify(mockBitmapCachesManager, never()).registerCallbacks(any())
     }
 
     @Test
@@ -1450,10 +2477,13 @@ internal class ResourceResolverTest {
         resolveBitmap(mockSerializerCallback)
 
         // Then
-        verify(mockSerializerCallback).onFailure()
+        inOrder(mockCopiedBitmap, mockSerializerCallback) {
+            verify(mockCopiedBitmap).recycle()
+            verify(mockSerializerCallback).onFailure()
+        }
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            InternalLogger.Target.MAINTAINER,
             "Unable to schedule Session Replay image processing",
             throwable = fakeRejection
         )
@@ -1494,19 +2524,76 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M convert without copying or recycling W resolveResourceIdFromBitmap() { ALPHA_8 bitmap }`() {
+    fun `M copy, convert and release W resolveResourceIdFromBitmap() { ALPHA_8 bitmap }`(
+        @Mock mockAlpha8Copy: Bitmap
+    ) {
         // Given
         whenever(mockBitmap.config).thenReturn(Bitmap.Config.ALPHA_8)
-        whenever(mockAlpha8BitmapConverter.convertAlpha8BitmapToArgb8888(mockBitmap)).thenReturn(mockCopiedBitmap)
+        whenever(mockBitmap.copy(Bitmap.Config.ALPHA_8, false)).thenReturn(mockAlpha8Copy)
+        whenever(mockAlpha8Copy.config).thenReturn(Bitmap.Config.ALPHA_8)
+        whenever(mockAlpha8BitmapConverter.convertAlpha8BitmapToArgb8888(mockAlpha8Copy)).thenReturn(mockCopiedBitmap)
 
         // When
         resolveBitmap(mockSerializerCallback)
 
         // Then
-        verify(mockAlpha8BitmapConverter).convertAlpha8BitmapToArgb8888(mockBitmap)
-        verify(mockBitmap, never()).copy(any(), any())
+        inOrder(mockBitmap, mockExecutorService, mockAlpha8BitmapConverter, mockCopiedBitmap, mockAlpha8Copy) {
+            verify(mockBitmap).copy(Bitmap.Config.ALPHA_8, false)
+            verify(mockExecutorService).execute(any())
+            verify(mockAlpha8BitmapConverter).convertAlpha8BitmapToArgb8888(mockAlpha8Copy)
+            verify(mockCopiedBitmap).recycle()
+            verify(mockAlpha8Copy).recycle()
+        }
+        verify(mockAlpha8BitmapConverter, never()).convertAlpha8BitmapToArgb8888(mockBitmap)
         verify(mockBitmap, never()).recycle()
         verify(mockSerializerCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M reserve the copy and its conversion W resolveResourceIdFromBitmap() { ALPHA_8 bitmap }`() {
+        // Given
+        whenever(mockBitmap.config).thenReturn(Bitmap.Config.ALPHA_8)
+        val expectedByteCount = fakeBitmapWidth.toLong() * fakeBitmapHeight * 5
+        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockPendingImageRequests).start(any(), eq(expectedByteCount), eq(mockSerializerCallback))
+    }
+
+    @Test
+    fun `M fail without copying W resolveResourceIdFromBitmap() { ALPHA_8 bitmap larger than the budget }`(
+        @IntForgery(min = 4097, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 4097, max = 100_000) fakeHeight: Int
+    ) {
+        // Given
+        whenever(mockBitmap.config).thenReturn(Bitmap.Config.ALPHA_8)
+        whenever(mockBitmap.width).thenReturn(fakeWidth)
+        whenever(mockBitmap.height).thenReturn(fakeHeight)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verify(mockBitmap, never()).copy(any(), any())
+        verifyNoInteractions(mockExecutorService)
+    }
+
+    @Test
+    fun `M fail without scheduling work W resolveResourceIdFromBitmap() { ALPHA_8 copy fails }`() {
+        // Given
+        whenever(mockBitmap.config).thenReturn(Bitmap.Config.ALPHA_8)
+        whenever(mockBitmap.copy(Bitmap.Config.ALPHA_8, false)).thenReturn(null)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verifyNoInteractions(mockExecutorService, mockAlpha8BitmapConverter)
     }
 
     @Test
@@ -1532,11 +2619,14 @@ internal class ResourceResolverTest {
     fun `M return cached resourceId W resolveResourceIdFromBitmap { alpha8 bitmap, cache hit }`(
         @StringForgery fakeResourceId: String,
         @Mock mockAlpha8Bitmap: Bitmap,
+        @Mock mockAlpha8Copy: Bitmap,
         @Mock mockCacheKey: Alpha8CacheKey
     ) {
         // Given
         whenever(mockAlpha8Bitmap.config).thenReturn(Bitmap.Config.ALPHA_8)
-        whenever(mockAlpha8ResourceCache.generateKey(mockAlpha8Bitmap)).thenReturn(mockCacheKey)
+        whenever(mockAlpha8Bitmap.copy(Bitmap.Config.ALPHA_8, false)).thenReturn(mockAlpha8Copy)
+        whenever(mockAlpha8Copy.config).thenReturn(Bitmap.Config.ALPHA_8)
+        whenever(mockAlpha8ResourceCache.generateKey(mockAlpha8Copy)).thenReturn(mockCacheKey)
         whenever(mockAlpha8ResourceCache.get(mockCacheKey)).thenReturn(fakeResourceId)
 
         // When
@@ -1555,14 +2645,17 @@ internal class ResourceResolverTest {
     fun `M convert and process W resolveResourceIdFromBitmap { alpha8 bitmap, cache miss }`(
         @StringForgery fakeResourceId: String,
         @Mock mockAlpha8Bitmap: Bitmap,
+        @Mock mockAlpha8Copy: Bitmap,
         @Mock mockConvertedBitmap: Bitmap,
         @Mock mockCacheKey: Alpha8CacheKey
     ) {
         // Given
         whenever(mockAlpha8Bitmap.config).thenReturn(Bitmap.Config.ALPHA_8)
-        whenever(mockAlpha8ResourceCache.generateKey(mockAlpha8Bitmap)).thenReturn(mockCacheKey)
+        whenever(mockAlpha8Bitmap.copy(Bitmap.Config.ALPHA_8, false)).thenReturn(mockAlpha8Copy)
+        whenever(mockAlpha8Copy.config).thenReturn(Bitmap.Config.ALPHA_8)
+        whenever(mockAlpha8ResourceCache.generateKey(mockAlpha8Copy)).thenReturn(mockCacheKey)
         whenever(mockAlpha8ResourceCache.get(mockCacheKey)).thenReturn(null)
-        whenever(mockAlpha8BitmapConverter.convertAlpha8BitmapToArgb8888(mockAlpha8Bitmap))
+        whenever(mockAlpha8BitmapConverter.convertAlpha8BitmapToArgb8888(mockAlpha8Copy))
             .thenReturn(mockConvertedBitmap)
         whenever(mockWebPImageCompression.compressBitmap(mockConvertedBitmap))
             .thenReturn(fakeImageCompressionByteArray)
@@ -1576,7 +2669,7 @@ internal class ResourceResolverTest {
         )
 
         // Then
-        verify(mockAlpha8BitmapConverter).convertAlpha8BitmapToArgb8888(mockAlpha8Bitmap)
+        verify(mockAlpha8BitmapConverter).convertAlpha8BitmapToArgb8888(mockAlpha8Copy)
         verify(mockWebPImageCompression).compressBitmap(mockConvertedBitmap)
         verify(mockConvertedBitmap).recycle()
         verify(mockAlpha8ResourceCache).put(mockCacheKey, fakeResourceId)
@@ -1586,13 +2679,16 @@ internal class ResourceResolverTest {
     @Test
     fun `M fail W resolveResourceIdFromBitmap { alpha8 conversion fails }`(
         @Mock mockAlpha8Bitmap: Bitmap,
+        @Mock mockAlpha8Copy: Bitmap,
         @Mock mockCacheKey: Alpha8CacheKey
     ) {
         // Given
         whenever(mockAlpha8Bitmap.config).thenReturn(Bitmap.Config.ALPHA_8)
-        whenever(mockAlpha8ResourceCache.generateKey(mockAlpha8Bitmap)).thenReturn(mockCacheKey)
+        whenever(mockAlpha8Bitmap.copy(Bitmap.Config.ALPHA_8, false)).thenReturn(mockAlpha8Copy)
+        whenever(mockAlpha8Copy.config).thenReturn(Bitmap.Config.ALPHA_8)
+        whenever(mockAlpha8ResourceCache.generateKey(mockAlpha8Copy)).thenReturn(mockCacheKey)
         whenever(mockAlpha8ResourceCache.get(mockCacheKey)).thenReturn(null)
-        whenever(mockAlpha8BitmapConverter.convertAlpha8BitmapToArgb8888(mockAlpha8Bitmap))
+        whenever(mockAlpha8BitmapConverter.convertAlpha8BitmapToArgb8888(mockAlpha8Copy))
             .thenReturn(null)
 
         // When

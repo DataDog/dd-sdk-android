@@ -6,10 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.PendingImageRequests.Companion.HEAP_FRACTION
 import com.datadog.android.sessionreplay.internal.recorder.resources.PendingImageRequests.Companion.MAX_PENDING_BYTES
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -24,6 +26,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -39,6 +42,9 @@ import org.mockito.quality.Strictness
 internal class PendingImageRequestsTest {
 
     private lateinit var testedRequests: PendingImageRequests
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
@@ -61,7 +67,11 @@ internal class PendingImageRequestsTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockBuildSdkVersionProvider.isAtLeastO).thenReturn(true)
-        testedRequests = PendingImageRequests(mockBuildSdkVersionProvider, maxHeapBytes = Long.MAX_VALUE)
+        testedRequests = PendingImageRequests(
+            mockInternalLogger,
+            mockBuildSdkVersionProvider,
+            maxHeapBytes = Long.MAX_VALUE
+        )
     }
 
     @Test
@@ -165,6 +175,123 @@ internal class PendingImageRequestsTest {
     }
 
     @Test
+    fun `M raise the reservation W reserve() { budget allows }`(
+        @StringForgery fakeOtherKey: String,
+        @LongForgery(min = 1, max = MAX_PENDING_BYTES) fakeRaisedByteCount: Long
+    ) {
+        // Given
+        val request = startRequest(fakeKey, 0L, mockCallback)
+
+        // When
+        val isReserved = request.reserve(fakeRaisedByteCount)
+        val otherRequest = testedRequests.start(
+            "$fakeKey-$fakeOtherKey",
+            MAX_PENDING_BYTES - fakeRaisedByteCount + 1,
+            mockOtherCallback
+        )
+
+        // Then
+        assertThat(isReserved).isTrue()
+        assertThat(otherRequest).isNull()
+        verify(mockOtherCallback).onFailure()
+    }
+
+    @Test
+    fun `M keep the reservation W reserve() { budget exceeded }`(
+        @StringForgery fakeOtherKey: String,
+        @Mock mockThirdCallback: ResourceResolverCallback,
+        @LongForgery(min = 1, max = MAX_PENDING_BYTES - 1) fakeOtherByteCount: Long
+    ) {
+        // Given
+        val request = startRequest(fakeKey, MAX_PENDING_BYTES - fakeOtherByteCount, mockCallback)
+        val otherRequest = startRequest("$fakeKey-$fakeOtherKey", fakeOtherByteCount, mockOtherCallback)
+
+        // When
+        val isReserved = request.reserve(MAX_PENDING_BYTES - fakeOtherByteCount + 1)
+        otherRequest.onSuccess(fakeResourceId)
+        val thirdRequest = testedRequests.start("$fakeKey-$fakeOtherKey-3", fakeOtherByteCount, mockThirdCallback)
+
+        // Then
+        assertThat(isReserved).isFalse()
+        assertThat(thirdRequest).isNotNull
+    }
+
+    @Test
+    fun `M raise the reservation W reserve() { larger than the budget, nothing else pending }`(
+        @StringForgery fakeOtherKey: String,
+        @LongForgery(min = MAX_PENDING_BYTES + 1, max = Long.MAX_VALUE / 2) fakeLargeByteCount: Long
+    ) {
+        // Given
+        val request = startRequest(fakeKey, fakeByteCount, mockCallback)
+
+        // When
+        val isReserved = request.reserve(fakeLargeByteCount)
+        val otherRequest = testedRequests.start("$fakeKey-$fakeOtherKey", 0L, mockOtherCallback)
+
+        // Then
+        assertThat(isReserved).isTrue()
+        assertThat(otherRequest).isNull()
+    }
+
+    @Test
+    fun `M release the raised reservation W reserve() + onSuccess()`(
+        @StringForgery fakeOtherKey: String,
+        @Mock mockThirdCallback: ResourceResolverCallback
+    ) {
+        // Given
+        val request = startRequest(fakeKey, 0L, mockCallback)
+        request.reserve(MAX_PENDING_BYTES - 1)
+        startRequest("$fakeKey-$fakeOtherKey", 1L, mockOtherCallback)
+
+        // When
+        request.onSuccess(fakeResourceId)
+        val thirdRequest = testedRequests.start("$fakeKey-$fakeOtherKey-3", MAX_PENDING_BYTES - 1, mockThirdCallback)
+
+        // Then
+        assertThat(thirdRequest).isNotNull
+        verifyNoInteractions(mockThirdCallback)
+    }
+
+    @Test
+    fun `M not reserve W reserve() { request completed }`() {
+        // Given
+        val request = startRequest(fakeKey, fakeByteCount, mockCallback)
+        request.onFailure()
+
+        // When / Then
+        assertThat(request.reserve(fakeByteCount)).isFalse()
+    }
+
+    @Test
+    fun `M complete every capture and log W onSuccess() or onFailure() { a callback throws }`(
+        @BoolForgery fakeSucceeded: Boolean
+    ) {
+        // Given
+        val fakeError = IllegalStateException()
+        doThrow(fakeError).whenever(mockCallback).onSuccess(fakeResourceId)
+        doThrow(fakeError).whenever(mockCallback).onFailure()
+        val request = startRequest(fakeKey, fakeByteCount, mockCallback)
+        testedRequests.start(fakeKey, fakeByteCount, mockOtherCallback)
+
+        // When
+        if (fakeSucceeded) request.onSuccess(fakeResourceId) else request.onFailure()
+
+        // Then
+        if (fakeSucceeded) {
+            verify(mockOtherCallback).onSuccess(fakeResourceId)
+        } else {
+            verify(mockOtherCallback).onFailure()
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            PendingImageRequests.CAPTURE_CALLBACK_FAILED,
+            fakeError,
+            onlyOnce = true
+        )
+    }
+
+    @Test
     fun `M complete the captures once W onSuccess() + onFailure()`() {
         // Given
         val request = startRequest(fakeKey, fakeByteCount, mockCallback)
@@ -222,7 +349,7 @@ internal class PendingImageRequestsTest {
     ) {
         // Given
         whenever(mockBuildSdkVersionProvider.isAtLeastO).thenReturn(false)
-        testedRequests = PendingImageRequests(mockBuildSdkVersionProvider, fakeMaxHeapBytes)
+        testedRequests = PendingImageRequests(mockInternalLogger, mockBuildSdkVersionProvider, fakeMaxHeapBytes)
         startRequest(fakeKey, fakeMaxHeapBytes / HEAP_FRACTION, mockCallback)
 
         // When
@@ -239,7 +366,7 @@ internal class PendingImageRequestsTest {
         @StringForgery fakeOtherKey: String
     ) {
         // Given
-        testedRequests = PendingImageRequests(mockBuildSdkVersionProvider, fakeMaxHeapBytes)
+        testedRequests = PendingImageRequests(mockInternalLogger, mockBuildSdkVersionProvider, fakeMaxHeapBytes)
         startRequest(fakeKey, MAX_PENDING_BYTES - 1, mockCallback)
 
         // When
