@@ -6,7 +6,7 @@ description: >-
 
 # sdk-pr-prepare — dd-sdk-android PR Preparation
 
-Run the steps below **in order**. Stop on the first failing step, surface the error, and do not proceed until the user resolves it.
+Run the steps below **in order**. Steps 3 and 6 say how to fix failures and retry; on any other failing step, surface the error and stop until the user resolves it.
 
 ## Arguments
 

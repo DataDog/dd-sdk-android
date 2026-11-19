@@ -97,7 +97,7 @@ Do not block. Proceed to Step 1.
 
 ## Step 2 — Analyze the diff
 
-Build a working list of **candidate findings**. Aim for **at least 5 candidates** as a guideline — if you have fewer, re-read the diff once more and look harder (missing null/thread annotations, allocations in loops, etc.). This is not a hard limit in either direction: report only real findings, even if there are fewer than 5 or none, and do not cap the list if there are more.
+Build a working list of **candidate findings**, checking every changed file against the categories below. Report only real findings, even if there are none, and do not cap the list.
 
 In parallel, run your own built-in code review (e.g. the `code-review` skill in Claude Code, or `/review` in Codex) on the same diff. Merge its findings into the candidate list, dropping duplicates.
 

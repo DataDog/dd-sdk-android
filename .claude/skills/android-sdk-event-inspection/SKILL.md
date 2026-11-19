@@ -55,14 +55,12 @@ Token format must be `pub` + 32 hex chars. Any UUID works for `rumApplicationId`
 
 ### 3. Build and Install
 
-Ensure `JAVA_HOME` and `ANDROID_HOME` are set in your environment, then run:
+Ensure `ANDROID_HOME` are set in your environment, then run:
 
 ```sh
 ./gradlew :sample:kotlin:install{Flavor}Debug
 # e.g. installUs1Debug, installStagingDebug
 ```
-
-> Full environment setup (Java, Android SDK, emulator) belongs in `AGENTS.md` (not yet created — tracked as follow-up work).
 
 ### 4. Launch the App
 
