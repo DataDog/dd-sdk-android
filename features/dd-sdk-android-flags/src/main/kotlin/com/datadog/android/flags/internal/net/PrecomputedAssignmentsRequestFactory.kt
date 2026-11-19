@@ -97,6 +97,8 @@ internal class PrecomputedAssignmentsRequestFactory(
             assignmentToken?.let {
                 headersBuilder.add(AssignmentAuthorization.HEADER, it)
             }
+
+            addService(headersBuilder, datadogContext.service)
         } catch (e: IllegalArgumentException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -108,6 +110,23 @@ internal class PrecomputedAssignmentsRequestFactory(
         }
 
         return headersBuilder.build()
+    }
+
+    // Same value RUM puts on its events: the configured service, or the package name.
+    private fun addService(headersBuilder: Headers.Builder, service: String) {
+        if (service.isEmpty()) return
+
+        // OkHttp validates the value. A rejected service drops only this header, not the request.
+        try {
+            headersBuilder.add(HEADER_SERVICE, service)
+        } catch (e: IllegalArgumentException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { "The service is not a valid HTTP header value, so flag requests do not send it." },
+                e
+            )
+        }
     }
 
     private fun buildRequestBody(
@@ -161,6 +180,7 @@ internal class PrecomputedAssignmentsRequestFactory(
     companion object {
         private const val HEADER_APPLICATION_ID = "dd-application-id"
         private const val HEADER_CLIENT_TOKEN = "dd-client-token"
+        private const val HEADER_SERVICE = "dd-service"
         private const val HEADER_CONTENT_TYPE = "Content-Type"
         private const val CONTENT_TYPE_VND_JSON = "application/vnd.api+json"
         private const val PREVIEW_CUSTOMER_DOMAIN = "preview"

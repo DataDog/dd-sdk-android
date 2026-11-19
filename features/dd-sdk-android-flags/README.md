@@ -510,6 +510,12 @@ Evaluation telemetry error messages contain stable error codes in both consent m
 `GENERAL` for unknown failures. `trackEvaluations(false)` disables this track. Assignment `doLog`
 controls exposures independently.
 
+## Usage attribution
+
+Flag requests send the SDK's `service` in the `dd-service` header, so Usage Attribution can split Feature Flags
+usage by `service`. It is the same service RUM reports: the one set in the core `Configuration`, or else the
+package name. A service that is not a valid HTTP header value is not sent, and the request still goes out.
+
 ## Integration with RUM
 
 When RUM is enabled in your application and RUM integration is enabled in the Flags configuration (default), flag evaluations are automatically:
