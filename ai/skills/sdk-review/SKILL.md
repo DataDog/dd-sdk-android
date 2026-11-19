@@ -178,7 +178,17 @@ Flag changes unrelated to the PR's stated purpose (drive-by refactors, unrelated
 - Hand-written JSON parsing or serialization where a JSON schema and a generated model would do, or manual parsing next to a schema that already exists.
 - Build scripts and `build-logic`: eager task APIs where lazy ones exist (`tasks.matching { }` instead of `tasks.named { }` / `configureEach`), dependencies on the Kotlin Gradle Plugin artifact where its API artifact suffices, dependency resolution at configuration time, dependencies declared out of order (main source set first, then test, then test fixtures; see Static Analysis and Compatibility in `AGENTS.md`), and hard-coded worker counts or memory settings without evidence they help.
 
-### 2.8 Other defects (open-ended)
+### 2.8 Billing impact
+
+Datadog is a paid product, and customers are billed for the data the SDK sends:
+
+- Logs and Traces are billed by the number of logs and spans.
+- RUM is billed by the number of sessions. A session is created by the first view event with a new session ID.
+- Profiling and Session Replay are billed by the number of RUM sessions that include profiling or Session Replay data, respectively.
+
+Flag any change that can change what customers are billed for, unless the PR already acknowledges it (e.g. in the PR description). Examples: more logs or spans sent, changed default sampling rates, new or split sessions (e.g. a view event that starts a new session ID), or more sessions carrying profiling or Session Replay data.
+
+### 2.9 Other defects (open-ended)
 
 Also flag anything else you would catch in a normal review: null-deref risks, incorrect `equals`/`hashCode`, resource leaks (`Cursor`, `InputStream`, `BufferedReader` not closed / no `use {}`), swallowed exceptions, catching `Error` (`OutOfMemoryError`, `AssertionError`) to continue, logging of PII, non-exhaustive `when` over sealed types or enums (an `else` branch that silently absorbs new subtypes), misuse of `apply`/`also`, off-by-one, missing `@Throws`, wrong unit-test assertions, a new copy of a helper that already exists in the module, time values whose name doesn't state the clock base and unit, cross-platform assumptions about `DatadogContext.sdkVersion` (see Public API in `AGENTS.md`), etc.
 
@@ -191,7 +201,7 @@ Do **not** ask the user about each finding individually. Instead, present the fu
 1. Print a **detailed description of every finding** to the terminal, in order. Each finding gets its own numbered section with:
    - **Title** — short, category-tagged, e.g. `[UI hot path] Paint allocated in onDraw`.
    - **Location** — `path/to/File.kt:line` (use the current HEAD line, not the diff index).
-   - **Category** — one of `UI hot path`, `Binary compatibility`, `Concurrency`, `Redundant sync`, `Main-thread blocking`, `PR scope`, `Schemas and build`, `Other`.
+   - **Category** — one of `UI hot path`, `Binary compatibility`, `Concurrency`, `Redundant sync`, `Main-thread blocking`, `PR scope`, `Schemas and build`, `Billing`, `Other`.
    - **Explanation** — 3–6 sentences. Explain *what* the problem is, *why* it matters (concrete user-visible impact: dropped frames, crash on update, ANR, data corruption, etc.), and *how* a reader can verify it. Quote the offending snippet.
    - **Suggested fix** — one concrete suggestion.
 
