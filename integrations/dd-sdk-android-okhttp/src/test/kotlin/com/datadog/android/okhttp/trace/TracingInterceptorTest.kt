@@ -1795,6 +1795,51 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `M scrub anonymous id from all BAGGAGE headers W intercept { retry, sampled }`() {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader(BAGGAGE_HEADER, "first=one,user.anonymous_id=anonymousId")
+            it.addHeader(BAGGAGE_HEADER, "second=two")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            val baggage = firstValue.headers(BAGGAGE_HEADER).flatMap { it.split(",") }
+            assertThat(baggage).containsExactlyInAnyOrder("first=one", "second=two")
+        }
+    }
+
+    @Test
+    fun `M scrub anonymous id from all BAGGAGE headers W intercept { retry, sampled out, TRACECONTEXT }`() {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader(BAGGAGE_HEADER, "first=one")
+            it.addHeader(BAGGAGE_HEADER, "user.anonymous_id=anonymousId,second=two")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl()))
+            .thenReturn(setOf(TracingHeaderType.TRACECONTEXT))
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            val baggage = firstValue.headers(BAGGAGE_HEADER).flatMap { it.split(",") }
+            assertThat(baggage).containsExactlyInAnyOrder("first=one", "second=two")
+        }
+    }
+
+    @Test
     fun `M keep existing BAGGAGE W intercept { new values != existing values }`(
         @StringForgery existingBaggageKey: String,
         @StringForgery existingBaggageValue: String,

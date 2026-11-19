@@ -14,8 +14,10 @@ import okhttp3.Request
 // A retried request keeps the baggage of its previous attempt, which may hold an anonymous ID
 // that must not be propagated anymore and that no new baggage would replace.
 internal fun Request.Builder.removeRetainedUserAnonymousIdBaggage(span: DatadogSpan) {
+    // The W3C baggage specification allows several baggage headers, which must be combined.
     val existing = try {
-        build().headers[TracingInterceptor.W3C_BAGGAGE_KEY]
+        build().headers(TracingInterceptor.W3C_BAGGAGE_KEY)
+            .reduceOrNull { acc, header -> _TraceInternalProxy.mergeBaggage(acc, header) }
     } catch (_: IllegalStateException) {
         null
     }
