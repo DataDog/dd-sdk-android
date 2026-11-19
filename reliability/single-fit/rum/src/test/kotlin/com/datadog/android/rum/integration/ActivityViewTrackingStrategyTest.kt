@@ -15,10 +15,8 @@ import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
-import com.datadog.android.rum.integration.tests.assertj.hasRumViewUpdateEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
-import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -122,7 +120,7 @@ class ActivityViewTrackingStrategyTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(3)
+            .hasSize(2)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -134,35 +132,23 @@ class ActivityViewTrackingStrategyTest {
                 hasViewIsActive(true)
                 hasDocumentVersion(2)
             }
-            .hasRumViewUpdateEvent(index = 1) {
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                dd { hasDocumentVersion(3) }
-                view {
-                    hasUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoCustomTimings()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 2) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 1) {
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
                 hasType("view")
                 hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
                 hasViewIsActive(false)
+                hasDocumentVersion(3)
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                hasCrashCount(0)
+                hasLongTaskCount(0)
+                hasFrozenFrameCount(0)
+                hasFrustrationCount(0)
+                doesNotHaveCustomTimings()
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
             }
     }
 

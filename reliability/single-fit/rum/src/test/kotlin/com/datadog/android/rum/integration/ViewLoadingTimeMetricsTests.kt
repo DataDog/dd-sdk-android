@@ -128,7 +128,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(5)
+            .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -176,36 +176,20 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 3) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(1)
+                doesNotHaveViewLoadingTime()
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -218,6 +202,8 @@ class ViewLoadingTimeMetricsTests {
             .build()
         Rum.enable(fakeRumConfiguration, stubSdkCore)
         val monitor = GlobalRumMonitor.get(stubSdkCore)
+        val timing1 = forge.anAlphabeticalString()
+        val timing2 = timing1 + forge.anAlphabeticalString()
 
         // When
         monitor.startView(viewKey, viewName)
@@ -225,9 +211,9 @@ class ViewLoadingTimeMetricsTests {
         stubSdkCore.advanceTimeBy(100)
         monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
         stubSdkCore.advanceTimeBy(100)
-        monitor.addTiming(forge.anAlphabeticalString())
+        monitor.addTiming(timing1)
         stubSdkCore.advanceTimeBy(100)
-        monitor.addTiming(forge.anAlphabeticalString())
+        monitor.addTiming(timing2)
         stubSdkCore.advanceTimeBy(100)
         monitor.stopView(viewKey)
         val appExpectedTtnsTime = TimeUnit.MILLISECONDS.toNanos(100)
@@ -235,7 +221,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(8)
+            .hasSize(6)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -283,37 +269,23 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // View updated with addTiming1 (diff part of DiffThenFullView at docVersion=4)
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint at docVersion=4 (DiffThenFullView from addTiming1)
+            .hasRumEvent(index = 3) {
+                // View updated with addTiming1 (full view checkpoint at docVersion=4)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(true)
+                hasViewName(viewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(1)
+                hasCustomTiming(timing1, TimeUnit.MILLISECONDS.toNanos(200))
+                doesNotHaveViewLoadingTime()
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(index = 5) {
+            .hasRumViewUpdateEvent(index = 4) {
                 // View updated with addTiming2
                 application { hasId(fakeApplicationId) }
                 session {
@@ -337,36 +309,22 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 6) {
-                // View stopped (diff part of DiffThenFullView on close)
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(400))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 7) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 5) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(6)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(400))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(1)
+                hasCustomTiming(timing1, TimeUnit.MILLISECONDS.toNanos(200))
+                hasCustomTiming(timing2, TimeUnit.MILLISECONDS.toNanos(300))
+                doesNotHaveViewLoadingTime()
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -394,7 +352,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(5)
+            .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -441,36 +399,20 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 3) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(0)
+                hasErrorCount(1)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -498,7 +440,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(3)
+            .hasSize(2)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -512,36 +454,20 @@ class ViewLoadingTimeMetricsTests {
                 doesNotHaveNetworkSettledTime()
                 doesNotHaveField("feature_flag")
             }
-            .hasRumViewUpdateEvent(index = 1) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 2) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 1) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(3)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -565,7 +491,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(3)
+            .hasSize(2)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -579,36 +505,20 @@ class ViewLoadingTimeMetricsTests {
                 doesNotHaveNetworkSettledTime()
                 doesNotHaveField("feature_flag")
             }
-            .hasRumViewUpdateEvent(index = 1) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 2) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 1) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(3)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -633,7 +543,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(5)
+            .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -682,36 +592,20 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(310))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 3) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(310))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(1)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -739,7 +633,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(5)
+            .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -788,36 +682,20 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(resourceIdentifierThresholdMs + 210))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 3) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(resourceIdentifierThresholdMs + 210))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(1)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -845,7 +723,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(5)
+            .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -894,36 +772,20 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 3) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(1)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -947,7 +809,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(8)
+            .hasSize(6)
             .hasRumEvent(index = 0) {
                 // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -994,38 +856,22 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpent(null)
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing previousView)
+            .hasRumEvent(index = 3) {
+                // Previous view stopped (full view on close)
                 hasType("view")
                 hasViewUrl(previousViewKey)
                 hasViewIsActive(false)
+                hasViewName(previousViewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(1)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 5) {
+            .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -1036,36 +882,20 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumViewUpdateEvent(index = 6) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 7) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 5) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(3)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
     }
 
@@ -1085,7 +915,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(8)
+            .hasSize(6)
             .hasRumEvent(index = 0) {
                 // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -1132,38 +962,22 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpent(null)
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing previousView)
+            .hasRumEvent(index = 3) {
+                // Previous view stopped (full view on close)
                 hasType("view")
                 hasViewUrl(previousViewKey)
                 hasViewIsActive(false)
+                hasViewName(previousViewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(1)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 5) {
+            .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -1174,36 +988,20 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(index = 6) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 7) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 5) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(3)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -1225,7 +1023,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(6)
+            .hasSize(4)
             .hasRumEvent(index = 0) {
                 // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -1238,38 +1036,22 @@ class ViewLoadingTimeMetricsTests {
                 doesNotHaveInteractionToNextViewTime()
                 doesNotHaveField("feature_flag")
             }
-            .hasRumViewUpdateEvent(index = 1) {
-                // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 2) {
-                // Full view checkpoint (closing previousView)
+            .hasRumEvent(index = 1) {
+                // Previous view stopped (full view on close)
                 hasType("view")
                 hasViewUrl(previousViewKey)
                 hasViewIsActive(false)
+                hasViewName(previousViewName)
+                hasDocumentVersion(3)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 3) {
+            .hasRumEvent(index = 2) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -1280,36 +1062,20 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(index = 4) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 5) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 3) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(3)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -1335,7 +1101,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(8)
+            .hasSize(6)
             .hasRumEvent(index = 0) {
                 // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -1382,38 +1148,22 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpent(null)
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing previousView)
+            .hasRumEvent(index = 3) {
+                // Previous view stopped (full view on close)
                 hasType("view")
                 hasViewUrl(previousViewKey)
                 hasViewIsActive(false)
+                hasViewName(previousViewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(1)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 5) {
+            .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -1424,36 +1174,20 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumViewUpdateEvent(index = 6) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 7) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 5) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(3)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
     }
 
@@ -1479,7 +1213,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(8)
+            .hasSize(6)
             .hasRumEvent(index = 0) {
                 // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -1526,38 +1260,22 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpent(null)
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing previousView)
+            .hasRumEvent(index = 3) {
+                // Previous view stopped (full view on close)
                 hasType("view")
                 hasViewUrl(previousViewKey)
                 hasViewIsActive(false)
+                hasViewName(previousViewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(1)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 5) {
+            .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -1568,36 +1286,20 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(index = 6) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 7) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 5) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(3)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -1617,7 +1319,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(8)
+            .hasSize(6)
             .hasRumEvent(index = 0) {
                 // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -1664,38 +1366,22 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpent(null)
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing previousView)
+            .hasRumEvent(index = 3) {
+                // Previous view stopped (full view on close)
                 hasType("view")
                 hasViewUrl(previousViewKey)
                 hasViewIsActive(false)
+                hasViewName(previousViewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(1)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 5) {
+            .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -1706,36 +1392,20 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumViewUpdateEvent(index = 6) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 7) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 5) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(3)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
     }
 
@@ -1767,7 +1437,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(8)
+            .hasSize(6)
             .hasRumEvent(index = 0) {
                 // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -1814,38 +1484,22 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpent(null)
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing previousView)
+            .hasRumEvent(index = 3) {
+                // Previous view stopped (full view on close)
                 hasType("view")
                 hasViewUrl(previousViewKey)
                 hasViewIsActive(false)
+                hasViewName(previousViewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(1)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 5) {
+            .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -1856,36 +1510,20 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(index = 6) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 7) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 5) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(3)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 
@@ -1918,7 +1556,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(8)
+            .hasSize(6)
             .hasRumEvent(index = 0) {
                 // Initial previous view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -1965,38 +1603,22 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpent(null)
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing previousView)
+            .hasRumEvent(index = 3) {
+                // Previous view stopped (full view on close)
                 hasType("view")
                 hasViewUrl(previousViewKey)
                 hasViewIsActive(false)
+                hasViewName(previousViewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(1)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumEvent(index = 5) {
+            .hasRumEvent(index = 4) {
                 // New View Event
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -2007,36 +1629,20 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(index = 6) {
-                // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 7) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 5) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(3)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
+                doesNotHaveInteractionToNextViewTime()
             }
     }
 

@@ -74,6 +74,11 @@ class RumEventAssert(actual: JsonObject) :
         return this
     }
 
+    fun hasViewTimeSpent(timeSpentNs: Long): RumEventAssert {
+        hasField("view.time_spent", timeSpentNs)
+        return this
+    }
+
     fun hasActionCount(count: Int): RumEventAssert {
         hasField("view.action.count", count)
         return this
@@ -86,6 +91,36 @@ class RumEventAssert(actual: JsonObject) :
 
     fun hasResourceCount(count: Int): RumEventAssert {
         hasField("view.resource.count", count)
+        return this
+    }
+
+    fun hasCrashCount(count: Int): RumEventAssert {
+        hasField("view.crash.count", count)
+        return this
+    }
+
+    fun hasLongTaskCount(count: Int): RumEventAssert {
+        hasField("view.long_task.count", count)
+        return this
+    }
+
+    fun hasFrozenFrameCount(count: Int): RumEventAssert {
+        hasField("view.frozen_frame.count", count)
+        return this
+    }
+
+    fun hasFrustrationCount(count: Int): RumEventAssert {
+        hasField("view.frustration.count", count)
+        return this
+    }
+
+    fun hasCustomTiming(name: String, durationNs: Long): RumEventAssert {
+        hasField("view.custom_timings.$name", durationNs)
+        return this
+    }
+
+    fun doesNotHaveCustomTimings(): RumEventAssert {
+        doesNotHaveField("view.custom_timings")
         return this
     }
 

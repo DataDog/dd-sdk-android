@@ -138,7 +138,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(3)
+            .hasSize(2)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -150,35 +150,23 @@ class ManualTrackingRumTest {
                 hasViewIsActive(true)
                 hasDocumentVersion(2)
             }
-            .hasRumViewUpdateEvent(index = 1) {
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                dd { hasDocumentVersion(3) }
-                view {
-                    hasUrl(viewKey)
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoCustomTimings()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 2) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 1) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(3)
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                hasCrashCount(0)
+                hasLongTaskCount(0)
+                hasFrozenFrameCount(0)
+                hasFrustrationCount(0)
+                doesNotHaveCustomTimings()
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
             }
     }
 
@@ -270,7 +258,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(5)
+            .hasSize(4)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -316,37 +304,19 @@ class ManualTrackingRumTest {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                // View updated on stopView
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                dd { hasDocumentVersion(4) }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoCustomTimings()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 3) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(1)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
             }
     }
 
@@ -372,7 +342,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(6)
+            .hasSize(5)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -432,36 +402,19 @@ class ManualTrackingRumTest {
                 hasViewName(viewName)
                 hasActionName(actionName2)
             }
-            .hasRumViewUpdateEvent(index = 4) {
-                // View updated with second action (diff part of DiffThenFullView at docVersion=4)
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                dd { hasDocumentVersion(4) }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    action { hasCount(2) }
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoCustomTimings()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 5) {
-                // Full view checkpoint at docVersion=4
+            .hasRumEvent(index = 4) {
+                // View updated with second action (full view checkpoint at docVersion=4)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(true)
+                hasViewName(viewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(2)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
             }
     }
 
@@ -486,7 +439,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(5)
+            .hasSize(4)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -532,36 +485,19 @@ class ManualTrackingRumTest {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                dd { hasDocumentVersion(4) }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoCustomTimings()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 3) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(false)
+                hasViewName(viewName)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(0)
+                hasErrorCount(1)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
             }
     }
 
@@ -588,7 +524,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(5)
+            .hasSize(4)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -635,36 +571,22 @@ class ManualTrackingRumTest {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                dd { hasDocumentVersion(4) }
-                view {
-                    hasUrl(key)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoCustomTimings()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 3) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(key)
                 hasViewIsActive(false)
+                hasViewName(name)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(1)
+                doesNotHaveViewLoadingTime()
+                hasNetworkSettledTime(
+                    TimeUnit.MILLISECONDS.toNanos(100),
+                    Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
+                )
             }
     }
 
@@ -693,7 +615,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(5)
+            .hasSize(4)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -740,36 +662,22 @@ class ManualTrackingRumTest {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 3) {
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                dd { hasDocumentVersion(4) }
-                view {
-                    hasUrl(key)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoCustomTimings()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 3) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(key)
                 hasViewIsActive(false)
+                hasViewName(name)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(1)
+                doesNotHaveViewLoadingTime()
+                hasNetworkSettledTime(
+                    TimeUnit.MILLISECONDS.toNanos(100),
+                    Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
+                )
             }
     }
 
@@ -853,7 +761,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(3)
+            .hasSize(2)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -866,35 +774,18 @@ class ManualTrackingRumTest {
                 doesNotHaveViewLoadingTime()
                 hasDocumentVersion(2)
             }
-            .hasRumViewUpdateEvent(index = 1) {
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                dd { hasDocumentVersion(3) }
-                view {
-                    hasUrl(key)
-                    hasIsActive(false)
-                    hasLoadingTime(null)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasNetworkSettledTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoCustomTimings()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 2) {
-                // Full view checkpoint (closing)
+            .hasRumEvent(index = 1) {
+                // View stopped (full view on close)
                 hasType("view")
                 hasViewUrl(key)
                 hasViewIsActive(false)
+                hasViewName(name)
+                hasDocumentVersion(3)
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveViewLoadingTime()
+                doesNotHaveNetworkSettledTime()
             }
     }
 
@@ -920,7 +811,7 @@ class ManualTrackingRumTest {
         val expectedSecondViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(100)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(4)
+            .hasSize(3)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -957,39 +848,19 @@ class ManualTrackingRumTest {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 2) {
-                // diff part of DiffThenFullView at docVersion=4
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                dd { hasDocumentVersion(4) }
-                view {
-                    hasUrl(key)
-                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
-                    hasLoadingTimeCloseTo(
-                        expectedSecondViewLoadingTime,
-                        Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
-                    )
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasNetworkSettledTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoCustomTimings()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 3) {
-                // Full view checkpoint at docVersion=4
+            .hasRumEvent(index = 2) {
+                // View updated with renewed loading time (full view checkpoint at docVersion=4)
                 hasType("view")
                 hasViewUrl(key)
                 hasViewIsActive(true)
+                hasViewName(name)
+                hasDocumentVersion(4)
+                hasViewTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
+                hasViewLoadingTime(expectedSecondViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
+                hasActionCount(0)
+                hasErrorCount(0)
+                hasResourceCount(0)
+                doesNotHaveNetworkSettledTime()
             }
     }
 
