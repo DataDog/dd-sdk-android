@@ -42,6 +42,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -1035,9 +1036,31 @@ internal class DatadogPropagationHelperTest {
         verify(mockRequestModifier, never()).replaceHeader(eq(W3CHttpCodec.BAGGAGE_KEY), any())
     }
 
-    private fun givenRetainedBaggage(baggage: String) {
+    @Test
+    fun `M scrub anonymous id from all baggage headers W propagateNotSampledHeaders() {retry, TRACECONTEXT}`() {
+        // Given
+        givenRetainedBaggage("first=one,user.anonymous_id=anonymousId", "second=two")
+
+        // When
+        testedHelper.propagateNotSampledHeaders(
+            mockRequestModifier,
+            mockTracer,
+            mockSpan,
+            setOf(TracingHeaderType.TRACECONTEXT),
+            TraceContextInjection.SAMPLED,
+            null
+        )
+
+        // Then
+        argumentCaptor<String> {
+            verify(mockRequestModifier).replaceHeader(eq(W3CHttpCodec.BAGGAGE_KEY), capture())
+            assertThat(firstValue.split(",")).containsExactlyInAnyOrder("first=one", "second=two")
+        }
+    }
+
+    private fun givenRetainedBaggage(vararg baggage: String) {
         val request = mock<HttpRequestInfo> {
-            on { headers } doReturn mapOf(W3CHttpCodec.BAGGAGE_KEY to listOf(baggage))
+            on { headers } doReturn mapOf(W3CHttpCodec.BAGGAGE_KEY to baggage.toList())
         }
         whenever(mockRequestModifier.build()) doReturn request
     }
