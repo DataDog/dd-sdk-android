@@ -57,6 +57,30 @@ internal class InternalProxyTest {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
             assertThat(logEvent.message).isEqualTo(message)
+            assertThat(logEvent.additionalProperties).isNull()
+        }
+    }
+
+    @Test
+    fun `M forward telemetry attributes W debug()`(
+        @StringForgery fakeMessage: String,
+        @StringForgery fakeReason: String
+    ) {
+        // Given
+        val mockSdkCore = mock<DatadogCore>()
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        val testedProxy = _InternalProxy(mockSdkCore)
+        val fakeAttributes = mapOf("reason" to fakeReason, "nullable" to null)
+
+        // When
+        testedProxy._telemetry.debug(fakeMessage, fakeAttributes)
+
+        // Then
+        argumentCaptor<InternalTelemetryEvent.Log.Debug> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            assertThat(firstValue.message).isEqualTo(fakeMessage)
+            assertThat(firstValue.additionalProperties).isEqualTo(fakeAttributes)
         }
     }
 

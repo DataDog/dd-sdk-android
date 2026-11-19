@@ -47,10 +47,11 @@ class _InternalProxy internal constructor(
                 return (sdkCore as? FeatureSdkCore)?.getFeature(Feature.RUM_FEATURE_NAME)
             }
 
-        fun debug(message: String) {
+        @JvmOverloads
+        fun debug(message: String, additionalProperties: Map<String, Any?>? = null) {
             val telemetryEvent = InternalTelemetryEvent.Log.Debug(
                 message = message,
-                additionalProperties = null
+                additionalProperties = additionalProperties
             )
             rumFeature?.sendEvent(telemetryEvent)
         }

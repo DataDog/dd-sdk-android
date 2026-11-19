@@ -29,7 +29,7 @@ enum com.datadog.android.DatadogSite
   val intakeEndpoint: String
 class com.datadog.android._InternalProxy
   class _TelemetryProxy
-    fun debug(String)
+    fun debug(String, Map<String, Any?>? = null)
     fun error(String, Throwable? = null)
     fun error(String, String?, String?)
   val _telemetry: _TelemetryProxy
