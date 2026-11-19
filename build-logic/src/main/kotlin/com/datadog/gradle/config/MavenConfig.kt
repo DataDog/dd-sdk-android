@@ -94,13 +94,11 @@ internal fun Project.publishingConfig(
         return
     }
 
-    val publicationVersion = AndroidConfig.VERSION.name
+    // The publication inherits these coordinates, and AGP uses them for fixture capabilities.
+    group = MavenConfig.GROUP_ID
+    version = AndroidConfig.VERSION.name
+
     val publishesTestFixtures = androidExtension.testFixtures.enable
-    if (publishesTestFixtures) {
-        // AGP uses the project coordinates to generate the published fixture capabilities.
-        group = MavenConfig.GROUP_ID
-        version = publicationVersion
-    }
 
     androidExtension.publishing {
         singleVariant(MavenConfig.PUBLICATION) {
@@ -132,9 +130,7 @@ internal fun Project.publishingConfig(
             publications.create<MavenPublication>(MavenConfig.PUBLICATION) {
                 from(releaseComponent)
 
-                groupId = MavenConfig.GROUP_ID
                 artifactId = customArtifactId
-                version = publicationVersion
 
                 pom {
                     name.set(projectName)
