@@ -53,10 +53,12 @@ public class HttpCodec {
 
   static final String BAGGAGE_SESSION_ID = "session.id";
   static final String BAGGAGE_USER_ID = "user.id";
+  static final String BAGGAGE_USER_ANONYMOUS_ID = "user.anonymous_id";
   static final String BAGGAGE_ACCOUNT_ID = "account.id";
 
   static final String RUM_KEY_SESSION_ID = "session_id";
   public static final String RUM_KEY_USER_ID = "user_id";
+  public static final String RUM_KEY_USER_ANONYMOUS_ID = "user_anonymous_id";
   public static final String RUM_KEY_ACCOUNT_ID = "account_id";
 
   public interface Injector {
@@ -383,6 +385,11 @@ public class HttpCodec {
     final String userId = (String) context.getTags().get(RUM_KEY_USER_ID);
     if (userId != null) {
       baggage.put(BAGGAGE_USER_ID, userId);
+    }
+
+    final String anonymousId = (String) context.getTags().get(RUM_KEY_USER_ANONYMOUS_ID);
+    if (anonymousId != null) {
+      baggage.put(BAGGAGE_USER_ANONYMOUS_ID, anonymousId);
     }
 
     final String accountId = (String) context.getTags().get(RUM_KEY_ACCOUNT_ID);

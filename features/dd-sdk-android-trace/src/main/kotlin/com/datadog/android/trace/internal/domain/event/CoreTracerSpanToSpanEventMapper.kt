@@ -84,6 +84,7 @@ internal class CoreTracerSpanToSpanEventMapper(
             id = userInfo.id,
             name = userInfo.name,
             email = userInfo.email,
+            anonymousId = userInfo.anonymousId,
             additionalProperties = userInfo.additionalProperties.toMutableMap()
         )
         val accountMeta = accountInfo?.let { resolveAccountInfo(it) }

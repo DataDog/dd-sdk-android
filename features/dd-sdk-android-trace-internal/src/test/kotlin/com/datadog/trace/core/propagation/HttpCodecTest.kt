@@ -34,12 +34,14 @@ internal class HttpCodecTest {
     @Test
     fun `M return correct baggage header W composeBaggage`(
         @StringForgery fakeUserId: String,
+        @StringForgery fakeAnonymousId: String,
         @StringForgery fakeSessionId: String,
         @StringForgery fakeAccountId: String
     ) {
         // Given
         val expected = Baggage().apply {
             put(HttpCodec.BAGGAGE_USER_ID, fakeUserId)
+            put(HttpCodec.BAGGAGE_USER_ANONYMOUS_ID, fakeAnonymousId)
             put(HttpCodec.BAGGAGE_ACCOUNT_ID, fakeAccountId)
             put(HttpCodec.BAGGAGE_SESSION_ID, fakeSessionId)
         }.toString()
@@ -48,6 +50,7 @@ internal class HttpCodecTest {
             mapOf<String, Any>(
                 HttpCodec.RUM_KEY_SESSION_ID to fakeSessionId,
                 HttpCodec.RUM_KEY_USER_ID to fakeUserId,
+                HttpCodec.RUM_KEY_USER_ANONYMOUS_ID to fakeAnonymousId,
                 HttpCodec.RUM_KEY_ACCOUNT_ID to fakeAccountId
             )
         )
