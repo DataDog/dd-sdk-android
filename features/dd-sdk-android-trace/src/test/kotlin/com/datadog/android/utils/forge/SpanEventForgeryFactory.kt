@@ -58,6 +58,7 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
                     id = userInfo?.id,
                     name = userInfo?.name,
                     email = userInfo?.email,
+                    anonymousId = userInfo?.anonymousId,
                     additionalProperties = userInfo?.additionalProperties?.toMutableMap()
                         ?: mutableMapOf()
                 ),

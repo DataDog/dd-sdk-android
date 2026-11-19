@@ -69,6 +69,7 @@ class RumContextPropagator(private val sdkCoreProvider: () -> FeatureSdkCore?) {
                     rumContext?.sessionSampleRate
                 )
                 instance.setTag(HttpCodec.RUM_KEY_USER_ID, datadogContext.userInfo.id)
+                instance.setTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID, datadogContext.userInfo.anonymousId)
                 instance.setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, datadogContext.accountInfo?.id)
             }
             instance.setTag(DATADOG_INITIAL_CONTEXT, null)

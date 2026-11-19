@@ -61,6 +61,7 @@ internal class DatadogHttpCodecTest {
     @MethodSource("rumContext")
     fun `M add baggage W inject { rum context present }`(
         userId: String?,
+        anonymousId: String?,
         accountId: String?,
         sessionId: String?,
         expected: String
@@ -69,6 +70,7 @@ internal class DatadogHttpCodecTest {
         whenever(mockContext.tags).thenReturn(
             mapOf(
                 HttpCodec.RUM_KEY_USER_ID to userId,
+                HttpCodec.RUM_KEY_USER_ANONYMOUS_ID to anonymousId,
                 HttpCodec.RUM_KEY_ACCOUNT_ID to accountId,
                 HttpCodec.RUM_KEY_SESSION_ID to sessionId
             )
@@ -113,11 +115,27 @@ internal class DatadogHttpCodecTest {
         fun rumContext() = listOf(
             Arguments.of(
                 "userId",
+                "anonymousId",
+                "accountId",
+                "sessionId",
+                "account.id=accountId,user.id=userId,user.anonymous_id=anonymousId,session.id=sessionId"
+            ),
+            Arguments.of(
+                null,
+                "anonymousId",
+                null,
+                null,
+                "user.anonymous_id=anonymousId"
+            ),
+            Arguments.of(
+                "userId",
+                null,
                 "accountId",
                 "sessionId",
                 "account.id=accountId,user.id=userId,session.id=sessionId"
             ),
             Arguments.of(
+                null,
                 null,
                 "accountId",
                 "sessionId",
@@ -126,11 +144,13 @@ internal class DatadogHttpCodecTest {
             Arguments.of(
                 "userId",
                 null,
+                null,
                 "sessionId",
                 "user.id=userId,session.id=sessionId"
             ),
             Arguments.of(
                 "userId",
+                null,
                 "accountId",
                 null,
                 "user.id=userId,account.id=accountId"

@@ -401,6 +401,12 @@ internal class SpanEventSerializerTest {
         val userName = spanEvent.meta.usr.name
         val userEmail = spanEvent.meta.usr.email
         val userId = spanEvent.meta.usr.id
+        val userAnonymousId = spanEvent.meta.usr.anonymousId
+        if (userAnonymousId != null) {
+            hasField(KEY_USR_ANONYMOUS_ID, userAnonymousId)
+        } else {
+            doesNotHaveField(KEY_USR_ANONYMOUS_ID)
+        }
         if (userId != null) {
             hasField(KEY_USR_ID, userId)
         } else {
@@ -608,6 +614,7 @@ internal class SpanEventSerializerTest {
         private const val KEY_USR_NAME = "name"
         private const val KEY_USR_EMAIL = "email"
         private const val KEY_USR_ID = "id"
+        private const val KEY_USR_ANONYMOUS_ID = "anonymous_id"
         private const val KEY_ACCOUNT = "account"
         private const val KEY_ACCOUNT_NAME = "name"
         private const val KEY_ACCOUNT_ID = "id"

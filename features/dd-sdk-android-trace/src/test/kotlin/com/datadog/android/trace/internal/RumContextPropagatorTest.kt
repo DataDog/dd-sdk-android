@@ -297,6 +297,7 @@ class RumContextPropagatorTest {
             LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeRumContext.sessionSampleRate,
             HttpCodec.RUM_KEY_ACCOUNT_ID to fakeDatadogContext.accountInfo?.id,
             HttpCodec.RUM_KEY_USER_ID to fakeDatadogContext.userInfo.id,
+            HttpCodec.RUM_KEY_USER_ANONYMOUS_ID to fakeDatadogContext.userInfo.anonymousId,
             DATADOG_INITIAL_CONTEXT to null
         )
         expectedTags.forEach { (key, value) -> verify(span).setTag(key, value) }
@@ -325,6 +326,7 @@ class RumContextPropagatorTest {
             LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeRumContext.sessionSampleRate,
             HttpCodec.RUM_KEY_ACCOUNT_ID to fakeDatadogContext.accountInfo?.id,
             HttpCodec.RUM_KEY_USER_ID to fakeDatadogContext.userInfo.id,
+            HttpCodec.RUM_KEY_USER_ANONYMOUS_ID to fakeDatadogContext.userInfo.anonymousId,
             DATADOG_INITIAL_CONTEXT to null
         )
         expectedTags.forEach { (key, value) -> verify(span).setTag(key, value) }
@@ -351,6 +353,7 @@ class RumContextPropagatorTest {
             LogAttributes.RUM_SESSION_SAMPLE_RATE,
             HttpCodec.RUM_KEY_ACCOUNT_ID,
             HttpCodec.RUM_KEY_USER_ID,
+            HttpCodec.RUM_KEY_USER_ANONYMOUS_ID,
             DATADOG_INITIAL_CONTEXT
         ).forEach { key -> verify(span).setTag(eq(key), isNull<Any>()) }
 
@@ -377,6 +380,7 @@ class RumContextPropagatorTest {
             LogAttributes.RUM_SESSION_SAMPLE_RATE,
             HttpCodec.RUM_KEY_ACCOUNT_ID,
             HttpCodec.RUM_KEY_USER_ID,
+            HttpCodec.RUM_KEY_USER_ANONYMOUS_ID,
             DATADOG_INITIAL_CONTEXT
         ).forEach { key -> verify(span).setTag(eq(key), isNull<Any>()) }
 
