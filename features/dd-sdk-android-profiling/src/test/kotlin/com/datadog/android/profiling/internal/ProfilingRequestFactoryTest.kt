@@ -32,6 +32,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
+import java.io.ByteArrayInputStream
 import java.util.Locale
 
 @Extensions(
@@ -135,7 +136,13 @@ class ProfilingRequestFactoryTest {
         // Given — a continuous profile: metadata is a ProfilingBatchMetadata blob
         val fakePerfettoBytes = forge.aString().toByteArray()
         val fakeRumEventsBytes = forge.aString().toByteArray()
-        val metadata = ProfilingBatchMetadata(fakePerfettoBytes, fakeRumEventsBytes).toBytes()
+        val metadata = checkNotNull(
+            ProfilingBatchMetadata.encode(
+                ByteArrayInputStream(fakePerfettoBytes),
+                fakePerfettoBytes.size,
+                fakeRumEventsBytes
+            )
+        )
         val fakeEventData = forge.aString().toByteArray()
         val batchData = listOf(RawBatchEvent(data = fakeEventData, metadata = metadata))
 
@@ -143,8 +150,10 @@ class ProfilingRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, null)
 
         // Then
-        assertThat(request.body.containsSubsequence(fakePerfettoBytes)).isTrue()
-        assertThat(request.body.containsSubsequence(fakeRumEventsBytes)).isTrue()
+        val partEnd = "\r\n--".toByteArray()
+        val partStart = "\r\n\r\n".toByteArray()
+        assertThat(request.body.containsSubsequence(partStart + fakePerfettoBytes + partEnd)).isTrue()
+        assertThat(request.body.containsSubsequence(partStart + fakeRumEventsBytes + partEnd)).isTrue()
         assertThat(request.body.containsSubsequence("perfetto.proto".toByteArray())).isTrue()
         assertThat(request.body.containsSubsequence("rum-mobile-events.json".toByteArray())).isTrue()
         assertThat(request.body.containsSubsequence(fakeEventData)).isTrue()
