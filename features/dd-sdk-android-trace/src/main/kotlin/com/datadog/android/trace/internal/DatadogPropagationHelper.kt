@@ -166,6 +166,7 @@ class DatadogPropagationHelper internal constructor() {
         span: DatadogSpan,
         tracingHeaderTypes: Set<TracingHeaderType>
     ) = builder.apply {
+        removeRetainedUserAnonymousIdBaggage(span)
         tracer.propagate().inject(
             span.context(),
             builder
@@ -236,6 +237,7 @@ class DatadogPropagationHelper internal constructor() {
         injectionType: TraceContextInjection,
         traceOrigin: String?
     ) = builder.apply {
+        removeRetainedUserAnonymousIdBaggage(span)
         for (headerType in tracingHeaderTypes) {
             when (headerType) {
                 TracingHeaderType.DATADOG -> {
@@ -453,6 +455,19 @@ class DatadogPropagationHelper internal constructor() {
                 traceStateHeader += ";o:$traceOrigin"
             }
             addHeader(W3CHttpCodec.TRACE_STATE_KEY, traceStateHeader)
+        }
+
+        // A retried request keeps the baggage of its previous attempt, which may hold an anonymous ID
+        // that must not be propagated anymore and that no new baggage would replace.
+        private fun HttpRequestInfoBuilder.removeRetainedUserAnonymousIdBaggage(span: DatadogSpan) {
+            val existing = resolveExistingBaggageHeaderValue()
+            val stripped = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, existing)
+            if (stripped == existing) return
+            if (stripped == null) {
+                removeHeader(W3CHttpCodec.BAGGAGE_KEY)
+            } else {
+                replaceHeader(W3CHttpCodec.BAGGAGE_KEY, stripped)
+            }
         }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // exceptions are caught

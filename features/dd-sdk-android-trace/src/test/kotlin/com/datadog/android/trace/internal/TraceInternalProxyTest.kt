@@ -8,8 +8,10 @@ package com.datadog.android.trace.internal
 
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.trace.core.propagation.HttpCodec
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -23,6 +25,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -100,5 +103,61 @@ internal class TraceInternalProxyTest {
         val sdkTracer: DatadogTracer = mock<DatadogTracerAdapter>()
 
         assertThat(_TraceInternalProxy.isDefaultTracer(sdkTracer)).isTrue()
+    }
+
+    @Test
+    fun `M remove retained anonymous id W removeRetainedUserAnonymousIdBaggage() {no anonymous id tag}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            "user.id=userId,user.anonymous_id=anonymousId"
+        )
+
+        // Then
+        assertThat(result).isEqualTo("user.id=userId")
+    }
+
+    @Test
+    fun `M return null W removeRetainedUserAnonymousIdBaggage() {only anonymous id, no tag}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, "user.anonymous_id=anonymousId")
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M keep header W removeRetainedUserAnonymousIdBaggage() {anonymous id tag set}`(
+        @StringForgery fakeAnonymousId: String
+    ) {
+        // Given
+        val span = mock<DatadogSpan>()
+        whenever(span.getTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID)).thenReturn(fakeAnonymousId)
+        val header = "user.id=userId,user.anonymous_id=anonymousId"
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, header)
+
+        // Then
+        assertThat(result).isSameAs(header)
+    }
+
+    @Test
+    fun `M keep header W removeRetainedUserAnonymousIdBaggage() {no anonymous id entry}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+        val header = "user.id=userId,session.id=sessionId"
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, header)
+
+        // Then
+        assertThat(result).isSameAs(header)
     }
 }

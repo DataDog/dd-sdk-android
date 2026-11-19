@@ -1736,6 +1736,65 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `M remove retained anonymous id from BAGGAGE W intercept { retry, no anonymous id tag }`(
+        @StringForgery existingBaggageValue: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader(BAGGAGE_HEADER, "user.anonymous_id=anonymousId,custom=$existingBaggageValue")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER)).containsExactly("custom=$existingBaggageValue")
+        }
+    }
+
+    @Test
+    fun `M remove BAGGAGE W intercept { retry, only anonymous id retained, not sampled }`() {
+        // Given
+        fakeRequest = forgeRequest { it.addHeader(BAGGAGE_HEADER, "user.anonymous_id=anonymousId") }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER)).isEmpty()
+        }
+    }
+
+    @Test
+    fun `M keep retained anonymous id in BAGGAGE W intercept { retry, anonymous id tag set }`(
+        @StringForgery fakeAnonymousId: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest { it.addHeader(BAGGAGE_HEADER, "user.anonymous_id=anonymousId") }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockSpan.getTag(USER_ANONYMOUS_ID_TAG)).thenReturn(fakeAnonymousId)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER)).containsExactly("user.anonymous_id=anonymousId")
+        }
+    }
+
+    @Test
     fun `M keep existing BAGGAGE W intercept { new values != existing values }`(
         @StringForgery existingBaggageKey: String,
         @StringForgery existingBaggageValue: String,
@@ -2080,6 +2139,7 @@ internal open class TracingInterceptorTest {
         val rumMonitor = GlobalRumMonitorTestConfiguration(datadogCore)
 
         private const val BAGGAGE_HEADER = "baggage"
+        private const val USER_ANONYMOUS_ID_TAG = "user_anonymous_id"
 
         @TestConfigurationsProvider
         @JvmStatic

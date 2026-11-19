@@ -178,6 +178,7 @@ public final class com/datadog/android/trace/internal/_TraceInternalProxy {
 	public final fun getPropagationHelper ()Lcom/datadog/android/trace/internal/DatadogPropagationHelper;
 	public final fun isDefaultTracer (Lcom/datadog/android/trace/api/tracer/DatadogTracer;)Z
 	public final fun mergeBaggage (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public final fun removeRetainedUserAnonymousIdBaggage (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/String;)Ljava/lang/String;
 	public final fun setSdkV2Compatible (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public final fun setTraceId128BitGenerationEnabled (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
