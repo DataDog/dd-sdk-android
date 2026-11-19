@@ -68,6 +68,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atMost
 import org.mockito.kotlin.doAnswer
@@ -4190,8 +4191,319 @@ internal class RumResourceScopeTest {
 
     // endregion
 
+    // region Cache delivery
+
+    @Test
+    fun `M use cache delivery attributes W handleEvent { delivery type and transfer size }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @LongForgery(min = 0) fakeTransferSize: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeDeliveryType = forge.aValueFrom(ResourceEvent.DeliveryType::class.java)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE to fakeDeliveryType.toJson().asString,
+                RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE to fakeTransferSize
+            )
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.resource.deliveryType).isEqualTo(fakeDeliveryType)
+            assertThat(firstValue.resource.transferSize).isEqualTo(fakeTransferSize)
+            assertThat(firstValue.context?.additionalProperties).doesNotContainKeys(
+                RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE,
+                RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE
+            )
+        }
+    }
+
+    @Test
+    fun `M use cache delivery attributes W handleEvent { StopResource then AddResourceTiming }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @LongForgery(min = 0) fakeTransferSize: Long,
+        @Forgery fakeTiming: ResourceTiming,
+        forge: Forge
+    ) {
+        // Given
+        val fakeDeliveryType = forge.aValueFrom(ResourceEvent.DeliveryType::class.java)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE to fakeDeliveryType.toJson().asString,
+                RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE to fakeTransferSize
+            )
+        testedScope.handleEvent(
+            RumRawEvent.WaitForResourceTiming(fakeKey, eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS)),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.AddResourceTiming(fakeKey, fakeTiming, eventTime = timeWithOffset(RESOURCE_DURATION_MS)),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.resource.deliveryType).isEqualTo(fakeDeliveryType)
+            assertThat(firstValue.resource.transferSize).isEqualTo(fakeTransferSize)
+            assertThat(firstValue.context?.additionalProperties).doesNotContainKeys(
+                RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE,
+                RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE
+            )
+        }
+    }
+
+    @Test
+    fun `M not set cache delivery W handleEvent { no cache delivery attributes }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.resource.deliveryType).isNull()
+            assertThat(firstValue.resource.transferSize).isNull()
+        }
+    }
+
+    @Test
+    fun `M not set cache delivery W handleEvent { null cache delivery attributes }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE to null,
+                RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE to null
+            )
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.resource.deliveryType).isNull()
+            assertThat(firstValue.resource.transferSize).isNull()
+            assertThat(firstValue.context?.additionalProperties).doesNotContainKeys(
+                RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE,
+                RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE
+            )
+        }
+        // the scope can log for unrelated reasons (e.g. an unknown forged source): only check that
+        // the null cache delivery attributes aren't reported as invalid
+        verify(mockInternalLogger, never()).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.MAINTAINER),
+            any(),
+            anyOrNull(),
+            any(),
+            anyOrNull()
+        )
+    }
+
+    @Test
+    fun `M ignore delivery type W handleEvent { invalid delivery type }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @StringForgery(regex = "invalid_[a-z]+") fakeDeliveryType: String,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE to fakeDeliveryType)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.resource.deliveryType).isNull()
+            assertThat(firstValue.context?.additionalProperties)
+                .doesNotContainKey(RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE)
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            RumResourceScope.INVALID_DELIVERY_TYPE_MESSAGE.format(Locale.US, fakeDeliveryType),
+            throwableClass = NoSuchElementException::class.java
+        )
+    }
+
+    @Test
+    fun `M ignore transfer size W handleEvent { negative transfer size }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @LongForgery(max = 0) fakeTransferSize: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE to fakeTransferSize)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.resource.transferSize).isNull()
+            assertThat(firstValue.context?.additionalProperties)
+                .doesNotContainKey(RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE)
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            RumResourceScope.INVALID_TRANSFER_SIZE_MESSAGE.format(Locale.US, fakeTransferSize)
+        )
+    }
+
+    @Test
+    fun `M use transfer size W handleEvent { whole floating point transfer size }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @LongForgery(min = 0, max = 1_000_000_000_000L) fakeTransferSize: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeTransferSizeValue: Number = forge.anElementFrom(
+            fakeTransferSize.toDouble(),
+            (fakeTransferSize % MAX_EXACT_FLOAT_INT).toFloat()
+        )
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE to fakeTransferSizeValue)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.resource.transferSize).isEqualTo(fakeTransferSizeValue.toLong())
+        }
+    }
+
+    @Test
+    fun `M ignore transfer size W handleEvent { not a whole number of bytes }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeTransferSize: Number = forge.anElementFrom(
+            -0.5,
+            forge.aLong(min = 0, max = 1_000_000).toDouble() + 0.5,
+            Double.NaN,
+            Double.POSITIVE_INFINITY,
+            Long.MAX_VALUE.toDouble(),
+            Float.NaN,
+            Float.POSITIVE_INFINITY,
+            forge.anInt(min = 0, max = 1_000).toFloat() + 0.5f
+        )
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE to fakeTransferSize)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.resource.transferSize).isNull()
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            RumResourceScope.INVALID_TRANSFER_SIZE_MESSAGE.format(Locale.US, fakeTransferSize)
+        )
+    }
+
+    @Test
+    fun `M ignore transfer size W handleEvent { non numeric transfer size }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @StringForgery fakeTransferSize: String,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE to fakeTransferSize)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.resource.transferSize).isNull()
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            RumResourceScope.INVALID_TRANSFER_SIZE_MESSAGE.format(Locale.US, fakeTransferSize)
+        )
+    }
+
+    // endregion
+
     companion object {
         private const val RESOURCE_DURATION_MS = 50L
+
+        // every integer up to 2^24 is exactly representable as a Float
+        private const val MAX_EXACT_FLOAT_INT = 1L shl 24
 
         val rumMonitor = GlobalRumMonitorTestConfiguration()
 

@@ -8,6 +8,7 @@ package com.datadog.android.okhttp.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.instrumentation.network.HttpBodySnapshot
+import com.datadog.android.api.instrumentation.network.HttpCacheDelivery
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.okhttp.internal.OkHttpResponseInfo.Companion.ERROR_PEEK_BODY
 import com.datadog.android.utils.verifyLog
@@ -470,6 +471,126 @@ internal class OkHttpResponseInfoTest {
     }
 
     // endregion
+
+    // region cacheDelivery
+
+    @Test
+    fun `M return NotCached W cacheDelivery { no cache response }`(
+        @IntForgery(min = 200, max = 599) fakeStatusCode: Int
+    ) {
+        // Given
+        val fakeResponse = fakeResponse(ByteArray(0)).newBuilder()
+            .networkResponse(fakeBodylessResponse(fakeStatusCode))
+            .build()
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.NotCached)
+    }
+
+    @Test
+    fun `M return LocalHit W cacheDelivery { cache response, no network response }`() {
+        // Given
+        val fakeResponse = fakeResponse(ByteArray(0)).newBuilder()
+            .cacheResponse(fakeBodylessResponse(HttpSpec.StatusCode.OK))
+            .build()
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.LocalHit)
+    }
+
+    @Test
+    fun `M return CachedUnknownReason W cacheDelivery { cache response, prior network redirect }`() {
+        // Given
+        val fakeRedirect = fakeBodylessResponse(HttpSpec.StatusCode.FOUND).newBuilder()
+            .networkResponse(fakeBodylessResponse(HttpSpec.StatusCode.FOUND))
+            .build()
+        val fakeResponse = fakeResponse(ByteArray(0)).newBuilder()
+            .cacheResponse(fakeBodylessResponse(HttpSpec.StatusCode.OK))
+            .priorResponse(fakeRedirect)
+            .build()
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.CachedUnknownReason)
+    }
+
+    @Test
+    fun `M return LocalHit W cacheDelivery { cache response, prior redirect served from cache }`() {
+        // Given
+        val fakeRedirect = fakeBodylessResponse(HttpSpec.StatusCode.MOVED_PERMANENTLY).newBuilder()
+            .cacheResponse(fakeBodylessResponse(HttpSpec.StatusCode.MOVED_PERMANENTLY))
+            .build()
+        val fakeResponse = fakeResponse(ByteArray(0)).newBuilder()
+            .cacheResponse(fakeBodylessResponse(HttpSpec.StatusCode.OK))
+            .priorResponse(fakeRedirect)
+            .build()
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.LocalHit)
+    }
+
+    @Test
+    fun `M return ValidatedHit without byte count W cacheDelivery { cache response, 304 network response }`() {
+        // Given
+        val fakeResponse = fakeResponse(ByteArray(0)).newBuilder()
+            .cacheResponse(fakeBodylessResponse(HttpSpec.StatusCode.OK))
+            .networkResponse(fakeBodylessResponse(HttpSpec.StatusCode.NOT_MODIFIED))
+            .build()
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.ValidatedHit(networkBytes = null))
+    }
+
+    @Test
+    fun `M return NotCached W cacheDelivery { cache response, non 304 network response }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeStatusCode = forge.anElementFrom(
+            forge.anInt(min = 200, max = HttpSpec.StatusCode.NOT_MODIFIED),
+            forge.anInt(min = HttpSpec.StatusCode.NOT_MODIFIED + 1, max = 600)
+        )
+        val fakeResponse = fakeResponse(ByteArray(0)).newBuilder()
+            .cacheResponse(fakeBodylessResponse(HttpSpec.StatusCode.OK))
+            .networkResponse(fakeBodylessResponse(fakeStatusCode))
+            .build()
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.NotCached)
+    }
+
+    // endregion
+
+    private fun fakeBodylessResponse(statusCode: Int): Response =
+        Response.Builder()
+            .request(Request.Builder().url(FAKE_URL).build())
+            .protocol(Protocol.HTTP_1_1)
+            .code(statusCode)
+            .message("")
+            .build()
 
     private fun fakeResponse(payload: ByteArray, contentType: String? = null): Response =
         Response.Builder()

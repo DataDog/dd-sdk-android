@@ -143,6 +143,23 @@ val cronetEngine = CronetEngine.Builder(context)
 **Note:** RUM feature should be enabled: `Rum.enable(...)`
 
 
+## Cache status
+
+RUM Resources report whether Cronet served the response from its HTTP cache (enabled with
+`CronetEngine.Builder.enableHttpCache(...)`). The SDK sets `resource.delivery_type` and
+`resource.transfer_size`, and Datadog derives `resource.cache_status` and `resource.cache_reason`
+from them. No configuration is needed.
+
+| Response | `delivery_type` | `transfer_size` |
+| --- | --- | --- |
+| Served from the cache, no bytes received | `cache` | `0` |
+| Served from the cache, bytes received for the validation | `cache` | the received byte count |
+| Served from the cache, byte count unknown or the request was redirected | `cache` | not set |
+| Downloaded from the network | not set | not set |
+
+The SDK reads this information from `UrlResponseInfo.wasCached()` and
+`RequestFinishedInfo.Metrics.getReceivedByteCount()`.
+
 ## Known Limitations
 
 ### Tracing redirects

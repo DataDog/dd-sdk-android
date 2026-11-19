@@ -164,6 +164,15 @@ class com.datadog.android.api.instrumentation.network.HttpBodySnapshot
   fun string(): String
   companion object 
     const val DEFAULT_MAX_BODY_BYTES: Long
+interface com.datadog.android.api.instrumentation.network.HttpCacheInfo
+  val cacheDelivery: HttpCacheDelivery
+sealed interface com.datadog.android.api.instrumentation.network.HttpCacheDelivery
+  data object NotCached : HttpCacheDelivery
+  data object LocalHit : HttpCacheDelivery
+  data class ValidatedHit : HttpCacheDelivery
+    constructor(Long?)
+  data object CachedUnknownReason : HttpCacheDelivery
+val cacheDelivery: HttpCacheDelivery
 interface com.datadog.android.api.instrumentation.network.HttpRequestBody
 interface com.datadog.android.api.instrumentation.network.HttpRequestInfo
   val url: String

@@ -5,6 +5,8 @@
  */
 package com.datadog.android.cronet.internal
 
+import com.datadog.android.api.instrumentation.network.HttpCacheDelivery
+import com.datadog.android.api.instrumentation.network.HttpCacheInfo
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.internal.network.HttpSpec
 import org.chromium.net.UrlResponseInfo
@@ -15,10 +17,14 @@ import org.chromium.net.UrlResponseInfo
 // and this instance is only built once the request has finished, by which point the chunks are
 // gone. Capturing them would mean copying every chunk of every response up front, at a memory cost
 // paid whether or not a snapshot is ever asked for.
+//
+// metricsReceivedByteCount comes from RequestFinishedInfo.Metrics, which is only available once
+// the request has finished. Instances built before that (e.g. for APM) leave it null.
 internal data class CronetHttpResponseInfo(
     private val response: UrlResponseInfo,
-    override val request: CronetHttpRequestInfo?
-) : HttpResponseInfo {
+    override val request: CronetHttpRequestInfo?,
+    private val metricsReceivedByteCount: Long? = null
+) : HttpResponseInfo, HttpCacheInfo {
 
     override val url: String get() = response.url
     override val statusCode: Int get() = response.httpStatusCode
@@ -55,5 +61,19 @@ internal data class CronetHttpResponseInfo(
                 ?.takeIf { contentLengthHeaderValues.size == 1 }
                 ?.toLongOrNull()
                 ?: response.receivedByteCount.takeIf { it >= 0 }
+        }
+
+    override val cacheDelivery: HttpCacheDelivery
+        get() = when {
+            !response.wasCached() -> HttpCacheDelivery.NotCached
+            metricsReceivedByteCount == 0L -> HttpCacheDelivery.LocalHit
+            // the byte count covers the whole request, so after a redirect it can't tell the
+            // bytes of a cache validation from the ones of the redirect hops
+            response.urlChain.size > 1 -> HttpCacheDelivery.CachedUnknownReason
+            metricsReceivedByteCount != null && metricsReceivedByteCount > 0L -> HttpCacheDelivery.ValidatedHit(
+                networkBytes = metricsReceivedByteCount
+            )
+            // not measured
+            else -> HttpCacheDelivery.CachedUnknownReason
         }
 }

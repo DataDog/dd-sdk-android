@@ -21,6 +21,7 @@ import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.internal.graphql.OkHttpGraphQLAdapter
 import com.datadog.android.okhttp.internal.isStreaming
 import com.datadog.android.okhttp.internal.mimeType
+import com.datadog.android.okhttp.internal.toHttpResponseInfo
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
@@ -33,6 +34,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
+import com.datadog.android.rum.internal.net.HttpCacheDeliveryResolver
 import com.datadog.android.rum.internal.net.reportNetworkInstrumentationConfigured
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -95,6 +97,7 @@ open class DatadogInterceptor internal constructor(
     redacted404ResourceName: Boolean,
     localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer,
     globalTracerProvider: () -> DatadogTracer?,
+    internal val cacheDeliveryResolver: HttpCacheDeliveryResolver,
     internal val resourceHeadersExtractor: ResourceHeadersExtractor? = null,
     defaultTracerCheck: (DatadogTracer) -> Boolean = _TraceInternalProxy::isDefaultTracer
 ) : TracingInterceptor(
@@ -260,7 +263,9 @@ open class DatadogInterceptor internal constructor(
             kind,
             attributes +
                 rumResourceAttributesProvider.onProvideAttributes(request, response, null) +
-                resourceHeaderAttributes
+                resourceHeaderAttributes +
+                // last, so that the cache evidence of the networking library takes precedence
+                cacheDeliveryResolver.resolve(response.toHttpResponseInfo(sdkCore.internalLogger))
         )
     }
 
@@ -420,7 +425,8 @@ open class DatadogInterceptor internal constructor(
                 redacted404ResourceName,
                 localTracerFactory,
                 globalTracerProvider,
-                resourceHeadersExtractor
+                cacheDeliveryResolver = HttpCacheDeliveryResolver(),
+                resourceHeadersExtractor = resourceHeadersExtractor
             )
         }
 

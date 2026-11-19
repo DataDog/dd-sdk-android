@@ -11,6 +11,7 @@ import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.rum.internal.net.verifyReportInstrumentationError
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.StubRequestFinishedInfoMetrics
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -53,6 +54,9 @@ internal class CronetRequestFinishedInfoListenerTest {
     private lateinit var mockResponseInfo: UrlResponseInfo
 
     @Mock
+    private lateinit var mockMetrics: RequestFinishedInfo.Metrics
+
+    @Mock
     private lateinit var fakeRequestInfo: CronetHttpRequestInfo
 
     private lateinit var testedListener: CronetRequestFinishedInfoListener
@@ -66,7 +70,7 @@ internal class CronetRequestFinishedInfoListenerTest {
 
         whenever(mockRequestFinishedInfo.responseInfo).thenReturn(mockResponseInfo)
         whenever(mockRequestFinishedInfo.annotations).thenReturn(listOf(fakeRequestInfo))
-        whenever(mockRequestFinishedInfo.metrics).thenReturn(mock())
+        whenever(mockRequestFinishedInfo.metrics).thenReturn(mockMetrics)
     }
 
     @Test
@@ -124,9 +128,13 @@ internal class CronetRequestFinishedInfoListenerTest {
     }
 
     @Test
-    fun `M call stopResource W onRequestFinished() { SUCCEEDED }`() {
+    fun `M call stopResource W onRequestFinished() { SUCCEEDED }`(
+        forge: Forge
+    ) {
         // Given
+        val fakeReceivedByteCount = forge.aNullable { aPositiveLong() }
         whenever(mockRequestFinishedInfo.finishedReason).thenReturn(RequestFinishedInfo.SUCCEEDED)
+        whenever(mockMetrics.receivedByteCount).thenReturn(fakeReceivedByteCount)
 
         // When
         testedListener.onRequestFinished(mockRequestFinishedInfo)
@@ -134,7 +142,11 @@ internal class CronetRequestFinishedInfoListenerTest {
         // Then
         verify(mockRumNetworkInstrumentation).stopResource(
             requestInfo = fakeRequestInfo,
-            responseInfo = CronetHttpResponseInfo(mockResponseInfo, fakeRequestInfo)
+            responseInfo = CronetHttpResponseInfo(
+                response = mockResponseInfo,
+                request = fakeRequestInfo,
+                metricsReceivedByteCount = fakeReceivedByteCount
+            )
         )
     }
 
