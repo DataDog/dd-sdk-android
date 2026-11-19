@@ -7,9 +7,11 @@
 package com.datadog.android.sessionreplay.material
 
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport.Companion.MATERIAL_EXTENSION_SUPPORT_NAME
+import com.datadog.android.sessionreplay.material.internal.FloatingActionButtonWireframeMapper
 import com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector
 import com.datadog.android.sessionreplay.material.internal.SliderWireframeMapper
 import com.datadog.android.sessionreplay.material.internal.TabWireframeMapper
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.slider.Slider
 import com.google.android.material.tabs.TabLayout.TabView
 import org.assertj.core.api.Assertions.assertThat
@@ -57,6 +59,19 @@ class MaterialExtensionSupportTest {
         // Then
         val sliderMapper = customMappers.firstOrNull { it.supportsView(mockView) }?.getUnsafeMapper()
         assertThat(sliderMapper).isInstanceOf(TabWireframeMapper::class.java)
+    }
+
+    @Test
+    fun `M return a FloatingActionButtonMapper W getCustomViewMappers()`() {
+        // Given
+        val mockView: FloatingActionButton = mock()
+
+        // When
+        val customMappers = testedMaterialExtensionSupport.getCustomViewMappers()
+
+        // Then
+        val fabMapper = customMappers.firstOrNull { it.supportsView(mockView) }?.getUnsafeMapper()
+        assertThat(fabMapper).isInstanceOf(FloatingActionButtonWireframeMapper::class.java)
     }
 
     @Test
