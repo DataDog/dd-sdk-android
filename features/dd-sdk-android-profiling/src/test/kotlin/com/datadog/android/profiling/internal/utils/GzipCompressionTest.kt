@@ -9,13 +9,10 @@ package com.datadog.android.profiling.internal.utils
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.utils.verifyLog
-import com.github.luben.zstd.Zstd
-import com.github.luben.zstd.ZstdException
-import com.github.luben.zstd.ZstdInputStream
-import com.github.luben.zstd.ZstdOutputStream
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okio.GzipSink
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.catchThrowableOfType
 import org.junit.jupiter.api.Test
@@ -34,6 +31,7 @@ import org.mockito.quality.Strictness
 import java.io.File
 import java.io.IOException
 import java.util.Random
+import java.util.zip.GZIPInputStream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -41,7 +39,7 @@ import java.util.Random
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class ZstdCompressionTest {
+internal class GzipCompressionTest {
 
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
@@ -50,28 +48,36 @@ internal class ZstdCompressionTest {
     lateinit var tmp: File
 
     @Test
-    fun `M return a zstd frame W compressFileSafe()`(forge: Forge) {
+    fun `M return a gzip stream W compressFileSafe()`(forge: Forge) {
         // Given
         val rawBytes = forge.aString(size = 64 * 1024).toByteArray()
         val file = tmp.resolve("trace").apply { writeBytes(rawBytes) }
 
         // When
-        val result = compressFileSafe(
-            file,
-            LIMIT_BYTES,
-            mockInternalLogger
-        )
+        val result = compressFileSafe(file, LIMIT_BYTES, mockInternalLogger)
 
         // Then
-        assertThat(
-            result
-        ).isInstanceOf(
-            CompressionResult.Compressed::class.java
-        )
+        assertThat(result).isInstanceOf(CompressionResult.Compressed::class.java)
         val compressed = result as CompressionResult.Compressed
-        assertThat(compressed.bytes).startsWith(*ZSTD_MAGIC)
-        assertThat(compressed.bytes.zstdDecompress()).isEqualTo(rawBytes)
+        assertThat(compressed.stream()).startsWith(*GZIP_MAGIC)
+        assertThat(compressed.stream().gzipDecompress()).isEqualTo(rawBytes)
         verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M hand out the buffer with its length W compressFileSafe()`(forge: Forge) {
+        // Given a trace whose compressed stream does not fill the buffer
+        val rawBytes = forge.aString(size = 4 * 1024).toByteArray()
+        val file = tmp.resolve("trace").apply { writeBytes(rawBytes) }
+
+        // When
+        val result = compressFileSafe(file, LIMIT_BYTES, mockInternalLogger) as CompressionResult.Compressed
+
+        // Then the buffer is longer than the data, and the length describes the stream
+        assertThat(result.length).isLessThan(result.bytes.size)
+        assertThat(result.length).isEqualTo(result.stream().size)
+        val roundTrip = result.stream().gzipDecompress()
+        assertThat(roundTrip).isEqualTo(rawBytes)
     }
 
     @Test
@@ -81,28 +87,18 @@ internal class ZstdCompressionTest {
         val file = tmp.resolve("trace").apply { writeBytes(incompressible) }
 
         // When
-        val result = compressFileSafe(
-            file,
-            LIMIT_BYTES,
-            mockInternalLogger
-        )
+        val result = compressFileSafe(file, LIMIT_BYTES, mockInternalLogger)
 
         // Then
-        assertThat(
-            result
-        ).isInstanceOf(
-            CompressionResult.TooLarge::class.java
-        )
-        assertThat(
-            (result as CompressionResult.TooLarge).sizeBytes
-        ).isGreaterThan(LIMIT_BYTES.toLong())
+        assertThat(result).isInstanceOf(CompressionResult.TooLarge::class.java)
+        assertThat((result as CompressionResult.TooLarge).sizeBytes).isGreaterThan(LIMIT_BYTES.toLong())
         assertThat(result.sizeBytes).isLessThan(2L * LIMIT_BYTES)
         verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
     fun `M report the trace as unreadable W compressFileSafe() {the trace is empty}`() {
-        // Given an empty trace, which would otherwise become a valid empty zstd frame
+        // Given an empty trace, which would otherwise become a valid empty gzip stream
         val empty = tmp.resolve("trace").apply { writeBytes(ByteArray(0)) }
 
         // When
@@ -119,17 +115,39 @@ internal class ZstdCompressionTest {
         val missing = tmp.resolve("missing")
 
         // When
-        val result = compressFileSafe(
-            missing,
-            LIMIT_BYTES,
-            mockInternalLogger
-        )
+        val result = compressFileSafe(missing, LIMIT_BYTES, mockInternalLogger)
 
         // Then
-        assertThat(
-            result
-        ).isSameAs(CompressionResult.Unreadable)
+        assertThat(result).isSameAs(CompressionResult.Unreadable)
         verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M report the raw trace W compressFileSafe() {the stream cannot be written}`(forge: Forge) {
+        verifyCompressionFailure(IOException(forge.anAlphabeticalString()), forge)
+    }
+
+    @Test
+    fun `M report the raw trace W compressFileSafe() {access denied}`(forge: Forge) {
+        verifyCompressionFailure(SecurityException(forge.anAlphabeticalString()), forge)
+    }
+
+    @Test
+    fun `M propagate the error W compressFileSafe() {the VM runs out of memory}`(forge: Forge) {
+        // Given
+        val fakeError = OutOfMemoryError(forge.anAlphabeticalString())
+        mockGzipWrite(fakeError) {
+            val file = tmp.resolve("trace").apply { writeBytes(ByteArray(TRACE_SIZE)) }
+
+            // When
+            val thrown = catchThrowableOfType(OutOfMemoryError::class.java) {
+                compressFileSafe(file, LIMIT_BYTES, mockInternalLogger)
+            }
+
+            // Then a fatal VM error is never swallowed
+            assertThat(thrown).isNotNull()
+            verifyNoInteractions(mockInternalLogger)
+        }
     }
 
     @Test
@@ -165,53 +183,10 @@ internal class ZstdCompressionTest {
         )
     }
 
-    @Test
-    fun `M report the raw trace W compressFileSafe() {zstd fails}`(forge: Forge) {
-        verifyCompressionFailure(ZstdException(Zstd.errGeneric(), forge.anAlphabeticalString()), forge)
-    }
-
-    @Test
-    fun `M report the raw trace W compressFileSafe() {native context allocation fails}`(forge: Forge) {
-        verifyCompressionFailure(IllegalStateException(forge.anAlphabeticalString()), forge)
-    }
-
-    @Test
-    fun `M report the raw trace W compressFileSafe() {native library missing}`(forge: Forge) {
-        verifyCompressionFailure(UnsatisfiedLinkError(forge.anAlphabeticalString()), forge)
-    }
-
-    @Test
-    fun `M report the raw trace W compressFileSafe() {write fails}`(forge: Forge) {
-        verifyCompressionFailure(IOException(forge.anAlphabeticalString()), forge)
-    }
-
-    @Test
-    fun `M report the raw trace W compressFileSafe() {access denied}`(forge: Forge) {
-        verifyCompressionFailure(SecurityException(forge.anAlphabeticalString()), forge)
-    }
-
-    @Test
-    fun `M propagate the error W compressFileSafe() {the VM runs out of memory}`(forge: Forge) {
-        // Given
-        val fakeError = OutOfMemoryError(forge.anAlphabeticalString())
-        mockZstdWrite(fakeError) {
-            val file = tmp.resolve("trace").apply { writeBytes(ByteArray(TRACE_SIZE)) }
-
-            // When
-            val thrown = catchThrowableOfType(OutOfMemoryError::class.java) {
-                compressFileSafe(file, LIMIT_BYTES, mockInternalLogger)
-            }
-
-            // Then a fatal VM error is never swallowed
-            assertThat(thrown).isNotNull()
-            verifyNoInteractions(mockInternalLogger)
-        }
-    }
-
     private fun verifyCompressionFailure(fakeError: Throwable, forge: Forge) {
         // Given a trace with a size, whose compression fails
         val rawBytes = ByteArray(TRACE_SIZE).also { Random(forge.aLong()).nextBytes(it) }
-        mockZstdWrite(fakeError) {
+        mockGzipWrite(fakeError) {
             val file = tmp.resolve("trace").apply { writeBytes(rawBytes) }
 
             // When
@@ -230,18 +205,22 @@ internal class ZstdCompressionTest {
         }
     }
 
-    // Fails the zstd write, which is what the streaming compression hits.
-    private fun mockZstdWrite(fakeError: Throwable, block: () -> Unit) {
-        Mockito.mockConstruction(ZstdOutputStream::class.java) { mock, _ ->
-            doThrow(fakeError).whenever(mock).write(any(), any(), any())
-        }.use { block() }
+    // Fails the gzip write, which is what the streaming compression hits.
+    private fun mockGzipWrite(fakeError: Throwable, block: () -> Unit) {
+        Mockito.mockConstruction(GzipSink::class.java) { mock, _ ->
+            whenever(mock.write(any(), any())) doThrow fakeError
+        }.use {
+            block()
+        }
     }
 
-    private fun ByteArray.zstdDecompress(): ByteArray = ZstdInputStream(inputStream()).use { it.readBytes() }
+    private fun CompressionResult.Compressed.stream(): ByteArray = bytes.copyOf(length)
+
+    private fun ByteArray.gzipDecompress(): ByteArray = GZIPInputStream(inputStream()).use { it.readBytes() }
 
     companion object {
         private const val LIMIT_BYTES = 1024 * 1024
         private const val TRACE_SIZE = 4096
-        private val ZSTD_MAGIC = byteArrayOf(0x28, 0xB5.toByte(), 0x2F, 0xFD.toByte())
+        private val GZIP_MAGIC = byteArrayOf(0x1F, 0x8B.toByte())
     }
 }

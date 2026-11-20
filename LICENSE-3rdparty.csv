@@ -60,7 +60,6 @@ import,com.github.bumptech.glide,"BSD 3-Clause","Copyright 2014 Google, Inc. All
 import,com.facebook.fresco,MIT,"Copyright (c) Facebook, Inc. and its affiliates"
 import,com.facebook.stetho,MIT,"Copyright (c) Facebook, Inc. and its affiliates"
 import,com.github.burrunan,Apache-2.0,Vladimir Sitnikov
-import,com.github.luben,BSD-2-Clause,"Copyright (c) 2015-present, Luben Karavelov"
 import,com.github.spotbugs,"GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1","Copyright (C) 1991, 1999 Free Software Foundation, Inc."
 import,com.github.TeamNewPipe,AGPL-3.0-only,"2017-2024 NewPipe contributors <https://newpipe.net>"
 import,com.github.TeamNewPipe.NewPipeExtractor,AGPL-3.0-only,"2017-2024 NewPipe contributors <https://newpipe.net>"

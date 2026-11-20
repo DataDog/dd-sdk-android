@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 internal class BoundedByteArrayOutputStreamTest {
 
     @Test
-    fun `M return exactly the written bytes W toByteArray() {output equal to the limit}`() {
+    fun `M hold exactly the written bytes W write() {output equal to the limit}`() {
         // Given
         val testedStream =
             BoundedByteArrayOutputStream(MAX_BYTES)
@@ -26,24 +26,27 @@ internal class BoundedByteArrayOutputStreamTest {
 
         // Then
         assertThat(testedStream.size).isEqualTo(MAX_BYTES)
-        assertThat(testedStream.toByteArray()).isEqualTo(bytes)
+        assertThat(testedStream.buffer).hasSize(MAX_BYTES)
+        assertThat(testedStream.buffer.copyOf(testedStream.size)).isEqualTo(bytes)
     }
 
     @Test
-    fun `M return the written bytes W toByteArray() {output below the limit}`() {
+    fun `M hold the written bytes W write() {output below the limit}`() {
         // Given
         val testedStream =
             BoundedByteArrayOutputStream(
                 LARGE_MAX_BYTES
             )
-        val chunk = ByteArray(20_000) { it.toByte() }
+        val chunk = ByteArray(9_000) { it.toByte() }
 
         // When
         testedStream.write(chunk, 0, chunk.size)
 
         // Then
         assertThat(testedStream.size).isEqualTo(chunk.size)
-        assertThat(testedStream.toByteArray()).isEqualTo(chunk)
+        // The buffer is longer than the data, so callers must honour size
+        assertThat(testedStream.buffer.size).isGreaterThan(chunk.size)
+        assertThat(testedStream.buffer.copyOf(testedStream.size)).isEqualTo(chunk)
     }
 
     @Test

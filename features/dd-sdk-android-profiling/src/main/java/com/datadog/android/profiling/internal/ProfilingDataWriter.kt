@@ -436,7 +436,7 @@ internal class ProfilingDataWriter(
         }
         return when (val result = compressFile(File(perfettoFilePath))) {
             is CompressionResult.Compressed -> encodeCompressedOrNull(
-                perfettoBytes = result.bytes,
+                compressed = result,
                 rumMobileEventsJson = rumMobileEventsJson,
                 logDrop = logDrop
             )
@@ -460,22 +460,20 @@ internal class ProfilingDataWriter(
         }
     }
 
+    // Only the used part of the compressed buffer is copied into the blob.
     private fun encodeCompressedOrNull(
-        perfettoBytes: ByteArray,
+        compressed: CompressionResult.Compressed,
         rumMobileEventsJson: ByteArray,
         logDrop: (String, Long?) -> Unit
     ): PerfettoMetadata? {
-        @Suppress("UnsafeThirdPartyFunctionCall") // bytes is non-null; it only throws NPE on null
-        val metadata = ProfilingBatchMetadata.encode(
-            ByteArrayInputStream(perfettoBytes),
-            perfettoBytes.size,
-            rumMobileEventsJson
-        )
+        @Suppress("UnsafeThirdPartyFunctionCall") // The buffer is non-null; it only throws NPE on null
+        val traceStream = ByteArrayInputStream(compressed.bytes, 0, compressed.length)
+        val metadata = ProfilingBatchMetadata.encode(traceStream, compressed.length, rumMobileEventsJson)
         return if (metadata == null) {
             logDrop(DROP_REASON_PERFETTO_UNREADABLE, null)
             null
         } else {
-            PerfettoMetadata(metadata, perfettoBytes.size.toLong(), compressed = true)
+            PerfettoMetadata(metadata, compressed.length.toLong(), compressed = true)
         }
     }
 

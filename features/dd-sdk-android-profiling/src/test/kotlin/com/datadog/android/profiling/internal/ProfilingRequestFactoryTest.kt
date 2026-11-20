@@ -14,7 +14,6 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
-import com.github.luben.zstd.Zstd
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -22,6 +21,9 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.MultipartReader
 import okio.Buffer
+import okio.GzipSink
+import okio.buffer
+import okio.sink
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -37,6 +39,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.util.Locale
 
 @Extensions(
@@ -138,7 +141,7 @@ class ProfilingRequestFactoryTest {
         forge: Forge
     ) {
         // Given — a continuous profile: metadata is a ProfilingBatchMetadata blob
-        val fakePerfettoBytes = Zstd.compress(forge.aString().toByteArray())
+        val fakePerfettoBytes = gzip(forge.aString().toByteArray())
         val fakeRumEventsBytes = forge.aString().toByteArray()
         val metadata = checkNotNull(
             ProfilingBatchMetadata.encode(
@@ -228,6 +231,12 @@ class ProfilingRequestFactoryTest {
         }
         assertThat(request.body.containsSubsequence(fakeEvent.data)).isTrue()
         assertThat(request.body.containsSubsequence(extraEvent.data)).isFalse()
+    }
+
+    private fun gzip(bytes: ByteArray): ByteArray {
+        val out = ByteArrayOutputStream()
+        GzipSink(out.sink()).buffer().use { it.writeAll(Buffer().write(bytes)) }
+        return out.toByteArray()
     }
 
     private fun Request.parts(): Map<String, ByteArray> {
