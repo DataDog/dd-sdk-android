@@ -151,6 +151,21 @@ internal class TraceInternalProxyTest {
     }
 
     @Test
+    fun `M remove anonymous id W removeRetainedUserAnonymousIdBaggage() {percent-encoded key}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            listOf("user%2Eanonymous%5Fid=old,user.id=user%2Bid", "user%2eanonymous_id=old2")
+        )
+
+        // Then
+        assertThat(result).containsExactly("user.id=user%2Bid")
+    }
+
+    @Test
     fun `M drop emptied values W removeRetainedUserAnonymousIdBaggage() {only anonymous id}`() {
         // Given
         val span = mock<DatadogSpan>()

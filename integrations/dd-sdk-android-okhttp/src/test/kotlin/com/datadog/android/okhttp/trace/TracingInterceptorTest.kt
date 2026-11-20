@@ -1859,6 +1859,27 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `M remove encoded anonymous id before merging BAGGAGE W intercept { retry, new baggage injected }`() {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader(BAGGAGE_HEADER, "user%2Eanonymous_id=old,custom=a+b;p=v")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        mockPropagation.wheneverInjectThenValueToHeaders(BAGGAGE_HEADER, "user.id=userId")
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            val baggage = firstValue.headers(BAGGAGE_HEADER).joinToString(",")
+            assertThat(baggage).doesNotContain("anonymous").contains("user.id=userId")
+        }
+    }
+
+    @Test
     fun `M keep existing BAGGAGE W intercept { new values != existing values }`(
         @StringForgery existingBaggageKey: String,
         @StringForgery existingBaggageValue: String,
