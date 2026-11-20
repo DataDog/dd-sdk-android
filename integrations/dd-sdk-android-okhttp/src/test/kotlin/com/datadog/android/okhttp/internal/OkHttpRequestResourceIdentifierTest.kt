@@ -218,7 +218,7 @@ internal class OkHttpRequestResourceIdentifierTest {
 
     @ValueSource(strings = ["POST", "PUT", "PATCH", "DELETE"])
     @ParameterizedTest
-    fun `M return {method url 0 contentType} W uniqueId {request with exception thrown for content length}`(
+    fun `M return {method url -1 contentType} W uniqueId {request with exception thrown for content length}`(
         method: String
     ) {
         // Given
@@ -252,7 +252,101 @@ internal class OkHttpRequestResourceIdentifierTest {
 
         // Then
         assertThat(actual)
-            .isEqualTo("$method•$fakeUrl•0•$fakeContentType")
+            .isEqualTo("$method•$fakeUrl•-1•$fakeContentType")
+    }
+
+    @Test
+    fun `M return {POST url -1 null} W uniqueId {exception thrown for content length, no content type}`() {
+        // Given
+        val request = Request.Builder()
+            .post(fakeRequestBody(contentLength = { throw IOException("") }, contentType = null))
+            .url(fakeUrl)
+            .build()
+
+        // When
+        val actual = request.uniqueId
+
+        // Then
+        assertThat(actual).isEqualTo("POST•$fakeUrl•-1•null")
+    }
+
+    @Test
+    fun `M return {POST url -1 null} W uniqueId {unknown content length, no content type}`() {
+        // Given
+        val request = Request.Builder()
+            .post(fakeRequestBody(contentLength = { -1L }, contentType = null))
+            .url(fakeUrl)
+            .build()
+
+        // When
+        val actual = request.uniqueId
+
+        // Then
+        assertThat(actual).isEqualTo("POST•$fakeUrl•-1•null")
+    }
+
+    @Test
+    fun `M return {POST url} W uniqueId {empty body, no content type}`() {
+        // Given
+        val request = Request.Builder()
+            .post(ByteArray(0).toRequestBody(null))
+            .url(fakeUrl)
+            .build()
+
+        // When
+        val actual = request.uniqueId
+
+        // Then
+        assertThat(actual).isEqualTo("POST•$fakeUrl")
+    }
+
+    @Test
+    fun `M return key with -1 W identifyRequest() {exception thrown for content length}`() {
+        // Given
+        val throwingRequest = Request.Builder()
+            .post(fakeRequestBody(contentLength = { throw IOException("") }, contentType = null))
+            .url(fakeUrl)
+            .build()
+        val emptyRequest = Request.Builder()
+            .post(ByteArray(0).toRequestBody(null))
+            .url(fakeUrl)
+            .build()
+
+        // When
+        @Suppress("DEPRECATION")
+        val throwingKey = identifyRequest(throwingRequest)
+
+        @Suppress("DEPRECATION")
+        val emptyKey = identifyRequest(emptyRequest)
+
+        // Then
+        assertThat(throwingKey).isEqualTo("POST•$fakeUrl•-1•null")
+        assertThat(throwingKey).isNotEqualTo(emptyKey)
+    }
+
+    @Test
+    fun `M return same key W uniqueId called repeatedly {exception thrown for content length}`() {
+        // Given
+        val request = Request.Builder()
+            .post(fakeRequestBody(contentLength = { throw IOException("") }, contentType = null))
+            .url(fakeUrl)
+            .build()
+
+        // When
+        val startKey = request.uniqueId
+        val stopKey = request.uniqueId
+
+        // Then
+        assertThat(stopKey).isEqualTo(startKey)
+        assertThat(startKey).isNotEqualTo("POST•$fakeUrl")
+    }
+
+    private fun fakeRequestBody(contentLength: () -> Long, contentType: MediaType?) = object : RequestBody() {
+        override fun contentLength(): Long = contentLength()
+        override fun contentType(): MediaType? = contentType
+        override fun writeTo(sink: BufferedSink) {
+            // no-op
+        }
     }
 
     private val Request.uniqueId: String
