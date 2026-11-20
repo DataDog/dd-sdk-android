@@ -56,6 +56,13 @@ stages:
         "-Dorg.gradle.logging.stacktrace=all"
       )
 
+      # On these branches we want to build and run tests from scratch.
+      case "${CI_COMMIT_BRANCH:-}" in
+        develop|release*|dogfooding*)
+          export DD_CI_RERUN_TASKS=true
+          ;;
+      esac
+
       printf -v configured_gradle_options ' %q' "${gradle_options[@]}"
       export GRADLE_OPTS="${GRADLE_OPTS:-}$configured_gradle_options"
 

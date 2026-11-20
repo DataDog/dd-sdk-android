@@ -18,6 +18,14 @@ internal class BuildCachePlugin : Plugin<Settings> {
 
         settings.pluginManager.apply("com.github.burrunan.s3-build-cache")
 
+        if (settings.providers.environmentVariable("DD_CI_RERUN_TASKS").orNull.toBoolean()) {
+            settings.gradle.lifecycle.beforeProject {
+                tasks.configureEach {
+                    outputs.upToDateWhen { false }
+                }
+            }
+        }
+
         // Here we override the location of the local cache because the default cache folder gets uploaded
         // to GitLab and we don't want to make it bigger for no reason. And use some leftover stuff from there too.
         settings.buildCache.local {
