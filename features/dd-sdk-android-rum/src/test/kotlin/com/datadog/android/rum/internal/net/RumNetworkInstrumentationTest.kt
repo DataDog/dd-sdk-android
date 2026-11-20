@@ -93,6 +93,9 @@ internal class RumNetworkInstrumentationTest {
     @Mock
     lateinit var mockResponseInfo: HttpResponseInfo
 
+    @Mock
+    lateinit var mockCacheDeliveryResolver: HttpCacheDeliveryResolver
+
     @StringForgery
     lateinit var fakeNetworkInstrumentationName: String
 
@@ -129,7 +132,8 @@ internal class RumNetworkInstrumentationTest {
             networkInstrumentationName = fakeNetworkInstrumentationName,
             rumResourceAttributesProvider = mockRumResourceAttributesProvider,
             libraryType = fakeLibraryType,
-            resourceHeadersExtractor = null
+            resourceHeadersExtractor = null,
+            cacheDeliveryResolver = mockCacheDeliveryResolver
         )
     }
 
@@ -339,6 +343,118 @@ internal class RumNetworkInstrumentationTest {
     }
 
     @Test
+    fun `M include cache delivery attributes W stopResource()`(
+        @IntForgery(min = 200, max = 600) fakeStatusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeCacheAttributes = forge.aMap<String, Any?> { anAlphabeticalString() to anAlphabeticalString() }
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+        whenever(mockResponseInfo.headers) doReturn emptyMap()
+        whenever(mockCacheDeliveryResolver.resolve(mockResponseInfo)) doReturn fakeCacheAttributes
+        whenever(
+            mockRumResourceAttributesProvider.onProvideAttributes(
+                any<HttpRequestInfo>(),
+                anyOrNull<HttpResponseInfo>(),
+                anyOrNull()
+            )
+        ) doReturn emptyMap()
+
+        // When
+        testedInstrumentation.stopResource(fakeRequestInfo, mockResponseInfo)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockRumMonitor).stopResource(
+                any<ResourceId>(),
+                anyOrNull(),
+                anyOrNull(),
+                any<RumResourceKind>(),
+                capture()
+            )
+            assertThat(firstValue).containsAllEntriesOf(fakeCacheAttributes)
+        }
+    }
+
+    @Test
+    fun `M let cache delivery attributes take precedence W stopResource() { provider sets same keys }`(
+        @IntForgery(min = 200, max = 600) fakeStatusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeProviderAttributes = mapOf(
+            RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE to forge.anAlphabeticalString(),
+            RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE to forge.aLong(max = 0)
+        )
+        val fakeCacheAttributes = mapOf<String, Any?>(
+            RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE to "cache",
+            RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE to forge.aPositiveLong()
+        )
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+        whenever(mockResponseInfo.headers) doReturn emptyMap()
+        whenever(mockCacheDeliveryResolver.resolve(mockResponseInfo)) doReturn fakeCacheAttributes
+        whenever(
+            mockRumResourceAttributesProvider.onProvideAttributes(
+                any<HttpRequestInfo>(),
+                anyOrNull<HttpResponseInfo>(),
+                anyOrNull()
+            )
+        ) doReturn fakeProviderAttributes
+
+        // When
+        testedInstrumentation.stopResource(fakeRequestInfo, mockResponseInfo)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockRumMonitor).stopResource(
+                any<ResourceId>(),
+                anyOrNull(),
+                anyOrNull(),
+                any<RumResourceKind>(),
+                capture()
+            )
+            assertThat(firstValue).containsAllEntriesOf(fakeCacheAttributes)
+        }
+    }
+
+    @Test
+    fun `M keep provider cache delivery attributes W stopResource() { no cache delivery attributes }`(
+        @IntForgery(min = 200, max = 600) fakeStatusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeProviderAttributes = mapOf(
+            RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE to forge.anAlphabeticalString(),
+            RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE to forge.aLong()
+        )
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+        whenever(mockResponseInfo.headers) doReturn emptyMap()
+        whenever(mockCacheDeliveryResolver.resolve(mockResponseInfo)) doReturn emptyMap()
+        whenever(
+            mockRumResourceAttributesProvider.onProvideAttributes(
+                any<HttpRequestInfo>(),
+                anyOrNull<HttpResponseInfo>(),
+                anyOrNull()
+            )
+        ) doReturn fakeProviderAttributes
+
+        // When
+        testedInstrumentation.stopResource(fakeRequestInfo, mockResponseInfo)
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockRumMonitor).stopResource(
+                any<ResourceId>(),
+                anyOrNull(),
+                anyOrNull(),
+                any<RumResourceKind>(),
+                capture()
+            )
+            assertThat(firstValue).containsAllEntriesOf(fakeProviderAttributes)
+        }
+    }
+
+    @Test
     fun `M return null body length for stream W stopResource() {streaming content type}`(
         @IntForgery(min = 200, max = 600) fakeStatusCode: Int
     ) {
@@ -536,7 +652,8 @@ internal class RumNetworkInstrumentationTest {
             networkInstrumentationName = fakeNetworkInstrumentationName,
             rumResourceAttributesProvider = mockRumResourceAttributesProvider,
             libraryType = fakeLibraryType,
-            resourceHeadersExtractor = extractor
+            resourceHeadersExtractor = extractor,
+            cacheDeliveryResolver = mockCacheDeliveryResolver
         )
 
         fakeRequestInfo = fakeRequestInfo.copy(
@@ -600,7 +717,8 @@ internal class RumNetworkInstrumentationTest {
             networkInstrumentationName = fakeNetworkInstrumentationName,
             rumResourceAttributesProvider = mockRumResourceAttributesProvider,
             libraryType = fakeLibraryType,
-            resourceHeadersExtractor = extractor
+            resourceHeadersExtractor = extractor,
+            cacheDeliveryResolver = mockCacheDeliveryResolver
         )
 
         fakeRequestInfo = fakeRequestInfo.copy(
@@ -694,7 +812,8 @@ internal class RumNetworkInstrumentationTest {
             networkInstrumentationName = fakeNetworkInstrumentationName,
             rumResourceAttributesProvider = mockRumResourceAttributesProvider,
             libraryType = fakeLibraryType,
-            resourceHeadersExtractor = extractor
+            resourceHeadersExtractor = extractor,
+            cacheDeliveryResolver = mockCacheDeliveryResolver
         )
 
         // When
@@ -717,7 +836,8 @@ internal class RumNetworkInstrumentationTest {
             networkInstrumentationName = fakeNetworkInstrumentationName,
             rumResourceAttributesProvider = mockRumResourceAttributesProvider,
             libraryType = fakeLibraryType,
-            resourceHeadersExtractor = extractor
+            resourceHeadersExtractor = extractor,
+            cacheDeliveryResolver = mockCacheDeliveryResolver
         )
 
         // When
@@ -813,7 +933,8 @@ internal class RumNetworkInstrumentationTest {
             networkInstrumentationName = fakeNetworkInstrumentationName,
             rumResourceAttributesProvider = mockRumResourceAttributesProvider,
             libraryType = fakeLibraryType,
-            resourceHeadersExtractor = null
+            resourceHeadersExtractor = null,
+            cacheDeliveryResolver = mockCacheDeliveryResolver
         )
 
         // When

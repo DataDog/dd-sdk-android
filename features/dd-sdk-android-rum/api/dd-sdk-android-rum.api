@@ -452,6 +452,11 @@ public final class com/datadog/android/rum/internal/net/GraphQLExtractor {
 public final class com/datadog/android/rum/internal/net/GraphQLExtractor$Companion {
 }
 
+public final class com/datadog/android/rum/internal/net/HttpCacheDeliveryResolver {
+	public fun <init> ()V
+	public final fun resolve (Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;)Ljava/util/Map;
+}
+
 public final class com/datadog/android/rum/internal/net/NetworkInstrumentationTelemetryExtKt {
 	public static final fun reportNetworkInstrumentationConfigured (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;)V
 }

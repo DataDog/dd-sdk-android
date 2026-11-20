@@ -44,6 +44,8 @@ import java.util.UUID
  * @param rumResourceAttributesProvider provider for custom attributes to attach to RUM resources
  * @param libraryType the type of networking library being instrumented, used for telemetry reporting
  * @param resourceHeadersExtractor optional extractor for capturing HTTP request/response headers in RUM Resource events
+ * @param cacheDeliveryResolver resolver for the attributes describing how a response was delivered with regard to the
+ * device HTTP cache
  */
 @InternalApi
 class RumNetworkInstrumentation internal constructor(
@@ -51,7 +53,8 @@ class RumNetworkInstrumentation internal constructor(
     internal val networkInstrumentationName: String,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     internal val libraryType: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType,
-    internal val resourceHeadersExtractor: ResourceHeadersExtractor?
+    internal val resourceHeadersExtractor: ResourceHeadersExtractor?,
+    internal val cacheDeliveryResolver: HttpCacheDeliveryResolver
 ) {
     private val sdkCoreReference = SdkReference(sdkInstanceName) {
         it.networkMonitor?.reportNetworkInstrumentationConfigured(
@@ -120,7 +123,9 @@ class RumNetworkInstrumentation internal constructor(
             responseInfo.getRumResourceKind(),
             attributes +
                 rumResourceAttributesProvider.onProvideAttributes(requestInfo, responseInfo, null) +
-                resourceHeaderAttributes
+                resourceHeaderAttributes +
+                // last, so that the cache evidence of the networking library takes precedence
+                cacheDeliveryResolver.resolve(responseInfo)
         )
     }
 

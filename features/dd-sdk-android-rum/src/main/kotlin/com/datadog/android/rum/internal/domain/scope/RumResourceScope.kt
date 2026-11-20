@@ -290,6 +290,13 @@ internal class RumResourceScope(
             ResourceEvent.Response(headers = ResourceEvent.RequestHeaders(it.toMutableMap()))
         }
 
+        val deliveryType = resolveDeliveryType(
+            resourceAttributes.remove(RumAttributes.INTERNAL_RESOURCE_DELIVERY_TYPE)
+        )
+        val transferSize = resolveTransferSize(
+            resourceAttributes.remove(RumAttributes.INTERNAL_RESOURCE_TRANSFER_SIZE)
+        )
+
         sdkCore.newRumEventWriteOperation(writeScope, writer) {
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
@@ -308,6 +315,8 @@ internal class RumResourceScope(
                     method = method.toResourceMethod(),
                     statusCode = statusCode,
                     size = size,
+                    transferSize = transferSize,
+                    deliveryType = deliveryType,
                     dns = finalTiming?.dns(),
                     connect = finalTiming?.connect(),
                     ssl = finalTiming?.ssl(),
@@ -416,6 +425,50 @@ internal class RumResourceScope(
         } else {
             duration
         }
+    }
+
+    private fun resolveDeliveryType(value: Any?): ResourceEvent.DeliveryType? {
+        if (value == null) return null
+        return try {
+            ResourceEvent.DeliveryType.fromJson(value.toString())
+        } catch (e: NoSuchElementException) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { INVALID_DELIVERY_TYPE_MESSAGE.format(Locale.US, value) },
+                e
+            )
+            null
+        }
+    }
+
+    private fun resolveTransferSize(value: Any?): Long? {
+        if (value == null) return null
+        val transferSize = when (value) {
+            is Long, is Int, is Short, is Byte -> value.toLong()
+            // cross-platform SDKs may forward whole numbers as floating point values, but a
+            // fractional, infinite or NaN value isn't a byte count: toLong() would turn it into a
+            // made-up size
+            is Double -> value.toWholeLongOrNull()
+            is Float -> value.toDouble().toWholeLongOrNull()
+            else -> null
+        }
+        return if (transferSize != null && transferSize >= 0) {
+            transferSize
+        } else {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { INVALID_TRANSFER_SIZE_MESSAGE.format(Locale.US, value) }
+            )
+            null
+        }
+    }
+
+    private fun Double.toWholeLongOrNull(): Long? {
+        // Long.MAX_VALUE.toDouble() is 2^63, which is already out of the Long range
+        val isWhole = isFinite() && this % 1.0 == 0.0 && this >= 0.0 && this < Long.MAX_VALUE.toDouble()
+        return if (isWhole) toLong() else null
     }
 
     private fun resolveResourceProvider(): ResourceEvent.Provider? {
@@ -648,6 +701,9 @@ internal class RumResourceScope(
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
             "resource: %s was 0 or negative. In order to keep the resource event" +
             " we forced it to 1ns."
+
+        internal const val INVALID_DELIVERY_TYPE_MESSAGE = "Ignoring invalid resource delivery type: %s"
+        internal const val INVALID_TRANSFER_SIZE_MESSAGE = "Ignoring invalid resource transfer size: %s"
 
         @Suppress("LongParameterList")
         fun fromEvent(

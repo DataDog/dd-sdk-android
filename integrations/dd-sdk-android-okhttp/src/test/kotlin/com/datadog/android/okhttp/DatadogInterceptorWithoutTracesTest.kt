@@ -25,6 +25,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.internal.net.HttpCacheDeliveryResolver
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.tests.elmyr.anOkHttpResponse
 import com.datadog.android.trace.TraceContextInjection
@@ -101,6 +102,9 @@ internal class DatadogInterceptorWithoutTracesTest {
     private lateinit var mockPropagation: DatadogPropagation
 
     private lateinit var fakeSpan: DatadogSpan
+
+    @Mock
+    lateinit var mockCacheDeliveryResolver: HttpCacheDeliveryResolver
 
     @Mock
     lateinit var mockChain: Interceptor.Chain
@@ -180,7 +184,8 @@ internal class DatadogInterceptorWithoutTracesTest {
             redacted404ResourceName = fakeRedacted404Resources,
             traceContextInjection = TraceContextInjection.ALL,
             localTracerFactory = { _, _ -> mockLocalTracer },
-            globalTracerProvider = { null }
+            globalTracerProvider = { null },
+            cacheDeliveryResolver = mockCacheDeliveryResolver
         )
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()

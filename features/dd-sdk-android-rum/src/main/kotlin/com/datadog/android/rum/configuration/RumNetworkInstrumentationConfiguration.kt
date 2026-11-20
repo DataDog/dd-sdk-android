@@ -9,6 +9,7 @@ package com.datadog.android.rum.configuration
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceAttributesProvider
+import com.datadog.android.rum.internal.net.HttpCacheDeliveryResolver
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 
@@ -61,6 +62,7 @@ class RumNetworkInstrumentationConfiguration {
         networkInstrumentationName = instrumentationName,
         rumResourceAttributesProvider = resourceAttributesProvider,
         libraryType = libraryType,
-        resourceHeadersExtractor = resourceHeadersExtractor
+        resourceHeadersExtractor = resourceHeadersExtractor,
+        cacheDeliveryResolver = HttpCacheDeliveryResolver()
     )
 }

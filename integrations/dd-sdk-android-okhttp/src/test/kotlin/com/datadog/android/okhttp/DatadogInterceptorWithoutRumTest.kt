@@ -13,6 +13,7 @@ import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
 import com.datadog.android.rum.RumResourceAttributesProvider
+import com.datadog.android.rum.internal.net.HttpCacheDeliveryResolver
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.tracer.DatadogTracer
@@ -49,6 +50,9 @@ import java.util.Locale
 internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
     @Mock
+    lateinit var mockCacheDeliveryResolver: HttpCacheDeliveryResolver
+
+    @Mock
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
 
     override fun instantiateTestedInterceptor(
@@ -67,6 +71,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
             redacted404ResourceName = fakeRedacted404Resources,
             localTracerFactory = localTracerFactory,
             globalTracerProvider = globalTracerProvider,
+            cacheDeliveryResolver = mockCacheDeliveryResolver,
             defaultTracerCheck = defaultTracerCheck
         )
     }

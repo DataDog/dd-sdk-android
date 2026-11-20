@@ -9,10 +9,12 @@ package com.datadog.android.okhttp
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.toBase64
+import com.datadog.android.okhttp.internal.OkHttpResponseInfo
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
@@ -22,6 +24,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.internal.net.HttpCacheDeliveryResolver
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.trace.TraceContextInjection
@@ -93,6 +96,9 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     private var resourceHeadersExtractor: ResourceHeadersExtractor? = null
 
+    @Mock
+    lateinit var mockCacheDeliveryResolver: HttpCacheDeliveryResolver
+
     override fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
         globalTracerProvider: () -> DatadogTracer?,
@@ -110,6 +116,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             redacted404ResourceName = fakeRedacted404Resources,
             localTracerFactory = localTracerFactory,
             globalTracerProvider = globalTracerProvider,
+            cacheDeliveryResolver = mockCacheDeliveryResolver,
             resourceHeadersExtractor = resourceHeadersExtractor
         )
     }
@@ -1432,4 +1439,130 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     // endregion
+
+    // region Cache delivery
+
+    @Test
+    fun `M resolve cache delivery from the response W intercept()`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<HttpResponseInfo> {
+            verify(mockCacheDeliveryResolver).resolve(capture())
+            assertThat((firstValue as OkHttpResponseInfo).originalResponse).isSameAs(fakeResponse)
+        }
+    }
+
+    @Test
+    fun `M include cache delivery attributes in stopResource W intercept()`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        val fakeCacheAttributes = mapOf<String, Any?>(
+            DELIVERY_TYPE_ATTRIBUTE to "cache",
+            TRANSFER_SIZE_ATTRIBUTE to forge.aPositiveLong(strict = false)
+        )
+        whenever(mockCacheDeliveryResolver.resolve(any())) doReturn fakeCacheAttributes
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val attrsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(rumMonitor.mockInstance).stopResource(
+            any<ResourceId>(),
+            any(),
+            anyOrNull(),
+            any(),
+            attrsCaptor.capture()
+        )
+        assertThat(attrsCaptor.firstValue).containsAllEntriesOf(fakeCacheAttributes)
+    }
+
+    @Test
+    fun `M cache delivery attributes override provider attributes W intercept() { conflicting keys }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        val fakeCacheAttributes = mapOf<String, Any?>(
+            DELIVERY_TYPE_ATTRIBUTE to "cache",
+            TRANSFER_SIZE_ATTRIBUTE to forge.aPositiveLong()
+        )
+        @Suppress("DEPRECATION")
+        whenever(
+            mockRumAttributesProvider.onProvideAttributes(
+                any<Request>(),
+                anyOrNull<Response>(),
+                anyOrNull<Throwable>()
+            )
+        ) doReturn mapOf(
+            DELIVERY_TYPE_ATTRIBUTE to forge.anAlphabeticalString(),
+            TRANSFER_SIZE_ATTRIBUTE to forge.aLong(max = 0)
+        )
+        whenever(mockCacheDeliveryResolver.resolve(any())) doReturn fakeCacheAttributes
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val attrsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(rumMonitor.mockInstance).stopResource(
+            any<ResourceId>(),
+            any(),
+            anyOrNull(),
+            any(),
+            attrsCaptor.capture()
+        )
+        assertThat(attrsCaptor.firstValue).containsAllEntriesOf(fakeCacheAttributes)
+    }
+
+    @Test
+    fun `M keep provider cache delivery attributes W intercept() { no cache delivery attributes }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        val fakeProviderAttributes = mapOf(
+            DELIVERY_TYPE_ATTRIBUTE to forge.anAlphabeticalString(),
+            TRANSFER_SIZE_ATTRIBUTE to forge.aLong()
+        )
+        @Suppress("DEPRECATION")
+        whenever(
+            mockRumAttributesProvider.onProvideAttributes(
+                any<Request>(),
+                anyOrNull<Response>(),
+                anyOrNull<Throwable>()
+            )
+        ) doReturn fakeProviderAttributes
+        whenever(mockCacheDeliveryResolver.resolve(any())) doReturn emptyMap()
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val attrsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(rumMonitor.mockInstance).stopResource(
+            any<ResourceId>(),
+            any(),
+            anyOrNull(),
+            any(),
+            attrsCaptor.capture()
+        )
+        assertThat(attrsCaptor.firstValue).containsAllEntriesOf(fakeProviderAttributes)
+    }
+
+    // endregion
+
+    companion object {
+        private const val DELIVERY_TYPE_ATTRIBUTE = "_dd.resource.delivery_type"
+        private const val TRANSFER_SIZE_ATTRIBUTE = "_dd.resource.transfer_size"
+    }
 }

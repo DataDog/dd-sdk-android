@@ -8,6 +8,8 @@ package com.datadog.android.okhttp.internal
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.instrumentation.network.HttpBodySnapshot
+import com.datadog.android.api.instrumentation.network.HttpCacheDelivery
+import com.datadog.android.api.instrumentation.network.HttpCacheInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.api.instrumentation.network.PeekableBodyInfo
@@ -19,7 +21,7 @@ import java.io.IOException
 internal class OkHttpResponseInfo(
     internal val originalResponse: Response,
     internal val internalLogger: InternalLogger
-) : HttpResponseInfo, PeekableBodyInfo {
+) : HttpResponseInfo, PeekableBodyInfo, HttpCacheInfo {
 
     override val contentType: String?
         get() = originalResponse.body?.contentType()?.mimeType()
@@ -77,6 +79,26 @@ internal class OkHttpResponseInfo(
 
     override val request: HttpRequestInfo get() = OkHttpRequestInfo(originalResponse.request, internalLogger)
 
+    // Only meaningful for an application interceptor: a network interceptor runs after the cache
+    // lookup, so it never sees a cached response
+    override val cacheDelivery: HttpCacheDelivery
+        get() {
+            val networkResponse = originalResponse.networkResponse
+            return when {
+                originalResponse.cacheResponse == null -> HttpCacheDelivery.NotCached
+                // the final response describes the last hop only: when an earlier hop (e.g. a
+                // redirect) went over the network, the request did transfer bytes
+                networkResponse == null && hasPriorNetworkResponse() -> HttpCacheDelivery.CachedUnknownReason
+                networkResponse == null -> HttpCacheDelivery.LocalHit
+                // OkHttp exposes no byte count for the validation exchange
+                networkResponse.code == HttpSpec.StatusCode.NOT_MODIFIED -> HttpCacheDelivery.ValidatedHit(
+                    networkBytes = null
+                )
+                // the cached entry was stale, and the server sent a new one
+                else -> HttpCacheDelivery.NotCached
+            }
+        }
+
     @WorkerThread
     @Suppress("ReturnCount")
     override fun peekBody(maxBytes: Long): HttpBodySnapshot? {
@@ -128,6 +150,14 @@ internal class OkHttpResponseInfo(
         }
     }
 
+    private fun hasPriorNetworkResponse(): Boolean {
+        var prior = originalResponse.priorResponse
+        while (prior != null) {
+            if (prior.networkResponse != null) return true
+            prior = prior.priorResponse
+        }
+        return false
+    }
     internal companion object {
 
         // We need to limit this value as the body will be loaded in memory

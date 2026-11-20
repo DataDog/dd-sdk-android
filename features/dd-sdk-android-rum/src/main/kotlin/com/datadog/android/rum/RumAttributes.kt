@@ -168,6 +168,17 @@ object RumAttributes {
      */
     const val RESPONSE_HEADERS: String = "_dd.response_headers"
 
+    /**
+     * How the resource was delivered, as a `resource.delivery_type` schema value, e.g. `cache` (String).
+     */
+    internal const val INTERNAL_RESOURCE_DELIVERY_TYPE: String = "_dd.resource.delivery_type"
+
+    /**
+     * The number of bytes received over the network for the resource, or a positive placeholder
+     * when a network exchange happened but its size isn't measured (Number).
+     */
+    internal const val INTERNAL_RESOURCE_TRANSFER_SIZE: String = "_dd.resource.transfer_size"
+
     // endregion
 
     // region Error

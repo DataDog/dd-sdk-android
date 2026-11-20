@@ -6,6 +6,7 @@
 
 package com.datadog.android.cronet.internal
 
+import com.datadog.android.api.instrumentation.network.HttpCacheDelivery
 import com.datadog.android.api.instrumentation.network.peekBody
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.utils.forge.Configurator
@@ -256,5 +257,126 @@ internal class CronetResponseInfoTest {
 
         // Then
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return NotCached W cacheDelivery { not cached }`(
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockUrlResponseInfo.wasCached()).thenReturn(false)
+        val responseInfo = CronetHttpResponseInfo(
+            response = mockUrlResponseInfo,
+            request = mockRequestInfo,
+            metricsReceivedByteCount = forge.aNullable { aPositiveLong(strict = false) }
+        )
+
+        // When
+        val result = responseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.NotCached)
+    }
+
+    @Test
+    fun `M return LocalHit W cacheDelivery { cached, no bytes received }`() {
+        // Given
+        whenever(mockUrlResponseInfo.wasCached()).thenReturn(true)
+        val responseInfo = CronetHttpResponseInfo(
+            response = mockUrlResponseInfo,
+            request = mockRequestInfo,
+            metricsReceivedByteCount = 0L
+        )
+
+        // When
+        val result = responseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.LocalHit)
+    }
+
+    @Test
+    fun `M return ValidatedHit W cacheDelivery { cached, bytes received, not redirected }`(
+        @LongForgery(min = 1) fakeReceivedByteCount: Long,
+        @StringForgery(regex = "https://[a-z]+\\.com/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        whenever(mockUrlResponseInfo.wasCached()).thenReturn(true)
+        whenever(mockUrlResponseInfo.urlChain).thenReturn(listOf(fakeUrl))
+        val responseInfo = CronetHttpResponseInfo(
+            response = mockUrlResponseInfo,
+            request = mockRequestInfo,
+            metricsReceivedByteCount = fakeReceivedByteCount
+        )
+
+        // When
+        val result = responseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.ValidatedHit(networkBytes = fakeReceivedByteCount))
+    }
+
+    @Test
+    fun `M return CachedUnknownReason W cacheDelivery { cached, unknown received bytes }`(
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockUrlResponseInfo.wasCached()).thenReturn(true)
+        val responseInfo = CronetHttpResponseInfo(
+            response = mockUrlResponseInfo,
+            request = mockRequestInfo,
+            metricsReceivedByteCount = forge.aNullable { aLong(max = 0) }
+        )
+
+        // When
+        val result = responseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.CachedUnknownReason)
+    }
+
+    @Test
+    fun `M return CachedUnknownReason W cacheDelivery { cached, bytes received, redirected }`(
+        @LongForgery(min = 1) fakeReceivedByteCount: Long,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockUrlResponseInfo.wasCached()).thenReturn(true)
+        whenever(mockUrlResponseInfo.urlChain).thenReturn(
+            forge.aList(size = forge.anInt(min = 2, max = 5)) { aStringMatching("https://[a-z]+\\.com/[a-z]+") }
+        )
+        val responseInfo = CronetHttpResponseInfo(
+            response = mockUrlResponseInfo,
+            request = mockRequestInfo,
+            metricsReceivedByteCount = fakeReceivedByteCount
+        )
+
+        // When
+        val result = responseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.CachedUnknownReason)
+    }
+
+    @Test
+    fun `M return LocalHit W cacheDelivery { cached, no bytes received, redirected }`(
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockUrlResponseInfo.wasCached()).thenReturn(true)
+        whenever(mockUrlResponseInfo.urlChain).thenReturn(
+            forge.aList(size = forge.anInt(min = 2, max = 5)) { aStringMatching("https://[a-z]+\\.com/[a-z]+") }
+        )
+        val responseInfo = CronetHttpResponseInfo(
+            response = mockUrlResponseInfo,
+            request = mockRequestInfo,
+            metricsReceivedByteCount = 0L
+        )
+
+        // When
+        val result = responseInfo.cacheDelivery
+
+        // Then
+        assertThat(result).isEqualTo(HttpCacheDelivery.LocalHit)
     }
 }
