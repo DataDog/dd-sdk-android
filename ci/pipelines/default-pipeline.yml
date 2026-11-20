@@ -232,6 +232,16 @@ test:kover:
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
+test:compile-sdk-compatibility:
+  extends: .verification-gradle-job
+  when: manual
+  allow_failure: true
+  script:
+    - >-
+      "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+      "platforms;android-35" "platforms;android-36" "platforms;android-37.0"
+    - bash ci/scripts/check_compile_sdk_compatibility.sh
+
 .single-fit-job:
   extends:
     - .base-gradle-cache-job

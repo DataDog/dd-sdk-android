@@ -22,7 +22,9 @@ plugins {
 
 android {
 
-    compileSdk = AndroidConfig.TARGET_SDK
+    compileSdk = providers.gradleProperty("integrationCompileSdk")
+        .map { it.toInt() }
+        .getOrElse(AndroidConfig.TARGET_SDK)
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     @Suppress("MagicNumber")

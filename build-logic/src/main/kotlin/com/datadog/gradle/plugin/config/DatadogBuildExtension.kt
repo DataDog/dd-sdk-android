@@ -38,9 +38,13 @@ abstract class DatadogBuildExtension @Inject constructor(
         project.kotlinConfig(evaluateWarningsAsErrors, jvmBytecodeTarget, kotlinApiVersion, kotlinLanguageVersion)
     }
 
-    /** Applies the shared `com.android.library` setup: SDK levels, source sets, lint and packaging. */
-    fun applyAndroidLibraryConfig() {
-        project.androidLibraryConfig()
+    /**
+     * Applies the shared `com.android.library` setup.
+     *
+     * @param minCompileSdk Consumer minimum in the AAR metadata. The default is independent of the SDK's compileSdk.
+     */
+    fun applyAndroidLibraryConfig(minCompileSdk: Int = 1) {
+        project.androidLibraryConfig(minCompileSdk)
     }
 
     /** Runs tests on the JUnit 5 platform and mirrors stderr of failing tests to the console. */
