@@ -18,6 +18,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.trace.internal.RumContextPropagator
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
+import com.datadog.android.trace.internal.domain.event.COMPUTE_STATS_META_KEY
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.domain.event.FORCE_DROP_SPAN
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
@@ -30,6 +31,7 @@ import java.util.Locale
 internal class CoreTraceWriter(
     private val sdkCore: FeatureSdkCore,
     internal val ddSpanToSpanEventMapper: ContextAwareMapper<DDSpan, SpanEvent>,
+    internal val clientSideStatsEnabled: Boolean,
     internal val eventMapper: EventMapper<SpanEvent> = NoOpEventMapper(),
     private val serializer: ContextAwareSerializer<SpanEvent>,
     private val internalLogger: InternalLogger,
@@ -84,6 +86,12 @@ internal class CoreTraceWriter(
     ) {
         val spanEvent = ddSpanToSpanEventMapper.map(datadogContext, span)
         val mapped = eventMapper.map(spanEvent) ?: return
+        // Applied after the event mapper, so neither a span tag nor the mapper can alter backend stats computation
+        if (clientSideStatsEnabled) {
+            mapped.meta.additionalProperties[COMPUTE_STATS_META_KEY] = "0"
+        } else {
+            mapped.meta.additionalProperties.remove(COMPUTE_STATS_META_KEY)
+        }
         try {
             val serialized = serializer
                 .serialize(datadogContext, mapped)

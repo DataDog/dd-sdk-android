@@ -49,7 +49,7 @@ internal class CoreTracerSpanToSpanEventMapperTest {
 
     @BeforeEach
     fun `set up`() {
-        testedMapper = CoreTracerSpanToSpanEventMapper(fakeNetworkInfoEnabled, clientSideStatsEnabled = false)
+        testedMapper = CoreTracerSpanToSpanEventMapper(fakeNetworkInfoEnabled)
     }
 
     @Test
@@ -186,53 +186,6 @@ internal class CoreTracerSpanToSpanEventMapperTest {
 
         // Then
         assertThat(event).isNotTopSpan()
-    }
-
-    @Test
-    fun `M set computeStats to 0 W map() { clientSideStatsEnabled is true }`(
-        @Forgery fakeSpan: DDSpan
-    ) {
-        // Given
-        testedMapper = CoreTracerSpanToSpanEventMapper(fakeNetworkInfoEnabled, clientSideStatsEnabled = true)
-
-        // When
-        val event = testedMapper.map(fakeDatadogContext, fakeSpan)
-
-        // Then
-        assertThat(event).hasComputeStats("0")
-    }
-
-    @Test
-    fun `M set computeStats to null W map() { clientSideStatsEnabled is false }`(
-        @Forgery fakeSpan: DDSpan
-    ) {
-        // Given
-        testedMapper = CoreTracerSpanToSpanEventMapper(fakeNetworkInfoEnabled, clientSideStatsEnabled = false)
-
-        // When
-        val event = testedMapper.map(fakeDatadogContext, fakeSpan)
-
-        // Then
-        assertThat(event).hasComputeStats(null)
-    }
-
-    @Test
-    fun `M remove computeStats W map() { clientSideStatsEnabled is false, tag set manually }`(
-        @Forgery fakeSpan: DDSpan,
-        @StringForgery fakeComputeStats: String
-    ) {
-        // Given
-        testedMapper = CoreTracerSpanToSpanEventMapper(fakeNetworkInfoEnabled, clientSideStatsEnabled = false)
-        val tags = fakeSpan.tags.toMutableMap().apply {
-            this[COMPUTE_STATS_META_KEY] = fakeComputeStats
-        }
-        whenever(fakeSpan.tags).thenReturn(tags)
-
-        // When
-        val event = testedMapper.map(fakeDatadogContext, fakeSpan)
-
-        // Then
-        assertThat(event).hasComputeStats(null)
     }
 
     // endregion

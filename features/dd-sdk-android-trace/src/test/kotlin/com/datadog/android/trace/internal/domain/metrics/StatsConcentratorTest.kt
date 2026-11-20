@@ -1053,7 +1053,7 @@ internal class StatsConcentratorTest {
             name = operation,
             resource = resource,
             error = error,
-            meta = base.meta.copy(additionalProperties = extraTags)
+            meta = base.meta.copy(additionalProperties = extraTags.toMutableMap())
         )
     }
 

@@ -129,7 +129,7 @@ data class com.datadog.android.trace.model.SpanEvent
       fun fromJson(kotlin.String): Metrics
       fun fromJsonObject(com.google.gson.JsonObject): Metrics
   data class Meta
-    constructor(kotlin.String, Dd, Span, Tracer, Usr, Account? = null, Network? = null, Device, Os, kotlin.collections.Map<kotlin.String, kotlin.String> = mapOf())
+    constructor(kotlin.String, Dd, Span, Tracer, Usr, Account? = null, Network? = null, Device, Os, kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Meta
