@@ -82,5 +82,54 @@ class FetchTest(unittest.TestCase):
         self.assertEqual(run.call_count, sync.FETCH_ATTEMPTS)
 
 
+
+class UpdateTest(unittest.TestCase):
+    """Runs the script in a temporary consumer repository against a local upstream checkout."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        root = Path(self.temporary.name)
+        self.upstream = root / 'upstream'
+        _upstream(self.upstream)
+        self.consumer = root / 'consumer'
+        (self.consumer / 'ci').mkdir(parents=True)
+        script = Path(_SPEC.origin).read_text()
+        (self.consumer / 'ci' / 'sync.py').write_text(script)
+        self.config = self.consumer / 'ci' / 'feature-flags-precomputed-fixtures.json'
+        self.config.write_text(json.dumps({'destination': 'fixtures', 'commit': self._head()}))
+        subprocess.run(['git', 'init', '-q', str(self.consumer)], check=True)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def _head(self):
+        return subprocess.run(['git', '-C', str(self.upstream), 'rev-parse', 'HEAD'],
+                              check=True, capture_output=True, text=True).stdout.strip()
+
+    def _commit(self, path, text):
+        (self.upstream / path).parent.mkdir(parents=True, exist_ok=True)
+        (self.upstream / path).write_text(text)
+        subprocess.run(['git', '-C', str(self.upstream), 'add', '-A'], check=True)
+        subprocess.run(['git', '-C', str(self.upstream), '-c', 'user.name=t', '-c', 'user.email=t@t',
+                        'commit', '-qm', path], check=True)
+        return self._head()
+
+    def _update(self, ref):
+        subprocess.run(['python3', str(self.consumer / 'ci' / 'sync.py'), '--update', '--ref', ref,
+                        '--source', str(self.upstream)], check=True, capture_output=True)
+        return json.loads(self.config.read_text())['commit']
+
+    def test_update_keeps_the_pin_when_no_imported_file_changed(self):
+        pinned = self._head()
+        unrelated = self._commit('unrelated/notes.md', 'notes')
+        self.assertNotEqual(unrelated, pinned)
+        self.assertEqual(self._update(unrelated), pinned)
+        # A fresh checkout has no local snapshot to compare.
+        subprocess.run(['rm', '-rf', str(self.consumer / 'fixtures')], check=True)
+        self.assertEqual(self._update(unrelated), pinned)
+        changed = self._commit('precomputed-assignments/cases/b.json',
+                               json.dumps({'name': 'b', 'evaluations': [], 'response': {}}))
+        self.assertEqual(self._update(changed), changed)
+
 if __name__ == '__main__':
     unittest.main()
