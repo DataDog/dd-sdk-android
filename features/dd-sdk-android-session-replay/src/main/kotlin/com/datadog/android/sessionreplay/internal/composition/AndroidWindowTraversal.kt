@@ -124,7 +124,12 @@ internal class AndroidWindowTraversal(
         } else {
             // Lists are owned by this copy and are never mutated after this handoff.
             WindowCopyResult.Present(
-                CapturedNativeWindow(state.density, state.views, state.isDrawingOrderReliable),
+                CapturedNativeWindow(
+                    state.density,
+                    state.views,
+                    state.isDrawingOrderReliable,
+                    state.pendingPixelCaptures
+                ),
                 state.touchOverrideAreas
             )
         }
@@ -162,14 +167,7 @@ internal class AndroidWindowTraversal(
         val bounds = pixels?.toNormalizedBounds(state.density)
             ?: viewBoundsResolver.resolveViewGlobalBounds(view, state.density).toCaptured()
         val ownPrivacy = resolveEffectivePrivacy(view, item.inheritedPrivacy, internalLogger)
-        val mappingContext = CapturedMappingContext(
-            state.identityFactory,
-            identity,
-            state.density,
-            bounds,
-            imagePrivacy = ownPrivacy.imagePrivacy,
-            textAndInputPrivacy = ownPrivacy.textAndInputPrivacy
-        )
+        val mappingContext = mappingContext(state, identity, bounds, ownPrivacy)
         val composition = if (kind == CapturedLayerKind.COMPOSE_HOST) {
             captureComposition(view, mappingContext, state, context)
         } else {
@@ -215,6 +213,21 @@ internal class AndroidWindowTraversal(
         state.views += copied
         pushNativeChildren(view, nativeChildren, hidden || isUndecomposedHost, index, copied, ownPrivacy, stack, state)
     }
+
+    private fun mappingContext(
+        state: CopyState,
+        identity: CapturedIdentity,
+        bounds: CapturedBounds,
+        privacy: EffectivePrivacy
+    ) = CapturedMappingContext(
+        state.identityFactory,
+        identity,
+        state.density,
+        bounds,
+        imagePrivacy = privacy.imagePrivacy,
+        textAndInputPrivacy = privacy.textAndInputPrivacy,
+        pendingPixelCaptureSink = state.pendingPixelCaptureSink
+    )
 
     @UiThread
     private fun pushNativeChildren(
@@ -281,6 +294,7 @@ internal class AndroidWindowTraversal(
             copy.touchOverrideAreas.forEach { (bounds, privacy) ->
                 state.touchOverrideAreas.putTouchOverrideArea(bounds, privacy)
             }
+            state.pendingPixelCaptures += copy.window.pendingPixelCaptures
             state.isDrawingOrderReliable = state.isDrawingOrderReliable && copy.window.isDrawingOrderReliable
         }
         return CapturedComposition(
@@ -397,6 +411,8 @@ internal class AndroidWindowTraversal(
         val locationOnScreen = IntArray(2)
         val views = mutableListOf<CapturedNativeView>()
         val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
+        val pendingPixelCaptures = mutableListOf<PendingPixelCapture>()
+        val pendingPixelCaptureSink = PendingPixelCaptureSink { pendingPixelCaptures.add(it) }
     }
 
     private data class WorkItem(
