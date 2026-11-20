@@ -8,16 +8,20 @@ package com.datadog.android.profiling.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
+import com.github.luben.zstd.Zstd
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.MultipartReader
+import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -134,7 +138,7 @@ class ProfilingRequestFactoryTest {
         forge: Forge
     ) {
         // Given — a continuous profile: metadata is a ProfilingBatchMetadata blob
-        val fakePerfettoBytes = forge.aString().toByteArray()
+        val fakePerfettoBytes = Zstd.compress(forge.aString().toByteArray())
         val fakeRumEventsBytes = forge.aString().toByteArray()
         val metadata = checkNotNull(
             ProfilingBatchMetadata.encode(
@@ -150,14 +154,11 @@ class ProfilingRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, null)
 
         // Then
-        val partEnd = "\r\n--".toByteArray()
-        val partStart = "\r\n\r\n".toByteArray()
-        assertThat(request.body.containsSubsequence(partStart + fakePerfettoBytes + partEnd)).isTrue()
-        assertThat(request.body.containsSubsequence(partStart + fakeRumEventsBytes + partEnd)).isTrue()
-        assertThat(request.body.containsSubsequence("perfetto.proto".toByteArray())).isTrue()
-        assertThat(request.body.containsSubsequence("rum-mobile-events.json".toByteArray())).isTrue()
-        assertThat(request.body.containsSubsequence(fakeEventData)).isTrue()
-        assertThat(request.body.containsSubsequence(metadata)).isFalse()
+        val parts = request.parts()
+        assertThat(parts.keys).containsExactly(EVENT_DISPOSITION, PERFETTO_DISPOSITION, RUM_EVENTS_DISPOSITION)
+        assertThat(parts.getValue(EVENT_DISPOSITION)).isEqualTo(fakeEventData)
+        assertThat(parts.getValue(PERFETTO_DISPOSITION)).isEqualTo(fakePerfettoBytes)
+        assertThat(parts.getValue(RUM_EVENTS_DISPOSITION)).isEqualTo(fakeRumEventsBytes)
     }
 
     @Test
@@ -182,10 +183,10 @@ class ProfilingRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, null)
 
         // Then
-        assertThat(request.body.containsSubsequence(corruptMetadata)).isTrue()
-        assertThat(request.body.containsSubsequence(fakeEventData)).isTrue()
-        assertThat(request.body.containsSubsequence("perfetto.proto".toByteArray())).isTrue()
-        assertThat(request.body.containsSubsequence("rum-mobile-events.json".toByteArray())).isFalse()
+        val parts = request.parts()
+        assertThat(parts.keys).containsExactly(EVENT_DISPOSITION, PERFETTO_DISPOSITION)
+        assertThat(parts.getValue(EVENT_DISPOSITION)).isEqualTo(fakeEventData)
+        assertThat(parts.getValue(PERFETTO_DISPOSITION)).isEqualTo(corruptMetadata)
     }
 
     @Test
@@ -229,6 +230,20 @@ class ProfilingRequestFactoryTest {
         assertThat(request.body.containsSubsequence(extraEvent.data)).isFalse()
     }
 
+    private fun Request.parts(): Map<String, ByteArray> {
+        val contentType = checkNotNull(contentType) { "Missing request content type" }
+        val boundary = contentType.substringAfter("boundary=")
+        val parts = linkedMapOf<String, ByteArray>()
+        MultipartReader(Buffer().write(body), boundary).use { reader ->
+            while (true) {
+                val part = reader.nextPart() ?: break
+                val disposition = checkNotNull(part.headers["Content-Disposition"]) { "Missing Content-Disposition" }
+                parts[disposition] = part.body.readByteArray()
+            }
+        }
+        return parts
+    }
+
     @Suppress("ReturnCount")
     private fun ByteArray.containsSubsequence(needle: ByteArray): Boolean {
         if (needle.isEmpty()) return true
@@ -240,5 +255,12 @@ class ProfilingRequestFactoryTest {
             return true
         }
         return false
+    }
+
+    companion object {
+        private const val EVENT_DISPOSITION = "form-data; name=\"event\"; filename=\"event.json\""
+        private const val PERFETTO_DISPOSITION = "form-data; name=\"perfetto.proto\"; filename=\"perfetto.proto\""
+        private const val RUM_EVENTS_DISPOSITION =
+            "form-data; name=\"rum-mobile-events.json\"; filename=\"rum-mobile-events.json\""
     }
 }

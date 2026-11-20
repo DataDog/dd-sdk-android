@@ -89,6 +89,9 @@ datadog:
       - "java.io.File.readBytes():java.io.FileNotFoundException,java.lang.SecurityException"
       - "java.io.File.readLines(java.nio.charset.Charset):java.io.FileNotFoundException,java.io.IOException,java.lang.SecurityException"
       - "java.io.File.readText(java.nio.charset.Charset):java.io.FileNotFoundException,java.io.IOException,java.lang.SecurityException"
+      - "java.io.FileInputStream.constructor(java.io.File?):java.io.FileNotFoundException,java.lang.SecurityException"
+      - "java.io.FileInputStream.constructor(kotlin.String?):java.io.FileNotFoundException,java.lang.SecurityException"
+      - "java.io.FileInputStream.copyTo(java.io.OutputStream, kotlin.Int):java.io.IOException"
       - "java.io.FileInputStream.read(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.io.IOException"
       - "java.io.FileInputStream.use(kotlin.Function1):java.io.IOException"
       - "java.io.FileOutputStream.use(kotlin.Function1):java.io.IOException"
@@ -296,4 +299,8 @@ datadog:
       # region SQLDelight
       - "com.squareup.sqldelight.transaction(kotlin.Boolean, kotlin.Function1):java.lang.IllegalStateException"
       - "com.squareup.sqldelight.transactionWithResult(kotlin.Boolean, kotlin.Function1):java.lang.IllegalStateException"
+      # endregion
+      # region zstd-jni
+      - "com.github.luben.zstd.ZstdOutputStream.constructor(java.io.OutputStream?, kotlin.Int):java.io.IOException,com.github.luben.zstd.ZstdException,java.lang.IllegalStateException,java.lang.UnsatisfiedLinkError"
+      - "com.github.luben.zstd.ZstdOutputStream.use(kotlin.Function1):java.io.IOException,com.github.luben.zstd.ZstdException"
       # endregion

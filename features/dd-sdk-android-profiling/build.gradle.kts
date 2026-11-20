@@ -44,6 +44,10 @@ plugins {
 android {
     namespace = "com.datadog.android.profiling"
 
+    defaultConfig {
+        consumerProguardFiles("consumer-rules.pro")
+    }
+
     testFixtures {
         enable = true
     }
@@ -56,6 +60,9 @@ dependencies {
     implementation(libs.androidXCore)
     implementation(libs.gson)
     implementation(libs.okHttp)
+    implementation(libs.zstdJni) {
+        artifact { type = "aar" }
+    }
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
@@ -69,6 +76,8 @@ dependencies {
         }
     }
 
+    // Plain jar bundles host natives so JVM unit tests can run zstd
+    testImplementation(libs.zstdJni)
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     unmock(libs.robolectric)

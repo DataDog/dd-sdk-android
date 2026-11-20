@@ -17,6 +17,7 @@ androidx.profileinstaller:profileinstaller:1.3.0 (minCompileSdk=33)             
 androidx.startup:startup-runtime:1.1.1 (minCompileSdk=31)                            |    18 Kb | runtime
 androidx.tracing:tracing:1.2.0 (minCompileSdk=33)                                    |     5 Kb | runtime
 androidx.versionedparcelable:versionedparcelable:1.1.1                               |    30 Kb | both
+com.github.luben:zstd-jni:1.5.7-12                                                   |  1137 Kb | both
 com.google.code.gson:gson:2.10.1                                                     |   276 Kb | both
 com.google.guava:listenablefuture:1.0                                                |     3 Kb | runtime
 com.squareup.okhttp3:okhttp:4.12.1                                                   |   773 Kb | both
@@ -28,5 +29,5 @@ org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4                          
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.4                              |  1442 Kb | both
 org.jetbrains:annotations:13.0                                                       |    17 Kb | both
 
-Total compile dependency artifact size: 5 Mb
-Total runtime dependency artifact size: 6 Mb
+Total compile dependency artifact size: 7 Mb
+Total runtime dependency artifact size: 7 Mb
