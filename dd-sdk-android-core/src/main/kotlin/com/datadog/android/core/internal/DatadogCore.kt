@@ -65,6 +65,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
 
 /**
  * Internal implementation of the [SdkCore] interface.
@@ -110,6 +111,9 @@ internal class DatadogCore(
     @Suppress("UnsafeThirdPartyFunctionCall") // the argument is always empty
     internal val featureContextUpdateReceivers: MutableSet<FeatureContextUpdateReceiver> =
         Collections.newSetFromMap(ConcurrentHashMap())
+
+    // Guards the core context (user and account id) snapshot against receiver registration.
+    private val coreContextLock = ReentrantLock()
 
     // region SdkCore
 
@@ -182,6 +186,7 @@ internal class DatadogCore(
         val extraInfoSnapshot = extraInfo.toMap()
         coreFeature.contextExecutorService.executeSafe("DatadogCore.setUserInfo", internalLogger) {
             coreFeature.userInfoProvider.setUserInfo(id, name, email, extraInfoSnapshot)
+            notifyCoreContextUpdate()
         }
     }
 
@@ -199,6 +204,7 @@ internal class DatadogCore(
     override fun clearUserInfo() {
         coreFeature.contextExecutorService.executeSafe("DatadogCore.clearUserInfo", internalLogger) {
             coreFeature.userInfoProvider.clearUserInfo()
+            notifyCoreContextUpdate()
         }
     }
 
@@ -224,6 +230,7 @@ internal class DatadogCore(
         val extraInfoSnapshot = extraInfo.toMap()
         coreFeature.contextExecutorService.executeSafe("DatadogCore.setAccountInfo", internalLogger) {
             coreFeature.accountInfoProvider.setAccountInfo(id, name, extraInfoSnapshot)
+            notifyCoreContextUpdate()
         }
     }
 
@@ -239,6 +246,7 @@ internal class DatadogCore(
     override fun clearAccountInfo() {
         coreFeature.contextExecutorService.executeSafe("DatadogCore.clearAccountInfo", internalLogger) {
             coreFeature.accountInfoProvider.clearAccountInfo()
+            notifyCoreContextUpdate()
         }
     }
 
@@ -334,7 +342,32 @@ internal class DatadogCore(
                 listener.onContextUpdate(it.key, currentContext)
             }
         }
-        featureContextUpdateReceivers.add(listener)
+        coreContextLock.safeWithLock(internalLogger) {
+            val currentCoreContext = buildCoreContext()
+            if (currentCoreContext.isNotEmpty()) {
+                listener.onContextUpdate(CORE_CONTEXT_NAME, currentCoreContext)
+            }
+            featureContextUpdateReceivers.add(listener)
+        }
+    }
+
+    // Must be called on the context thread, after the user or account info provider has been mutated.
+    private fun notifyCoreContextUpdate() {
+        coreContextLock.safeWithLock(internalLogger) {
+            val coreContext = buildCoreContext()
+            featureContextUpdateReceivers.forEach {
+                it.onContextUpdate(CORE_CONTEXT_NAME, coreContext)
+            }
+        }
+    }
+
+    private fun buildCoreContext(): Map<String, Any?> {
+        val userId = coreFeature.userInfoProvider.getUserInfo().id
+        val accountId = coreFeature.accountInfoProvider.getAccountInfo()?.id
+        return buildMap {
+            if (userId != null) put(CORE_CONTEXT_USER_ID_KEY, userId)
+            if (accountId != null) put(CORE_CONTEXT_ACCOUNT_ID_KEY, accountId)
+        }
     }
 
     override fun removeContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
@@ -760,6 +793,13 @@ internal class DatadogCore(
 
     companion object {
         internal const val SHUTDOWN_THREAD_NAME = "datadog_shutdown"
+
+        // Name and keys of the context entry that core publishes to FeatureContextUpdateReceiver
+        // whenever the user or account id changes. It is not a registered feature. Absent keys
+        // mean the value is not set.
+        internal const val CORE_CONTEXT_NAME = "core"
+        internal const val CORE_CONTEXT_USER_ID_KEY = "user_id"
+        internal const val CORE_CONTEXT_ACCOUNT_ID_KEY = "account_id"
 
         internal const val ENV_NAME_VALIDATION_REG_EX = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"
         internal const val MESSAGE_ENV_NAME_NOT_VALID =

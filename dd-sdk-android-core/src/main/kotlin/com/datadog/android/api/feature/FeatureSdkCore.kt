@@ -97,6 +97,10 @@ interface FeatureSdkCore : SdkCore {
      * Sets feature context update listener. Once subscribed, current context will be emitted
      * immediately if it exists.
      *
+     * Besides feature contexts, the listener receives updates under the `"core"` name, which is not a
+     * registered feature, whenever the user or account id changes. The context holds `"user_id"` and
+     * `"account_id"` entries, each absent when not set.
+     *
      * @param listener Listener to remove.
      */
     fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver)
