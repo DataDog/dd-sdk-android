@@ -40,7 +40,9 @@ import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryI
  *
  * **Threading**: [install] and the [RumAppStartupDetector.Listener] callbacks run on the main
  * thread. [attach] runs on whichever thread [Rum.enable] was called on, the same as the detector
- * creation on the native path.
+ * creation on the native path. The listeners and the buffered launch are guarded by a single
+ * lock, and events are forwarded while holding it, so that each listener receives every event of
+ * a launch exactly once and in order, whichever thread it attached from.
  */
 object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
 
@@ -55,6 +57,9 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
         ) : Event()
     }
 
+    private val lock = Any()
+
+    @Volatile
     private var detectorImpl: RumAppStartupDetector? = null
     private val listeners = mutableListOf<RumAppStartupDetector.Listener>()
 
@@ -71,8 +76,8 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
     /** `true` if [install] has been called. */
     val isInstalled: Boolean get() = detectorImpl != null
 
-    /** Number of listeners currently attached. Must be read on the main thread. */
-    val attachedListenerCount: Int get() = listeners.size
+    /** Number of listeners currently attached. */
+    val attachedListenerCount: Int get() = synchronized(lock) { listeners.size }
 
     /**
      * Installs the detector into [application].
@@ -125,8 +130,10 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
      * @param listener The listener to receive startup events.
      */
     fun attach(listener: RumAppStartupDetector.Listener) {
-        listeners.add(listener)
-        pendingEvents.toList().forEach { forward(listener, it) }
+        synchronized(lock) {
+            listeners.add(listener)
+            pendingEvents.forEach { forward(listener, it) }
+        }
     }
 
     /**
@@ -143,18 +150,18 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
      * AppStart now would leave the next core to enable RUM replaying a TTID with no AppStart to be
      * indexed against.
      *
-     * Must be called on the main thread.
-     *
      * @param listener The listener to remove.
      */
     fun detach(listener: RumAppStartupDetector.Listener) {
-        listeners.removeAll { it === listener }
-        // The buffer holds one launch at a time, so the presence of a TTID means this one is
-        // complete and every attached listener has already had the whole of it.
-        val isLaunchInFlight = pendingEvents.isNotEmpty() &&
-            pendingEvents.none { it is Event.TTIDComputed }
-        if (listeners.isEmpty() && !isLaunchInFlight) {
-            pendingEvents.clear()
+        synchronized(lock) {
+            listeners.removeAll { it === listener }
+            // The buffer holds one launch at a time, so the presence of a TTID means this one is
+            // complete and every attached listener has already had the whole of it.
+            val isLaunchInFlight = pendingEvents.isNotEmpty() &&
+                pendingEvents.none { it is Event.TTIDComputed }
+            if (listeners.isEmpty() && !isLaunchInFlight) {
+                pendingEvents.clear()
+            }
         }
     }
 
@@ -183,10 +190,12 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
      *
      * The event is buffered whether or not anyone is listening: a core that enables RUM in the
      * middle of a launch — after its AppStart, before its TTID — still needs the launch as a whole.
+     *
+     * Must be called while holding [lock].
      */
     private fun dispatch(event: Event) {
         pendingEvents.add(event)
-        listeners.toList().forEach { forward(it, event) }
+        listeners.forEach { forward(it, event) }
     }
 
     // region RumAppStartupDetector.Listener
@@ -194,8 +203,10 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
     override fun onAppStartupDetected(scenario: RumStartupScenario) {
         // A new launch supersedes the previous one: only the most recent is worth replaying, and
         // this keeps the buffer bounded over the lifetime of the process.
-        pendingEvents.clear()
-        dispatch(Event.AppStartupDetected(scenario))
+        synchronized(lock) {
+            pendingEvents.clear()
+            dispatch(Event.AppStartupDetected(scenario))
+        }
     }
 
     override fun onTTIDComputed(
@@ -203,7 +214,9 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
         durationNs: Long,
         wasForwarded: Boolean
     ) {
-        dispatch(Event.TTIDComputed(scenario, durationNs, wasForwarded))
+        synchronized(lock) {
+            dispatch(Event.TTIDComputed(scenario, durationNs, wasForwarded))
+        }
     }
 
     // endregion
