@@ -143,7 +143,8 @@ object _TraceInternalProxy {
     }
 
     private fun isUserAnonymousIdMember(member: String): Boolean {
-        val key = member.substringBefore('=').substringBefore(';').trim()
+        // Decoded like Baggage.from does, so an encoded key can't bypass the removal.
+        val key = Baggage.urlDecode(member.substringBefore('=').substringBefore(';').trim())
         return key == HttpCodec.BAGGAGE_USER_ANONYMOUS_ID
     }
 

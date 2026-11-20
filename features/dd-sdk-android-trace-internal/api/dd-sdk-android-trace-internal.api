@@ -3094,6 +3094,7 @@ public final class com/datadog/trace/core/propagation/Baggage {
 	public fun mergeWith (Lcom/datadog/trace/core/propagation/Baggage;)Lcom/datadog/trace/core/propagation/Baggage;
 	public fun put (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/trace/core/propagation/Baggage;
 	public fun toString ()Ljava/lang/String;
+	public static fun urlDecode (Ljava/lang/String;)Ljava/lang/String;
 }
 
 public abstract class com/datadog/trace/core/propagation/ContextInterpreter : com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$KeyClassifier {

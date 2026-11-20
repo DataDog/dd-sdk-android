@@ -98,7 +98,8 @@ public final class Baggage {
         return baggage;
     }
 
-    private static String urlDecode(final String value) {
+    @NonNull
+    public static String urlDecode(@NonNull final String value) {
         String decoded = value;
         try {
             // Suppressing decode(String s, Charset charset) because it requires minSdk = 33.
