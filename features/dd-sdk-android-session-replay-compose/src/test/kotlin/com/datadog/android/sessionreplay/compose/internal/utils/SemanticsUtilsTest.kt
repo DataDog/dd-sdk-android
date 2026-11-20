@@ -1480,14 +1480,12 @@ internal class SemanticsUtilsTest {
         // Given
         val mockVectorPainter = mock<VectorPainter>()
         val mockBitmap = mock<Bitmap>()
-        val mockCopiedBitmap = mock<Bitmap>()
         val fakeContentScale = ContentScale.Crop
         val fakeAlignment = Alignment.TopStart
         whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
         whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
         whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn fakeContentScale
         whenever(mockReflectionUtils.getAlignment(mockSemanticsNode)) doReturn fakeAlignment
-        whenever(mockBitmap.copy(any(), any())) doReturn mockCopiedBitmap
 
         // When
         val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode, mockInternalLogger)
@@ -1495,12 +1493,13 @@ internal class SemanticsUtilsTest {
         // Then
         assertThat(result).isEqualTo(
             BitmapInfo(
-                bitmap = mockCopiedBitmap,
+                bitmap = mockBitmap,
                 isContextualImage = false,
                 contentScale = fakeContentScale,
                 alignment = fakeAlignment
             )
         )
+        verify(mockBitmap, never()).copy(any(), any())
     }
 
     @Test
@@ -1508,7 +1507,6 @@ internal class SemanticsUtilsTest {
         // Given
         val mockBitmapPainter = mock<BitmapPainter>()
         val mockBitmap = mock<Bitmap>()
-        val mockCopiedBitmap = mock<Bitmap>()
         val fakeContentScale = ContentScale.FillWidth
         val fakeAlignment = Alignment.BottomEnd
         whenever(mockReflectionUtils.getAsyncImagePainter(mockSemanticsNode)) doReturn mockBitmapPainter
@@ -1516,7 +1514,6 @@ internal class SemanticsUtilsTest {
         whenever(mockReflectionUtils.isAsyncImagePainter(mockBitmapPainter)) doReturn false
         whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn fakeContentScale
         whenever(mockReflectionUtils.getAlignment(mockSemanticsNode)) doReturn fakeAlignment
-        whenever(mockBitmap.copy(any(), any())) doReturn mockCopiedBitmap
 
         // When
         val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode, mockInternalLogger)
@@ -1524,12 +1521,13 @@ internal class SemanticsUtilsTest {
         // Then
         assertThat(result).isEqualTo(
             BitmapInfo(
-                bitmap = mockCopiedBitmap,
+                bitmap = mockBitmap,
                 isContextualImage = true,
                 contentScale = fakeContentScale,
                 alignment = fakeAlignment
             )
         )
+        verify(mockBitmap, never()).copy(any(), any())
     }
 
     @Test
@@ -1560,11 +1558,10 @@ internal class SemanticsUtilsTest {
     }
 
     @Test
-    fun `M return copied bitmap W resolveSemanticsPainter { HARDWARE bitmap }`() {
+    fun `M return the bitmap without copying W resolveSemanticsPainter { HARDWARE bitmap }`() {
         // Given
         val mockVectorPainter = mock<VectorPainter>()
         val mockBitmap = mock<Bitmap>()
-        val mockCopiedBitmap = mock<Bitmap>()
         val fakeContentScale = ContentScale.Fit
         val fakeAlignment = Alignment.Center
         whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
@@ -1572,7 +1569,6 @@ internal class SemanticsUtilsTest {
         whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn fakeContentScale
         whenever(mockReflectionUtils.getAlignment(mockSemanticsNode)) doReturn fakeAlignment
         whenever(mockBitmap.config) doReturn Bitmap.Config.HARDWARE
-        whenever(mockBitmap.copy(Bitmap.Config.ARGB_8888, false)) doReturn mockCopiedBitmap
 
         // When
         val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode, mockInternalLogger)
@@ -1580,29 +1576,13 @@ internal class SemanticsUtilsTest {
         // Then
         assertThat(result).isEqualTo(
             BitmapInfo(
-                bitmap = mockCopiedBitmap,
+                bitmap = mockBitmap,
                 isContextualImage = false,
                 contentScale = fakeContentScale,
                 alignment = fakeAlignment
             )
         )
-    }
-
-    @Test
-    fun `M return null W resolveSemanticsPainter { bitmap copy fails }`() {
-        // Given
-        val mockVectorPainter = mock<VectorPainter>()
-        val mockBitmap = mock<Bitmap>()
-        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn mockVectorPainter
-        whenever(mockReflectionUtils.getBitmapInVectorPainter(mockVectorPainter)) doReturn mockBitmap
-        whenever(mockBitmap.config) doReturn Bitmap.Config.ARGB_8888
-        whenever(mockBitmap.copy(any(), any())) doReturn null
-
-        // When
-        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode, mockInternalLogger)
-
-        // Then
-        assertThat(result).isNull()
+        verify(mockBitmap, never()).copy(any(), any())
     }
 
     @ParameterizedTest(name = "{index} (overflowValue: {0}, expectedMode: {1})")

@@ -8,7 +8,9 @@ package com.datadog.android.sessionreplay.recorder.wrappers
 
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
+import android.os.Build
 import android.util.DisplayMetrics
+import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.lint.InternalApi
 
@@ -86,8 +88,36 @@ class BitmapWrapper(
         }
     }
 
+    // Creates a bitmap of its own on the buffer of a hardware bitmap, without copying pixels, so it stays readable
+    // after the source bitmap is recycled. The buffer object is not closed: the source bitmap caches it, and it is the
+    // application's own object when the application created the bitmap with Bitmap.wrapHardwareBuffer.
+    @RequiresApi(Build.VERSION_CODES.S)
+    internal fun wrapHardwareBuffer(bitmap: Bitmap): Bitmap? {
+        return try {
+            Bitmap.wrapHardwareBuffer(bitmap.hardwareBuffer, bitmap.colorSpace)
+        } catch (e: IllegalStateException) {
+            // The source bitmap was recycled.
+            logWrapFailure(e)
+            null
+        } catch (e: IllegalArgumentException) {
+            logWrapFailure(e)
+            null
+        }
+    }
+
+    private fun logWrapFailure(error: RuntimeException) {
+        logger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.MAINTAINER,
+            messageBuilder = { FAILED_TO_WRAP_HARDWARE_BUFFER },
+            throwable = error,
+            onlyOnce = true
+        )
+    }
+
     private companion object {
         private const val FAILED_TO_CREATE_BITMAP = "Failed to create bitmap"
         private const val FAILED_TO_CREATE_SCALED_BITMAP = "Failed to create scaled bitmap"
+        private const val FAILED_TO_WRAP_HARDWARE_BUFFER = "Failed to wrap the buffer of a hardware bitmap"
     }
 }

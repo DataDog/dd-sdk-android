@@ -25,6 +25,9 @@ import org.mockito.Mock
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -94,6 +97,56 @@ internal class BitmapCachesManagerTest {
         // Then
         verify(mockApplicationContext).registerComponentCallbacks(mockComponentCallbacksCache)
         verify(mockApplicationContext).registerComponentCallbacks(mockBitmapPool)
+    }
+
+    @Test
+    fun `M unregister both caches W unregisterCallbacks() { registered }`() {
+        // Given
+        val mockComponentCallbacksCache = mock(ResourcesLRUCache::class.java)
+        testedCachesManager = createBitmapCachesManager(
+            bitmapPool = mockBitmapPool,
+            resourcesLRUCache = mockComponentCallbacksCache,
+            keyGenerator = mockKeyGenerator,
+            logger = mockLogger
+        )
+        testedCachesManager.registerCallbacks(mockApplicationContext)
+
+        // When
+        testedCachesManager.unregisterCallbacks(mockApplicationContext)
+
+        // Then
+        verify(mockApplicationContext).unregisterComponentCallbacks(mockComponentCallbacksCache)
+        verify(mockApplicationContext).unregisterComponentCallbacks(mockBitmapPool)
+    }
+
+    @Test
+    fun `M register again W registerCallbacks() { after unregisterCallbacks }`() {
+        // Given
+        val mockComponentCallbacksCache = mock(ResourcesLRUCache::class.java)
+        testedCachesManager = createBitmapCachesManager(
+            bitmapPool = mockBitmapPool,
+            resourcesLRUCache = mockComponentCallbacksCache,
+            keyGenerator = mockKeyGenerator,
+            logger = mockLogger
+        )
+        testedCachesManager.registerCallbacks(mockApplicationContext)
+        testedCachesManager.unregisterCallbacks(mockApplicationContext)
+
+        // When
+        testedCachesManager.registerCallbacks(mockApplicationContext)
+
+        // Then
+        verify(mockApplicationContext, times(2)).registerComponentCallbacks(mockComponentCallbacksCache)
+        verify(mockApplicationContext, times(2)).registerComponentCallbacks(mockBitmapPool)
+    }
+
+    @Test
+    fun `M not unregister W unregisterCallbacks() { never registered }`() {
+        // When
+        testedCachesManager.unregisterCallbacks(mockApplicationContext)
+
+        // Then
+        verify(mockApplicationContext, never()).unregisterComponentCallbacks(any())
     }
 
     @Test

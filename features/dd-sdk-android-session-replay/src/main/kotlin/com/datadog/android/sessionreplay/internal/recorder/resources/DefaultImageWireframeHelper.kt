@@ -232,17 +232,6 @@ internal class DefaultImageWireframeHelper(
         }
 
         val displayMetrics = resources.displayMetrics
-        val applicationContext = view.context.applicationContext
-
-        if (applicationContext == null) {
-            logger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.TELEMETRY,
-                { APPLICATION_CONTEXT_NULL_ERROR.format(Locale.US, view.javaClass.canonicalName) }
-            )
-
-            return null
-        }
 
         val density = displayMetrics.density
         val drawableWidthDp = drawableProperties.drawableWidth.densityNormalized(density).toLong()
@@ -290,7 +279,6 @@ internal class DefaultImageWireframeHelper(
 
         resourceResolver.resolveResourceIdFromDrawable(
             resources = resources,
-            applicationContext = applicationContext,
             displayMetrics = displayMetrics,
             originalDrawable = drawableProperties.drawable,
             drawableCopier = drawableCopier,
@@ -503,9 +491,6 @@ internal class DefaultImageWireframeHelper(
 
         @VisibleForTesting
         internal const val MASK_ALL_CONTENT_LABEL = "Image"
-
-        @VisibleForTesting
-        internal const val APPLICATION_CONTEXT_NULL_ERROR = "Application context is null for view %s"
 
         @VisibleForTesting
         internal const val RESOURCES_NULL_ERROR = "Resources is null for view %s"

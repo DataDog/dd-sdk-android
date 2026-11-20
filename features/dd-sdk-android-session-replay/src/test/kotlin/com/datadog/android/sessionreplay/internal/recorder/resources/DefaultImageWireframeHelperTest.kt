@@ -23,7 +23,6 @@ import com.datadog.android.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
-import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper.Companion.APPLICATION_CONTEXT_NULL_ERROR
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper.Companion.RESOURCES_NULL_ERROR
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -335,7 +334,6 @@ internal class DefaultImageWireframeHelperTest {
         whenever(
             mockResourceResolver.resolveResourceIdFromDrawable(
                 resources = any(),
-                applicationContext = any(),
                 displayMetrics = any(),
                 originalDrawable = any(),
                 drawableCopier = any(),
@@ -345,7 +343,7 @@ internal class DefaultImageWireframeHelperTest {
                 resourceResolverCallback = any()
             )
         ).thenAnswer {
-            val callback = it.getArgument<ResourceResolverCallback>(8)
+            val callback = it.getArgument<ResourceResolverCallback>(7)
             callback.onFailure()
         }
 
@@ -403,7 +401,6 @@ internal class DefaultImageWireframeHelperTest {
         // Then
         verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
-            applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
             drawableCopier = any(),
@@ -496,62 +493,6 @@ internal class DefaultImageWireframeHelperTest {
 
         // Then
         assertThat(wireframe).isInstanceOf(MobileSegment.Wireframe.PlaceholderWireframe::class.java)
-    }
-
-    @Test
-    fun `M return null W createImageWireframeByDrawable() { application context is null }`() {
-        // Given
-        whenever(mockView.context.applicationContext).thenReturn(null)
-
-        // When
-        val wireframe = testedHelper.createImageWireframeByDrawable(
-            view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 100,
-            height = 100,
-            drawable = mockDrawable,
-            shapeStyle = null,
-            border = null,
-            usePIIPlaceholder = true,
-            customResourceIdCacheKey = null,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        assertThat(wireframe).isNull()
-    }
-
-    @Test
-    fun `M send telemetry W createImageWireframeByDrawable { application context is null }`() {
-        // Given
-        whenever(mockView.context.applicationContext).thenReturn(null)
-
-        // When
-        testedHelper.createImageWireframeByDrawable(
-            view = mockView,
-            imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
-            currentWireframeIndex = 0,
-            x = 0,
-            y = 0,
-            width = 100,
-            height = 100,
-            drawable = mockDrawable,
-            shapeStyle = null,
-            border = null,
-            usePIIPlaceholder = true,
-            customResourceIdCacheKey = null,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
-        )
-
-        // Then
-        mockLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.TELEMETRY,
-            APPLICATION_CONTEXT_NULL_ERROR.format(Locale.US, "android.view.View")
-        )
     }
 
     @Test
@@ -670,7 +611,6 @@ internal class DefaultImageWireframeHelperTest {
         whenever(
             mockResourceResolver.resolveResourceIdFromDrawable(
                 resources = any(),
-                applicationContext = any(),
                 displayMetrics = any(),
                 originalDrawable = any(),
                 drawableCopier = any(),
@@ -680,7 +620,7 @@ internal class DefaultImageWireframeHelperTest {
                 resourceResolverCallback = any()
             )
         ).thenAnswer {
-            val callback = it.getArgument<ResourceResolverCallback>(8)
+            val callback = it.getArgument<ResourceResolverCallback>(7)
             callback.onSuccess(fakeResourceId)
         }
 
@@ -718,7 +658,6 @@ internal class DefaultImageWireframeHelperTest {
         // Then
         verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
-            applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
             drawableCopier = any(),
@@ -910,7 +849,6 @@ internal class DefaultImageWireframeHelperTest {
 
         verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
-            applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
             drawableCopier = any(),
@@ -958,7 +896,6 @@ internal class DefaultImageWireframeHelperTest {
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
         verify(mockResourceResolver, times(2)).resolveResourceIdFromDrawable(
             resources = any(),
-            applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
             drawableCopier = any(),
@@ -1031,7 +968,6 @@ internal class DefaultImageWireframeHelperTest {
         val captor = argumentCaptor<Int>()
         verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
-            applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
             drawableCopier = any(),
@@ -1066,7 +1002,6 @@ internal class DefaultImageWireframeHelperTest {
         val captor = argumentCaptor<Int>()
         verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
-            applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
             drawableCopier = any(),
@@ -1152,7 +1087,6 @@ internal class DefaultImageWireframeHelperTest {
         // Then
         verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
-            applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
             drawableCopier = any(),
@@ -1227,7 +1161,6 @@ internal class DefaultImageWireframeHelperTest {
             // Then
             verify(mockResourceResolver).resolveResourceIdFromDrawable(
                 resources = any(),
-                applicationContext = any(),
                 displayMetrics = any(),
                 originalDrawable = any(),
                 drawableCopier = any(),
@@ -1291,7 +1224,6 @@ internal class DefaultImageWireframeHelperTest {
 
         verify(mockResourceResolver).resolveResourceIdFromDrawable(
             resources = any(),
-            applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
             drawableCopier = any(),
@@ -1339,7 +1271,6 @@ internal class DefaultImageWireframeHelperTest {
         val argumentCaptor = argumentCaptor<ResourceResolverCallback>()
         verify(mockResourceResolver, times(2)).resolveResourceIdFromDrawable(
             resources = any(),
-            applicationContext = any(),
             displayMetrics = any(),
             originalDrawable = any(),
             drawableCopier = any(),
