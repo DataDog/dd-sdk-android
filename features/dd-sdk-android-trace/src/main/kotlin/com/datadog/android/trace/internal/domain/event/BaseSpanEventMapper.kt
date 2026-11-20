@@ -19,6 +19,7 @@ internal abstract class BaseSpanEventMapper<T : Any> : ContextAwareMapper<T, Spa
         id = userInfo.id,
         name = userInfo.name,
         email = userInfo.email,
+        anonymousId = userInfo.anonymousId,
         additionalProperties = userInfo.additionalProperties.toMutableMap()
     )
 

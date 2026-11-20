@@ -184,6 +184,11 @@
               "type": "string",
               "description": "Email of the user",
               "readOnly": true
+            },
+            "anonymous_id": {
+              "type": "string",
+              "description": "An anonymous identifier of the user across sessions",
+              "readOnly": true
             }
           },
           "additionalProperties": {

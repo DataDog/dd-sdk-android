@@ -8,8 +8,10 @@ package com.datadog.android.trace.internal
 
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.trace.core.propagation.HttpCodec
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -23,6 +25,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -100,5 +103,110 @@ internal class TraceInternalProxyTest {
         val sdkTracer: DatadogTracer = mock<DatadogTracerAdapter>()
 
         assertThat(_TraceInternalProxy.isDefaultTracer(sdkTracer)).isTrue()
+    }
+
+    @Test
+    fun `M remove anonymous id members W removeRetainedUserAnonymousIdBaggage() {no anonymous id tag}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            listOf("user.id=user+id;prop=value,user.anonymous_id=old", " user.anonymous_id ;p=1 ,custom=")
+        )
+
+        // Then
+        assertThat(result).containsExactly("user.id=user+id;prop=value", "custom=")
+    }
+
+    @Test
+    fun `M remove anonymous id W removeRetainedUserAnonymousIdBaggage() {empty values}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            listOf("custom=,user.anonymous_id=old")
+        )
+
+        // Then
+        assertThat(result).containsExactly("custom=")
+    }
+
+    @Test
+    fun `M remove anonymous id W removeRetainedUserAnonymousIdBaggage() {malformed members}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            listOf("not a member,,=x,user.anonymous_id=old,k=%zz")
+        )
+
+        // Then
+        assertThat(result).containsExactly("not a member,,=x,k=%zz")
+    }
+
+    @Test
+    fun `M remove anonymous id W removeRetainedUserAnonymousIdBaggage() {percent-encoded key}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            listOf("user%2Eanonymous%5Fid=old,user.id=user%2Bid", "user%2eanonymous_id=old2")
+        )
+
+        // Then
+        assertThat(result).containsExactly("user.id=user%2Bid")
+    }
+
+    @Test
+    fun `M drop emptied values W removeRetainedUserAnonymousIdBaggage() {only anonymous id}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            listOf("user.anonymous_id=old", "first=one")
+        )
+
+        // Then
+        assertThat(result).containsExactly("first=one")
+    }
+
+    @Test
+    fun `M return null W removeRetainedUserAnonymousIdBaggage() {anonymous id tag set}`(
+        @StringForgery fakeAnonymousId: String
+    ) {
+        // Given
+        val span = mock<DatadogSpan>()
+        whenever(span.getTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID)).thenReturn(fakeAnonymousId)
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, listOf("user.anonymous_id=old"))
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W removeRetainedUserAnonymousIdBaggage() {no anonymous id member}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            listOf("user.id=userId,user.anonymous_idx=other")
+        )
+
+        // Then
+        assertThat(result).isNull()
     }
 }

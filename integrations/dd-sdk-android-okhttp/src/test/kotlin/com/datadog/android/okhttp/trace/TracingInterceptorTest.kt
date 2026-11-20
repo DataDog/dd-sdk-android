@@ -1736,6 +1736,150 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `M remove retained anonymous id from BAGGAGE W intercept { retry, no anonymous id tag }`(
+        @StringForgery existingBaggageValue: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader(BAGGAGE_HEADER, "user.anonymous_id=anonymousId,custom=$existingBaggageValue")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER)).containsExactly("custom=$existingBaggageValue")
+        }
+    }
+
+    @Test
+    fun `M remove BAGGAGE W intercept { retry, only anonymous id retained, not sampled }`() {
+        // Given
+        fakeRequest = forgeRequest { it.addHeader(BAGGAGE_HEADER, "user.anonymous_id=anonymousId") }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER)).isEmpty()
+        }
+    }
+
+    @Test
+    fun `M keep retained anonymous id in BAGGAGE W intercept { retry, anonymous id tag set }`(
+        @StringForgery fakeAnonymousId: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest { it.addHeader(BAGGAGE_HEADER, "user.anonymous_id=anonymousId") }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockSpan.getTag(USER_ANONYMOUS_ID_TAG)).thenReturn(fakeAnonymousId)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER)).containsExactly("user.anonymous_id=anonymousId")
+        }
+    }
+
+    @Test
+    fun `M scrub anonymous id from all BAGGAGE headers W intercept { retry, sampled }`() {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader(BAGGAGE_HEADER, "first=one,user.anonymous_id=anonymousId")
+            it.addHeader(BAGGAGE_HEADER, "second=two")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            val baggage = firstValue.headers(BAGGAGE_HEADER).flatMap { it.split(",") }
+            assertThat(baggage).containsExactlyInAnyOrder("first=one", "second=two")
+        }
+    }
+
+    @Test
+    fun `M scrub anonymous id from all BAGGAGE headers W intercept { retry, sampled out, TRACECONTEXT }`() {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader(BAGGAGE_HEADER, "first=one")
+            it.addHeader(BAGGAGE_HEADER, "user.anonymous_id=anonymousId,second=two")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl()))
+            .thenReturn(setOf(TracingHeaderType.TRACECONTEXT))
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            val baggage = firstValue.headers(BAGGAGE_HEADER).flatMap { it.split(",") }
+            assertThat(baggage).containsExactlyInAnyOrder("first=one", "second=two")
+        }
+    }
+
+    @Test
+    fun `M keep other BAGGAGE members unchanged W intercept { retry, empty value, plus, properties }`() {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader("Baggage", "custom=,user.id=user+id;prop=value,user.anonymous_id=old")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER)).containsExactly("custom=,user.id=user+id;prop=value")
+        }
+    }
+
+    @Test
+    fun `M remove encoded anonymous id before merging BAGGAGE W intercept { retry, new baggage injected }`() {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader(BAGGAGE_HEADER, "user%2Eanonymous_id=old,custom=a+b;p=v")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        mockPropagation.wheneverInjectThenValueToHeaders(BAGGAGE_HEADER, "user.id=userId")
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            val baggage = firstValue.headers(BAGGAGE_HEADER).joinToString(",")
+            assertThat(baggage).doesNotContain("anonymous").contains("user.id=userId")
+        }
+    }
+
+    @Test
     fun `M keep existing BAGGAGE W intercept { new values != existing values }`(
         @StringForgery existingBaggageKey: String,
         @StringForgery existingBaggageValue: String,
@@ -2080,6 +2224,7 @@ internal open class TracingInterceptorTest {
         val rumMonitor = GlobalRumMonitorTestConfiguration(datadogCore)
 
         private const val BAGGAGE_HEADER = "baggage"
+        private const val USER_ANONYMOUS_ID_TAG = "user_anonymous_id"
 
         @TestConfigurationsProvider
         @JvmStatic

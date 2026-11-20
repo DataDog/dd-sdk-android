@@ -14,6 +14,7 @@ import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.trace.core.propagation.Baggage
+import com.datadog.trace.core.propagation.HttpCodec
 
 /**
  * For library usage only.
@@ -114,6 +115,40 @@ object _TraceInternalProxy {
             .mergeWith(Baggage.from(newHeader))
             .toString()
     }
+
+    /**
+     * Removes user anonymous ID list members retained in baggage header values (e.g. from a previous
+     * attempt of the same request) when [span] must not propagate it, for instance because tracking
+     * consent is not granted. Other list members are kept byte-for-byte.
+     *
+     * @param span The span of the request being traced.
+     * @param headerValues The values of every existing baggage header field.
+     * @return The values to set instead, without the values left empty, or null when the headers
+     * must be kept as they are.
+     */
+    fun removeRetainedUserAnonymousIdBaggage(span: DatadogSpan, headerValues: List<String>): List<String>? {
+        if (span.getTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID) != null) return null
+        var changed = false
+        val cleanedValues = headerValues.mapNotNull { value ->
+            val members = value.split(BAGGAGE_MEMBER_SEPARATOR)
+            val kept = members.filterNot { isUserAnonymousIdMember(it) }
+            if (kept.size == members.size) {
+                value
+            } else {
+                changed = true
+                kept.joinToString(BAGGAGE_MEMBER_SEPARATOR).takeIf { kept.any { member -> member.isNotBlank() } }
+            }
+        }
+        return cleanedValues.takeIf { changed }
+    }
+
+    private fun isUserAnonymousIdMember(member: String): Boolean {
+        // Decoded like Baggage.from does, so an encoded key can't bypass the removal.
+        val key = Baggage.urlDecode(member.substringBefore('=').substringBefore(';').trim())
+        return key == HttpCodec.BAGGAGE_USER_ANONYMOUS_ID
+    }
+
+    private const val BAGGAGE_MEMBER_SEPARATOR = ","
 
     /**
      * Creates an [ApmNetworkInstrumentation] instance from the provided configuration.

@@ -166,6 +166,7 @@ class DatadogPropagationHelper internal constructor() {
         span: DatadogSpan,
         tracingHeaderTypes: Set<TracingHeaderType>
     ) = builder.apply {
+        removeRetainedUserAnonymousIdBaggage(span)
         tracer.propagate().inject(
             span.context(),
             builder
@@ -236,6 +237,7 @@ class DatadogPropagationHelper internal constructor() {
         injectionType: TraceContextInjection,
         traceOrigin: String?
     ) = builder.apply {
+        removeRetainedUserAnonymousIdBaggage(span)
         for (headerType in tracingHeaderTypes) {
             when (headerType) {
                 TracingHeaderType.DATADOG -> {
@@ -453,6 +455,19 @@ class DatadogPropagationHelper internal constructor() {
                 traceStateHeader += ";o:$traceOrigin"
             }
             addHeader(W3CHttpCodec.TRACE_STATE_KEY, traceStateHeader)
+        }
+
+        // A retried request keeps the baggage of its previous attempt, which may hold an anonymous ID
+        // that must not be propagated anymore and that no new baggage would replace.
+        private fun HttpRequestInfoBuilder.removeRetainedUserAnonymousIdBaggage(span: DatadogSpan) {
+            // Header names are case-insensitive, and some builders (e.g. Cronet) preserve their case.
+            val baggageHeaders = build().headers.filterKeys { it.equals(W3CHttpCodec.BAGGAGE_KEY, ignoreCase = true) }
+            val cleanedValues = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+                span,
+                baggageHeaders.values.flatten()
+            ) ?: return
+            baggageHeaders.keys.forEach { removeHeader(it) }
+            cleanedValues.forEach { addHeader(W3CHttpCodec.BAGGAGE_KEY, it) }
         }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // exceptions are caught

@@ -3094,6 +3094,7 @@ public final class com/datadog/trace/core/propagation/Baggage {
 	public fun mergeWith (Lcom/datadog/trace/core/propagation/Baggage;)Lcom/datadog/trace/core/propagation/Baggage;
 	public fun put (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/trace/core/propagation/Baggage;
 	public fun toString ()Ljava/lang/String;
+	public static fun urlDecode (Ljava/lang/String;)Ljava/lang/String;
 }
 
 public abstract class com/datadog/trace/core/propagation/ContextInterpreter : com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$KeyClassifier {
@@ -3160,7 +3161,9 @@ public class com/datadog/trace/core/propagation/ExtractedContext : com/datadog/t
 }
 
 public class com/datadog/trace/core/propagation/HttpCodec {
+	public static final field BAGGAGE_USER_ANONYMOUS_ID Ljava/lang/String;
 	public static final field RUM_KEY_ACCOUNT_ID Ljava/lang/String;
+	public static final field RUM_KEY_USER_ANONYMOUS_ID Ljava/lang/String;
 	public static final field RUM_KEY_USER_ID Ljava/lang/String;
 	public fun <init> ()V
 	public static fun allInjectorsFor (Lcom/datadog/trace/api/Config;Ljava/util/Map;)Ljava/util/Map;
