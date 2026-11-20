@@ -1104,6 +1104,10 @@ datadog:
       - "com.lyft.kronos.KronosTime.constructor(kotlin.Long, kotlin.Long?)"
       - "com.lyft.kronos.KronosClock.shutdown()"
       # endregion
+      # region Material Components
+      - "com.google.android.material.floatingactionbutton.FloatingActionButton.getMeasuredContentRect(android.graphics.Rect)"
+      - "com.google.android.material.shape.CornerSize.getCornerSize(android.graphics.RectF)"
+      # endregion
       # region OkHttp
       - "okhttp3.Cache.constructor(java.io.File, kotlin.Long)"
       - "okhttp3.Call.Factory.newCall(okhttp3.Request)"

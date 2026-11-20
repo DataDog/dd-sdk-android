@@ -11,9 +11,14 @@ import android.graphics.drawable.Drawable
 
 /**
  * Default implementation of [DrawableCopier] interface, it copies the drawable from constant state.
+ *
+ * Some drawables return themselves from `ConstantState.newDrawable` (for example the border of a
+ * Material `FloatingActionButton`). Drawing such a "copy" off the main thread would touch the
+ * view's own drawable, so [copy] returns null for them.
  */
 class DefaultDrawableCopier : DrawableCopier {
     override fun copy(originalDrawable: Drawable, resources: Resources): Drawable? {
-        return originalDrawable.constantState?.newDrawable(resources)
+        val copy = originalDrawable.constantState?.newDrawable(resources)
+        return if (copy === originalDrawable) null else copy
     }
 }

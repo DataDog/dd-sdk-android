@@ -195,7 +195,7 @@ internal class RumFeature(
     internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
 
-    internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
+    internal var schedulerExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
     private var anrDetectorExecutorService: ExecutorService? = null
     internal var anrDetectorRunnable: ANRDetectorRunnable? = null
     internal lateinit var appContext: Context
@@ -284,11 +284,11 @@ internal class RumFeature(
         val frequency = configuration.vitalsMonitorUpdateFrequency
         val vitalsUpdatesRequired = frequency != VitalsUpdateFrequency.NEVER
 
-        // The vital executor backs both the CPU/memory vital monitors and timeseries sampling.
-        if (vitalsUpdatesRequired || configuration.timeseriesConfiguration != null) initializeVitalExecutorService()
+        // The scheduler executor backs both the CPU/memory vital monitors and timeseries sampling.
+        if (vitalsUpdatesRequired || configuration.timeseriesConfiguration != null) initializeSchedulerExecutorService()
 
         if (vitalsUpdatesRequired) {
-            // CPU/memory monitors schedule on the vital executor, so they are only set up when vitals
+            // CPU/memory monitors schedule on the scheduler executor, so they are only set up when vitals
             // are enabled - the same condition that creates the executor above.
             initializeCpuVitalMonitor(frequency)
             initializeMemoryVitalMonitor(frequency)
@@ -354,7 +354,7 @@ internal class RumFeature(
             sdkCore = sdkCore,
             sessionRegistry = sessionRegistry,
             pipelinesFactory = pipelinesFactory,
-            scheduledExecutorService = vitalExecutorService,
+            scheduledExecutorService = schedulerExecutorService,
             viewTransitionDelayMs = timeseriesConfiguration.viewTransitionDelayMs
         )
     }
@@ -453,10 +453,10 @@ internal class RumFeature(
         memoryVitalMonitor = NoOpVitalMonitor()
         frameRateVitalMonitor = NoOpVitalMonitor()
 
-        vitalExecutorService.shutdownNow()
+        schedulerExecutorService.shutdownNow()
         anrDetectorExecutorService?.shutdownNow()
         anrDetectorRunnable?.stop()
-        vitalExecutorService = NoOpScheduledExecutorService()
+        schedulerExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
 
         cleanupInfoProviders()
@@ -712,9 +712,9 @@ internal class RumFeature(
         longTaskTrackingStrategy.unregister(appContext)
     }
 
-    private fun initializeVitalExecutorService() {
+    private fun initializeSchedulerExecutorService() {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        vitalExecutorService = sdkCore.createScheduledExecutorService("rum-vital")
+        schedulerExecutorService = sdkCore.createScheduledExecutorService("rum-scheduler")
     }
 
     private fun initializeCpuVitalMonitor(frequency: VitalsUpdateFrequency) {
@@ -755,13 +755,13 @@ internal class RumFeature(
             sdkCore,
             vitalReader,
             vitalObserver,
-            vitalExecutorService,
+            schedulerExecutorService,
             periodInMs
         ).apply {
             sdkCore.setContextUpdateReceiver(this)
             rumContextUpdateReceivers += this
         }
-        vitalExecutorService.scheduleSafe(
+        schedulerExecutorService.scheduleSafe(
             "Vitals monitoring",
             periodInMs,
             TimeUnit.MILLISECONDS,

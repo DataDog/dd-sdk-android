@@ -45,6 +45,8 @@ dagger = "2.56.2"
 
 # JUnit
 jUnitJupiter = "5.14.1"
+# Maven requires an explicit launcher version in our POM. Keep it aligned with the JUnit BOM.
+jUnitPlatform = "1.14.1"
 systemStubsJupiter = "2.1.6"
 
 # Android JUnit
@@ -190,7 +192,7 @@ androidXComposeMaterial = { module = "androidx.compose.material:material" }
 material3Android = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Android" }
 
 # JUnit 5
-jUnitPlatform = { module = "org.junit.platform:junit-platform-launcher" }
+jUnitPlatform = { module = "org.junit.platform:junit-platform-launcher", version.ref = "jUnitPlatform" }
 jUnitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "jUnitJupiter" }
 jUnitMockitoExt = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
 

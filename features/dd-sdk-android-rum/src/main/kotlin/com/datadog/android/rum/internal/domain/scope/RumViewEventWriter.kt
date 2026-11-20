@@ -147,6 +147,6 @@ internal class RumViewEventWriterImpl(
         internal const val VIEW_EVENT_MAPPER_NOT_SAME_INSTANCE_WARNING_MESSAGE =
             "ViewEventMapper returned a different ViewEvent instance than the one passed in; " +
                 "the original ViewEvent will be used instead."
-        internal const val FULL_VIEW_EVERY_N_UPDATES = 4L
+        internal const val FULL_VIEW_EVERY_N_UPDATES = 10L
     }
 }

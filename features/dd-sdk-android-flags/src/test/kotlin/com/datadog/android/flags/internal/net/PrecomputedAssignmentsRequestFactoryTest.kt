@@ -20,6 +20,7 @@ import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.utils.withRumContext
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
@@ -237,6 +238,82 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
         checkNotNull(request)
         assertThat(request.url.toString()).isEqualTo(fakeCustomEndpoint)
+    }
+
+    // endregion
+
+    // region create() - dd-service
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M send dd-service W create() { service set by the app }`(
+        useCustomEndpoint: Boolean,
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        // Given
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            mockInternalLogger,
+            "https://custom-proxy.example.com/flags/assignments".takeIf { useCustomEndpoint },
+            null
+        )
+        val context = fakeDatadogContext.copy(service = "checkout-android")
+
+        // When
+        val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
+
+        // Then
+        assertThat(request.header("dd-service")).isEqualTo("checkout-android")
+    }
+
+    @Test
+    fun `M send dd-service W create() { service is the package name default }`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        // Given
+        val context = fakeDatadogContext.copy(service = "com.example.shop")
+
+        // When
+        val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
+
+        // Then
+        assertThat(request.header("dd-service")).isEqualTo("com.example.shop")
+    }
+
+    @Test
+    fun `M not send dd-service W create() { empty service }`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        // Given
+        val context = fakeDatadogContext.copy(service = "")
+
+        // When
+        val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
+
+        // Then
+        assertThat(request.header("dd-service")).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["café-api", "checkout\n", "支付"])
+    fun `M send the request without dd-service W create() { service rejected by OkHttp }`(
+        service: String,
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        // Given
+        val context = fakeDatadogContext.copy(service = service)
+
+        // When
+        val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
+
+        // Then
+        assertThat(request.header("dd-service")).isNull()
+        assertThat(request.header("dd-client-token")).isEqualTo(context.clientToken)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            "The service is not a valid HTTP header value, so flag requests do not send it.",
+            IllegalArgumentException::class.java
+        )
     }
 
     // endregion
