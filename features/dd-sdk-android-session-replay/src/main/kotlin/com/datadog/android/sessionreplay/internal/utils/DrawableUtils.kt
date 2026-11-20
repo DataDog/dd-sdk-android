@@ -114,9 +114,8 @@ internal class DrawableUtils(
             // needed because overdrawing an already used bitmap causes unusual visual artifacts
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
 
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
-
             try {
+                drawable.setBounds(0, 0, canvas.width, canvas.height)
                 drawable.draw(canvas)
             } catch (e: RuntimeException) {
                 logDrawableDrawException(drawable, e)
