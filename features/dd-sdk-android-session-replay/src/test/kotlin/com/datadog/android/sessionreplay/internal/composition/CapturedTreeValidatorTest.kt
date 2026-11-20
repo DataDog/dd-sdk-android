@@ -538,7 +538,8 @@ internal class CapturedTreeValidatorTest {
             wireframes = listOf(
                 semanticWireframe(fakeFirstWireframeIdentity),
                 semanticWireframe(fakeSecondWireframeIdentity)
-            )
+            ),
+            viewportSize = fakeTree.snapshot.viewportSize
         )
 
         // When
@@ -589,7 +590,8 @@ internal class CapturedTreeValidatorTest {
                 scope = fakeScope,
                 root = fakeRoot,
                 layers = fakeLayers,
-                wireframes = listOf(semanticWireframe(fakeWireframeIdentity))
+                wireframes = listOf(semanticWireframe(fakeWireframeIdentity)),
+                viewportSize = fakeTree.snapshot.viewportSize
             )
         )
 

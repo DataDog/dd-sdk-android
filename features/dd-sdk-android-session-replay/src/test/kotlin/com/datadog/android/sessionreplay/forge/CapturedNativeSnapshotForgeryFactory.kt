@@ -16,6 +16,7 @@ import com.datadog.android.sessionreplay.internal.composition.CapturedNativeView
 import com.datadog.android.sessionreplay.internal.composition.CapturedNativeWindow
 import com.datadog.android.sessionreplay.internal.composition.CapturedWindow
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
+import com.datadog.android.sessionreplay.internal.composition.aCapturedViewportSize
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundColor
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
@@ -30,7 +31,8 @@ internal class CapturedNativeSnapshotForgeryFactory : ForgeryFactory<CapturedNat
         return CapturedNativeSnapshot(
             forge.aLong(min = 1L),
             window.views.first().identity.scope,
-            listOf(window)
+            listOf(window),
+            forge.aCapturedViewportSize()
         )
     }
 }

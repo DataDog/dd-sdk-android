@@ -130,13 +130,13 @@ internal class AndroidWindowTraversalHostBackgroundTest : AndroidWindowTraversal
         val copy = testedTraversal.traverseWindow(mockRoot, fakeWindow, identityFactory, fakeContext)
             as WindowCopyResult.Present
         val result = testedBuilder.build(
-            CapturedNativeSnapshot(1L, identityFactory.scope, listOf(copy.window)),
+            CapturedNativeSnapshot(1L, identityFactory.scope, listOf(copy.window), CapturedViewportSize(0L, 0L)),
             fakeContext
         )
         val nextCopy = testedTraversal.traverseWindow(mockRoot, fakeWindow, identityFactory, fakeContext)
             as WindowCopyResult.Present
         val nextResult = testedBuilder.build(
-            CapturedNativeSnapshot(2L, identityFactory.scope, listOf(nextCopy.window)),
+            CapturedNativeSnapshot(2L, identityFactory.scope, listOf(nextCopy.window), CapturedViewportSize(0L, 0L)),
             fakeContext
         )
 

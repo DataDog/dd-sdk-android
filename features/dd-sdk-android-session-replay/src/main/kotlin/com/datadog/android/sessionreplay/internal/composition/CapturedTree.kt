@@ -19,5 +19,9 @@ internal data class CapturedFullSnapshot(
     val scope: RumViewIdentityScope,
     val root: CapturedLayer?,
     val layers: List<CapturedLayer>,
-    val wireframes: List<CapturedWireframe>
+    val wireframes: List<CapturedWireframe>,
+    val viewportSize: CapturedViewportSize
 ) : CapturedSnapshotInput
+
+/** Density-normalized size of the app window, as legacy reports it in Meta and viewport-resize records. */
+internal data class CapturedViewportSize(val width: Long, val height: Long)

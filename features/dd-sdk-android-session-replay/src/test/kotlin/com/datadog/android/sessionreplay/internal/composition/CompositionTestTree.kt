@@ -32,7 +32,8 @@ private fun compositionTestTree(
     windowName: String,
     layerName: String,
     rootBounds: CapturedBounds,
-    layerBounds: CapturedBounds
+    layerBounds: CapturedBounds,
+    viewportSize: CapturedViewportSize
 ): CompositionTestTree {
     val fakeScope = RumViewIdentityScope(scopeValue)
     val fakeFactory = DefaultCapturedIdentityFactory(fakeScope)
@@ -69,7 +70,8 @@ private fun compositionTestTree(
             scope = fakeScope,
             root = fakeRoot,
             layers = listOf(fakeLayer),
-            wireframes = listOf(fakeWireframe)
+            wireframes = listOf(fakeWireframe),
+            viewportSize = viewportSize
         )
     )
 }
@@ -82,12 +84,18 @@ internal fun Forge.aCompositionTestTree(
     windowName = anAlphabeticalString(),
     layerName = anAlphabeticalString(),
     rootBounds = aCapturedBounds(),
-    layerBounds = aCapturedBounds()
+    layerBounds = aCapturedBounds(),
+    viewportSize = aCapturedViewportSize()
 )
 
 internal fun Forge.aCapturedBounds(): CapturedBounds = CapturedBounds(
     x = aLong(min = 0L, max = 1_000L),
     y = aLong(min = 0L, max = 1_000L),
+    width = aLong(min = 0L, max = 1_000L),
+    height = aLong(min = 0L, max = 1_000L)
+)
+
+internal fun Forge.aCapturedViewportSize(): CapturedViewportSize = CapturedViewportSize(
     width = aLong(min = 0L, max = 1_000L),
     height = aLong(min = 0L, max = 1_000L)
 )

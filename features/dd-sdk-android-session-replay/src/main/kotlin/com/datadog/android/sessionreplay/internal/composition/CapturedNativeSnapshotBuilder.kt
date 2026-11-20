@@ -52,7 +52,8 @@ internal class CapturedNativeSnapshotBuilder(
                 windows.map { CapturedChild.Layer(it.rootLayer.identity) }
             ),
             layers = layers,
-            wireframes = wireframes
+            wireframes = wireframes,
+            viewportSize = snapshot.viewportSize
         )
     }
 

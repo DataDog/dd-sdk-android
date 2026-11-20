@@ -826,6 +826,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.material.internal.MaterialDrawableToColorMapper)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.material.internal.MaterialOptionSelectorDetector)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord.MobileFullSnapshotRecord)"
+      - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord.ViewEndRecord)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.PlaceholderWireframe)"

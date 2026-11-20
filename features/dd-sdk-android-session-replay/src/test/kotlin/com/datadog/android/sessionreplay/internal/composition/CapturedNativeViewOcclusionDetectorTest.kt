@@ -619,7 +619,8 @@ internal class CapturedNativeViewOcclusionDetectorTest {
             listOf(CapturedChild.Layer(fakeWindow.rootLayer.identity))
         ),
         fakeWindow.layers,
-        fakeWindow.wireframes
+        fakeWindow.wireframes,
+        CapturedViewportSize(0L, 0L)
     )
     internal enum class CompositionEffect {
         NONE,

@@ -99,7 +99,8 @@ internal class CompositionProcessingIsolationTest {
         if (fakeExpectedWrite) {
             val records = argumentCaptor<EnrichedRecord>()
             verify(fakeFixture.mockWriter).write(records.capture(), isA())
-            val record = records.firstValue.records.single() as MobileSegment.MobileRecord.MobileFullSnapshotRecord
+            val record = records.firstValue.records
+                .filterIsInstance<MobileSegment.MobileRecord.MobileFullSnapshotRecord>().single()
             assertThat(record.timestamp).isEqualTo(fakeFixture.fakeTimestamp + 2)
         } else {
             verifyNoInteractions(fakeFixture.mockWriter)
@@ -208,7 +209,8 @@ internal class CompositionProcessingIsolationTest {
                 CapturedNativeSnapshot(
                     fakeTimestamp + ++fakeCapturedCount,
                     fakeIdentityFactory.scope,
-                    listOf(CapturedNativeWindow(fakeDensity, listOf(fakeView)))
+                    listOf(CapturedNativeWindow(fakeDensity, listOf(fakeView))),
+                    CapturedViewportSize(0L, 0L)
                 )
             }
             testedOrchestrator = SnapshotCaptureOrchestrator(

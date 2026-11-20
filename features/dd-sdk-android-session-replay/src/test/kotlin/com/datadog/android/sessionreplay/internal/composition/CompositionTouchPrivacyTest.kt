@@ -1497,7 +1497,8 @@ internal class CompositionTouchPrivacyTest {
             ),
             touchPrivacyManager = touchPrivacyManager,
             viewIdentifierResolver = mockViewIdentifierResolver,
-            isMainThreadWindow = { true }
+            isMainThreadWindow = { true },
+            resolveViewportSize = { CapturedViewportSize(0L, 0L) }
         )
         val orchestrator = SnapshotCaptureOrchestrator(
             producer = producer,

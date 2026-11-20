@@ -142,7 +142,7 @@ internal class AndroidWindowTraversalHandoffGeometryTest : AndroidWindowTraversa
             fakeContext
         ) as WindowCopyResult.Present
         val result = testedBuilder.build(
-            CapturedNativeSnapshot(1L, identityFactory.scope, listOf(copy.window)),
+            CapturedNativeSnapshot(1L, identityFactory.scope, listOf(copy.window), CapturedViewportSize(0L, 0L)),
             fakeContext
         )
 
