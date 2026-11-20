@@ -13,6 +13,7 @@ import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.rum.RumContext
@@ -729,7 +730,7 @@ internal class RumViewManagerScopeTest {
         assertThat(testedScope.childrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp)
-                    .isEqualTo(resolveExpectedTimestamp(fakeAppStartEvent.eventTime.timestamp))
+                    .isEqualTo(resolveExpectedTimestamp(fakeAppStartEvent.applicationStartTime.timestamp))
                 assertThat(it.key.id).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_ID)
                 assertThat(it.key.url).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL)
                 assertThat(it.key.name).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_NAME)
@@ -829,7 +830,7 @@ internal class RumViewManagerScopeTest {
     // region ApplicationStarted
 
     @Test
-    fun `M not send APPLICATION_START action to the intake W handleEvent { ApplicationStarted } ()`(
+    fun `M write initial view event W handleEvent { ApplicationStarted }`(
         forge: Forge
     ) {
         // Given
@@ -844,7 +845,20 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeAppStartEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verifyNoInteractions(mockWriter)
+        argumentCaptor<MappedViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val viewEvent = firstValue.viewEvent
+            assertThat(viewEvent.view.name).isEqualTo("ApplicationLaunch")
+            assertThat(viewEvent.view.isActive).isTrue()
+            assertThat(viewEvent.dd.documentVersion).isEqualTo(2)
+            assertThat(viewEvent.date)
+                .isEqualTo(fakeAppStartEvent.applicationStartTime.timestamp + fakeTime.serverTimeOffsetMs)
+            assertThat(viewEvent.view.timeSpent)
+                .isEqualTo(fakeAppStartEvent.eventTime.nanoTime - fakeAppStartEvent.applicationStartTime.nanoTime)
+            assertThat(viewEvent.view.action.count).isZero()
+            assertThat(viewEvent.view.resource.count).isZero()
+            assertThat(viewEvent.view.error.count).isZero()
+        }
     }
 
     // endregion

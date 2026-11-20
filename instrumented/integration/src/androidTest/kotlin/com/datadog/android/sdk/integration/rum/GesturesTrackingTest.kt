@@ -75,7 +75,8 @@ internal abstract class GesturesTrackingTest :
         activity: GesturesTrackingPlaygroundActivity
     ): List<ExpectedEvent> {
         return listOf(
-            ExpectedApplicationLaunchViewEvent(docVersion = 2),
+            ExpectedApplicationLaunchViewEvent(docVersion = 3),
+            ExpectedApplicationLaunchViewUpdateEvent(docVersion = 3),
             ExpectedViewEvent(
                 viewUrl,
                 docVersion = 2

@@ -138,13 +138,21 @@ internal class RumApplicationScope(
             startNewSession(event, datadogContext, writeScope, writer)
         }
 
-        // SessionExpiryCheck is synthetic and may run before the first real event, so it must not mark the app start.
-        val isAppStartCandidate = event !is RumRawEvent.SdkInit && event !is RumRawEvent.SessionExpiryCheck
+        // We call delegateToChildren for SdkInit here because for a new session this will trigger the
+        // sampling decision which needs to happen before any other event is written.
+        if (event is RumRawEvent.SdkInit) {
+            delegateToChildren(event, datadogContext, writeScope, writer)
+        }
+
+        // SessionExpiryCheck is synthetic and must not mark the app start.
+        val isAppStartCandidate = event !is RumRawEvent.SessionExpiryCheck
         if (isAppStartCandidate && !isAppStartedEventSent) {
             sendApplicationStartEvent(event.eventTime, datadogContext, writeScope, writer)
         }
 
-        delegateToChildren(event, datadogContext, writeScope, writer)
+        if (event !is RumRawEvent.SdkInit) {
+            delegateToChildren(event, datadogContext, writeScope, writer)
+        }
 
         return this
     }
@@ -272,9 +280,10 @@ internal class RumApplicationScope(
                 timestamp = TimeUnit.NANOSECONDS.toMillis(timestampNs),
                 nanoTime = processStartTimeNs
             )
-            val startupTime = eventTime.nanoTime - processStartTimeNs
-            val appStartedEvent =
-                RumRawEvent.ApplicationStarted(startupTime, applicationLaunchViewTime)
+            val appStartedEvent = RumRawEvent.ApplicationStarted(
+                applicationStartTime = applicationLaunchViewTime,
+                eventTime = eventTime
+            )
             delegateToChildren(appStartedEvent, datadogContext, writeScope, writer)
             isAppStartedEventSent = true
         }
