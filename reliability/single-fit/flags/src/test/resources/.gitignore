@@ -1,0 +1,5 @@
+# Shared feature flags conformance fixtures, fetched before unit tests from ffe-system-test-data
+# at the commit pinned in ci/feature-flags-precomputed-fixtures.json (see build.gradle.kts).
+precomputed/
+# Staging folders that the fetch script creates and removes; one is left only if the script is killed.
+.precompute-*/

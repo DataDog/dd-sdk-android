@@ -15,6 +15,7 @@ import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.SplitFeature
 import com.datadog.android.flags.internal.serialization.FlagsJson
+import com.datadog.android.flags.internal.serialization.UnsupportedVariationTypeException
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -56,11 +57,16 @@ internal class PrecomputeMapper(
             val observeFullEvaluationData = FlagsJson.readConsent(metadata)
             val flags = attributes.flags.additionalProperties
             if (obfuscation != null) FlagsJson.validateKeys(flags.keys.iterator())
-            val assignments = flags.mapValues {
-                FlagsJson.readAssignment(FlagsJson.objectValue(it.value)).copy(
-                    observeFullEvaluationData = observeFullEvaluationData
-                )
-            }
+            val assignments = flags.mapNotNull { (key, value) ->
+                try {
+                    key to FlagsJson.readAssignment(FlagsJson.objectValue(value)).copy(
+                        observeFullEvaluationData = observeFullEvaluationData
+                    )
+                } catch (_: UnsupportedVariationTypeException) {
+                    warnUnsupportedType()
+                    null
+                }
+            }.toMap()
             warnUnknownDestinations(assignments.values)
             PrecomputedAssignments(assignments, obfuscation, observeFullEvaluationData)
         } else {
@@ -83,6 +89,15 @@ internal class PrecomputeMapper(
     } catch (e: JsonParseException) {
         logParseFailure(e, redactErrors)
         null
+    }
+
+    private fun warnUnsupportedType() {
+        internalLogger.log(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.USER,
+            messageBuilder = { "Ignored a flag with an unsupported variationType in the precomputed response." },
+            onlyOnce = true
+        )
     }
 
     private fun logParseFailure(exception: JsonParseException, redactErrors: Boolean) {

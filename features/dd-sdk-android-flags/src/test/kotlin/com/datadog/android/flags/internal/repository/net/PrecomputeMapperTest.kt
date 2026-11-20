@@ -73,6 +73,32 @@ internal class PrecomputeMapperTest {
         testedMapper = PrecomputeMapper(mockInternalLogger)
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M warn once and preserve valid flags W map() {unsupported variation type}`(fakeConsent: Boolean) {
+        // Given
+        val unknown = buildFlagJson("future-type", true)
+        val valid = buildFlagJson(VariationType.BOOLEAN.value, true)
+        val json = JSONObject(buildValidJson(mapOf("unknown" to unknown, fakeFlagKey to valid))).apply {
+            getJSONObject("data").getJSONObject("attributes").put("observeFullEvaluationData", fakeConsent)
+        }.toString()
+
+        // When
+        val result = testedMapper.map(json)
+
+        // Then
+        val assignments = checkNotNull(result)
+        assertThat(assignments.flags.keys).containsExactly(fakeFlagKey)
+        assertThat(assignments.observeFullEvaluationData).isEqualTo(fakeConsent)
+        assertThat(assignments.flags.getValue(fakeFlagKey).observeFullEvaluationData).isEqualTo(fakeConsent)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            "Ignored a flag with an unsupported variationType in the precomputed response.",
+            onlyOnce = true
+        )
+    }
+
     @Test
     fun `M warn once per response and unknown destination W map() twice {split features}`(
         @StringForgery fakeTextValue: String,
