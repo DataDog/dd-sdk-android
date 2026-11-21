@@ -90,7 +90,9 @@ def snapshot(source, ref, spec=PRECOMPUTED):
         if target is None:
             continue
         mode, kind, blob = metadata.decode().split()
-        if mode != '100644' or kind != 'blob':
+        # A tree source may carry generator scripts; the copy keeps their bytes but not the executable bit.
+        modes = {'100644'} if precomputed else {'100644', '100755'}
+        if mode not in modes or kind != 'blob':
             raise ValueError('Fixture entries must be ordinary files: ' + path)
         result[target] = git(source, 'cat-file', 'blob', blob)
     if not result or not all(p in result for p in files.values()):

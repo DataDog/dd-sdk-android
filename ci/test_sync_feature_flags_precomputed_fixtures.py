@@ -27,6 +27,8 @@ def _upstream(root):
     write('precomputed-assignments/cases/a.json', json.dumps({'name': 'a', 'evaluations': [], 'response': {'n': 5.0}}))
     write('response-signing/v1/corpus.json', '{"cases": []}')
     write('response-signing/v1/nested/case.json', '{}')
+    write('response-signing/v1/generate.sh', '#!/bin/sh\n')
+    (root / 'response-signing/v1/generate.sh').chmod(0o755)
     subprocess.run(['git', 'init', '-q', str(root)], check=True)
     subprocess.run(['git', '-C', str(root), 'add', '-A'], check=True)
     subprocess.run(['git', '-C', str(root), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'c'],
@@ -59,8 +61,18 @@ class SnapshotTest(unittest.TestCase):
             sync.verify(self.destination)
 
     def test_tree_source_copies_every_file_under_its_path(self):
-        self.assertEqual(sorted(sync.read_snapshot(self.tree)), ['SOURCE.json', 'corpus.json', 'nested/case.json'])
+        self.assertEqual(sorted(sync.read_snapshot(self.tree)),
+                         ['SOURCE.json', 'corpus.json', 'generate.sh', 'nested/case.json'])
         sync.verify(self.tree, self.tree_spec)
+
+    def test_tree_source_rejects_symbolic_links(self):
+        upstream = Path(self.temporary.name) / 'upstream'
+        (upstream / 'response-signing/v1/link.json').symlink_to('corpus.json')
+        subprocess.run(['git', '-C', str(upstream), 'add', '-A'], check=True)
+        subprocess.run(['git', '-C', str(upstream), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'l'],
+                       check=True)
+        with self.assertRaises(ValueError):
+            sync.snapshot(upstream, 'HEAD', self.tree_spec)
 
     def test_response_preserves_numeric_tokens(self):
         self.assertEqual((self.destination / 'responses/cases/a.json').read_text(), '{"n": 5.0}\n')
