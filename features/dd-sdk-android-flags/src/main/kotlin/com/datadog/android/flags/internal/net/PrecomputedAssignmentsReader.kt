@@ -9,7 +9,7 @@ package com.datadog.android.flags.internal.net
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
-import com.datadog.android.flags.internal.signing.SignedAssignmentsResponse
+import com.datadog.android.flags.internal.signing.VerifiedResponse
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -20,18 +20,44 @@ internal interface PrecomputedAssignmentsReader {
         context: EvaluationContext,
         datadogContext: DatadogContext,
         diagnostics: Diagnostics
-    ): PrecomputedAssignmentsResponse?
+    ): PrecomputedAssignmentsResult?
 
+    @WorkerThread
+    fun readPrecomputedFlags(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        diagnostics: Diagnostics,
+        assignmentToken: String
+    ): PrecomputedAssignmentsResult?
+
+    /**
+     * Reads assignments for an opted-in signing client. A successful read returns [SignedAssignmentsResponse].
+     * [assignmentToken] is the subject-authorization credential, or null.
+     */
     @WorkerThread
     fun readSignedPrecomputedFlags(
         context: EvaluationContext,
         datadogContext: DatadogContext,
         diagnostics: Diagnostics,
+        assignmentToken: String?,
         generation: Long,
         onPrepared: () -> Unit = {}
-    ): SignedAssignmentsResponse? = readPrecomputedFlags(context, datadogContext, diagnostics)?.let {
-        SignedAssignmentsResponse(it.body, null, it.flagSelectionIgnoredReason)
+    ): PrecomputedAssignmentsResult? {
+        val result = if (assignmentToken == null) {
+            readPrecomputedFlags(context, datadogContext, diagnostics)
+        } else {
+            readPrecomputedFlags(context, datadogContext, diagnostics, assignmentToken)
+        }
+        return if (result is PrecomputedAssignmentsResponse) {
+            SignedAssignmentsResponse(result.body, null, result.flagSelectionIgnoredReason)
+        } else {
+            result
+        }
     }
+}
+
+internal sealed interface PrecomputedAssignmentsResult {
+    data object AuthorizationRejected : PrecomputedAssignmentsResult
 }
 
 /**
@@ -40,4 +66,14 @@ internal interface PrecomputedAssignmentsReader {
 internal data class PrecomputedAssignmentsResponse(
     val body: String,
     val flagSelectionIgnoredReason: String?
-)
+) : PrecomputedAssignmentsResult
+
+/**
+ * A response read by an opted-in signing client. [proof] is null when the response is not verified.
+ */
+internal data class SignedAssignmentsResponse(
+    val json: String,
+    val proof: VerifiedResponse?,
+    val flagSelectionIgnoredReason: String? = null,
+    val isCancelled: () -> Boolean = { false }
+) : PrecomputedAssignmentsResult

@@ -18,13 +18,6 @@ internal data class ResponseSigningConfiguration(
     val trustedRoots: List<String> = emptyList()
 )
 
-internal data class SignedAssignmentsResponse(
-    val json: String,
-    val proof: VerifiedResponse?,
-    val flagSelectionIgnoredReason: String? = null,
-    val isCancelled: () -> Boolean = { false }
-)
-
 /** Serializes request generations with admission; no response can change trust anchors. */
 internal class ResponseSigningState(
     val configuration: ResponseSigningConfiguration,

@@ -140,9 +140,9 @@ Clients do not run the `signing_cases`, because they hold no signing keys.
 nonminimal KeyUsage named bits, with test-only credentials in `src/test/resources/response-signing-chain/`.
 
 ```shell
-python3 ci/sync-precomputed-fixtures.py --signing --ref <full-upstream-sha>
-python3 ci/sync-precomputed-fixtures.py --signing --verify
-python3 ci/sync-precomputed-fixtures.py --signing --check
+python3 ci/sync-response-signing-fixtures.py --ref <full-upstream-sha>
+python3 ci/sync-response-signing-fixtures.py --verify
+python3 ci/sync-response-signing-fixtures.py --check
 ./gradlew :features:dd-sdk-android-flags:connectedDebugAndroidTest
 ```
 
@@ -167,6 +167,8 @@ val flagsConfig = FlagsConfiguration.Builder()
     .trackExposures(false)
     .build()
 ```
+
+With `trackExposures(false)`, the SDK sends no exposure events to Datadog. It still records which exposures it has seen, so that the OpenFeature `ExposureHook` reports correct exposure decisions. See [Exposures in your own data store](../dd-sdk-android-flags-openfeature/README.md#exposures-in-your-own-data-store).
 
 #### Configure custom endpoints
 
@@ -213,6 +215,63 @@ val client = FlagsClient.Builder().build()
 val analyticsClient = FlagsClient.Builder("analytics").build()
 ```
 
+### Authorize assignment downloads for a subject
+
+Subject authorization prevents the SDK from returning cached flag assignments for one subject (targeting key) while
+the app requests assignments for another subject. If your environment requires subject authorization, get a JWT for
+the subject from your backend. Then pass the complete evaluation context, including the token in the
+`dd_assignment_token` attribute, in a single `setEvaluationContext` call:
+
+```kotlin
+client.setEvaluationContext(
+    EvaluationContext(
+        targetingKey = "user-123",
+        attributes = mapOf(
+            "country" to "US",
+            "dd_assignment_token" to jwtFromYourBackend
+        )
+    )
+)
+```
+
+Your backend signs the token for the requested subject and environment. Keep the private signing key on the backend.
+Before the token expires, call `setEvaluationContext` again with the complete context and a new token. Changing only
+the token triggers a full assignment download. To remove the token, omit `dd_assignment_token` or set it to an empty
+string. The SDK does not restore an earlier token.
+
+The SDK sends the token only in the reserved `DD-Assignment-Token` request header. It removes
+`dd_assignment_token` from targeting attributes, persisted assignment context, exposure data, evaluation telemetry,
+and SDK logs.
+
+With a custom flag endpoint, the proxy must forward the `DD-Assignment-Token` header.
+
+The SDK does not parse the token or validate its claims. The assignment endpoint validates its signature, expiration,
+and other claims, so validation does not depend on the device clock. The token must contain only printable ASCII
+characters and no whitespace. If the value is unusable, the SDK omits it, logs a fixed warning that does not include
+the value, and sends the request without a token.
+
+A usable token establishes a **subject boundary** for its targeting key as soon as the SDK accepts the context update:
+
+- Retained assignments for a different targeting key are unavailable while the assignment download is in progress and
+  after the download fails. Evaluation returns the application default with `ErrorCode.GENERAL`.
+- Retained assignments for the same targeting key remain available as a fallback. The fallback keeps the context that
+  was used to download the assignments, and the client state changes to `Stale`.
+- [Experimentation opt-out modes](#exclude-a-subject-from-experimentation) still require an exact context match.
+
+The SDK also establishes a subject boundary when the server returns an HTTP 401 response with the JSON:API error code
+`ASSIGNMENT_AUTHORIZATION_FAILED`, even if the request had no token. The context callback receives
+`FlagsAssignmentAuthorizationException` for this rejection. An eligible same-subject fallback remains available and
+keeps the client `Stale`, but the callback still reports the failed refresh. Removing a token or retrying does not
+restore another subject's assignments. A successful download or an eligible same-subject fallback clears the boundary.
+The SDK does not automatically refresh tokens, retry the update, or verify signed assignment responses.
+
+Without a token or an `ASSIGNMENT_AUTHORIZATION_FAILED` rejection, the SDK does not establish a subject boundary, and
+evaluation works the same as in environments that do not require subject authorization. Missing, empty, and unusable
+token values do not establish a boundary.
+
+**Note**: `ErrorCode.GENERAL` is a public enum constant. Exhaustive Kotlin `when` expressions over `ErrorCode` must
+handle it.
+
 ### Exclude a subject from experimentation
 
 Configure the client to honor `dd_experimentation_opt_out_at`:
@@ -240,7 +299,9 @@ client.setEvaluationContext(
 )
 ```
 
-`setEvaluationContext` is asynchronous. Resolve the flag after its success callback.
+`setEvaluationContext` is asynchronous. A success callback means that fresh assignments are ready. A failure callback
+can accompany the `Stale` state when eligible cached assignments remain available; inspect `client.state` before
+deciding whether to continue using cached values.
 Callbacks run on a background thread. Dispatch UI changes to the main thread.
 A newer context can replace the assignments before a callback runs. In enabled modes, a request replaced
 before its result is processed fails with `FlagsContextSupersededException`, unless its timeout already completed it.
@@ -432,6 +493,10 @@ if (result.errorCode != null) {
 - `errorMessage: String?` - Optional human-readable error message
 - `flagMetadata: Map<String, Any>?` - Optional metadata associated with the flag
 
+##### Split features
+
+When the selected split has features for application hooks, `flagMetadata` contains one entry for each of them, with the key `__dd_feature.<feature key>`. For example, a holdout gives `__dd_feature.holdout.key`, `__dd_feature.holdout.assignment_group` and `__dd_feature.holdout.should_include_in_holdout_analysis`. A value is a `String`, `Double` or `Boolean`. Other `__dd_` entries are internal and can change without notice.
+
 ##### Error codes
 - `FLAG_NOT_FOUND` - The flag could not be found
 - `PARSE_ERROR` - Error parsing the flag value
@@ -531,6 +596,12 @@ Evaluation telemetry error messages contain stable error codes in both consent m
 `GENERAL` for unknown failures. `trackEvaluations(false)` disables this track. Assignment `doLog`
 controls exposures independently.
 
+## Usage attribution
+
+Flag requests send the SDK's `service` in the `dd-service` header, so Usage Attribution can split Feature Flags
+usage by `service`. It is the same service RUM reports: the one set in the core `Configuration`, or else the
+package name. A service that is not a valid HTTP header value is not sent, and the request still goes out.
+
 ## Integration with RUM
 
 When RUM is enabled in your application and RUM integration is enabled in the Flags configuration (default), flag evaluations are automatically:
@@ -568,42 +639,54 @@ The Flags module uses the JSON contract from [ffe-system-test-data](https://gith
 This keeps response behavior consistent across mobile SDKs. The snapshot is test data only.
 It adds no runtime dependency and requires no Git submodule.
 
-The generated snapshot is at `reliability/single-fit/flags/src/test/resources/precomputed`. `SOURCE.json` records the source commit and file digests.
+`ci/feature-flags-precomputed-fixtures.json` pins an upstream commit. Tests read the snapshot from the git-ignored `reliability/single-fit/flags/src/test/resources/precomputed` folder. `SOURCE.json` records the source commit and file digests.
 The runner discovers all nested JSON cases through the generated index.
-Adding a case requires an upstream fixture change and snapshot refresh. It requires no runner or filename-list change.
+Adding a case requires an upstream fixture change and a pin update. It requires no runner or filename-list change.
 Missing or empty fixtures fail the suite. Shared `_include` and `_skip` fields describe API applicability.
 Do not add local exclusions to hide failures.
 
 Numeric behavior follows the [shared numeric contract](https://github.com/DataDog/ffe-system-test-data/blob/main/precomputed-assignments/README.md#mobile-conformance-and-numeric-types).
+The SDK keeps each numeric token as written in the response, also in the cache. An Int read of a fractional token, such as `4503599627370497.5` or `1.00000000000000001`, returns the default with `TYPE_MISMATCH`.
+Assignment snapshots for cross-platform bridges omit a numeric assignment that no Int or Double read accepts, such as `1e400`, `1e-400`, or `100000000000000000001`.
+Plaintext flag keys match exactly, without Unicode normalization. Exposure and evaluation events use the key that the caller passed.
 The native context API requires a string targeting key. Fixtures with `targetingKey: null` must declare this platform in `_skip` upstream; the runner reports an actionable fixture error if an applicable case violates that requirement.
 
 Upstream CI requires a generated obfuscated companion for each applicable plain fixture. It rejects missing, stale, or orphaned companions. Edit the plain case upstream and regenerate; do not maintain two sets of expectations. Dedicated malformed-encoding cases and fixed digest vectors remain separate.
 
 Cases cover values, defaults, errors, reasons, variants, emission gates, duplicate evaluations, and numeric boundaries.
 Obfuscation cases cover fixed digests, salts, Unicode, whitespace, malformed metadata, and plaintext event identity.
-The suite uses the feature integration harness. Each fixture also runs through required signature verification. Valid unsigned fixtures run after cache restoration without networking. It checks public getters, response rejection, and real exposure and evaluation records.
+The suite uses the feature integration harness. Each fixture also runs through required signature verification. It feeds the fixture response, with its numeric tokens and `observeFullEvaluationData` value, through the real download, parse, and persistence path. Each valid fixture also runs after cache restoration without networking. It checks public getters, response rejection, and real exposure and evaluation records.
+Matchers compare JSON types strictly: `true` does not match `1`. A `_count` that is not a positive integer fails the test.
+The suite prints a report with the fixture revision, the executed evaluations, and the exclusions.
 
 Run from the repository root:
 
 ```sh
-python3 ci/sync-precomputed-fixtures.py --verify
-./gradlew :reliability:single-fit:flags:testDebugUnitTest --tests '*CanonicalPrecomputedTest*'
+./gradlew :reliability:single-fit:flags:testReleaseUnitTest --tests '*CanonicalPrecomputedTest*'
+python3 ci/test_sync_feature_flags_precomputed_fixtures.py
 ```
 
-Refresh the snapshot from a reviewed upstream commit:
+The `pullFeatureFlagsFixtures` task runs only before unit-test resources are processed. It fetches the pinned commit and verifies its digests. When the local snapshot already matches the pin, it only verifies, without networking.
+Each fetch attempt has a timeout, and a failed attempt is retried. The task has a 10-minute timeout.
+The snapshot check ignores `.DS_Store` files. Any other file that is not in the snapshot fails the check.
+
+Move the pin to a reviewed upstream commit:
 
 ```sh
-python3 ci/sync-precomputed-fixtures.py --ref <full-upstream-sha>
-python3 ci/sync-precomputed-fixtures.py --check
+python3 ci/sync-feature-flags-precomputed-fixtures.py --update --ref <full-upstream-sha>
 ```
 
 The importer copies committed bytes, regenerates the index, and removes deleted cases.
-It preserves Unity asset GUIDs where applicable. Do not edit imported JSON or its checksums.
-Use `--source <local-checkout> --ref <commit>` to test an upstream fixture branch before publication.
-`--verify` checks local integrity without networking. `--check` also compares the recorded upstream commit.
+It preserves Unity asset GUIDs where applicable. Do not edit fetched JSON or its checksums.
+Use `--update --source <local-checkout> --ref <commit>` to test an upstream fixture branch before publication.
+`--verify` checks that the local snapshot matches the pin without networking.
 
-The weekly `Precomputed flag fixtures` workflow opens a draft update PR when fixture content changes.
-It uses a short-lived token restricted to the default branch and this workflow.
+The weekly `Feature flags precomputed fixtures` workflow opens a draft update PR that moves the pin when fixture content changes.
+It runs only in `DataDog/dd-sdk-android`, not in forks.
+Scheduled and manual updates on `develop` share one concurrency group.
+It requests a short-lived write token only when the pin changed. The token is restricted to the default branch and this workflow.
+If the PR creation fails, the workflow deletes the new update branch.
+A PR that changes only the pin runs the `test:single-fit-flags` GitLab job, which runs this suite.
 It waits when an update PR is already open. Normal SDK CI must pass before merge.
 Merge the upstream fixture contract before merging its consumer PRs.
 The update workflow never merges or publishes an SDK release.

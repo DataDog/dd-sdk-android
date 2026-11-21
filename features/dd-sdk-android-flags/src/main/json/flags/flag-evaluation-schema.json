@@ -85,6 +85,11 @@
     "targeting_rule": {
       "$ref": "#/definitions/Identifier"
     },
+    "features": {
+      "type": "object",
+      "description": "Features of the selected split routed to evaluation events, keyed by feature key",
+      "additionalProperties": true
+    },
     "error": {
       "type": "object",
       "properties": {

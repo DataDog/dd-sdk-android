@@ -1,0 +1,98 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.flags.integration
+
+import com.datadog.android.flags.integration.tests.utils.CanonicalFixtureMatcher
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.ValueSource
+
+internal class CanonicalFixtureMatcherTest {
+    @ParameterizedTest
+    @CsvSource(
+        delimiter = '|',
+        value = [
+            "true|1",
+            "1|true",
+            "false|0",
+            "\"1\"|1",
+            "1|\"1\"",
+            "\"true\"|true",
+            "null|0",
+            "{\"a\":true}|{\"a\":1}",
+            "[1]|[true]"
+        ]
+    )
+    fun `M not match different JSON types W jsonEquals()`(actual: String, expected: String) {
+        // When
+        val result = CanonicalFixtureMatcher.jsonEquals(json(actual), json(expected))
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        delimiter = '|',
+        value = ["true|true", "1|1.0", "\"1\"|\"1\"", "null|null", "{\"a\":[1,true]}|{\"a\":[1.0,true]}"]
+    )
+    fun `M match equal JSON values W jsonEquals()`(actual: String, expected: String) {
+        // When
+        val result = CanonicalFixtureMatcher.jsonEquals(json(actual), json(expected))
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M not consume a numeric event W consume() {boolean matcher field}`() {
+        // Given
+        val expectations = json("{\"exposures\":[{\"_count\":1,\"value\":true}]}").asJsonObject
+
+        // When + Then
+        assertThatThrownBy {
+            CanonicalFixtureMatcher.consume(listOf(json("{\"value\":1}")), expectations, "exposures") { true }
+        }.isInstanceOf(AssertionError::class.java)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["1", "2.0", "9"])
+    fun `M return the count W count() {positive integer}`(fakeCount: String) {
+        // When
+        val result = CanonicalFixtureMatcher.count(json("{\"_count\":$fakeCount}").asJsonObject)
+
+        // Then
+        assertThat(result).isEqualTo(fakeCount.toBigDecimal().toInt())
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["0", "-1", "1.5", "true", "false", "\"2\"", "null", "[1]", "{}", "1e100", "1e-400"])
+    fun `M fail the test W count() {invalid count}`(fakeCount: String) {
+        // Given
+        val matcher = json("{\"_count\":$fakeCount}").asJsonObject
+
+        // When + Then
+        assertThatThrownBy { CanonicalFixtureMatcher.count(matcher) }
+            .isInstanceOf(AssertionError::class.java)
+            .hasMessageContaining("Invalid _count")
+    }
+
+    @Test
+    fun `M fail the test W count() {missing count}`() {
+        // When + Then
+        assertThatThrownBy { CanonicalFixtureMatcher.count(JsonObject()) }
+            .isInstanceOf(AssertionError::class.java)
+            .hasMessageContaining("Invalid _count")
+    }
+
+    private fun json(text: String) = JsonParser.parseString(text)
+}

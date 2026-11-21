@@ -17,6 +17,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assertThat
@@ -39,7 +40,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
-import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -54,6 +54,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
+import java.io.RandomAccessFile
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -210,11 +211,15 @@ internal class ProfilingDataWriterTest {
             .hasLongTaskIds(fakeLongTasks.map { it.id })
 
         val actualMetadata = ProfilingBatchMetadata
-            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock())
+            .fromBytesOrNull(argumentCaptor.firstValue.metadata)
         checkNotNull(actualMetadata)
-        assertThat(actualMetadata.perfettoBytes).isEqualTo(fakePerfettoBytes)
+        assertThat(
+            actualMetadata.bytes.copyOfRange(actualMetadata.perfettoOffset, actualMetadata.rumMobileEventsOffset)
+        ).isEqualTo(fakePerfettoBytes)
 
-        val actualMetadataEvents = JsonParser.parseString(String(actualMetadata.rumMobileEventsBytes))
+        val actualMetadataEvents = JsonParser.parseString(
+            String(actualMetadata.bytes, actualMetadata.rumMobileEventsOffset, actualMetadata.rumMobileEventsLength)
+        )
             .asJsonArray
             .map {
                 RumMetadataEvent.fromJsonObject(it.asJsonObject)
@@ -332,6 +337,199 @@ internal class ProfilingDataWriterTest {
             isNull()
         )
         verifyNoMoreInteractions(mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M drop and delete file W writeManualProfile() {profile one byte over the limit}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
+        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>
+    ) {
+        // Given
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        val fakeSize = PROFILE_SIZE_LIMIT_BYTES + 1
+        RandomAccessFile(file, "rw").use { it.setLength(fakeSize) }
+
+        // When
+        testedDataWriterTest.writeManualProfile(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = fakeVitals,
+            anrEvents = fakeAnrs,
+            longTasks = fakeLongTasks
+        )
+
+        // Then
+        assertThat(file.exists()).isFalse()
+        val expectedProps = mapOf(
+            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+                ProfilingDataWriter.KEY_DROPPED to true,
+                ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_PROFILE_TOO_LARGE,
+                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+                ProfilingDataWriter.KEY_LONG_TASK_COUNT to fakeLongTasks.size,
+                ProfilingDataWriter.KEY_ANR_COUNT to fakeAnrs.size,
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size,
+                ProfilingDataWriter.KEY_PROFILE_SIZE_BYTES to fakeSize
+            )
+        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).logMetric(
+                capture(),
+                eq(expectedProps),
+                eq(MethodCallSamplingRate.ALL.rate),
+                isNull()
+            )
+            assertThat(firstValue()).isEqualTo(ProfilingTelemetry.TELEMETRY_MSG_PROFILING_SESSION)
+        }
+        verifyNoInteractions(mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M drop and delete file W writeTriggerProfile() {profile one byte over the limit}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeRumContext: ProfilingRumContext,
+        forge: Forge
+    ) {
+        // Given
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        val fakeSize = PROFILE_SIZE_LIMIT_BYTES + 1
+        RandomAccessFile(file, "rw").use { it.setLength(fakeSize) }
+        val fakeErrorId = forge.anAlphabeticalString()
+
+        // When
+        testedDataWriterTest.writeTriggerProfile(
+            perfettoResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            rumErrorId = fakeErrorId,
+            rumContext = fakeRumContext
+        )
+
+        // Then
+        assertThat(file.exists()).isFalse()
+        val expectedProps = mapOf(
+            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+                ProfilingDataWriter.KEY_DROPPED to true,
+                ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_PROFILE_TOO_LARGE,
+                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+                ProfilingDataWriter.KEY_HAS_RUM_ERROR_ID to true,
+                ProfilingDataWriter.KEY_PROFILE_SIZE_BYTES to fakeSize
+            )
+        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).logMetric(
+                capture(),
+                eq(expectedProps),
+                eq(MethodCallSamplingRate.ALL.rate),
+                isNull()
+            )
+            assertThat(firstValue()).isEqualTo(ProfilingTelemetry.TELEMETRY_MSG_PROFILING_SESSION)
+        }
+        verifyNoInteractions(mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M write the result W writeManualProfile() {profile exactly at the limit}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
+        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>
+    ) {
+        // Given
+        whenever(mockEventBatchWriter.write(any(), isNull(), eq(EventType.DEFAULT))) doReturn true
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        RandomAccessFile(file, "rw").use { it.setLength(PROFILE_SIZE_LIMIT_BYTES) }
+
+        // When
+        testedDataWriterTest.writeManualProfile(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = fakeVitals,
+            anrEvents = fakeAnrs,
+            longTasks = fakeLongTasks
+        )
+
+        // Then
+        argumentCaptor<RawBatchEvent> {
+            verify(mockEventBatchWriter).write(capture(), isNull(), eq(EventType.DEFAULT))
+            val metadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(firstValue.metadata))
+            assertThat(metadata.perfettoLength.toLong()).isEqualTo(PROFILE_SIZE_LIMIT_BYTES)
+        }
+        assertThat(file.exists()).isFalse()
+    }
+
+    @Test
+    fun `M write the result W writeTriggerProfile() {profile exactly at the limit}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeRumContext: ProfilingRumContext,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockEventBatchWriter.write(any(), isNull(), eq(EventType.DEFAULT))) doReturn true
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        RandomAccessFile(file, "rw").use { it.setLength(PROFILE_SIZE_LIMIT_BYTES) }
+
+        // When
+        testedDataWriterTest.writeTriggerProfile(
+            perfettoResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            rumErrorId = forge.anAlphabeticalString(),
+            rumContext = fakeRumContext
+        )
+
+        // Then
+        argumentCaptor<RawBatchEvent> {
+            verify(mockEventBatchWriter).write(capture(), isNull(), eq(EventType.DEFAULT))
+            val metadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(firstValue.metadata))
+            assertThat(metadata.perfettoLength.toLong()).isEqualTo(PROFILE_SIZE_LIMIT_BYTES)
+        }
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(successfulTriggerWriteProps(fakeResult)),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
+        assertThat(file.exists()).isFalse()
+    }
+
+    @Test
+    fun `M write the result in a batch W writeTriggerProfile()`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeRumContext: ProfilingRumContext,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockEventBatchWriter.write(any(), isNull(), eq(EventType.DEFAULT))) doReturn true
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        val fakePerfettoBytes = forge.aString(size = forge.anInt(min = 1, max = 4096)).toByteArray()
+        file.writeBytes(fakePerfettoBytes)
+        val fakeErrorId = forge.anAlphabeticalString()
+
+        // When
+        testedDataWriterTest.writeTriggerProfile(
+            perfettoResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            rumErrorId = fakeErrorId,
+            rumContext = fakeRumContext
+        )
+
+        // Then
+        argumentCaptor<RawBatchEvent> {
+            verify(mockEventBatchWriter).write(capture(), isNull(), eq(EventType.DEFAULT))
+            val metadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(firstValue.metadata))
+            assertThat(
+                metadata.bytes.copyOfRange(metadata.perfettoOffset, metadata.rumMobileEventsOffset)
+            ).isEqualTo(fakePerfettoBytes)
+            val rumEvents = JsonParser.parseString(
+                String(metadata.bytes, metadata.rumMobileEventsOffset, metadata.rumMobileEventsLength)
+            ).asJsonArray
+                .map { RumMetadataEvent.fromJsonObject(it.asJsonObject) }
+            assertThat(rumEvents.map { it.id }).containsExactly(fakeErrorId)
+        }
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(successfulTriggerWriteProps(fakeResult)),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
+        assertThat(file.exists()).isFalse()
     }
 
     @Test
@@ -460,10 +658,14 @@ internal class ProfilingDataWriterTest {
             .hasErrorIds(emptyList())
 
         val actualMetadata = ProfilingBatchMetadata
-            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock())
+            .fromBytesOrNull(argumentCaptor.firstValue.metadata)
         checkNotNull(actualMetadata)
-        assertThat(actualMetadata.perfettoBytes).isEqualTo(fakePerfettoBytes)
-        val actualMetadataEvents = JsonParser.parseString(String(actualMetadata.rumMobileEventsBytes))
+        assertThat(
+            actualMetadata.bytes.copyOfRange(actualMetadata.perfettoOffset, actualMetadata.rumMobileEventsOffset)
+        ).isEqualTo(fakePerfettoBytes)
+        val actualMetadataEvents = JsonParser.parseString(
+            String(actualMetadata.bytes, actualMetadata.rumMobileEventsOffset, actualMetadata.rumMobileEventsLength)
+        )
             .asJsonArray
             .map { RumMetadataEvent.fromJsonObject(it.asJsonObject) }
         val vitalsMetadata = actualMetadataEvents.filter { it.type == RumMetadataEvent.Type.VITAL }
@@ -628,5 +830,20 @@ internal class ProfilingDataWriterTest {
             eq(MethodCallSamplingRate.ALL.rate),
             isNull()
         )
+    }
+
+    private fun successfulTriggerWriteProps(fakeResult: PerfettoResult) = mapOf(
+        ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+        ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+            ProfilingDataWriter.KEY_DROPPED to false,
+            ProfilingDataWriter.KEY_DROP_REASON to null,
+            ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+            ProfilingDataWriter.KEY_HAS_RUM_ERROR_ID to true
+        )
+    )
+
+    companion object {
+        // 30 MiB, the intake limit, kept as a literal independent from the production constant
+        private const val PROFILE_SIZE_LIMIT_BYTES = 31_457_280L
     }
 }

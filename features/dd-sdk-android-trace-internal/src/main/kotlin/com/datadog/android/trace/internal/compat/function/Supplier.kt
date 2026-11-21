@@ -6,7 +6,7 @@
 
 package com.datadog.android.trace.internal.compat.function
 
-internal interface Supplier<T> {
+internal interface Supplier<out T> {
 
     fun get(): T
 }

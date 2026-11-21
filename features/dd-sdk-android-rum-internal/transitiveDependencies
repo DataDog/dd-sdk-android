@@ -1,7 +1,8 @@
 Dependencies List
 
-org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
-org.jetbrains:annotations:13.0                                  :   17 Kb
+Dependency                                                                           |     Size | Classpath
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                                            |  1706 Kb | both
+org.jetbrains:annotations:13.0                                                       |    17 Kb | both
 
-Total transitive dependencies size                              : 1723 Kb
-
+Total compile dependency artifact size: 1723 Kb
+Total runtime dependency artifact size: 1723 Kb

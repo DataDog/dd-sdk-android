@@ -81,17 +81,25 @@ internal class ProfilingRequestFactory(
             EVENT_FILE_NAME,
             rawBatchEvent.data.toRequestBody(CONTENT_TYPE_JSON_TYPE)
         )
-        val eventMetadata = ProfilingBatchMetadata.fromBytesOrNull(rawBatchEvent.metadata, internalLogger)
+        val eventMetadata = ProfilingBatchMetadata.fromBytesOrNull(rawBatchEvent.metadata)
         if (eventMetadata != null) {
             multipartBodyBuilder.addFormDataPart(
                 PERFETTO_FILE_NAME,
                 PERFETTO_FILE_NAME,
-                eventMetadata.perfettoBytes.toRequestBody(CONTENT_TYPE_BINARY_TYPE)
+                eventMetadata.bytes.toRequestBody(
+                    CONTENT_TYPE_BINARY_TYPE,
+                    eventMetadata.perfettoOffset,
+                    eventMetadata.perfettoLength
+                )
             )
             multipartBodyBuilder.addFormDataPart(
                 RUM_MOBILE_EVENTS_FILE_NAME,
                 RUM_MOBILE_EVENTS_FILE_NAME,
-                eventMetadata.rumMobileEventsBytes.toRequestBody(CONTENT_TYPE_JSON_TYPE)
+                eventMetadata.bytes.toRequestBody(
+                    CONTENT_TYPE_JSON_TYPE,
+                    eventMetadata.rumMobileEventsOffset,
+                    eventMetadata.rumMobileEventsLength
+                )
             )
         } else {
             multipartBodyBuilder.addFormDataPart(

@@ -10,7 +10,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.internal.timeseries.DataPoint
 
-internal interface EventFactory<T : Any, E : Any> {
+internal interface EventFactory<in T : Any, out E : Any> {
     val eventName: String
 
     fun create(

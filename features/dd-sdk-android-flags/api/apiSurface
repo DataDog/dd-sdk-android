@@ -7,6 +7,7 @@ enum com.datadog.android.flags.ExperimentationOptOutMode
   - FUTURE_EXPERIMENTS_ONLY
 object com.datadog.android.flags.Flags
   fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
+class com.datadog.android.flags.FlagsAssignmentAuthorizationException : RuntimeException
 interface com.datadog.android.flags.FlagsClient
   fun onFirstFlags(FlagsClientEventListener): FlagsSubscription
   fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback? = null)
@@ -60,8 +61,9 @@ interface com.datadog.android.flags.StateObservable
   fun removeListener(FlagsStateListener)
 class com.datadog.android.flags._FlagsInternalProxy
   constructor(FlagsClient)
+  fun getInternalLogger(): com.datadog.android.api.InternalLogger
   fun isExperimentationOptOutEnabled(): Boolean
-  fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback?, Boolean)
+  fun setEvaluationContextWithOutcome(com.datadog.android.flags.model.EvaluationContext, Boolean?, (com.datadog.android.flags.model.FlagsClientState, Throwable?) -> Unit)
   fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean
   fun getFlagAssignmentsSnapshot(com.datadog.android.flags.model.EvaluationContext): Map<String, com.datadog.android.flags.model.UnparsedFlag>?
   fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.UnparsedFlag>
@@ -71,12 +73,16 @@ class com.datadog.android.flags._FlagsInternalProxy
   fun trackFlagEvaluationEvent(String, com.datadog.android.flags.model.UnparsedFlag?, com.datadog.android.flags.model.EvaluationContext, String?)
   fun trackFlagEvaluationEvent(String, com.datadog.android.flags.model.UnparsedFlag?, com.datadog.android.flags.model.EvaluationContext, String?, Boolean, String?)
   fun trackFlagRumEvaluation(String, String, com.datadog.android.flags.model.EvaluationContext)
+  fun <T: Any> resolveDeferringExposure(String, T): DeferredExposureResolution<T>
+  class DeferredExposureResolution<T: Any>
+    constructor(com.datadog.android.flags.model.ResolutionDetails<T>, com.datadog.android.flags.model.EvaluationContext?, () -> Boolean??)
 enum com.datadog.android.flags.model.ErrorCode
   - PROVIDER_NOT_READY
   - FLAG_NOT_FOUND
   - PARSE_ERROR
   - TYPE_MISMATCH
   - INVALID_CONTEXT
+  - GENERAL
 data class com.datadog.android.flags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())
   companion object 

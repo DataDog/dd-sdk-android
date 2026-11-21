@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.AnyThread
+import androidx.annotation.GuardedBy
 import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
@@ -147,7 +148,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * RUM feature class, which needs to be registered with Datadog SDK instance.
@@ -187,13 +187,15 @@ internal class RumFeature(
     internal var memoryVitalMonitor: VitalMonitor = NoOpVitalMonitor()
     internal var frameRateVitalMonitor: VitalMonitor = NoOpVitalMonitor()
 
-    internal var debugActivityLifecycleListener =
-        AtomicReference<Application.ActivityLifecycleCallbacks>(null)
+    private val debugListenerLock = Any()
+
+    @GuardedBy("debugListenerLock")
+    internal var debugActivityLifecycleListener: UiRumDebugListener? = null
     internal var frameStatesAggregator: Application.ActivityLifecycleCallbacks? = null
     internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
 
-    internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
+    internal var schedulerExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
     private var anrDetectorExecutorService: ExecutorService? = null
     internal var anrDetectorRunnable: ANRDetectorRunnable? = null
     internal lateinit var appContext: Context
@@ -282,11 +284,11 @@ internal class RumFeature(
         val frequency = configuration.vitalsMonitorUpdateFrequency
         val vitalsUpdatesRequired = frequency != VitalsUpdateFrequency.NEVER
 
-        // The vital executor backs both the CPU/memory vital monitors and timeseries sampling.
-        if (vitalsUpdatesRequired || configuration.timeseriesConfiguration != null) initializeVitalExecutorService()
+        // The scheduler executor backs both the CPU/memory vital monitors and timeseries sampling.
+        if (vitalsUpdatesRequired || configuration.timeseriesConfiguration != null) initializeSchedulerExecutorService()
 
         if (vitalsUpdatesRequired) {
-            // CPU/memory monitors schedule on the vital executor, so they are only set up when vitals
+            // CPU/memory monitors schedule on the scheduler executor, so they are only set up when vitals
             // are enabled - the same condition that creates the executor above.
             initializeCpuVitalMonitor(frequency)
             initializeMemoryVitalMonitor(frequency)
@@ -352,7 +354,7 @@ internal class RumFeature(
             sdkCore = sdkCore,
             sessionRegistry = sessionRegistry,
             pipelinesFactory = pipelinesFactory,
-            scheduledExecutorService = vitalExecutorService,
+            scheduledExecutorService = schedulerExecutorService,
             viewTransitionDelayMs = timeseriesConfiguration.viewTransitionDelayMs
         )
     }
@@ -438,6 +440,7 @@ internal class RumFeature(
             (appContext as? Application)?.unregisterActivityLifecycleCallbacks(it)
         }
         processLifecycleMonitor = null
+        disableDebugging()
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.stop()
 
         dataWriter = NoOpDataWriter()
@@ -450,10 +453,10 @@ internal class RumFeature(
         memoryVitalMonitor = NoOpVitalMonitor()
         frameRateVitalMonitor = NoOpVitalMonitor()
 
-        vitalExecutorService.shutdownNow()
+        schedulerExecutorService.shutdownNow()
         anrDetectorExecutorService?.shutdownNow()
         anrDetectorRunnable?.stop()
-        vitalExecutorService = NoOpScheduledExecutorService()
+        schedulerExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
 
         cleanupInfoProviders()
@@ -606,10 +609,10 @@ internal class RumFeature(
             return
         }
         val context = appContext
-        synchronized(debugActivityLifecycleListener) {
-            if (context is Application && debugActivityLifecycleListener.get() == null) {
+        synchronized(debugListenerLock) {
+            if (context is Application && debugActivityLifecycleListener == null) {
                 val listener = UiRumDebugListener(sdkCore, advancedRumMonitor)
-                debugActivityLifecycleListener.set(listener)
+                debugActivityLifecycleListener = listener
                 context.registerActivityLifecycleCallbacks(listener)
             }
         }
@@ -618,11 +621,26 @@ internal class RumFeature(
     @AnyThread
     internal fun disableDebugging() {
         val context = appContext
-        synchronized(debugActivityLifecycleListener) {
-            if (debugActivityLifecycleListener.get() != null && context is Application) {
-                val listener = debugActivityLifecycleListener.get()
+        synchronized(debugListenerLock) {
+            val listener = debugActivityLifecycleListener
+            if (listener != null && context is Application) {
                 context.unregisterActivityLifecycleCallbacks(listener)
-                debugActivityLifecycleListener.set(null)
+                // unsubscribe before a replacement listener can be registered
+                listener.unsubscribe()
+                debugActivityLifecycleListener = null
+                detachDebugListener(listener)
+            }
+        }
+    }
+
+    private fun detachDebugListener(listener: UiRumDebugListener) {
+        if (isMainThread()) {
+            @Suppress("ThreadSafety") // just verified we are on the main thread
+            listener.detach()
+        } else {
+            handler.post {
+                @Suppress("ThreadSafety") // handler posts to the main looper
+                listener.detach()
             }
         }
     }
@@ -694,9 +712,9 @@ internal class RumFeature(
         longTaskTrackingStrategy.unregister(appContext)
     }
 
-    private fun initializeVitalExecutorService() {
+    private fun initializeSchedulerExecutorService() {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        vitalExecutorService = sdkCore.createScheduledExecutorService("rum-vital")
+        schedulerExecutorService = sdkCore.createScheduledExecutorService("rum-scheduler")
     }
 
     private fun initializeCpuVitalMonitor(frequency: VitalsUpdateFrequency) {
@@ -737,13 +755,13 @@ internal class RumFeature(
             sdkCore,
             vitalReader,
             vitalObserver,
-            vitalExecutorService,
+            schedulerExecutorService,
             periodInMs
         ).apply {
             sdkCore.setContextUpdateReceiver(this)
             rumContextUpdateReceivers += this
         }
-        vitalExecutorService.scheduleSafe(
+        schedulerExecutorService.scheduleSafe(
             "Vitals monitoring",
             periodInMs,
             TimeUnit.MILLISECONDS,

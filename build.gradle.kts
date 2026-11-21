@@ -129,9 +129,10 @@ registerSubModuleAggregationTask(
 }
 
 tasks.register("ktlintFormatAll") {
-    description = "Runs code formatting with ktlint for both main and included (`:build-logic`) builds."
+    description = "Runs code formatting with ktlint for the main build and included build logic."
     dependsOn(allprojects.mapNotNull { it.tasks.named { it == "ktlintFormat" } })
     dependsOn(gradle.includedBuild("build-logic").task(":ktlintFormat"))
+    dependsOn(gradle.includedBuild("build-logic-settings").task(":ktlintFormat"))
 }
 
 registerSubModuleAggregationTask(

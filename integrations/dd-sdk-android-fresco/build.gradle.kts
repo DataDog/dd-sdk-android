@@ -42,8 +42,9 @@ android {
 dependencies {
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlinRuntime)
-    implementation(libs.okHttp)
-    implementation(libs.bundles.fresco)
+    implementation(libs.frescoImagePipelineBase)
+    // The documented Fresco setup uses the OkHttp image pipeline at runtime.
+    runtimeOnly(libs.bundles.fresco)
 
     testImplementation(project(":tools:unit")) {
         attributes {
@@ -53,6 +54,7 @@ dependencies {
             )
         }
     }
+    testImplementation(libs.frescoImagePipeline)
     testImplementation(libs.okHttpMock)
 }
 

@@ -48,7 +48,7 @@ internal class EvaluationCallbackDispatchTest {
     fun setUp() {
         whenever(mockCore.timeProvider).thenReturn(mock())
         whenever(mockCore.internalLogger).thenReturn(mockLogger)
-        whenever(mockCore.createOkHttpCallFactory()).thenReturn(mock())
+        whenever(mockCore.createOkHttpCallFactory(any())).thenReturn(mock())
         whenever(mockCore.createSingleThreadExecutorService(any())).thenAnswer {
             if (it.getArgument<String>(0) == FlagsClient.FLAGS_CALLBACK_EXECUTOR_NAME) {
                 mockCallbackWorker

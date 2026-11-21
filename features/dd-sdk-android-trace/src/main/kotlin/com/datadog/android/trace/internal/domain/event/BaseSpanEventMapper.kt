@@ -13,7 +13,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.trace.model.SpanEvent
 
-internal abstract class BaseSpanEventMapper<T> : ContextAwareMapper<T, SpanEvent> {
+internal abstract class BaseSpanEventMapper<T : Any> : ContextAwareMapper<T, SpanEvent> {
 
     protected fun resolveUserInfo(userInfo: UserInfo) = SpanEvent.Usr(
         id = userInfo.id,

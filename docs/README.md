@@ -53,7 +53,9 @@ Review factual accuracy against the affected code, navigation, reader purpose,
 and the scope of any instructions. Preserve useful existing guidance.
 Use short sentences and active voice. A mechanical result does not establish
 semantic accuracy or full Simplified Technical English compliance.
-Record the affected-document decision and actual validation results in PR evidence.
+Assess whether documentation is affected and record actual validation results in
+task output or reports. Include these details in PR descriptions only when relevant
+to review, following the [PR preparation skill](../ai/skills/sdk-pr-prepare/SKILL.md).
 Leave unrelated legacy prose for a separate change.
 
 ## Foundation validation
@@ -81,7 +83,9 @@ path explicitly before staged validation. Do not stage unrelated files.
 
 `sdk-pr-prepare` owns the SDK build, lint, test, and generated-file procedures.
 It does not currently invoke the Foundation gate. Run the gate separately on
-the final intended snapshot, and record both SDK and documentation evidence.
+the final intended snapshot, and record both SDK and documentation evidence in
+task output or reports. Apply the PR description guidance above when selecting
+evidence to include in the PR.
 A Foundation pass does not replace any selected SDK validation.
 
 For staged changes, use the `index` command above before the commit. If the SDK

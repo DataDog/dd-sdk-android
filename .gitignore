@@ -10,6 +10,7 @@ captures/
 # Gradle files
 .gradle/
 build/
+**/workspace/build-cache/
 
 # CMake
 .cxx/
@@ -33,11 +34,13 @@ gh_token
 **/verification-metadata.xml
 !gradle/verification-metadata.xml
 
+## Common AI agents
+worktrees/
+*.local.json
+*.local.md
+
 # Codex
 .codex
-
-# Claude
-.claude/worktrees/
 
 ci/scripts/__pycache__/
 

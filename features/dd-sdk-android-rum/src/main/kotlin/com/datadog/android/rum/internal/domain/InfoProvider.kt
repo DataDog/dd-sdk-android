@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.domain
 
 internal interface InfoData
 
-internal interface InfoProvider<T : InfoData> {
+internal interface InfoProvider<out T : InfoData> {
     fun getState(): T
     fun cleanup()
 }

@@ -8,7 +8,7 @@ package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.api.context.DatadogContext
 
-internal interface ContextAwareMapper<R, T> {
+internal interface ContextAwareMapper<in R, out T> {
 
     fun map(datadogContext: DatadogContext, model: R): T
 }

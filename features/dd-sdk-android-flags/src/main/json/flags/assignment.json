@@ -11,7 +11,26 @@
     "variationKey": { "type": "string" },
     "extraLogging": { "type": "object", "additionalProperties": true },
     "reason": { "type": "string" },
-    "serialId": { "type": "integer" }
+    "serialId": { "type": "integer" },
+    "features": {
+      "type": "array",
+      "description": "Features of the selected split. The SDK drops malformed entries before parsing.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" },
+          "value": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number" },
+              { "type": "boolean" }
+            ]
+          },
+          "destinations": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["key", "value", "destinations"]
+      }
+    }
   },
   "required": ["variationType", "variationValue", "doLog", "allocationKey", "variationKey", "extraLogging", "reason"]
 }

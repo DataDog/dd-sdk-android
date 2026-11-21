@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.flags.internal.model.VariationType
+import com.datadog.android.flags.model.UnparsedFlag
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.Locale
@@ -89,6 +90,20 @@ internal object FlagValueConverter {
 
             result ?: throw IllegalArgumentException("Failed to parse value '$variationValue'")
         }
+    }
+
+    /**
+     * Returns [flags] without the numeric assignments that neither an Int nor a Double getter can read, such as
+     * `1e400`, `1e-400`, or a whole value that Double can't hold exactly. Bridges and other exports read numbers
+     * from the raw literal, so they must not receive a value that native getters reject.
+     */
+    fun <T : UnparsedFlag> exportable(flags: Map<String, T>): Map<String, T> {
+        val exportable = flags.filterValues { flag ->
+            !isNumeric(flag.variationType) ||
+                convert(flag.variationValue, flag.variationType, Int::class).isSuccess ||
+                convert(flag.variationValue, flag.variationType, Double::class).isSuccess
+        }
+        return if (exportable.size == flags.size) flags else exportable
     }
 
     /**

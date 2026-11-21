@@ -40,6 +40,9 @@ stages:
     - export DATADOG_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
 
   setup-gradle:
+    # Rewrite only the CI checkout; retain the wrapper's version and distribution type.
+    - |
+      sed -i -E "s#^distributionUrl=.*services\.gradle\.org/distributions/gradle-(.*)-(all|bin)\.zip\$#distributionUrl=${GRADLE_DISTRIBUTION_MIRROR}/v\1/gradle-\1-\2.zip#" gradle/wrapper/gradle-wrapper.properties
     - export GRADLE_USER_HOME="cache/"
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - |
@@ -52,6 +55,13 @@ stages:
         "-Dorg.gradle.jvmargs=${gradle_jvm_args[*]}"
         "-Dorg.gradle.logging.stacktrace=all"
       )
+
+      # On these branches we want to build and run tests from scratch.
+      case "${CI_COMMIT_BRANCH:-}" in
+        develop|release*|dogfooding*)
+          export DD_CI_RERUN_TASKS=true
+          ;;
+      esac
 
       printf -v configured_gradle_options ' %q' "${gradle_options[@]}"
       export GRADLE_OPTS="${GRADLE_OPTS:-}$configured_gradle_options"
@@ -150,7 +160,7 @@ analysis:ktlint:
   extends: .verification-gradle-job
   timeout: 30m
   script:
-    - ./gradlew ktlintCheck :build-logic:ktlintCheck
+    - ./gradlew ktlintCheck :build-logic:ktlintCheck :build-logic-settings:ktlintCheck
 
 analysis:detekt:
   extends: .verification-gradle-job
@@ -182,6 +192,7 @@ test:debug:
 test:tools:
   extends: .verification-gradle-job
   script:
+    - python3 -m unittest discover -s ci/scripts -p test_publish_dogfood_to_depot.py
     - ./gradlew :unitTestTools
   artifacts:
     when: always
@@ -518,7 +529,7 @@ test-pyramid:rum-fit-tests:
     DYNAMIC_BUILD_RENDER_RULES: android
     TARGET_SHA_DD_SDK_ANDROID: $CI_COMMIT_SHA
 
-# PUBLISH ARTIFACTS ON MAVEN
+# PUBLISH ARTIFACTS ON MAVEN (Maven Central, plus binaries.ddbuild.io for internal tools)
 
 publish:release-all:
   extends:
@@ -544,6 +555,24 @@ publish:release-all:
     paths:
       - "**/verification-metadata.xml"
 
+# tools/benchmark is internal: it skips Sonatype and goes to binaries.ddbuild.io instead (see MavenConfig).
+# A separate job, so that a failed upload can be retried on its own without publishing to Sonatype again.
+publish:benchmark-internal:
+  extends:
+    - .cpu-memory-intensive-job
+  tags: [ "arch:amd64" ]
+  interruptible: false
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - !reference [.snippets, setup-gradle]
+    - ./gradlew :tools:benchmark:publishReleasePublicationToInternalRepository --no-build-cache
+
 # Publishes every dogfooding build once its pipeline has passed
 publish:dogfooding:
   extends:
@@ -560,7 +589,26 @@ publish:dogfooding:
     - !reference [.snippets, setup-gradle]
     # Publishing is done by S3 repo, so credentials are managed by IAM from env set in the CI
     # job for the service account. Signing is also not required for internal build.
-    - ./gradlew publishReleasePublicationToDogfoodRepository --stacktrace --no-daemon -Pdd-skip-signing
+    - ./gradlew publishReleasePublicationToInternalRepository --stacktrace --no-daemon -Pdd-skip-signing
+
+
+# Runs independently of S3 publishing; a Depot failure must not fail the pipeline.
+publish:dogfooding-depot:
+  extends:
+    - .cpu-memory-intensive-job
+    - .real-sdk-commit-sha-job
+  tags: [ "arch:amd64" ]
+  only:
+    - dogfooding
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  interruptible: false
+  allow_failure: true
+  dependencies: []
+  script:
+    - !reference [.snippets, setup-gradle]
+    - python3 ci/scripts/publish_dogfood_to_depot.py
 
 
 # SLACK NOTIFICATIONS

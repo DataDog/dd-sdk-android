@@ -7,6 +7,7 @@ datadog:
       - "android.app.ActivityManager.getMemoryInfo(android.app.ActivityManager.MemoryInfo?):java.lang.RuntimeException"
       - "android.app.ActivityManager.getMyMemoryState(android.app.ActivityManager.RunningAppProcessInfo?):java.lang.RuntimeException"
       - "android.app.ApplicationExitInfo.getTraceInputStream():java.io.IOException"
+      - "android.content.Context.getSystemService(java.lang.Class):java.lang.RuntimeException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, android.content.pm.PackageManager.PackageInfoFlags):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, kotlin.Int):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.res.AssetManager.open(kotlin.String):java.io.IOException"
@@ -200,6 +201,7 @@ datadog:
       # endregion
       # region Kotlin primitives
       - "kotlin.ByteArray.constructor(kotlin.Int, kotlin.Function1):java.lang.NegativeArraySizeException"
+      - "kotlin.ByteArray.copyInto(kotlin.ByteArray, kotlin.Int, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.ByteArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
       - "kotlin.ByteArray.copyOfRange(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
       - "kotlin.ByteArray.get(kotlin.Int):java.lang.IndexOutOfBoundsException"

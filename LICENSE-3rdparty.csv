@@ -59,6 +59,7 @@ import,com.benasher44,MIT,"Copyright (c) 2019 Ben Asher"
 import,com.github.bumptech.glide,"BSD 3-Clause","Copyright 2014 Google, Inc. All rights reserved, Copyright (c) 2013. Bump Technologies Inc. All Rights Reserved."
 import,com.facebook.fresco,MIT,"Copyright (c) Facebook, Inc. and its affiliates"
 import,com.facebook.stetho,MIT,"Copyright (c) Facebook, Inc. and its affiliates"
+import,com.github.burrunan,Apache-2.0,Vladimir Sitnikov
 import,com.github.spotbugs,"GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1","Copyright (C) 1991, 1999 Free Software Foundation, Inc."
 import,com.github.TeamNewPipe,AGPL-3.0-only,"2017-2024 NewPipe contributors <https://newpipe.net>"
 import,com.github.TeamNewPipe.NewPipeExtractor,AGPL-3.0-only,"2017-2024 NewPipe contributors <https://newpipe.net>"

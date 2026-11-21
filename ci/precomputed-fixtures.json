@@ -1,4 +1,0 @@
-{
-  "destination": "reliability/single-fit/flags/src/test/resources/precomputed",
-  "signing_destination": "features/dd-sdk-android-flags/src/test/resources/response-signing-v1"
-}

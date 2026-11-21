@@ -101,6 +101,8 @@ dependencies {
     implementation(platform(libs.androidXComposeBom))
     implementation(libs.material3Android)
     implementation(libs.bundles.androidXCompose)
+    implementation(libs.androidXComposeUiToolingPreview)
+    debugImplementation(libs.androidXComposeUiTooling)
     implementation(libs.coilCompose)
     implementation(libs.daggerLib)
     ksp(libs.daggerCompiler)

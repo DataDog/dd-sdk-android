@@ -60,12 +60,12 @@ Except for our unit tests, the actual implementation is our own `LoggingSchedule
 
 ---
 
-### `RumFeature.vitalExecutorService`: `ScheduledExecutorService`
+### `RumFeature.schedulerExecutorService`: `ScheduledExecutorService`
 
 ##### Purpose and Usage
 
-This instance (one per `RumFeature`) is used to schedule regular readings of the system vitals, namely the CPU and
-memory usage.
+This instance (one per `RumFeature`) is used to schedule RUM periodic work, such as regular readings of the system
+vitals, namely the CPU and memory usage.
 
 ##### Load and scalability
 

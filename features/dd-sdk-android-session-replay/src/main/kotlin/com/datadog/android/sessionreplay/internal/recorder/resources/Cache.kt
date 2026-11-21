@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
-internal interface Cache<K : Any, V : Any> {
+internal interface Cache<in K : Any, V : Any> {
 
     fun put(value: V) {}
     fun put(key: K, value: V) {}

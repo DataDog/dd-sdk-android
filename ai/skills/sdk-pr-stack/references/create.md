@@ -11,12 +11,12 @@ This skill turns the current feature branch into a series of stacked pull reques
 
 **Key principle: one gt branch = one PR, but one PR can contain multiple commits.** Do not force a 1-commit-per-PR structure. Organise commits into PRs that make logical sense for a reviewer — target ~400 lines of changed code per PR, but never split artificially.
 
-## PR content rules — MANDATORY
+## PR content rules
 
 Each PR in the stack must contain only code that is logically related to the changes introduced on the branch. These rules apply when deciding how to split commits into PRs (Steps 2, 3.1, and 3.2) and must never be violated in the name of keeping PRs small:
 
 - **Tests travel with their production code.** If a PR contains new or modified production code, its tests must be in the same PR — not split into a separate PR. Conversely, if a PR contains new or modified tests, the production code those tests cover must be in the same PR.
-- **Detekt rule changes are bundled with the triggering production code.** Additions or modifications to detekt config files (e.g. `detekt_custom_unsafe_calls.yml`, `detekt_custom_safe_calls.yml`) must be in the same PR as the production code that requires the rule change — never in a standalone PR.
+- **Detekt rule changes are bundled with the triggering production code.** Additions or modifications to detekt config files (e.g. `detekt_custom_unsafe_calls.yml`, `detekt_custom_safe_calls_*.yml`) must be in the same PR as the production code that requires the rule change — never in a standalone PR.
 
 When the subagent in Step 3.1 proposes a split, validate the output against these rules before presenting it to the user. If any PR violates them, revise the split — either by merging the offending PRs or by moving the misplaced files — before showing it.
 
@@ -32,9 +32,9 @@ This skill file itself is authored in English — do not translate it.
 
 ---
 
-## Interactive questions — MANDATORY
+## Interactive questions
 
-Every clarifying question throughout every step MUST be asked via the `AskUserQuestion` tool. Never present choices as plain numbered text. Batch related questions when possible (up to 4 per call). The user can always pick "Other" to type a free-text response.
+Ask clarifying questions with `AskUserQuestion` rather than as numbered text, batching related questions (up to 4 per call). The user can always pick "Other" to type a free-text response.
 
 ---
 
@@ -336,17 +336,7 @@ Then use `AskUserQuestion`:
 
 ### 3.3 Compile-check configuration
 
-Detect build systems in the repo root (use `Glob`/`Read`):
-
-| Manifest file         | Default command          |
-|-----------------------|--------------------------|
-| `package.json`        | `npm run build`          |
-| `go.mod`              | `go build ./...`         |
-| `Cargo.toml`          | `cargo build`            |
-| `pom.xml`             | `mvn -q compile`         |
-| `build.gradle(.kts)`  | `./gradlew assembleLibrariesDebug`        |
-| `pyproject.toml`      | `python -m compileall .` |
-| (none, only `.py`)    | `python -m compileall .` |
+The default compile command is `./gradlew assembleLibrariesDebug`.
 
 Use `AskUserQuestion`:
 
@@ -606,7 +596,7 @@ Then use `AskUserQuestion`:
 
 ### 4.3 Generate PR descriptions (separate from commit messages)
 
-**PR descriptions are MANDATORY. They can never be omitted, skipped, or left empty — not even for small or "obvious" PRs.**
+Every PR gets a non-empty description, including small or "obvious" ones.
 
 PR descriptions are GitHub metadata — they must NOT be embedded in git commit messages. Generate one PR description per PR branch now, before submission, so they can be applied via `gh pr edit` after `gt submit`.
 
@@ -616,9 +606,8 @@ Steps:
 2. For each PR branch in the stack:
    - Collect its diff stat: `git diff <parent-branch>...<pr-branch> --stat`
    - Draft a PR description in English:
-     - **If a template exists**: fill it out section by section. Do NOT delete, reorder, or skip any heading — if a section genuinely does not apply write `N/A` (or the repo's equivalent). Following the template structure is not optional.
+     - **If a template exists**: follow its prompts and keep applicable sections and the review checklist in order.
      - **If no template**: write a 2–4 sentence summary covering, in order: what changed (user-visible / behavioural effect), why (motivation: ticket, bug, performance, follow-up), and any relevant notes (caveats, migration steps, test coverage, deliberate omissions).
-   - If the branch name encodes a ticket (`RUM-xxxx`), add `Ref: RUM-xxxx` on its own line at the end so GitHub/Jira auto-links it.
    - Show the drafted description to the user via `AskUserQuestion` (Approve / Edit / Regenerate) before storing it. The user may edit the wording but **may not approve an empty description** — if the user attempts to leave it blank, prompt again.
 3. Store the approved `pr_title` and description per branch in a map `{ "<branch-name>": { "title": "<pr_title>", "body": "<pr-description>" } }` for use in Step 4.4.
 

@@ -372,7 +372,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(6)
+            .hasSize(5)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -433,7 +433,7 @@ class ManualTrackingRumTest {
                 hasActionName(actionName2)
             }
             .hasRumViewUpdateEvent(index = 4) {
-                // View updated with second action (diff part of DiffThenFullView at docVersion=4)
+                // View updated with second action
                 application { hasId(fakeApplicationId) }
                 session {
                     hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
@@ -457,11 +457,68 @@ class ManualTrackingRumTest {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumEvent(index = 5) {
-                // Full view checkpoint at docVersion=4
+    }
+
+    // Keep in sync with RumViewEventWriterImpl.FULL_VIEW_EVERY_N_UPDATES.
+    @Test
+    fun `M send full view checkpoint every 10 document versions W startView() + addAction() {9 actions}`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String,
+        forge: Forge
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+        val actionNames = List(9) { forge.anAlphabeticalString() }
+
+        // When
+        rumMonitor.startView(viewKey, viewName)
+        actionNames.forEach {
+            stubSdkCore.advanceTimeBy(100)
+            rumMonitor.addAction(RumActionType.CUSTOM, it)
+        }
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(20)
+            .hasRumEvent(index = 0) {
+                // Initial view
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasDocumentVersion(2)
+            }
+            .hasRumViewUpdateEvent(index = 14) {
+                dd { hasDocumentVersion(9) }
+                view { action { hasCount(7) } }
+            }
+            .hasRumEvent(index = 15) {
+                hasType("action")
+                hasActionName(actionNames[7])
+            }
+            .hasRumViewUpdateEvent(index = 16) {
+                // diff part of DiffThenFullView at docVersion=10
+                dd { hasDocumentVersion(10) }
+                view { action { hasCount(8) } }
+            }
+            .hasRumEvent(index = 17) {
+                // Full view checkpoint at docVersion=10
                 hasType("view")
                 hasViewUrl(viewKey)
                 hasViewIsActive(true)
+                hasDocumentVersion(10)
+                hasActionCount(8)
+            }
+            .hasRumEvent(index = 18) {
+                hasType("action")
+                hasActionName(actionNames[8])
+            }
+            .hasRumViewUpdateEvent(index = 19) {
+                // Diffs resume after the checkpoint
+                dd { hasDocumentVersion(11) }
+                view {
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(900))
+                    action { hasCount(9) }
+                }
             }
     }
 
@@ -920,7 +977,7 @@ class ManualTrackingRumTest {
         val expectedSecondViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(100)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(4)
+            .hasSize(3)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -958,7 +1015,6 @@ class ManualTrackingRumTest {
                 hasNoOptionalFields()
             }
             .hasRumViewUpdateEvent(index = 2) {
-                // diff part of DiffThenFullView at docVersion=4
                 application { hasId(fakeApplicationId) }
                 session {
                     hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
@@ -984,12 +1040,6 @@ class ManualTrackingRumTest {
                     hasNoOptionalViewFields()
                 }
                 hasNoOptionalFields()
-            }
-            .hasRumEvent(index = 3) {
-                // Full view checkpoint at docVersion=4
-                hasType("view")
-                hasViewUrl(key)
-                hasViewIsActive(true)
             }
     }
 

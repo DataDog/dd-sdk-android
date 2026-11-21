@@ -1,25 +1,36 @@
 Dependencies List
 
-androidx.annotation:annotation-experimental:1.0.0               :   11 Kb
-androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
-androidx.arch.core:core-common:2.1.0                            :   10 Kb
-androidx.arch.core:core-runtime:2.1.0                           :    5 Kb
-androidx.collection:collection-jvm:1.4.5                        :  770 Kb
-androidx.lifecycle:lifecycle-common:2.1.0                       :   21 Kb
-androidx.lifecycle:lifecycle-livedata-core:2.1.0                :    8 Kb
-androidx.lifecycle:lifecycle-livedata:2.1.0                     :   10 Kb
-androidx.startup:startup-runtime:1.0.0                          :   18 Kb
-androidx.work:work-runtime:2.8.1                                : 1626 Kb
-com.google.code.gson:gson:2.10.1                                :  276 Kb
-com.google.guava:listenablefuture:1.0                           :    3 Kb
-com.lyft.kronos:kronos-android:0.0.1-alpha11                    :    5 Kb
-com.lyft.kronos:kronos-java:0.0.1-alpha11                       :   29 Kb
-com.squareup.okhttp3:okhttp:4.12.1                              :  773 Kb
-com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
-org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
-org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
-org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
-org.jetbrains:annotations:13.0                                  :   17 Kb
+Dependency                                                                           |     Size | Classpath
+androidx.annotation:annotation-experimental:1.0.0                                    |    11 Kb | compile
+androidx.annotation:annotation-experimental:1.1.0                                    |    16 Kb | runtime
+androidx.annotation:annotation-jvm:1.9.1                                             |    59 Kb | both
+androidx.arch.core:core-common:2.1.0                                                 |    10 Kb | both
+androidx.arch.core:core-runtime:2.1.0                                                |     5 Kb | both
+androidx.collection:collection:1.0.0                                                 |    40 Kb | runtime
+androidx.core:core:1.6.0 (minCompileSdk=1)                                           |   905 Kb | runtime
+androidx.lifecycle:lifecycle-common:2.1.0                                            |    21 Kb | both
+androidx.lifecycle:lifecycle-livedata-core:2.1.0                                     |     8 Kb | both
+androidx.lifecycle:lifecycle-livedata:2.1.0                                          |    10 Kb | both
+androidx.lifecycle:lifecycle-runtime:2.1.0                                           |     8 Kb | runtime
+androidx.lifecycle:lifecycle-service:2.1.0                                           |     3 Kb | runtime
+androidx.room:room-common:2.5.0                                                      |    58 Kb | runtime
+androidx.room:room-runtime:2.5.0 (minCompileSdk=33)                                  |   231 Kb | runtime
+androidx.sqlite:sqlite-framework:2.3.0 (minCompileSdk=33)                            |    31 Kb | runtime
+androidx.sqlite:sqlite:2.3.0 (minCompileSdk=33)                                      |    29 Kb | runtime
+androidx.startup:startup-runtime:1.0.0                                               |    18 Kb | both
+androidx.tracing:tracing:1.0.0                                                       |     4 Kb | runtime
+androidx.versionedparcelable:versionedparcelable:1.1.1                               |    30 Kb | runtime
+androidx.work:work-runtime:2.8.1 (minCompileSdk=33)                                  |  1626 Kb | both
+com.google.code.gson:gson:2.10.1                                                     |   276 Kb | both
+com.google.guava:listenablefuture:1.0                                                |     3 Kb | both
+com.lyft.kronos:kronos-android:0.0.1-alpha11                                         |     5 Kb | both
+com.lyft.kronos:kronos-java:0.0.1-alpha11                                            |    29 Kb | both
+com.squareup.okhttp3:okhttp:4.12.1                                                   |   773 Kb | both
+com.squareup.okio:okio-jvm:3.6.0                                                     |   351 Kb | both
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                                       |    959 b | both
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                                       |    965 b | both
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                                            |  1706 Kb | both
+org.jetbrains:annotations:13.0                                                       |    17 Kb | both
 
-Total transitive dependencies size                              :    5 Mb
-
+Total compile dependency artifact size: 4 Mb
+Total runtime dependency artifact size: 6 Mb
