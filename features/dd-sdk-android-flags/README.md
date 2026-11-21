@@ -694,7 +694,7 @@ The Flags module uses the JSON contract from [ffe-system-test-data](https://gith
 This keeps response behavior consistent across mobile SDKs. The snapshot is test data only.
 It adds no runtime dependency and requires no Git submodule.
 
-`ci/feature-flags-precomputed-fixtures.json` pins an upstream commit. Tests read the snapshot from the git-ignored `reliability/single-fit/flags/src/test/resources/precomputed` folder. `SOURCE.json` records the source commit and file digests.
+`ci/feature-flags-precomputed-fixtures.json` lists the upstream sources. Each source has its own path, destination, format and pinned commit, so later fixture sets reuse the same pipeline. The `precomputed-assignments` source is read from the git-ignored `reliability/single-fit/flags/src/test/resources/precomputed` folder. `SOURCE.json` in each destination records the source commit and file digests.
 The runner discovers all nested JSON cases through the generated index.
 Adding a case requires an upstream fixture change and a pin update. It requires no runner or filename-list change.
 Missing or empty fixtures fail the suite. Shared `_include` and `_skip` fields describe API applicability.

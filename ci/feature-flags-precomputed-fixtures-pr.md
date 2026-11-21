@@ -1,6 +1,6 @@
 ### What does this PR do?
 
-Refresh the shared precomputed response fixtures to `SOURCE_COMMIT`.
+Refresh the shared feature flags fixtures to `SOURCE_COMMIT` (one pin for each source).
 
 ### Motivation
 
