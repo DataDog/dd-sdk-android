@@ -513,7 +513,12 @@ interface FlagsClient {
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
             val signing = signingContext?.let {
-                ResponseSigningState(configuration.responseSigning, featureSdkCore.internalLogger, context = it) {
+                ResponseSigningState(
+                    configuration.responseSigning,
+                    featureSdkCore.internalLogger,
+                    context = it,
+                    minimumNotBefore = flagsFeature.minimumNotBefore
+                ) {
                     featureSdkCore.timeProvider.getDeviceTimestampMillis() / SIGNING_MILLIS_PER_SECOND
                 }
             }

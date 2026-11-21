@@ -9,6 +9,8 @@
 package com.datadog.android.flags.internal
 
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.datadog.android.api.InternalLogger
@@ -29,7 +31,10 @@ import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.selection.FlagSelectionCanonicalizer
 import com.datadog.android.flags.internal.selection.FlagSelectionResult
 import com.datadog.android.flags.internal.selection.logDroppedFlagSelection
+import com.datadog.android.flags.internal.signing.InMemoryMinimumNotBeforeStore
+import com.datadog.android.flags.internal.signing.MinimumNotBeforeStore
 import com.datadog.android.flags.internal.signing.ResponseSigningContext
+import com.datadog.android.flags.internal.signing.SharedPreferencesMinimumNotBeforeStore
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
@@ -70,6 +75,10 @@ internal class FlagsFeature(
      * This map stores all clients created for this feature instance.
      */
     private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
+
+    /** Persistent once the feature starts with signing on; shared by this feature's clients. */
+    @Volatile
+    internal var minimumNotBefore: MinimumNotBeforeStore = InMemoryMinimumNotBeforeStore()
 
     internal val signingContext = if (flagsConfiguration.responseSigning.mode == ResponseSigningMode.OFF) {
         null
@@ -147,6 +156,12 @@ internal class FlagsFeature(
         signingContext?.let {
             it.start()
             sdkCore.setContextUpdateReceiver(it)
+            // Some test or wrapper contexts return no preferences; the floor then lives in memory only.
+            val preferences: SharedPreferences? = appContext.getSharedPreferences(
+                SharedPreferencesMinimumNotBeforeStore.PREFERENCES_NAME,
+                MODE_PRIVATE
+            )
+            if (preferences != null) minimumNotBefore = SharedPreferencesMinimumNotBeforeStore(preferences)
         }
         (flagSelectionResult as? FlagSelectionResult.Dropped)?.let {
             sdkCore.internalLogger.logDroppedFlagSelection(it.error)

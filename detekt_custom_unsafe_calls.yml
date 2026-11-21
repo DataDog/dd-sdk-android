@@ -17,6 +17,7 @@ datadog:
       - "android.content.SharedPreferences.getBoolean(kotlin.String?, kotlin.Boolean):java.lang.ClassCastException"
       - "android.content.SharedPreferences.getFloat(kotlin.String?, kotlin.Float):java.lang.ClassCastException"
       - "android.content.SharedPreferences.getInt(kotlin.String?, kotlin.Int):java.lang.ClassCastException"
+      - "android.content.SharedPreferences.getLong(kotlin.String?, kotlin.Long):java.lang.ClassCastException"
       - "android.content.SharedPreferences.getString(kotlin.String?, kotlin.String?):java.lang.ClassCastException"
       - "android.content.SharedPreferences.getStringSet(kotlin.String?,kotlin.collections.MutableSet?):java.lang.ClassCastException"
       - "android.database.sqlite.SQLiteDatabase.beginTransaction():java.lang.IllegalStateException"

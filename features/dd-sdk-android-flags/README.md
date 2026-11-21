@@ -145,6 +145,24 @@ When the proof of the last verified response expires in `REQUIRED` mode:
   The customer decides when to refetch.
 - `expireVerifiedFlags` has no effect in `OBSERVE` or `OFF` mode.
 
+Minimum not-before revocation (draft wire, pending the edge and the shared fixtures):
+
+- A response can carry `x-datadog-feature-flags-minimum-not-before`: unix seconds, one canonical
+  decimal value. When present, the SDK appends `0x01` and the value as a big-endian u64 to the
+  v1 transcript, after the certificate hashes. When absent, the transcript is unchanged.
+- The SDK accepts the value only from a fully verified response. It ignores a value that is
+  lower than the stored value. It ignores a value that is greater than the `notBefore` of any
+  certificate in the response chain, with the reason `minimum-not-before-ignored`, because a
+  response must never revoke its own chain.
+- The SDK stores the highest value per trust anchor (the key is SHA-256 of the root DER) in
+  SharedPreferences. This is the only data that `REQUIRED` mode persists. It holds no flag data.
+- On each verification, the SDK rejects a chain if the leaf or any intermediate has a `notBefore`
+  lower than the stored value, with the reason `revoked-certificate`. `REQUIRED` fails closed, and
+  `OBSERVE` accepts the response as unverified. Both modes store new values.
+- Because a value cannot exceed the `notBefore` of the current chain, it can revoke only
+  certificates that are older than every certificate in that chain, for example an old
+  intermediate generation after an intermediate rotation.
+
 ```kotlin
 @OptIn(ExperimentalFlagsApi::class)
 val strictConfig = FlagsConfiguration.Builder()

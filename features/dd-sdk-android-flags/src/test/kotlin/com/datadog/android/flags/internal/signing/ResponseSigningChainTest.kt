@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.signing
 
+import android.content.SharedPreferences
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import okhttp3.Headers
@@ -20,6 +21,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.math.BigInteger
@@ -294,7 +299,215 @@ internal class ResponseSigningChainTest {
 
     // endregion
 
+    // region Minimum not-before (draft wire)
+
+    @Test
+    fun `M reject an older chain W verify() {stored minimum not-before}`() {
+        // Given
+        val generations = Generations.mint()
+        val store = InMemoryMinimumNotBeforeStore()
+        val reasons = mutableListOf<String>()
+        val verifier = ResponseSigningVerifier(listOf(generations.root), store) { reasons += it }
+        val request = request()
+        // When
+        val raising = verifier.verify(
+            request,
+            200,
+            generations.newLeaf.sign(request, BODY, NOV_21_0200, NOV_19),
+            BODY,
+            NOV_21_0200
+        )
+        val old = verifier.verify(request, 200, generations.oldLeaf.sign(request, BODY, NOV_21_0200), BODY, NOV_21_0200)
+        val current = verifier.verify(
+            request,
+            200,
+            generations.newLeaf.sign(request, BODY, NOV_21_0200),
+            BODY,
+            NOV_21_0200
+        )
+        // Then
+        assertThat(raising).isNotNull()
+        assertThat(store.get(generations.anchorId)).isEqualTo(NOV_19)
+        assertThat(old).isNull()
+        assertThat(reasons).containsExactly(ResponseSigningVerifier.REVOKED_CERTIFICATE)
+        assertThat(current).isNotNull()
+    }
+
+    @Test
+    fun `M ignore a lower minimum not-before W verify()`() {
+        // Given
+        val generations = Generations.mint()
+        val store = InMemoryMinimumNotBeforeStore()
+        val verifier = ResponseSigningVerifier(listOf(generations.root), store)
+        val request = request()
+        verifier.verify(request, 200, generations.newLeaf.sign(request, BODY, NOV_21_0200, NOV_19), BODY, NOV_21_0200)
+        // When
+        val lower = verifier.verify(
+            request,
+            200,
+            generations.newLeaf.sign(request, BODY, NOV_21_0200, NOV_01),
+            BODY,
+            NOV_21_0200
+        )
+        // Then
+        assertThat(lower).isNotNull()
+        assertThat(store.get(generations.anchorId)).isEqualTo(NOV_19)
+        assertThat(
+            verifier.verify(request, 200, generations.oldLeaf.sign(request, BODY, NOV_21_0200), BODY, NOV_21_0200)
+        )
+            .isNull()
+    }
+
+    @Test
+    fun `M ignore a value above the chain W verify() {value between the old and new leaf}`() {
+        // Given: intermediates from Nov 19-20, leaves from Nov 20 06:00 and Nov 21 01:00.
+        val generations = Generations.mint()
+        val store = InMemoryMinimumNotBeforeStore()
+        val reasons = mutableListOf<String>()
+        val verifier = ResponseSigningVerifier(listOf(generations.root), store) { reasons += it }
+        val request = request()
+        // When
+        val announcing = verifier.verify(
+            request,
+            200,
+            generations.newLeaf.sign(request, BODY, NOV_21_0200, NOV_20_1200),
+            BODY,
+            NOV_21_0200
+        )
+        // Then
+        assertThat(announcing).isNotNull()
+        assertThat(reasons).containsExactly(ResponseSigningVerifier.MINIMUM_NOT_BEFORE_IGNORED)
+        assertThat(store.get(generations.anchorId)).isNull()
+        listOf(generations.newLeaf, generations.previousLeaf).forEach { credential ->
+            assertThat(verifier.verify(request, 200, credential.sign(request, BODY, NOV_21_0200), BODY, NOV_21_0200))
+                .isNotNull()
+        }
+    }
+
+    @TestFactory
+    fun `M bind minimum not-before into the signature W verify()`(): List<DynamicTest> {
+        val generations = Generations.mint()
+        val request = request()
+        val signed = generations.newLeaf.sign(request, BODY, NOV_21_0200, NOV_19)
+        val unsigned = generations.newLeaf.sign(request, BODY, NOV_21_0200)
+        return listOf(
+            "changed value" to signed.newBuilder().set(MINIMUM_NOT_BEFORE, (NOV_19 - 1).toString()).build(),
+            "removed header" to signed.newBuilder().removeAll(MINIMUM_NOT_BEFORE).build(),
+            "added header" to unsigned.newBuilder().add(MINIMUM_NOT_BEFORE, NOV_19.toString()).build(),
+            "duplicated header" to signed.newBuilder().add(MINIMUM_NOT_BEFORE, NOV_19.toString()).build(),
+            "leading zero" to signed.newBuilder().set(MINIMUM_NOT_BEFORE, "0$NOV_19").build()
+        ).map { (name, headers) ->
+            DynamicTest.dynamicTest(name) {
+                // Given
+                val store = InMemoryMinimumNotBeforeStore()
+                // When
+                val result = ResponseSigningVerifier(listOf(generations.root), store)
+                    .verify(request, 200, headers, BODY, NOV_21_0200)
+                // Then
+                assertThat(result).isNull()
+                assertThat(store.get(generations.anchorId)).isNull()
+            }
+        }
+    }
+
+    @Test
+    fun `M keep the stored value W restart {shared preferences store}`() {
+        // Given
+        val generations = Generations.mint()
+        val preferences = FakePreferences()
+        val request = request()
+        ResponseSigningVerifier(listOf(generations.root), SharedPreferencesMinimumNotBeforeStore(preferences.mock))
+            .verify(request, 200, generations.newLeaf.sign(request, BODY, NOV_21_0200, NOV_19), BODY, NOV_21_0200)
+        // When
+        val restarted =
+            ResponseSigningVerifier(listOf(generations.root), SharedPreferencesMinimumNotBeforeStore(preferences.mock))
+        // Then
+        assertThat(
+            restarted.verify(request, 200, generations.oldLeaf.sign(request, BODY, NOV_21_0200), BODY, NOV_21_0200)
+        )
+            .isNull()
+        assertThat(
+            restarted.verify(request, 200, generations.newLeaf.sign(request, BODY, NOV_21_0200), BODY, NOV_21_0200)
+        )
+            .isNotNull()
+    }
+
+    // endregion
+
     // region Helpers
+
+    /** One root; an old intermediate generation from Jan 1 and a staging-like one from Nov 19-20 with two leaves. */
+    private class Generations(
+        val root: String,
+        val anchorId: String,
+        val oldLeaf: Credential,
+        val previousLeaf: Credential,
+        val newLeaf: Credential
+    ) {
+        companion object {
+            fun mint(): Generations {
+                val root = Minted.mint("Revocation Root", keyPair(), null, caExtensions(2, true, "03020106", null))
+                fun intermediates(name: String, notBefore: String): Minted {
+                    val upper = Minted.mint(
+                        "$name Upper",
+                        keyPair(),
+                        root,
+                        caExtensions(1, true, "03020106", null),
+                        notBefore
+                    )
+                    return Minted.mint(
+                        "$name Lower",
+                        keyPair(),
+                        upper,
+                        caExtensions(0, true, "03020106", null),
+                        notBefore
+                    )
+                        .also { it.parent = upper }
+                }
+                fun leaf(name: String, issuer: Minted, notBefore: String): Credential {
+                    val key = keyPair()
+                    val leaf = Minted.mint(
+                        name,
+                        key,
+                        issuer,
+                        listOf(
+                            extension(BASIC_CONSTRAINTS, true, "3000".decodeHex().toByteArray()),
+                            extension(KEY_USAGE, true, "03020780".decodeHex().toByteArray()),
+                            extension(EKU, false, eku(listOf(FFE)))
+                        ),
+                        notBefore
+                    )
+                    return Credential(key.private, leaf.der, listOf(issuer.der, checkNotNull(issuer.parent).der))
+                }
+                val old = intermediates("Old", "260101000000Z")
+                val current = intermediates("Current", "261119000000Z")
+                return Generations(
+                    root = root.der.toByteString().base64(),
+                    anchorId = sha(root.der).toByteString().hex(),
+                    oldLeaf = leaf("ffe-old", old, "261101000000Z"),
+                    previousLeaf = leaf("ffe-previous", current, "261120060000Z"),
+                    newLeaf = leaf("ffe-new", current, "261121010000Z")
+                )
+            }
+        }
+    }
+
+    /** SharedPreferences backed by a map, so a new store instance simulates a restart. */
+    private class FakePreferences {
+        val values = mutableMapOf<String, Long>()
+        private val editor: SharedPreferences.Editor = mock {
+            on { putLong(any(), any()) } doAnswer { invocation ->
+                values[invocation.getArgument(0)] = invocation.getArgument(1)
+                invocation.mock as SharedPreferences.Editor
+            }
+        }
+        val mock: SharedPreferences = mock {
+            on { getLong(any(), any()) } doAnswer { invocation ->
+                values[invocation.getArgument<String>(0)] ?: invocation.getArgument<Long>(1)
+            }
+            on { edit() } doReturn editor
+        }
+    }
 
     private data class Credential(val key: PrivateKey, val leaf: ByteArray, val chain: List<ByteArray>) {
         val leafNotBefore: Long
@@ -303,8 +516,8 @@ internal class ResponseSigningChainTest {
                     .generateCertificate(leaf.inputStream()) as X509Certificate
                 ).notBefore.time / 1000
 
-        fun sign(request: Request, body: ByteArray, now: Long): Headers {
-            val transcript = expectedTranscript(request, body, leaf, chain, now)
+        fun sign(request: Request, body: ByteArray, now: Long, minimumNotBefore: Long? = null): Headers {
+            val transcript = expectedTranscript(request, body, leaf, chain, now, minimumNotBefore)
             val signature = Signature.getInstance("SHA256withECDSA").apply {
                 initSign(key)
                 update(transcript)
@@ -317,6 +530,7 @@ internal class ResponseSigningChainTest {
                 .add(PREFIX + "issued-at", now.toString())
                 .add(PREFIX + "expires-at", (now + 300).toString())
                 .add(PREFIX + "signature", signature.toByteString().base64())
+                .apply { minimumNotBefore?.let { add(MINIMUM_NOT_BEFORE, it.toString()) } }
                 .build()
         }
     }
@@ -366,8 +580,16 @@ internal class ResponseSigningChainTest {
     }
 
     private class Minted(val der: ByteArray, val name: ByteArray, val keyPair: KeyPair, val keyId: ByteArray) {
+        var parent: Minted? = null
+
         companion object {
-            fun mint(subject: String, keyPair: KeyPair, issuer: Minted?, extensions: List<ByteArray>): Minted {
+            fun mint(
+                subject: String,
+                keyPair: KeyPair,
+                issuer: Minted?,
+                extensions: List<ByteArray>,
+                notBefore: String = "260101000000Z"
+            ): Minted {
                 val name = der(0x30, der(0x31, der(0x30, der(6, "550403".hex()), der(12, subject.toByteArray()))))
                 val keyId = sha(keyPair.public.encoded).copyOf(20)
                 val signer = issuer ?: Minted(ByteArray(0), name, keyPair, keyId)
@@ -381,7 +603,7 @@ internal class ResponseSigningChainTest {
                     der(2, byteArrayOf(0x01) + sha(subject.toByteArray()).copyOf(8)),
                     ECDSA_SHA256,
                     signer.name,
-                    der(0x30, der(23, "260101000000Z".toByteArray()), der(23, "270101000000Z".toByteArray())),
+                    der(0x30, der(23, notBefore.toByteArray()), der(23, "270101000000Z".toByteArray())),
                     name,
                     keyPair.public.encoded,
                     der(0xa3, der(0x30, *all.toTypedArray()))
@@ -428,6 +650,13 @@ internal class ResponseSigningChainTest {
     companion object {
         private const val PREFIX = "x-datadog-feature-flags-"
         private const val CHAIN = PREFIX + "signing-chain"
+        private const val MINIMUM_NOT_BEFORE = PREFIX + "minimum-not-before"
+
+        // Minimum not-before scenario (unix seconds, UTC): staging-like intermediates are older than the leaves.
+        private const val NOV_01 = 1793491200L
+        private const val NOV_19 = 1795046400L
+        private const val NOV_20_1200 = 1795176000L
+        private const val NOV_21_0200 = 1795226400L
         private val BODY = """{"data":{"attributes":{"flags":{}}}}""".toByteArray()
         private val V1_DOMAIN = "datadog.feature-flags.precomputed-assignments.v1\u0000".toByteArray()
 
@@ -452,7 +681,8 @@ internal class ResponseSigningChainTest {
             body: ByteArray,
             leaf: ByteArray,
             chain: List<ByteArray>,
-            now: Long
+            now: Long,
+            minimumNotBefore: Long? = null
         ): ByteArray {
             val output = ByteArrayOutputStream()
             val out = DataOutputStream(output)
@@ -485,6 +715,10 @@ internal class ResponseSigningChainTest {
             out.write(sha(leaf))
             out.writeByte(chain.size)
             chain.forEach { out.write(sha(it)) }
+            minimumNotBefore?.let {
+                out.writeByte(1)
+                out.writeLong(it)
+            }
             return output.toByteArray()
         }
 

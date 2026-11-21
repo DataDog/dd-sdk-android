@@ -25,9 +25,15 @@ internal data class VerifiedResponse(val scope: String, val verifiedAt: Long, va
  * The verifier keeps no leaf or intermediate identity between responses, so every valid chain under an anchor passes.
  *
  * @param anchors pinned roots as padded base64 DER; production uses only [ResponseSigningTrustRoots.STAGING_ROOT]
+ * @param minimumNotBefore draft revocation floor per anchor, raised only by fully verified responses
+ * @param report receives [REVOKED_CERTIFICATE] and [MINIMUM_NOT_BEFORE_IGNORED]
  */
 @Suppress("MagicNumber") // Time windows, DER OIDs and integer widths are frozen protocol constants.
-internal class ResponseSigningVerifier(anchors: List<String>) {
+internal class ResponseSigningVerifier(
+    anchors: List<String>,
+    private val minimumNotBefore: MinimumNotBeforeStore = InMemoryMinimumNotBeforeStore(),
+    private val report: (String) -> Unit = {}
+) {
     private val anchors = anchors.toList()
 
     fun verify(request: Request, status: Int, headers: Headers, body: ByteArray, now: Long): VerifiedResponse? = try {
@@ -54,6 +60,7 @@ internal class ResponseSigningVerifier(anchors: List<String>) {
         signingCheck(single(headers, PREFIX + "certificate-id") == leafBytes.signingBytes().sha256().hex())
         val issued = seconds(single(headers, PREFIX + "issued-at"))
         val expires = seconds(single(headers, PREFIX + "expires-at"))
+        val announcedMinimum = minimumNotBefore(headers)
         signingCheck(now >= 0 && issued <= now + 30 && expires > now && expires > issued && expires - issued <= 300)
         val leaf = certificate(leafBytes)
         // Index 0 issued the leaf; each next intermediate issued the previous one.
@@ -63,10 +70,11 @@ internal class ResponseSigningVerifier(anchors: List<String>) {
         val last = intermediates[intermediates.size - 1]
         val anchor = anchors.asSequence().mapNotNull { root ->
             try {
-                certificate(base64(root, 4096)).takeIf { parent ->
+                val rootBytes = base64(root, 4096)
+                certificate(rootBytes).takeIf { parent ->
                     parent.covers(now, issued, expires) && parent.admitsChain(intermediates.size) &&
                         last.issuedBy(parent)
-                }
+                }?.let { rootBytes.signingBytes().sha256().hex() }
             } catch (_: GeneralSecurityException) {
                 null
             } catch (_: IllegalArgumentException) {
@@ -79,7 +87,27 @@ internal class ResponseSigningVerifier(anchors: List<String>) {
         val signature = base64(single(headers, PREFIX + "signature"), 72)
         strictSignature(signature)
         signingCheck(verifySignature(leaf.publicKey, transcript(request, status, headers, body), signature))
+        val chainNotBefore = intermediates.fold(leaf.notBefore) { oldest, certificate ->
+            minOf(oldest, certificate.notBefore)
+        }
+        applyMinimumNotBefore(anchor ?: signingFailure(), chainNotBefore, announcedMinimum)
         return VerifiedResponse(scope(request), now, expires)
+    }
+
+    // Draft revocation: runs only after the signature, so only an authentic chain can raise or meet the floor.
+    private fun applyMinimumNotBefore(anchorId: String, chainNotBefore: Long, announced: Long?) {
+        val floor = minimumNotBefore.get(anchorId)
+        if (floor != null && chainNotBefore < floor) {
+            report(REVOKED_CERTIFICATE)
+            signingFailure()
+        }
+        if (announced == null) return
+        // A response must never revoke a certificate of its own chain.
+        if (announced > chainNotBefore) {
+            report(MINIMUM_NOT_BEFORE_IGNORED)
+        } else {
+            minimumNotBefore.raise(anchorId, announced)
+        }
     }
 
     private class Certificate(
@@ -209,6 +237,7 @@ internal class ResponseSigningVerifier(anchors: List<String>) {
     companion object {
         const val PREFIX = "x-datadog-feature-flags-"
         private const val NONCE_HEADER = PREFIX + "request-nonce"
+        private const val MINIMUM_NOT_BEFORE_HEADER = PREFIX + "minimum-not-before"
         const val CAPABILITY = "response-signing-v1"
         const val SIGNATURE_VERSION = "1"
         private const val DOMAIN = "datadog.feature-flags.precomputed-assignments.v1"
@@ -225,6 +254,8 @@ internal class ResponseSigningVerifier(anchors: List<String>) {
         // OID contents (without tag and length) of anyExtendedKeyUsage 2.5.29.37.0.
         private const val ANY_EXTENDED_KEY_USAGE = "551d2500"
         const val MAX_RESPONSE_BYTES = 2 * 1024 * 1024
+        const val REVOKED_CERTIFICATE = "revoked-certificate"
+        const val MINIMUM_NOT_BEFORE_IGNORED = "minimum-not-before-ignored"
         private const val MAX_SAFE_INTEGER = 9007199254740991L
         private const val AUTHORITY_KEY_ID = "551d23"
         private const val SUBJECT_KEY_ID = "551d0e"
@@ -235,6 +266,7 @@ internal class ResponseSigningVerifier(anchors: List<String>) {
             listOf("content-type", "dd-application-id", "x-rkyv", "x-use-cache", "x-dd-feature-flags-capabilities")
 
         fun transcript(request: Request, status: Int, headers: Headers, body: ByteArray): ByteArray {
+            val minimum = minimumNotBefore(headers)
             val issued = seconds(single(headers, PREFIX + "issued-at"))
             val expires = seconds(single(headers, PREFIX + "expires-at"))
             val leaf = base64(single(headers, PREFIX + "signing-certificate"), MAX_CERTIFICATE_BYTES)
@@ -245,6 +277,8 @@ internal class ResponseSigningVerifier(anchors: List<String>) {
                 write(leaf.signingBytes().sha256())
                 writeByte(intermediates.size)
                 intermediates.forEach { write(it.signingBytes().sha256()) }
+                // Draft: the edge binds the revocation floor only when it sends one, so v1 stays unchanged.
+                minimum?.let { writeByte(1).writeLong(it) }
             }.signingBytes()
         }
 
@@ -375,6 +409,13 @@ internal class ResponseSigningVerifier(anchors: List<String>) {
             var value = 0L
             for (byte in node.value) value = (value shl 8) or (byte.toInt() and 255).toLong()
             return value
+        }
+
+        /** Draft `minimum-not-before`: absent, or exactly one canonical unix-seconds value. */
+        private fun minimumNotBefore(headers: Headers): Long? {
+            val values = headers.values(MINIMUM_NOT_BEFORE_HEADER)
+            signingCheck(values.size <= 1)
+            return values.firstOrNull()?.let { seconds(it) }
         }
 
         private fun single(headers: Headers, name: String): String {

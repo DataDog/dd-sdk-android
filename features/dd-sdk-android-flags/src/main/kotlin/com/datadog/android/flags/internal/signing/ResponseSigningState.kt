@@ -34,6 +34,7 @@ internal class ResponseSigningState(
     val configuration: ResponseSigningConfiguration,
     private val logger: InternalLogger,
     private val context: ResponseSigningContext = ResponseSigningContext(),
+    minimumNotBefore: MinimumNotBeforeStore = InMemoryMinimumNotBeforeStore(),
     private val nowSeconds: () -> Long
 ) {
     val lock = context.lock
@@ -41,7 +42,14 @@ internal class ResponseSigningState(
     private var generation = 0L
     private var requestedContext: EvaluationContext? = null
     private var expectedScope: String? = null
-    val verifier = ResponseSigningVerifier(configuration.anchors)
+    val verifier = ResponseSigningVerifier(configuration.anchors, minimumNotBefore) { reason ->
+        logger.log(
+            InternalLogger.Level.INFO,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            { "Flag response signing v1: $reason" },
+            onlyOnce = true
+        )
+    }
 
     fun now(): Long = nowSeconds()
 
