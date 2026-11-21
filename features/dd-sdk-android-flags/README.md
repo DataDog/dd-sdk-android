@@ -87,9 +87,15 @@ length, if present, must admit every intermediate.
 Response signing is disabled by default. A client that does not opt in sends the same
 requests as before and handles responses as before.
 
-Signing is available only when the SDK targets `DatadogSite.STAGING`. For every other site,
-`responseSigning()` has no effect: the SDK logs a warning and sends unchanged requests.
-Production has no anchor yet.
+Staging only; production is not supported yet. Signing works only when the SDK targets
+`DatadogSite.STAGING`. Production has no root or EKU yet, and support comes in a later release.
+For every other site:
+
+- `REQUIRED` fails closed. The client logs an error once, sends no assignment request, and fails
+  every fetch with `UnsupportedOperationException`. The client state is `Error`, and evaluations
+  return defaults. Remove `REQUIRED` or use `OBSERVE`.
+- `OBSERVE` has no effect. The client logs a warning once and sends unchanged requests, so flags
+  are not verified.
 
 ```kotlin
 val flagsConfig = FlagsConfiguration.Builder()

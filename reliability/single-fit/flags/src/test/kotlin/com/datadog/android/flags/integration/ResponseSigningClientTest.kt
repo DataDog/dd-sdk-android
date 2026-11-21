@@ -19,6 +19,7 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.stub.StubDataStoreHandler
 import com.datadog.android.core.stub.StubExecutorService
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
@@ -27,6 +28,7 @@ import com.datadog.android.flags.integration.FlagsClientTest.Companion.createStu
 import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeConfigurator
 import com.datadog.android.flags.integration.tests.utils.responseSigningWithTestRoots
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.time.TimeProvider
@@ -274,7 +276,9 @@ internal class ResponseSigningClientTest {
 
     @ParameterizedTest
     @EnumSource(DatadogSite::class)
-    fun `M send today's requests W setEvaluationContext() {opt in on every non-staging site}`(site: DatadogSite) {
+    fun `M send today's requests W setEvaluationContext() {OBSERVE or OFF on every non-staging site}`(
+        site: DatadogSite
+    ) {
         if (site == DatadogSite.STAGING) return
         // Given
         fakeDatadogContext = fakeDatadogContext.copy(site = site)
@@ -283,7 +287,7 @@ internal class ResponseSigningClientTest {
         testedClient.setEvaluationContext(EvaluationContext("subject"), null)
         queue.removeFirst().run()
         val baseline = requests.removeAt(requests.lastIndex)
-        for (mode in ResponseSigningMode.values()) {
+        for (mode in listOf(ResponseSigningMode.OFF, ResponseSigningMode.OBSERVE)) {
             create(mode)
             // When
             testedClient.setEvaluationContext(EvaluationContext("subject"), null)
@@ -295,6 +299,38 @@ internal class ResponseSigningClientTest {
             assertThat(request.headers).isEqualTo(baseline.headers)
             assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
         }
+    }
+
+    @ParameterizedTest
+    @EnumSource(DatadogSite::class)
+    fun `M fail closed without a request W setEvaluationContext() {REQUIRED on every non-staging site}`(
+        site: DatadogSite
+    ) {
+        if (site == DatadogSite.STAGING) return
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(site = site)
+        responseKind = "unsigned"
+        create(ResponseSigningMode.REQUIRED)
+        val failures = mutableListOf<Throwable>()
+        val callback = object : EvaluationContextCallback {
+            override fun onSuccess() = Unit
+            override fun onFailure(error: Throwable) {
+                failures += error
+            }
+        }
+        // When
+        repeat(2) {
+            testedClient.setEvaluationContext(EvaluationContext("subject-$it"), callback)
+            while (queue.isNotEmpty()) queue.removeFirst().run()
+        }
+        // Then
+        assertThat(requests).isEmpty()
+        assertThat(failures).hasSize(2).allSatisfy {
+            assertThat(it).isInstanceOf(UnsupportedOperationException::class.java)
+                .hasMessageContaining("supported only on the Datadog staging site")
+        }
+        assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
     }
 
     @Test

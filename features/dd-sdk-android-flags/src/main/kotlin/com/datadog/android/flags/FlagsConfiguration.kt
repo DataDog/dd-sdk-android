@@ -76,10 +76,14 @@ data class FlagsConfiguration internal constructor(
         /**
          * Opts into assignment response verification. Signing is off by default.
          *
-         * Signing is available only when the SDK targets [com.datadog.android.DatadogSite.STAGING]. The SDK pins the
-         * Datadog staging root and accepts any valid leaf and intermediate chain under it, so routine certificate
-         * rotation needs no SDK update. For any other site this option has no effect: the SDK logs a warning and
-         * sends the same requests as without this option.
+         * Staging only; production is not supported yet. Signing works only when the SDK targets
+         * [com.datadog.android.DatadogSite.STAGING]. The SDK pins the Datadog staging root and accepts any valid leaf
+         * and intermediate chain under it, so routine certificate rotation needs no SDK update. Production support
+         * comes in a later release. On any other site:
+         * - [ResponseSigningMode.REQUIRED] fails closed. The client logs an error, sends no assignment request, and
+         *   fails every fetch with [UnsupportedOperationException].
+         * - [ResponseSigningMode.OBSERVE] has no effect. The client logs a warning and sends unsigned requests, so
+         *   flags are not verified.
          *
          * @param mode OFF by default; OBSERVE accepts unverified data, REQUIRED uses verified memory only.
          * @return this builder.

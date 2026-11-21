@@ -393,8 +393,15 @@ interface FlagsClient {
      */
     companion object {
         private const val SIGNING_MILLIS_PER_SECOND = 1000
-        internal const val RESPONSE_SIGNING_UNAVAILABLE_MESSAGE =
-            "Flags response signing is available only for the staging site. Requests are sent without signing."
+        private const val RESPONSE_SIGNING_STAGING_ONLY =
+            "Flags response signing is supported only on the Datadog staging site in this SDK version. " +
+                "Production support comes in a later release."
+        internal const val RESPONSE_SIGNING_REQUIRED_UNAVAILABLE_MESSAGE = RESPONSE_SIGNING_STAGING_ONLY +
+            " ResponseSigningMode.REQUIRED fails every flag fetch on this site and sends no request." +
+            " Remove ResponseSigningMode.REQUIRED or use ResponseSigningMode.OBSERVE."
+        internal const val RESPONSE_SIGNING_OBSERVE_UNAVAILABLE_MESSAGE = RESPONSE_SIGNING_STAGING_ONLY +
+            " ResponseSigningMode.OBSERVE has no effect on this site: requests are sent without signing," +
+            " and flags are not verified."
         private const val DEFAULT_CLIENT_NAME = "default"
 
         /**
@@ -484,7 +491,14 @@ interface FlagsClient {
             experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
             evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
-            val signingContext = flagsFeature.signingContext?.takeIf { signingAvailable(featureSdkCore) }
+            val signingMode = configuration.responseSigning.mode
+            val signingContext = flagsFeature.signingContext?.takeIf { signingAvailable(featureSdkCore, signingMode) }
+            // No production anchor exists yet, so required signing off staging must not accept unsigned flags.
+            val unsupportedSigningError = if (signingMode == ResponseSigningMode.REQUIRED && signingContext == null) {
+                UnsupportedOperationException(RESPONSE_SIGNING_REQUIRED_UNAVAILABLE_MESSAGE)
+            } else {
+                null
+            }
             val experimentationOptOut = ExperimentationOptOut(
                 experimentationOptOutMode,
                 signingContext?.lock ?: Any()
@@ -526,13 +540,17 @@ interface FlagsClient {
                     NoOpFlagsRepository()
                 }
             }
-            val flagsRepository = signing?.let {
-                SigningFlagsRepository(
-                    { scope -> ordinaryRepository("$name-signing-v1-observe", scope) },
-                    it,
-                    deliverFirstFlags
-                )
-            } ?: ordinaryRepository(name, null)
+            val flagsRepository = if (unsupportedSigningError != null) {
+                NoOpFlagsRepository()
+            } else {
+                signing?.let {
+                    SigningFlagsRepository(
+                        { scope -> ordinaryRepository("$name-signing-v1-observe", scope) },
+                        it,
+                        deliverFirstFlags
+                    )
+                } ?: ordinaryRepository(name, null)
+            }
 
             val callFactory = if (signing == null) {
                 featureSdkCore.createOkHttpCallFactory()
@@ -582,7 +600,8 @@ interface FlagsClient {
                 callbackExecutor = EvaluationCallbackDispatcher(featureSdkCore.internalLogger) {
                     featureSdkCore.createSingleThreadExecutorService(FLAGS_CALLBACK_EXECUTOR_NAME)
                 },
-                assignmentAuthorization = assignmentAuthorization
+                assignmentAuthorization = assignmentAuthorization,
+                unsupportedSigningError = unsupportedSigningError
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
@@ -602,15 +621,22 @@ interface FlagsClient {
             )
         }
 
-        // The staging site is the only site with a pinned anchor. Other sites keep today's requests.
-        private fun signingAvailable(featureSdkCore: FeatureSdkCore): Boolean {
+        // The staging site is the only site with a pinned anchor. Elsewhere OBSERVE keeps today's requests.
+        private fun signingAvailable(featureSdkCore: FeatureSdkCore, mode: ResponseSigningMode): Boolean {
             val site = (featureSdkCore as? InternalSdkCore)?.getDatadogContext()?.site
             val available = ResponseSigningTrustRoots.isAvailable(site)
             if (!available) {
+                val required = mode == ResponseSigningMode.REQUIRED
                 featureSdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
+                    if (required) InternalLogger.Level.ERROR else InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    { RESPONSE_SIGNING_UNAVAILABLE_MESSAGE },
+                    {
+                        if (required) {
+                            RESPONSE_SIGNING_REQUIRED_UNAVAILABLE_MESSAGE
+                        } else {
+                            RESPONSE_SIGNING_OBSERVE_UNAVAILABLE_MESSAGE
+                        }
+                    },
                     onlyOnce = true
                 )
             }

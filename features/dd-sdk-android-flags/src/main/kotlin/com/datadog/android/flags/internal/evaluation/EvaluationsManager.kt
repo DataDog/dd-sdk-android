@@ -109,6 +109,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param experimentationOptOut validates contexts and prevents superseded installations
  * @param callbackExecutor delivers customer callbacks outside state delivery and network operations
  * @param assignmentAuthorization extracts assignment credentials and enforces subject isolation
+ * @param unsupportedSigningError fails every fetch without a request; null unless signing is required but unavailable
  */
 @Suppress("TooManyFunctions") // Each step of the fetch, install and completion lifecycle is a separate function.
 internal class EvaluationsManager(
@@ -125,7 +126,8 @@ internal class EvaluationsManager(
     private val experimentationOptOut: ExperimentationOptOut,
     private val callbackExecutor: Executor = InlineExecutor,
     private val assignmentAuthorization: AssignmentAuthorization =
-        AssignmentAuthorization(internalLogger, experimentationOptOut.stateLock)
+        AssignmentAuthorization(internalLogger, experimentationOptOut.stateLock),
+    private val unsupportedSigningError: Throwable? = null
 ) {
     private val instanceId = UUIDv7Generator.generate(sdkCore.timeProvider.getDeviceTimestampMillis()).toString()
     private val fetchSequence = AtomicLong(0)
@@ -183,18 +185,25 @@ internal class EvaluationsManager(
             onFetchFinished()
             return
         }
-        if (request.invalid) {
-            val error = FlagsInvalidContextException(ExperimentationOptOut.INVALID_CONTEXT_MESSAGE)
+        // Unsupported required signing fails before any request; the client logged it once at build.
+        val rejection = unsupportedSigningError ?: if (request.invalid) {
+            FlagsInvalidContextException(ExperimentationOptOut.INVALID_CONTEXT_MESSAGE)
+        } else {
+            null
+        }
+        if (rejection != null) {
             synchronized(initializationTerminalLock) {
-                ifCurrent(request) { enqueueState(FlagsClientState.Error(error)) }
-                enqueueCompletion(InitializationResult(callback), error)
+                ifCurrent(request) { enqueueState(FlagsClientState.Error(rejection)) }
+                enqueueCompletion(InitializationResult(callback), rejection)
             }
             effects.drain()
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { ExperimentationOptOut.INVALID_CONTEXT_MESSAGE }
-            )
+            if (rejection is FlagsInvalidContextException) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { ExperimentationOptOut.INVALID_CONTEXT_MESSAGE }
+                )
+            }
             onFetchFinished()
             return
         }
