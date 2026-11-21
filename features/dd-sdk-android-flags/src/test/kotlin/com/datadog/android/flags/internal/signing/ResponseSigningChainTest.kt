@@ -43,8 +43,9 @@ import java.security.spec.PKCS8EncodedKeySpec
  * Response signing v1 with a certificate chain (1 to 3 intermediates in `x-datadog-feature-flags-signing-chain`).
  * The test signs synthetic responses with an independent transcript encoder, so it does not reuse SDK encoding.
  *
- * `response-signing-chain/` holds test-only credentials from a local test CA. Their keys sign nothing
- * outside tests. The test clock follows each leaf, so the 72-hour leaf validity does not expire the test.
+ * `response-signing-chain/` holds test-only credentials from a local test CA. They are fetched from
+ * ffe-system-test-data `response-signing/chain/` at the pin in `ci/feature-flags-precomputed-fixtures.json`.
+ * Their keys sign nothing outside tests. The test clock follows each leaf, so the 72-hour leaf validity does not expire the test.
  */
 internal class ResponseSigningChainTest {
 
@@ -618,7 +619,7 @@ internal class ResponseSigningChainTest {
     }
 
     private fun credential(name: String): Credential {
-        val json = resource("credentials/$name.json")
+        val json = resource("$name.json")
         val key = KeyFactory.getInstance("EC")
             .generatePrivate(PKCS8EncodedKeySpec(bytes(json["private_key_pkcs8_der_base64"].asString)))
         return Credential(
@@ -628,7 +629,7 @@ internal class ResponseSigningChainTest {
         )
     }
 
-    private fun root(name: String): String = resourceBytes("roots/$name.pem").toString(Charsets.US_ASCII)
+    private fun root(name: String): String = resourceBytes("$name.pem").toString(Charsets.US_ASCII)
         .lines().filter { it.isNotBlank() && !it.startsWith("-----") }.joinToString("")
 
     private fun resource(name: String): JsonObject =

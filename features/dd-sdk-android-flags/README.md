@@ -184,20 +184,22 @@ corpus and native host-JVM tests are development evidence; Android device/provid
 iOS API review, production anchor provisioning, and operational rollout approval remain
 release prerequisites.
 
-The signing fixtures use `ci/sync-response-signing-fixtures.py` and the weekly `Response signing fixtures` workflow.
-`src/test/resources/response-signing-v1/SOURCE.json` records the central commit and file checksums.
+The signing fixtures come from ffe-system-test-data through the shared fixture pipeline. Two sources in
+`ci/feature-flags-precomputed-fixtures.json` pin `response-signing/v1/` and `response-signing/chain/`. The fetch
+writes them to the git-ignored `src/test/resources/response-signing-v1/` and `src/test/resources/response-signing-chain/`
+folders before unit tests and instrumented test assets are built. `SOURCE.json` in each folder records the commit and
+file checksums.
 The JVM and Android instrumented verifier tests discover every manifest-listed suite and check its checksum and counts.
 They assert acceptance decisions and exact transcripts for every response vector.
 A case `anchor_der_base64` replaces the file anchor for that case.
 Clients do not run the `signing_cases`, because they hold no signing keys.
 `rejection_reason` is a rule code; the tests do not compare native error messages.
 `ResponseSigningChainTest` adds test-CA-issued chains and minted profile cases, including
-nonminimal KeyUsage named bits, with test-only credentials in `src/test/resources/response-signing-chain/`.
+nonminimal KeyUsage named bits, with the fetched test-only credentials in `src/test/resources/response-signing-chain/`.
 
 ```shell
-python3 ci/sync-response-signing-fixtures.py --ref <full-upstream-sha>
-python3 ci/sync-response-signing-fixtures.py --verify
-python3 ci/sync-response-signing-fixtures.py --check
+python3 ci/sync-feature-flags-precomputed-fixtures.py
+python3 ci/sync-feature-flags-precomputed-fixtures.py --verify
 ./gradlew :features:dd-sdk-android-flags:connectedDebugAndroidTest
 ```
 

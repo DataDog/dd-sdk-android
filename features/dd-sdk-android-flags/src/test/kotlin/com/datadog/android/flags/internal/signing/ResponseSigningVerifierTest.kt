@@ -60,7 +60,7 @@ internal class ResponseSigningVerifierTest {
             checkNotNull(ResponseSigningTrustRoots.STAGING_ROOT.decodeBase64()).toByteArray().inputStream()
         ) as X509Certificate
         val intermediate = factory.generateCertificate(
-            checkNotNull(javaClass.getResourceAsStream("/response-signing-chain/staging/dc-intermediate.pem"))
+            checkNotNull(javaClass.getResourceAsStream("/response-signing-chain/staging-us1-dc-intermediate.pem"))
         ) as X509Certificate
         // When
         intermediate.verify(root.publicKey)

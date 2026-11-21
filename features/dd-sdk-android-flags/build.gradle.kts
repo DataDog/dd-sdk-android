@@ -99,3 +99,12 @@ datadogBuild {
             "library for Android applications."
     )
 }
+
+// Shared response-signing fixtures are git-ignored. The single-fit task fetches every pinned source, so one task
+// owns the destinations and parallel builds do not write them twice.
+tasks.matching {
+    (it.name.startsWith("process") && it.name.endsWith("UnitTestJavaRes")) ||
+        (it.name.startsWith("merge") && it.name.endsWith("AndroidTestAssets"))
+}.configureEach {
+    dependsOn(":reliability:single-fit:flags:pullFeatureFlagsFixtures")
+}

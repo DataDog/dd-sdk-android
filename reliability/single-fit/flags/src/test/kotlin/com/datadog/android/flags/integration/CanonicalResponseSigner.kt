@@ -33,7 +33,7 @@ internal object CanonicalResponseSigner {
     const val ROTATED_CREDENTIAL = "rotated-lower-intermediate"
 
     private fun credential(name: String) = JsonParser.parseString(
-        checkNotNull(javaClass.getResource("/response-signing-chain/credentials/$name.json")).readText()
+        checkNotNull(javaClass.getResource("/response-signing-chain/$name.json")).readText()
     ).asJsonObject
     private val defaultLeaf = bytes(credential(DEFAULT_CREDENTIAL)["certificate_der_base64"].asString)
 
@@ -41,7 +41,7 @@ internal object CanonicalResponseSigner {
     val now = (
         CertificateFactory.getInstance("X.509").generateCertificate(defaultLeaf.inputStream()) as X509Certificate
         ).notBefore.time / 1000 + 60
-    val root = checkNotNull(javaClass.getResource("/response-signing-chain/roots/root-a.pem")).readText()
+    val root = checkNotNull(javaClass.getResource("/response-signing-chain/root-a.pem")).readText()
         .lines().filter { it.isNotBlank() && !it.startsWith("-----") }.joinToString("")
 
     /** [minimumNotBefore] adds the draft revocation header, bound into the transcript. */
