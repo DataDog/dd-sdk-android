@@ -32,7 +32,7 @@ fun FlagsClient.setEvaluationTelemetryOptOut(Boolean)
 data class com.datadog.android.flags.FlagsConfiguration
   fun copy(Boolean = this.trackExposures, Boolean = this.trackEvaluations, String? = this.customExposureEndpoint, String? = this.customEvaluationEndpoint, String? = this.customFlagEndpoint, Long = this.evaluationFlushIntervalMs, Boolean = this.rumIntegrationEnabled, Boolean = this.gracefulModeEnabled): FlagsConfiguration
   class Builder
-    fun responseSigning(ResponseSigningMode, List<String>): Builder
+    fun responseSigning(ResponseSigningMode): Builder
     fun trackExposures(Boolean): Builder
     fun trackEvaluations(Boolean): Builder
     fun useCustomExposureEndpoint(String): Builder

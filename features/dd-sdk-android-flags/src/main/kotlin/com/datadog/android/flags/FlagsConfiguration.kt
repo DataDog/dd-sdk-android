@@ -74,18 +74,21 @@ data class FlagsConfiguration internal constructor(
         private var responseSigning = ResponseSigningConfiguration()
 
         /**
-         * Opts into assignment response verification. No production trust anchor is bundled.
+         * Opts into assignment response verification. Signing is off by default.
+         *
+         * Signing is available only when the SDK targets [com.datadog.android.DatadogSite.STAGING]. The SDK pins the
+         * Datadog staging root and accepts any valid leaf and intermediate chain under it, so routine certificate
+         * rotation needs no SDK update. For any other site this option has no effect: the SDK logs a warning and
+         * sends the same requests as without this option.
          *
          * @param mode OFF by default; OBSERVE accepts unverified data, REQUIRED uses verified memory only.
-         * @param trustedRootCertificates Explicit trusted public root certificates as padded base64 DER.
-         * An empty list selects bundled trust only for the exact staging endpoint.
-         * Explicit roots replace bundled trust. Invalid or unavailable roots cannot verify responses.
          * @return this builder.
          */
-        fun responseSigning(mode: ResponseSigningMode, trustedRootCertificates: List<String>): Builder {
-            responseSigning = ResponseSigningConfiguration(mode, trustedRootCertificates.toList())
+        fun responseSigning(mode: ResponseSigningMode): Builder {
+            responseSigning = ResponseSigningConfiguration(mode)
             return this
         }
+
         private var flagSelection: FlagSelection? = null
 
         /**

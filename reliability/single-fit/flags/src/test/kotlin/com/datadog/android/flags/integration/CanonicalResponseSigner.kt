@@ -27,23 +27,34 @@ import java.security.spec.PKCS8EncodedKeySpec
 /** Signs canonical v1 chain response bytes with the test CA fixture key, independently of the SDK verifier. */
 internal object CanonicalResponseSigner {
     private const val PREFIX = "x-datadog-feature-flags-"
-    private val credential = JsonParser.parseString(
-        checkNotNull(javaClass.getResource("/response-signing-chain/credentials/two-intermediates.json")).readText()
+    const val DEFAULT_CREDENTIAL = "two-intermediates"
+
+    /** Another generation under the same test root, with a different leaf and lower intermediate. */
+    const val ROTATED_CREDENTIAL = "rotated-lower-intermediate"
+
+    private fun credential(name: String) = JsonParser.parseString(
+        checkNotNull(javaClass.getResource("/response-signing-chain/credentials/$name.json")).readText()
     ).asJsonObject
-    private val leaf = bytes(credential["certificate_der_base64"].asString)
-    private val intermediates = credential.getAsJsonArray("intermediates_der_base64").map { it.asString }
+    private val defaultLeaf = bytes(credential(DEFAULT_CREDENTIAL)["certificate_der_base64"].asString)
 
     // Test leaves live 72 hours; derive the clock from the fixture so refreshed credentials keep working.
     val now = (
-        CertificateFactory.getInstance("X.509").generateCertificate(leaf.inputStream()) as X509Certificate
+        CertificateFactory.getInstance("X.509").generateCertificate(defaultLeaf.inputStream()) as X509Certificate
         ).notBefore.time / 1000 + 60
     val root = checkNotNull(javaClass.getResource("/response-signing-chain/roots/root-a.pem")).readText()
         .lines().filter { it.isNotBlank() && !it.startsWith("-----") }.joinToString("")
 
-    fun response(request: Request, body: String): Response = httpResponse(request, body = body).newBuilder()
-        .headers(signedHeaders(request, body.toByteArray(Charsets.UTF_8))).build()
+    fun response(request: Request, body: String, credentialName: String = DEFAULT_CREDENTIAL): Response =
+        httpResponse(request, body = body).newBuilder()
+            .headers(signedHeaders(request, body.toByteArray(Charsets.UTF_8), credentialName)).build()
 
-    private fun signedHeaders(request: Request, body: ByteArray): Headers {
+    fun leafCertificate(credentialName: String): String =
+        credential(credentialName)["certificate_der_base64"].asString
+
+    private fun signedHeaders(request: Request, body: ByteArray, credentialName: String): Headers {
+        val credential = credential(credentialName)
+        val leaf = bytes(credential["certificate_der_base64"].asString)
+        val intermediates = credential.getAsJsonArray("intermediates_der_base64").map { it.asString }
         if (request.header(PREFIX + "request-nonce") == null) return Headers.Builder().build()
         val output = ByteArrayOutputStream()
         val transcript = DataOutputStream(output)

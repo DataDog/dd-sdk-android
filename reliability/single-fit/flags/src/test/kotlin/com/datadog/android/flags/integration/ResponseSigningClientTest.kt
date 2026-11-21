@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.integration
 
+import com.datadog.android.DatadogSite
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
@@ -24,6 +25,7 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.integration.FlagsClientTest.Companion.createStubSdkCore
 import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeConfigurator
+import com.datadog.android.flags.integration.tests.utils.responseSigningWithTestRoots
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
@@ -61,6 +63,7 @@ internal class ResponseSigningClientTest {
     private var cancelledChecks = 0
     private val requests = mutableListOf<Request>()
     private var responseKind = "valid"
+    private var credentialName = CanonicalResponseSigner.DEFAULT_CREDENTIAL
     private var observeFullEvaluationData = false
     private var endpoint = "https://flags.example.test/assignments?dd_env=test"
     private var beforeResponse: () -> Unit = {}
@@ -69,7 +72,11 @@ internal class ResponseSigningClientTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         stubCore = createStubSdkCore(forge)
-        fakeDatadogContext = fakeDatadogContext.copy(source = "android", featuresContext = emptyMap())
+        fakeDatadogContext = fakeDatadogContext.copy(
+            source = "android",
+            featuresContext = emptyMap(),
+            site = DatadogSite.STAGING
+        )
         stubCore.stubDataStore(Feature.FLAGS_FEATURE_NAME, store)
         stubCore.stubNetworkResponses { request ->
             requests.add(request)
@@ -125,10 +132,13 @@ internal class ResponseSigningClientTest {
         testedClient.setEvaluationContext(EvaluationContext("subject"), null)
         queue.removeFirst().run()
         // Then
+        // An unsigned 200 (edge before credential publication) fails closed in REQUIRED and is reported in OBSERVE.
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isEqualTo(
             mode == ResponseSigningMode.OBSERVE
         )
         assertThat(requests).hasSize(1)
+        assertThat(stubCore.telemetryEventsWritten().map { it.message })
+            .contains("Flag response signing v1: unverified")
     }
 
     @ParameterizedTest
@@ -220,16 +230,114 @@ internal class ResponseSigningClientTest {
     }
 
     @Test
-    fun `M fail locally W setEvaluationContext() {required without anchor}`() {
+    fun `M reject test chains W setEvaluationContext() {required with the pinned staging anchor}`() {
         // Given
-        create(ResponseSigningMode.REQUIRED, emptyList())
+        create(ResponseSigningMode.REQUIRED, roots = null)
         // When
         testedClient.setEvaluationContext(EvaluationContext("subject"), null)
         queue.removeFirst().run()
         // Then
-        assertThat(requests).isEmpty()
+        assertThat(requests).hasSize(1)
+        assertThat(requests.single().header(PREFIX + "signature-version")).isEqualTo("1")
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
         assertThat(store.operations).isZero()
+    }
+
+    @ParameterizedTest
+    @EnumSource(ResponseSigningMode::class, names = ["OBSERVE", "REQUIRED"])
+    fun `M accept every leaf under the root W setEvaluationContext() {rotation between fetches}`(
+        mode: ResponseSigningMode
+    ) {
+        // Given
+        create(mode)
+        val generations = listOf(
+            CanonicalResponseSigner.DEFAULT_CREDENTIAL,
+            CanonicalResponseSigner.ROTATED_CREDENTIAL,
+            CanonicalResponseSigner.DEFAULT_CREDENTIAL
+        )
+        assertThat(generations.map { CanonicalResponseSigner.leafCertificate(it) }.distinct()).hasSize(2)
+        // When
+        val results = generations.mapIndexed { index, generation ->
+            credentialName = generation
+            observeFullEvaluationData = index % 2 == 1
+            testedClient.setEvaluationContext(EvaluationContext("subject-$index"), null)
+            queue.removeFirst().run()
+            testedClient.resolve("critical-demo", false)
+        }
+        // Then
+        assertThat(results).allSatisfy { assertThat(it.value).isTrue() }
+        assertThat(results.map { it.flagMetadata["__dd_observe_full_evaluation_data"] })
+            .containsExactly(false, true, false)
+        assertThat(stubCore.telemetryEventsWritten().map { it.message })
+            .doesNotContain("Flag response signing v1: unverified")
+    }
+
+    @ParameterizedTest
+    @EnumSource(DatadogSite::class)
+    fun `M send today's requests W setEvaluationContext() {opt in on every non-staging site}`(site: DatadogSite) {
+        if (site == DatadogSite.STAGING) return
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(site = site)
+        responseKind = "unsigned"
+        create(null)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        val baseline = requests.removeAt(requests.lastIndex)
+        for (mode in ResponseSigningMode.values()) {
+            create(mode)
+            // When
+            testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+            queue.removeFirst().run()
+            // Then
+            val request = requests.removeAt(requests.lastIndex)
+            assertThat(request.url).isEqualTo(baseline.url)
+            assertThat(request.method).isEqualTo(baseline.method)
+            assertThat(request.headers).isEqualTo(baseline.headers)
+            assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        }
+    }
+
+    @Test
+    fun `M send today's requests W setEvaluationContext() {staging without opt in or with OFF}`() {
+        // Given
+        create(null)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        val baseline = requests.removeAt(requests.lastIndex)
+        create(ResponseSigningMode.OFF)
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        val request = requests.removeAt(requests.lastIndex)
+        assertThat(request.headers).isEqualTo(baseline.headers)
+        assertThat(request.url).isEqualTo(baseline.url)
+        assertThat(baseline.headers.names().map { it.lowercase() })
+            .doesNotContain("x-stream", PREFIX + "signature-version", PREFIX + "request-nonce")
+        assertThat(baseline.header("X-DD-FEATURE-FLAGS-CAPABILITIES").orEmpty())
+            .doesNotContain("response-signing-v1")
+        // A signed proof on the response is ignored without opt in.
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+    }
+
+    @Test
+    fun `M send the v1 opt-in request W setEvaluationContext() {staging opt in}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        // When
+        repeat(2) {
+            testedClient.setEvaluationContext(EvaluationContext("subject-$it"), null)
+            queue.removeFirst().run()
+        }
+        // Then
+        val nonces = requests.map { checkNotNull(it.header(PREFIX + "request-nonce")) }
+        assertThat(nonces).allSatisfy { assertThat(it).matches("[0-9a-f]{32}") }
+        assertThat(nonces.distinct()).hasSize(2)
+        requests.forEach {
+            assertThat(it.headers.values(PREFIX + "signature-version")).containsExactly("1")
+            assertThat(it.header("X-stream")).isEqualTo("false")
+            assertThat(it.header("X-DD-FEATURE-FLAGS-CAPABILITIES")?.split(',')).contains("response-signing-v1")
+        }
     }
 
     @Test
@@ -478,7 +586,8 @@ internal class ResponseSigningClientTest {
         stubCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, false) { it.putAll(context) }
     }
 
-    private fun create(mode: ResponseSigningMode, roots: List<String> = listOf(CanonicalResponseSigner.root)) {
+    /** [mode] null builds a client that never calls `responseSigning()`; [roots] null uses the pinned anchor. */
+    private fun create(mode: ResponseSigningMode?, roots: List<String>? = listOf(CanonicalResponseSigner.root)) {
         val core = object : InternalSdkCore by stubCore {
             override fun getDatadogContext(withFeatureContexts: Set<String>) = fakeDatadogContext
             override fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
@@ -510,11 +619,14 @@ internal class ResponseSigningClientTest {
                 }
             }
         }
-        Flags.enable(
-            FlagsConfiguration.Builder().trackExposures(false).trackEvaluations(false).rumIntegrationEnabled(false)
-                .useCustomFlagEndpoint(endpoint).responseSigning(mode, roots).build(),
-            core
-        )
+        val builder = FlagsConfiguration.Builder().trackExposures(false).trackEvaluations(false)
+            .rumIntegrationEnabled(false).useCustomFlagEndpoint(endpoint)
+        when {
+            mode == null -> Unit
+            roots == null -> builder.responseSigning(mode)
+            else -> builder.responseSigningWithTestRoots(mode, roots)
+        }
+        Flags.enable(builder.build(), core)
         testedClient = FlagsClient.Builder(sdkCore = core).build()
     }
 
@@ -525,7 +637,7 @@ internal class ResponseSigningClientTest {
               "allocationKey":"test","variationKey":"on","reason":"TARGETING_MATCH","extraLogging":{}
             }}}}}
         """.trimIndent()
-        val headers = CanonicalResponseSigner.response(request, json).headers
+        val headers = CanonicalResponseSigner.response(request, json, credentialName).headers
         val response = Response.Builder().request(request).protocol(Protocol.HTTP_1_1).message("test")
             .code(if (responseKind == "403") 403 else 200)
             .headers(if (responseKind.startsWith("unsigned")) Headers.Builder().build() else headers)

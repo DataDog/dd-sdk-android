@@ -13,10 +13,16 @@ import okhttp3.Request
 import java.io.IOException
 import java.security.SecureRandom
 
+/**
+ * @param mode the customer opt-in; OFF sends today's requests unchanged
+ * @param testTrustedRoots test-only anchors; empty in production, which pins [ResponseSigningTrustRoots.STAGING_ROOT]
+ */
 internal data class ResponseSigningConfiguration(
     val mode: ResponseSigningMode = ResponseSigningMode.OFF,
-    val trustedRoots: List<String> = emptyList()
-)
+    val testTrustedRoots: List<String> = emptyList()
+) {
+    val anchors: List<String> get() = testTrustedRoots.ifEmpty { listOf(ResponseSigningTrustRoots.STAGING_ROOT) }
+}
 
 /** Serializes request generations with admission; no response can change trust anchors. */
 internal class ResponseSigningState(
@@ -30,7 +36,7 @@ internal class ResponseSigningState(
     private var generation = 0L
     private var requestedContext: EvaluationContext? = null
     private var expectedScope: String? = null
-    val verifier = ResponseSigningVerifier(configuration.trustedRoots)
+    val verifier = ResponseSigningVerifier(configuration.anchors)
 
     fun now(): Long = nowSeconds()
 
@@ -60,8 +66,6 @@ internal class ResponseSigningState(
     }
 
     fun prepare(original: Request, requestGeneration: Long): Request? = try {
-        val roots = ResponseSigningTrustRoots.forEndpoint(original.url, configuration.trustedRoots)
-        signingCheck(configuration.mode != ResponseSigningMode.REQUIRED || roots.isNotEmpty())
         val nonce = ByteArray(NONCE_BYTES)
         SecureRandom().nextBytes(nonce)
         val capabilities = original.header("x-dd-feature-flags-capabilities")

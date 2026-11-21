@@ -14,8 +14,8 @@ import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.model.AssignmentAuthorizationErrorResponse
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
 import com.datadog.android.flags.internal.selection.FlagSelectionIgnoredReason
-import com.datadog.android.flags.internal.signing.ResponseSigningVerifier
 import com.datadog.android.flags.internal.signing.ResponseSigningState
+import com.datadog.android.flags.internal.signing.ResponseSigningVerifier
 import com.datadog.android.flags.model.EvaluationContext
 import com.google.gson.JsonParseException
 import okhttp3.Call
@@ -135,7 +135,7 @@ internal class PrecomputedAssignmentsDownloader(
             failedSignedDownload(null)
         } catch (exception: IOException) {
             // Transports may include request headers in exception messages, causes, or custom fields.
-            failedSignedDownload(exception.takeUnless { credentialUsed })
+            failedSignedDownload(if (credentialUsed) null else exception)
         }
     }
 

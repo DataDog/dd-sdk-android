@@ -6,30 +6,25 @@
 
 package com.datadog.android.flags.internal.signing
 
-import okhttp3.HttpUrl
+import com.datadog.android.DatadogSite
 
+/** The pinned trust anchor. Responses never supply or replace it. */
 internal object ResponseSigningTrustRoots {
-    private const val HTTPS_PORT = 443
 
-    // Public staging root shared with browser SDK 493572e24936303cb60b5963c70a8425e3b681fb.
-    private const val STAGING_ROOT =
-        "MIIBpTCCAUugAwIBAgIQKsPLOMisev8X0XQFpshjkTAKBggqhkjOPQQDAjAxMS8wLQYDVQQDEyZTVEFHSU5HIE9OTFkgRkZFIHJl" +
-            "c3BvbnNlIHNpZ25pbmcgcm9vdDAeFw0yNjExMDQxOTQ5NTlaFw0zNjEwMzEwMDAwMDBaMDExLzAtBgNVBAMTJlNUQUdJTkcgT05M" +
-            "WSBGRkUgcmVzcG9uc2Ugc2lnbmluZyByb290MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE5WCwmxXE/POEOIwmzAPNWA+p9Tj8" +
-            "5d0vGWgUBKZ2n2ahzacUTa1MNAJqhFbErodKBOUxZL91ce0hNd3CREXO+qNFMEMwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQI" +
-            "MAYBAf8CAQEwHQYDVR0OBBYEFGwi5EY0Qjo1O4IeocR1YFDZ6saYMAoGCCqGSM49BAMCA0gAMEUCIECTtDqZk0HqFTTPGsGXCkzG" +
-            "CHFQkBh6CD6HUc7H1u+pAiEA67aMjoptLka70k0EIGc5cg3ShIUs48JwJ4z8qilqEHY="
+    /**
+     * `CN=Datadog Customer Signing Root CA - staging`, padded base64 DER.
+     * SHA-256 of the DER: `0e469f3cecc9cd51fd64373879636540512d56e99eecd70361c78b98c47ea934`.
+     * Subject key identifier: `aa5e91e52cdb130d175eed1010a501c0ef45d60d`. Valid from 2026-11-19 to 2036-11-16.
+     */
+    const val STAGING_ROOT: String =
+        "MIIB0TCCAXigAwIBAgIUeuKLTmp+6/G7at2Gdr8kEvQXr+MwCgYIKoZIzj0EAwIwNTEzMDEGA1UEAxMqRGF0YWRvZyBDdXN0b21l" +
+            "ciBTaWduaW5nIFJvb3QgQ0EgLSBzdGFnaW5nMB4XDTI2MTExOTIzNTYzOVoXDTM2MTExNjIzNTcwOVowNTEzMDEGA1UEAxMqRGF0" +
+            "YWRvZyBDdXN0b21lciBTaWduaW5nIFJvb3QgQ0EgLSBzdGFnaW5nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnqgqgmas0ot4" +
+            "6nCUq418zkd+SCG5EzGmtxKAFSAT4rGTtmylNee/9Asw5nKeV5eLN5Ki7zZ/3wBgIBL/owvov6NmMGQwDgYDVR0PAQH/BAQDAgEG" +
+            "MBIGA1UdEwEB/wQIMAYBAf8CAQIwHQYDVR0OBBYEFKpekeUs2xMNF17tEBClAcDvRdYNMB8GA1UdIwQYMBaAFKpekeUs2xMNF17t" +
+            "EBClAcDvRdYNMAoGCCqGSM49BAMCA0cAMEQCIC6R3Cx6TgUbrKOr+jG2wvrbmNLt97tVUqEOne3nKrdtAiAXfSsjQefOVfiEFg+5" +
+            "G3ksGZzZTkfOPxf0Zl1WOqmrgA=="
 
-    fun forEndpoint(endpoint: HttpUrl, explicitRoots: List<String>): List<String> {
-        if (explicitRoots.isNotEmpty()) return explicitRoots
-        // Trust follows the effective endpoint, never the application's environment label.
-        val stagingOrigin = endpoint.scheme == "https" && endpoint.host == "preview.ff-cdn.datad0g.com" &&
-            endpoint.port == HTTPS_PORT
-        val hasCredentials = endpoint.username.isNotEmpty() || endpoint.password.isNotEmpty()
-        return if (stagingOrigin && !hasCredentials) {
-            listOf(STAGING_ROOT)
-        } else {
-            emptyList()
-        }
-    }
+    /** Signing is available only when the SDK targets the staging site. Production has no anchor yet. */
+    fun isAvailable(site: DatadogSite?): Boolean = site == DatadogSite.STAGING
 }

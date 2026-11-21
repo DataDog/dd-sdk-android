@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATU
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
@@ -35,6 +36,7 @@ import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.SigningFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.internal.signing.ResponseSigningState
+import com.datadog.android.flags.internal.signing.ResponseSigningTrustRoots
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
@@ -391,6 +393,8 @@ interface FlagsClient {
      */
     companion object {
         private const val SIGNING_MILLIS_PER_SECOND = 1000
+        internal const val RESPONSE_SIGNING_UNAVAILABLE_MESSAGE =
+            "Flags response signing is available only for the staging site. Requests are sent without signing."
         private const val DEFAULT_CLIENT_NAME = "default"
 
         /**
@@ -480,9 +484,10 @@ interface FlagsClient {
             experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
             evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
+            val signingContext = flagsFeature.signingContext?.takeIf { signingAvailable(featureSdkCore) }
             val experimentationOptOut = ExperimentationOptOut(
                 experimentationOptOutMode,
-                flagsFeature.signingContext?.lock ?: Any()
+                signingContext?.lock ?: Any()
             )
             val assignmentAuthorization = AssignmentAuthorization(
                 featureSdkCore.internalLogger,
@@ -491,7 +496,7 @@ interface FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
-            val signing = flagsFeature.signingContext?.let {
+            val signing = signingContext?.let {
                 ResponseSigningState(configuration.responseSigning, featureSdkCore.internalLogger, context = it) {
                     featureSdkCore.timeProvider.getDeviceTimestampMillis() / SIGNING_MILLIS_PER_SECOND
                 }
@@ -595,6 +600,21 @@ interface FlagsClient {
                 evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled,
                 assignmentAuthorization = assignmentAuthorization
             )
+        }
+
+        // The staging site is the only site with a pinned anchor. Other sites keep today's requests.
+        private fun signingAvailable(featureSdkCore: FeatureSdkCore): Boolean {
+            val site = (featureSdkCore as? InternalSdkCore)?.getDatadogContext()?.site
+            val available = ResponseSigningTrustRoots.isAvailable(site)
+            if (!available) {
+                featureSdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { RESPONSE_SIGNING_UNAVAILABLE_MESSAGE },
+                    onlyOnce = true
+                )
+            }
+            return available
         }
 
         private fun createRumEvaluationLogger(featureSdkCore: FeatureSdkCore): RumEvaluationLogger {

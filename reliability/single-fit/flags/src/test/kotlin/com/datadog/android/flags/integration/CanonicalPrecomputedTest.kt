@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.integration
 
+import com.datadog.android.DatadogSite
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
@@ -15,6 +16,7 @@ import com.datadog.android.flags.integration.FlagsClientTest.Companion.createStu
 import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeConfigurator
 import com.datadog.android.flags.integration.tests.utils.CanonicalFixtureMatcher
 import com.datadog.android.flags.integration.tests.utils.httpResponse
+import com.datadog.android.flags.integration.tests.utils.responseSigningWithTestRoots
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionReason
@@ -59,7 +61,7 @@ internal class CanonicalPrecomputedTest {
         require(targetingKey != null && targetingKey.isJsonPrimitive && targetingKey.asJsonPrimitive.isString) {
             "$path: Android requires a string targetingKey; null-context fixtures must exclude android upstream"
         }
-        var core = createStubSdkCore(forge)
+        var core = createStubSdkCore(forge, DatadogSite.STAGING)
         val store = core.stubDataStore(Feature.FLAGS_FEATURE_NAME)
         val responseBody = fixture["response"].toString()
         if (signed) core.advanceTimeBy(CanonicalResponseSigner.now * 1000)
@@ -68,10 +70,11 @@ internal class CanonicalPrecomputedTest {
         }
         Flags.enable(
             FlagsConfiguration.Builder().useCustomFlagEndpoint("https://fixture.test/precompute-assignments")
-                .responseSigning(
-                    if (signed) ResponseSigningMode.REQUIRED else ResponseSigningMode.OFF,
-                    listOf(CanonicalResponseSigner.root)
-                ).build(),
+                .apply {
+                    if (signed) {
+                        responseSigningWithTestRoots(ResponseSigningMode.REQUIRED, listOf(CanonicalResponseSigner.root))
+                    }
+                }.build(),
             core
         )
         var client = FlagsClient.Builder(sdkCore = core).build()

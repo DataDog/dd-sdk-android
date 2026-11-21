@@ -78,6 +78,26 @@ internal class ResponseSigningChainTest {
     }
 
     @Test
+    fun `M accept rotated leaves and intermediates W verify() {one verifier, one root}`() {
+        // Given
+        val testedVerifier = ResponseSigningVerifier(listOf(root("root-a")))
+        val generations =
+            listOf("two-intermediates", "rotated-lower-intermediate", "one-intermediate", "two-intermediates")
+        val leaves = generations.map { credential(it).leaf.toList() }
+        val now = generations.maxOf { credential(it).leafNotBefore } + 60
+
+        // When
+        val results = generations.map { name ->
+            val request = request()
+            testedVerifier.verify(request, 200, credential(name).sign(request, BODY, now), BODY, now)
+        }
+
+        // Then
+        assertThat(leaves.distinct()).hasSize(3)
+        assertThat(results).allSatisfy { assertThat(it).isNotNull() }
+    }
+
+    @Test
     fun `M encode v1 domain and every intermediate hash W transcript()`() {
         // Given
         val credential = credential("two-intermediates")

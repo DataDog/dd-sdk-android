@@ -84,34 +84,40 @@ index `i` must have a path length of at least `i`. An intermediate or root exten
 usage, if present, must contain the FFE purpose or `anyExtendedKeyUsage`. A root path
 length, if present, must admit every intermediate.
 
-Response signing is disabled by default. This draft enables a staging-only mobile pilot
-using the same public root as the browser SDK. Production endpoints have no bundled root.
+Response signing is disabled by default. A client that does not opt in sends the same
+requests as before and handles responses as before.
+
+Signing is available only when the SDK targets `DatadogSite.STAGING`. For every other site,
+`responseSigning()` has no effect: the SDK logs a warning and sends unchanged requests.
+Production has no anchor yet.
 
 ```kotlin
 val flagsConfig = FlagsConfiguration.Builder()
-    .useCustomFlagEndpoint("https://preview.ff-cdn.datad0g.com/precompute-assignments")
-    .responseSigning(ResponseSigningMode.REQUIRED, emptyList())
+    .responseSigning(ResponseSigningMode.REQUIRED)
     .build()
 ```
 
-An empty root list selects bundled trust only for `https://preview.ff-cdn.datad0g.com`
-on port 443. The effective request endpoint selects trust, including a custom endpoint.
-The application's `env` value does not select a root. A nonempty list replaces bundled
-trust with explicitly configured public root certificates encoded as padded base64 DER.
-Never put a private key in SDK configuration. No roots are downloaded.
+An opted-in request adds `response-signing-v1` to `X-DD-FEATURE-FLAGS-CAPABILITIES`, sets
+`X-stream: false`, sends signature version `1`, and sends a fresh 32-character lowercase
+hex nonce in `x-datadog-feature-flags-request-nonce`.
 
-Use required mode for the staging pilot; keep production signing off. Fresh sessions
-provide observations across rotations without adding polling. The root stays fixed while
-responses carry the current leaf and intermediate chain. Routine rotation needs
-no SDK update or prior successful fetch. Root validity still bounds unchanged SDK support.
+The SDK pins one root: `CN=Datadog Customer Signing Root CA - staging`, SHA-256
+`0e469f3cecc9cd51fd64373879636540512d56e99eecd70361c78b98c47ea934`. A response never
+supplies the root. The SDK uses no system trust store and downloads no certificates.
+Every certificate, including the root, must satisfy `notBefore <= now < notAfter`.
+Each child validity must be inside its parent validity. The SDK does not check leaf issuance freshness.
+
+The server rotates the leaf daily inside a 120-hour validity window. Each response carries
+its own leaf and chain. The SDK does not pin or cache a leaf or intermediate identity, so any
+valid chain under the root passes. Routine leaf and intermediate rotation needs no SDK update
+or prior successful fetch. Root validity still bounds unchanged SDK support.
 
 - `OFF` preserves existing transport and persistence and performs no signing work.
 - `OBSERVE` reports bounded verified/unverified telemetry and accepts otherwise-valid
   responses when optional verification fails. Authentication, transport, redirect, and
   JSON errors remain failures. Signed and unsigned requests are never retried as a downgrade.
-- `REQUIRED` accepts only valid proofs. Invalid or unavailable roots yield evaluation defaults;
-  an endpoint without a configured or bundled root fails locally before a request. Verified assignments are held only
-  in memory and are checked against their original expiry on every evaluation. Restart,
+- `REQUIRED` accepts only valid proofs. A missing or invalid proof yields evaluation defaults.
+  Verified assignments are held only in memory and are checked against their original expiry on every evaluation. Restart,
   expiry, a changed request scope, or a clock earlier than admission causes defaults.
   A live RUM application-ID change or stopping the Flags feature immediately invalidates
   prior proofs and prevents in-flight responses from restoring them.
@@ -129,7 +135,7 @@ corpus and native host-JVM tests are development evidence; Android device/provid
 iOS API review, production anchor provisioning, and operational rollout approval remain
 release prerequisites.
 
-The signing fixtures use the existing snapshot importer and weekly update workflow.
+The signing fixtures use `ci/sync-response-signing-fixtures.py` and the weekly `Response signing fixtures` workflow.
 `src/test/resources/response-signing-v1/SOURCE.json` records the central commit and file checksums.
 The JVM and Android instrumented verifier tests discover every manifest-listed suite and check its checksum and counts.
 They assert acceptance decisions and exact transcripts for every response vector.

@@ -20,9 +20,16 @@ import java.util.Locale
 
 internal data class VerifiedResponse(val scope: String, val verifiedAt: Long, val expiresAt: Long)
 
-/** Native JCA verifies signatures; the explicit anchor never enters a system trust/path builder. */
+/**
+ * Native JCA verifies signatures; the pinned anchor never enters a system trust/path builder.
+ * The verifier keeps no leaf or intermediate identity between responses, so every valid chain under an anchor passes.
+ *
+ * @param anchors pinned roots as padded base64 DER; production uses only [ResponseSigningTrustRoots.STAGING_ROOT]
+ */
 @Suppress("MagicNumber") // Time windows, DER OIDs and integer widths are frozen protocol constants.
-internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
+internal class ResponseSigningVerifier(anchors: List<String>) {
+    private val anchors = anchors.toList()
+
     fun verify(request: Request, status: Int, headers: Headers, body: ByteArray, now: Long): VerifiedResponse? = try {
         verifyProof(request, status, headers, body, now)
     } catch (_: GeneralSecurityException) {
@@ -54,7 +61,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         leaf.restrictLeaf()
         intermediates.forEachIndexed { index, intermediate -> intermediate.restrictIntermediate(index) }
         val last = intermediates[intermediates.size - 1]
-        val anchor = ResponseSigningTrustRoots.forEndpoint(request.url, trustedRoots).asSequence().mapNotNull { root ->
+        val anchor = anchors.asSequence().mapNotNull { root ->
             try {
                 certificate(base64(root, 4096)).takeIf { parent ->
                     parent.covers(now, issued, expires) && parent.admitsChain(intermediates.size) &&
@@ -83,8 +90,9 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         val notAfter: Long,
         val extensions: Map<String, Pair<Boolean, ByteArray>>
     ) {
+        /** `notBefore <= now < notAfter`; the proof window must also fit inside the certificate validity. */
         fun covers(now: Long, issued: Long, expires: Long): Boolean {
-            return now in notBefore..notAfter && issued >= notBefore && expires <= notAfter
+            return notBefore <= now && now < notAfter && issued >= notBefore && expires <= notAfter
         }
 
         @Suppress("ReturnCount") // Reject each issuer linkage before invoking native cryptography.
@@ -149,7 +157,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         signingCheck(validity.size == 2)
         val notBefore = signingTime(validity[0])
         val notAfter = signingTime(validity[1])
-        signingCheck(notBefore < notAfter)
+        signingCheck(notBefore < notAfter && notAfter <= MAX_SAFE_INTEGER)
         signingCheck(cert[1].encoded.contentEquals(hex("300a06082a8648ce3d040302")))
         signingCheck(tbs[2].encoded.contentEquals(cert[1].encoded))
         signingCheck(cert[2].tag == 3 && cert[2].value[0] == 0.toByte())
@@ -217,6 +225,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         // OID contents (without tag and length) of anyExtendedKeyUsage 2.5.29.37.0.
         private const val ANY_EXTENDED_KEY_USAGE = "551d2500"
         const val MAX_RESPONSE_BYTES = 2 * 1024 * 1024
+        private const val MAX_SAFE_INTEGER = 9007199254740991L
         private const val AUTHORITY_KEY_ID = "551d23"
         private const val SUBJECT_KEY_ID = "551d0e"
         private const val MAX_REQUEST_BYTES = 1024 * 1024
@@ -383,7 +392,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
 
         private fun seconds(value: String): Long {
             signingCheck(value.matches(Regex("0|[1-9][0-9]{0,15}")))
-            return (value.toLongOrNull() ?: signingFailure()).also { signingCheck(it <= 9007199254740991L) }
+            return (value.toLongOrNull() ?: signingFailure()).also { signingCheck(it <= MAX_SAFE_INTEGER) }
         }
 
         private fun strictSignature(bytes: ByteArray) {

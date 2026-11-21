@@ -6,11 +6,12 @@
 
 package com.datadog.android.flags.internal.signing
 
+import com.datadog.android.DatadogSite
+import com.datadog.android.flags.ResponseSigningMode
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import okhttp3.Headers
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.ByteString.Companion.decodeBase64
@@ -20,46 +21,61 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 
 internal class ResponseSigningVerifierTest {
     @TestFactory
-    fun `M select staging trust only for exact HTTPS origin W forEndpoint()`(): List<DynamicTest> {
-        val cases = mapOf(
-            "https://preview.ff-cdn.datad0g.com/precompute-assignments" to true,
-            "https://PREVIEW.FF-CDN.DATAD0G.COM:443/precompute-assignments?dd_env=production" to true,
-            "https://preview.ff-cdn.datadoghq.com/precompute-assignments?dd_env=staging" to false,
-            "https://preview.ff-cdn.us3.datadoghq.com/precompute-assignments" to false,
-            "https://preview.ff-cdn.datad0g.com.attacker.test/precompute-assignments" to false,
-            "https://attacker-preview.ff-cdn.datad0g.com/precompute-assignments" to false,
-            "https://preview.ff-cdn.datad0g.com:444/precompute-assignments" to false,
-            "http://preview.ff-cdn.datad0g.com/precompute-assignments" to false,
-            "https://user@preview.ff-cdn.datad0g.com/precompute-assignments" to false
-        )
-        return cases.map { (endpoint, expected) ->
-            DynamicTest.dynamicTest(endpoint) {
+    fun `M allow signing only on the staging site W isAvailable()`(): List<DynamicTest> =
+        DatadogSite.values().map { site ->
+            DynamicTest.dynamicTest(site.name) {
                 // When
-                val roots = ResponseSigningTrustRoots.forEndpoint(endpoint.toHttpUrl(), emptyList())
+                val result = ResponseSigningTrustRoots.isAvailable(site)
                 // Then
-                assertThat(roots).hasSize(if (expected) 1 else 0)
-                if (expected) {
-                    assertThat(checkNotNull(roots.single().decodeBase64()).sha256().hex())
-                        .isEqualTo("6e83e91905e966b37a4eaf30961143cba6027ead0affc207ae6edc012390171e")
-                }
+                assertThat(result).isEqualTo(site == DatadogSite.STAGING)
             }
+        } + DynamicTest.dynamicTest("unknown site") {
+            assertThat(ResponseSigningTrustRoots.isAvailable(null)).isFalse()
         }
+
+    @Test
+    fun `M pin only the staging root W anchors {production configuration}`() {
+        // When
+        val anchors = ResponseSigningConfiguration(ResponseSigningMode.REQUIRED).anchors
+        // Then
+        assertThat(anchors).containsExactly(ResponseSigningTrustRoots.STAGING_ROOT)
+        val der = checkNotNull(anchors.single().decodeBase64())
+        assertThat(der.sha256().hex()).isEqualTo(STAGING_ROOT_SHA256)
+        assertThat(der.base64()).isEqualTo(anchors.single())
     }
 
     @Test
-    fun `M replace bundled staging trust W forEndpoint() {explicit roots}`() {
+    fun `M issue the staging DC intermediate W STAGING_ROOT`() {
         // Given
-        val roots = listOf(resource("corpus.json")["anchor_der_base64"].asString)
+        val factory = CertificateFactory.getInstance("X.509")
+        val root = factory.generateCertificate(
+            checkNotNull(ResponseSigningTrustRoots.STAGING_ROOT.decodeBase64()).toByteArray().inputStream()
+        ) as X509Certificate
+        val intermediate = factory.generateCertificate(
+            checkNotNull(javaClass.getResourceAsStream("/response-signing-chain/staging/dc-intermediate.pem"))
+        ) as X509Certificate
         // When
-        val result = ResponseSigningTrustRoots.forEndpoint(
-            "https://preview.ff-cdn.datad0g.com/precompute-assignments".toHttpUrl(),
-            roots
-        )
+        intermediate.verify(root.publicKey)
         // Then
-        assertThat(result).isEqualTo(roots)
+        assertThat(intermediate.issuerX500Principal).isEqualTo(root.subjectX500Principal)
+        assertThat(root.subjectX500Principal.name).isEqualTo("CN=Datadog Customer Signing Root CA - staging")
+        assertThat(root.basicConstraints).isEqualTo(2)
+    }
+
+    @Test
+    fun `M keep test roots out of production W anchors {test override}`() {
+        // Given
+        val roots = mutableListOf(resource("corpus.json")["anchor_der_base64"].asString)
+        // When
+        val anchors = ResponseSigningConfiguration(ResponseSigningMode.REQUIRED, roots.toList()).anchors
+        roots.clear()
+        // Then
+        assertThat(anchors).hasSize(1).doesNotContain(ResponseSigningTrustRoots.STAGING_ROOT)
     }
 
     @TestFactory
@@ -165,4 +181,8 @@ internal class ResponseSigningVerifierTest {
 
     private fun resourceBytes(path: String): ByteArray = checkNotNull(javaClass.classLoader)
         .getResourceAsStream(path).let { checkNotNull(it) }.use { it.readBytes() }
+
+    private companion object {
+        const val STAGING_ROOT_SHA256 = "0e469f3cecc9cd51fd64373879636540512d56e99eecd70361c78b98c47ea934"
+    }
 }

@@ -327,7 +327,7 @@ internal class EvaluationsManager(
     }
 
     // Keep proof, cancellation and context gates atomic with installation.
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun fetchSignedEvaluations(
         request: ExperimentationOptOut.Request,
         generation: Long,
@@ -342,7 +342,12 @@ internal class EvaluationsManager(
             Fetch(sequence, if (sequence == 1L) Trigger.INITIALIZATION else Trigger.CONTEXT_CHANGE)
         )
         val cachedContext = AtomicReference<EvaluationContext?>()
-        val completion = startInitializationTimeout(request, callback, cachedContext, { signing.isCurrent(generation) }) {
+        val completion = startInitializationTimeout(
+            request,
+            callback,
+            cachedContext,
+            { signing.isCurrent(generation) }
+        ) {
             ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
             effects.drain()
         }
@@ -399,7 +404,13 @@ internal class EvaluationsManager(
                                 installed = true
                             } else {
                                 flagsRepository.restoreVerifiedFlags()?.let { effects.enqueue { it.complete {} } }
-                                applyRequestFailure(request, outcome, cachedContext.get(), authorizationRejected, throwable)
+                                applyRequestFailure(
+                                    request,
+                                    outcome,
+                                    cachedContext.get(),
+                                    authorizationRejected,
+                                    throwable
+                                )
                             }
                         }
                         if (!current) enqueueCompletion(outcome, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
@@ -429,11 +440,12 @@ internal class EvaluationsManager(
         else -> INVALID_RESPONSE_MESSAGE
     }
 
-    private fun failure(networkFailed: Boolean, authorizationRejected: Boolean): Throwable = if (authorizationRejected) {
-        FlagsAssignmentAuthorizationException()
-    } else {
-        NetworkRequestFailedException(failureMessage(networkFailed, authorizationRejected = false))
-    }
+    private fun failure(networkFailed: Boolean, authorizationRejected: Boolean): Throwable =
+        if (authorizationRejected) {
+            FlagsAssignmentAuthorizationException()
+        } else {
+            NetworkRequestFailedException(failureMessage(networkFailed, authorizationRejected = false))
+        }
 
     // Executor construction does not run the task. Rejection is rethrown only
     // to executeSafe, which logs it without exposing it to the caller.
