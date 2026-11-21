@@ -2570,6 +2570,32 @@ internal class DatadogFlagsClientTest {
         verify(mockFlagsRepository).waitForPersistenceLoad()
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = ["1e400", "-1e400", "1e-400", "100000000000000000001", "9007199254740993"])
+    fun `M omit unrepresentable numeric assignments W getFlagAssignmentsSnapshot()`(
+        fakeLiteral: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlag = forge.getForgery<PrecomputedFlag>()
+        val snapshot = mapOf(
+            "unrepresentable" to fakeFlag.copy(variationType = "number", variationValue = fakeLiteral),
+            "integer" to fakeFlag.copy(variationType = "integer", variationValue = "9007199254740992"),
+            "fraction" to fakeFlag.copy(variationType = "float", variationValue = "4503599627370497.5"),
+            "text" to fakeFlag.copy(variationType = "string", variationValue = fakeLiteral)
+        )
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
+            FlagsAssignmentsSnapshot(snapshot, fakeDefaultContext)
+
+        // When
+        val result = testedClient.getFlagAssignmentsSnapshot()
+        val contextResult = testedClient.getFlagAssignmentsSnapshot(fakeDefaultContext)
+
+        // Then
+        assertThat(result).containsOnlyKeys("integer", "fraction", "text")
+        assertThat(contextResult).isEqualTo(result)
+    }
+
     @Test
     fun `M track evaluation W trackFlagSnapshotEvaluation() { boolean flag }`(forge: Forge) {
         // Given

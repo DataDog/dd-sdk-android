@@ -71,6 +71,7 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
      * experimentation opt-out mode, [context] is still the current request. Returns null otherwise,
      * including for a client that is not a Datadog client.
      * Use it in a completion callback: a newer request can install before the callback runs.
+     * Both snapshot functions omit a numeric assignment that no Int or Double read accepts, such as `1e400`.
      */
     fun getFlagAssignmentsSnapshot(context: EvaluationContext): Map<String, UnparsedFlag>? =
         (client as? DatadogFlagsClient)?.getFlagAssignmentsSnapshot(context)

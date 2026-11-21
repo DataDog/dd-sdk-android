@@ -778,6 +778,7 @@ internal class DatadogFlagsClient(
             flagsRepository.getAssignmentsSnapshot()
                 ?.takeIf { it.context == targetingContext && resolutionContext(it.context).errorCode == null }
                 ?.flags
+                ?.let { FlagValueConverter.exportable(it) }
         }
     }
 
@@ -793,7 +794,7 @@ internal class DatadogFlagsClient(
         return synchronized(telemetryLock) {
             val snapshot = flagsRepository.getAssignmentsSnapshot()
             if (snapshot != null && resolutionContext(snapshot.context).errorCode == null) {
-                snapshot.flags
+                FlagValueConverter.exportable(snapshot.flags)
             } else {
                 emptyMap()
             }
