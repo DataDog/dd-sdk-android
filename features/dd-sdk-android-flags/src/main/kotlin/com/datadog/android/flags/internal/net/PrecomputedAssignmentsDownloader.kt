@@ -4,11 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.internal.net
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.model.AssignmentAuthorizationErrorResponse

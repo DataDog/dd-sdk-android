@@ -4,10 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.integration
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration

@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags
 
 import com.datadog.android.flags.internal.selection.FlagSelection
@@ -74,6 +76,9 @@ data class FlagsConfiguration internal constructor(
         private var responseSigning = ResponseSigningConfiguration()
 
         /**
+         * Experimental. Response signing is in preview and works only on the Datadog staging site. The API can change
+         * or be removed in a minor release, based on customer feedback.
+         *
          * Opts into assignment response verification. Signing is off by default.
          *
          * Staging only; production is not supported yet. Signing works only when the SDK targets
@@ -88,7 +93,8 @@ data class FlagsConfiguration internal constructor(
          * @param mode OFF by default; OBSERVE accepts unverified data, REQUIRED uses verified memory only.
          * @return this builder.
          */
-        fun responseSigning(mode: ResponseSigningMode): Builder {
+        @ExperimentalFlagsApi
+        fun experimentalResponseSigning(mode: ResponseSigningMode): Builder {
             responseSigning = ResponseSigningConfiguration(mode)
             return this
         }

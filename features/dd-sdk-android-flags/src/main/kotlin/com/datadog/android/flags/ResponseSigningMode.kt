@@ -6,7 +6,13 @@
 
 package com.datadog.android.flags
 
-/** Controls verification of assignment responses. Disabled unless explicitly configured. */
+/**
+ * Controls verification of assignment responses. Disabled unless explicitly configured.
+ *
+ * Experimental. Response signing is in preview and works only on the Datadog staging site. The API can change or be
+ * removed in a minor release, based on customer feedback.
+ */
+@ExperimentalFlagsApi
 enum class ResponseSigningMode {
     /** Preserves the existing transport and cache behavior without cryptographic work. */
     OFF,

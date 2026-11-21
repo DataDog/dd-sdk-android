@@ -3,6 +3,9 @@ public abstract interface class com/datadog/android/flags/EvaluationContextCallb
 	public abstract fun onSuccess ()V
 }
 
+public abstract interface annotation class com/datadog/android/flags/ExperimentalFlagsApi : java/lang/annotation/Annotation {
+}
+
 public final class com/datadog/android/flags/ExperimentationOptOutMode : java/lang/Enum {
 	public static final field DISABLED Lcom/datadog/android/flags/ExperimentationOptOutMode;
 	public static final field FUTURE_EXPERIMENTS_ONLY Lcom/datadog/android/flags/ExperimentationOptOutMode;
@@ -79,10 +82,10 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
 	public final fun evaluationFlushInterval (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun experimentalResponseSigning (Lcom/datadog/android/flags/ResponseSigningMode;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun flagSelection (Ljava/util/List;Ljava/util/List;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun gracefulModeEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun initializationTimeout (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
-	public final fun responseSigning (Lcom/datadog/android/flags/ResponseSigningMode;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun rumIntegrationEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun trackEvaluations (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun trackExposures (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;

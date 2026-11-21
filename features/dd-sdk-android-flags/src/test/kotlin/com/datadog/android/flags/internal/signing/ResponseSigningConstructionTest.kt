@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.internal.signing
 
 import android.content.Context
@@ -17,6 +19,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.ResponseSigningMode
@@ -154,7 +157,7 @@ internal class ResponseSigningConstructionTest {
             FlagsConfiguration.Builder()
                 .trackEvaluations(false)
                 .initializationTimeout(initializationTimeoutMs)
-                .responseSigning(mode)
+                .experimentalResponseSigning(mode)
                 .build()
         )
         val mockScope = mock<FeatureScope> {

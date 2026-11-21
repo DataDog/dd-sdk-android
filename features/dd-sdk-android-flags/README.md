@@ -60,7 +60,11 @@ Flags.enable(flagsConfig)
 
 The `FlagsConfiguration.Builder` supports the following options:
 
-#### Response signing (experimental draft)
+#### Response signing (experimental)
+
+Response signing is experimental. `ResponseSigningMode` and
+`FlagsConfiguration.Builder.experimentalResponseSigning()` require `@OptIn(ExperimentalFlagsApi::class)`.
+The API can change or be removed in a minor release, based on customer feedback.
 
 The SDK does not send `X-stream`. Signed and unsigned requests keep their ordinary transport selection.
 The edge buffers the responses that it signs, because a v1 proof covers the whole body.
@@ -98,8 +102,9 @@ For every other site:
   are not verified.
 
 ```kotlin
+@OptIn(ExperimentalFlagsApi::class)
 val flagsConfig = FlagsConfiguration.Builder()
-    .responseSigning(ResponseSigningMode.REQUIRED)
+    .experimentalResponseSigning(ResponseSigningMode.REQUIRED)
     .build()
 ```
 

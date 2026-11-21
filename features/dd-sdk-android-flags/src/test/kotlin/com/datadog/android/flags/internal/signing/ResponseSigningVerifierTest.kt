@@ -4,9 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.internal.signing
 
 import com.datadog.android.DatadogSite
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.ResponseSigningMode
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject

@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.internal
 
 import android.content.Context
@@ -15,6 +17,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration

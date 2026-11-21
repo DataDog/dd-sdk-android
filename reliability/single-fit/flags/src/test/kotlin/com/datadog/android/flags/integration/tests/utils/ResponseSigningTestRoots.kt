@@ -4,8 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.integration.tests.utils
 
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.ResponseSigningMode
 
@@ -17,7 +20,7 @@ internal fun FlagsConfiguration.Builder.responseSigningWithTestRoots(
     mode: ResponseSigningMode,
     roots: List<String>
 ): FlagsConfiguration.Builder {
-    responseSigning(mode)
+    experimentalResponseSigning(mode)
     val configuration = Class.forName("com.datadog.android.flags.internal.signing.ResponseSigningConfiguration")
         .getDeclaredConstructor(ResponseSigningMode::class.java, List::class.java)
         .newInstance(mode, roots.toList())

@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.integration
 
 import com.datadog.android.DatadogSite
@@ -20,6 +22,7 @@ import com.datadog.android.core.stub.StubDataStoreHandler
 import com.datadog.android.core.stub.StubExecutorService
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
@@ -636,7 +639,7 @@ internal class ResponseSigningClientTest {
         stubCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, false) { it.putAll(context) }
     }
 
-    /** [mode] null builds a client that never calls `responseSigning()`; [roots] null uses the pinned anchor. */
+    /** [mode] null builds a client that never calls `experimentalResponseSigning()`; [roots] null uses the pinned anchor. */
     private fun create(mode: ResponseSigningMode?, roots: List<String>? = listOf(CanonicalResponseSigner.root)) {
         val core = object : InternalSdkCore by stubCore {
             override fun getDatadogContext(withFeatureContexts: Set<String>) = fakeDatadogContext
@@ -673,7 +676,7 @@ internal class ResponseSigningClientTest {
             .rumIntegrationEnabled(false).useCustomFlagEndpoint(endpoint)
         when {
             mode == null -> Unit
-            roots == null -> builder.responseSigning(mode)
+            roots == null -> builder.experimentalResponseSigning(mode)
             else -> builder.responseSigningWithTestRoots(mode, roots)
         }
         Flags.enable(builder.build(), core)
