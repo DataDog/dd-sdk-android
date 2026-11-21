@@ -2,10 +2,11 @@
 # Unless explicitly stated otherwise, all files in this repository are licensed under the
 # Apache License Version 2.0. This product includes software developed at Datadog
 # (https://www.datadoghq.com/). Copyright 2025-Present Datadog, Inc.
-"""Fetch the pinned precompute test snapshot into a git-ignored folder; never edit imported JSON.
+"""Fetch pinned ffe-system-test-data snapshots into git-ignored folders; never edit imported files.
 
-The repository commits only the upstream commit SHA in ci/feature-flags-precomputed-fixtures.json.
-The default mode materializes that commit; --update moves the pin.
+ci/feature-flags-precomputed-fixtures.json lists sources. Each source has a repository path prefix, a destination,
+its own upstream commit SHA, a format, and an optional file map. The repository commits only those pins.
+The default mode materializes every pin; --update moves each pin.
 """
 import argparse
 import hashlib
@@ -19,12 +20,18 @@ import uuid
 from pathlib import Path
 
 REPOSITORY = 'https://github.com/DataDog/ffe-system-test-data.git'
-PREFIX = 'precomputed-assignments/'
-FILES = {
-    'schemas/precomputed-assignment.schema.json': 'schema.json',
-    'precomputed-assignments/README.md': 'README.md',
-    'LICENSE': 'LICENSE',
-    'NOTICE': 'NOTICE',
+# "precomputed-assignments" imports cases with extracted responses and an index; "tree" copies every file under path.
+FORMATS = {'precomputed-assignments', 'tree'}
+PRECOMPUTED = {
+    'name': 'precomputed-assignments',
+    'format': 'precomputed-assignments',
+    'path': 'precomputed-assignments/',
+    'files': {
+        'schemas/precomputed-assignment.schema.json': 'schema.json',
+        'precomputed-assignments/README.md': 'README.md',
+        'LICENSE': 'LICENSE',
+        'NOTICE': 'NOTICE',
+    },
 }
 # Finder metadata is ignored; any other unexpected file still fails.
 IGNORED_NAMES = {'.DS_Store'}
@@ -60,29 +67,38 @@ def response_bytes(content):
             return text[start:position].encode('utf-8') + b'\n'
 
 
-def snapshot(source, ref):
+def snapshot(source, ref, spec=PRECOMPUTED):
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._/-]*', ref) or '..' in ref:
         raise ValueError('Invalid fixture revision')
     sha = git(source, 'rev-parse', '--verify', ref + '^{commit}').decode().strip()
     if not re.fullmatch(r'[0-9a-f]{40}', sha):
         raise ValueError('Expected a full source commit SHA')
+    prefix = spec['path']
+    files = spec.get('files', {})
+    precomputed = spec['format'] == 'precomputed-assignments'
     result = {}
     for entry in git(source, 'ls-tree', '-rz', '--full-tree', sha).split(b'\0'):
         if not entry:
             continue
         metadata, raw_path = entry.split(b'\t', 1)
         path = raw_path.decode()
-        target = FILES.get(path)
-        if path.startswith(PREFIX + 'cases/') and path.endswith('.json'):
-            target = path[len(PREFIX):]
+        target = files.get(path)
+        if precomputed and path.startswith(prefix + 'cases/') and path.endswith('.json'):
+            target = path[len(prefix):]
+        if not precomputed and path.startswith(prefix):
+            target = path[len(prefix):]
         if target is None:
             continue
         mode, kind, blob = metadata.decode().split()
         if mode != '100644' or kind != 'blob':
             raise ValueError('Fixture entries must be ordinary files: ' + path)
         result[target] = git(source, 'cat-file', 'blob', blob)
+    if not result or not all(p in result for p in files.values()):
+        raise ValueError('Missing or empty fixture source: ' + spec['name'])
+    if not precomputed:
+        return _with_provenance(result, sha)
     cases = sorted(p for p in result if p.startswith('cases/'))
-    if not cases or not all(p in result for p in FILES.values()):
+    if not cases:
         raise ValueError('Missing or empty precomputed fixture corpus')
     for path in cases:
         data = json.loads(result[path])
@@ -92,6 +108,10 @@ def snapshot(source, ref):
             raise TypeError('Missing evaluations: ' + path)
         result['responses/' + path] = response_bytes(result[path])
     result['index.json'] = (json.dumps(cases, indent=2) + '\n').encode()
+    return _with_provenance(result, sha)
+
+
+def _with_provenance(result, sha):
     result['SOURCE.json'] = (json.dumps({
         'repository': REPOSITORY,
         'commit': sha,
@@ -112,7 +132,7 @@ def read_snapshot(destination):
     return result
 
 
-def verify(destination):
+def verify(destination, spec=PRECOMPUTED):
     content = read_snapshot(destination)
     metadata = json.loads(content.pop('SOURCE.json'))
     if metadata['repository'] != REPOSITORY or not re.fullmatch(r'[0-9a-f]{40}', metadata['commit']):
@@ -120,6 +140,11 @@ def verify(destination):
     hashes = {p: hashlib.sha256(v).hexdigest() for p, v in sorted(content.items())}
     if hashes != metadata['files']:
         raise ValueError('Snapshot content differs from its recorded checksums')
+    if spec['format'] != 'precomputed-assignments':
+        if not content:
+            raise ValueError('Missing or empty fixture source: ' + spec['name'])
+        print(f"Verified {len(content)} {spec['name']} files at {metadata['commit']}")
+        return
     cases = sorted(p for p in content if p.startswith('cases/') and p.endswith('.json'))
     if not cases or json.loads(content['index.json']) != cases:
         raise ValueError('Missing, empty, or stale fixture index')
@@ -177,24 +202,35 @@ def write_snapshot(destination, after):
             staged.rename(destination)
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--update', action='store_true', help='Pin a new upstream revision, then fetch it')
-    parser.add_argument('--ref', help='Revision to pin with --update (default: main)')
-    parser.add_argument('--source', type=Path, help='Read a local Git checkout instead of fetching')
-    parser.add_argument('--verify', action='store_true', help='Verify the fetched snapshot against the pin without network access')
-    args = parser.parse_args()
-    if args.ref is not None and not args.update:
-        parser.error('--ref requires --update; the default run fetches the pin')
-    if args.verify and args.update:
-        parser.error('Use either --verify or --update')
-    root = Path(__file__).resolve().parent.parent
-    config_path = root / 'ci/feature-flags-precomputed-fixtures.json'
-    config = json.loads(config_path.read_text())
-    pin = config.get('commit')
-    if not isinstance(pin, str) or not re.fullmatch(r'[0-9a-f]{40}', pin):
-        raise ValueError('ci/feature-flags-precomputed-fixtures.json must pin a full upstream commit SHA')
-    relative = Path(config['destination'])
+def sources(config):
+    """Validates the manifest; every source keeps its own pin."""
+    entries = config.get('sources')
+    if not isinstance(entries, list) or not entries:
+        raise ValueError('ci/feature-flags-precomputed-fixtures.json must list at least one source')
+    names = set()
+    destinations = set()
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get('format') not in FORMATS:
+            raise ValueError('Each source must declare a supported format')
+        name, path = entry.get('name'), entry.get('path')
+        if not isinstance(name, str) or not re.fullmatch(r'[a-z0-9][a-z0-9-]*', name) or name in names:
+            raise ValueError('Each source needs a unique lowercase name')
+        if not isinstance(path, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._/-]*/', path) or '..' in path:
+            raise ValueError('Source path must be a repository folder ending with /: ' + name)
+        if not isinstance(entry.get('commit'), str) or not re.fullmatch(r'[0-9a-f]{40}', entry['commit']):
+            raise ValueError('Source must pin a full upstream commit SHA: ' + name)
+        files = entry.get('files', {})
+        if not isinstance(files, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in files.items()):
+            raise ValueError('Source file map must map upstream paths to destination paths: ' + name)
+        if entry['destination'] in destinations:
+            raise ValueError('Each source needs its own destination: ' + name)
+        names.add(name)
+        destinations.add(entry['destination'])
+    return entries
+
+
+def checked_destination(root, spec):
+    relative = Path(spec['destination'])
     if relative.is_absolute() or '..' in relative.parts:
         raise ValueError('Destination must be inside the repository')
     destination = root / relative
@@ -221,18 +257,26 @@ def main():
             extra = read_snapshot(destination).keys() - metadata['files'].keys() - {'SOURCE.json'}
             if extra:
                 raise ValueError('Destination contains files outside the previous snapshot')
+    return destination
+
+
+def sync_source(root, spec, args):
+    """Materializes one pin, or with --update moves it; returns the resulting commit and file count."""
+    pin = spec['commit']
+    destination = checked_destination(root, spec)
     before = read_snapshot(destination)
     current = json.loads(before['SOURCE.json'])['commit'] if 'SOURCE.json' in before else None
     if args.verify:
         if current != pin:
-            raise ValueError(f'Fetched snapshot ({current}) does not match the pin ({pin}); run without --verify')
-        verify(destination)
-        return
+            raise ValueError(f"Fetched {spec['name']} snapshot ({current}) does not match the pin ({pin}); "
+                             'run without --verify')
+        verify(destination, spec)
+        return pin, None
     ref = (args.ref or 'main') if args.update else pin
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._/-]*', ref) or '..' in ref:
         raise ValueError('Invalid fixture revision')
     if not args.update and current == pin:
-        verify(destination)
+        verify(destination, spec)
         after = before
     else:
         with tempfile.TemporaryDirectory(prefix='ffe-precompute-') as temporary:
@@ -243,16 +287,16 @@ def main():
                 subprocess.run(['git', 'init', '-q', str(source)], check=True)
                 fetch(source, ref)
                 ref = 'FETCH_HEAD'
-            after = snapshot(source, ref)
+            after = snapshot(source, ref, spec)
             pinned = before if current == pin else None
             if args.update and pinned is None and json.loads(after['SOURCE.json'])['commit'] != pin:
                 # A fresh checkout has no local snapshot, so read the pinned one to compare.
                 try:
                     if fetched:
                         fetch(source, pin)
-                        pinned = snapshot(source, 'FETCH_HEAD')
+                        pinned = snapshot(source, 'FETCH_HEAD', spec)
                     else:
-                        pinned = snapshot(source, pin)
+                        pinned = snapshot(source, pin, spec)
                 except (Exception, SystemExit):  # pylint: disable=broad-except
                     # Without a readable pinned snapshot, the new commit counts as a change.
                     pinned = None
@@ -263,19 +307,52 @@ def main():
             after = pinned
         if before != after:
             write_snapshot(destination, after)
-    if config.get('unityMetadata'):
+    if spec.get('unityMetadata'):
         unity_metadata(destination)
     commit = json.loads(after['SOURCE.json'])['commit']
-    changed = commit != pin
+    if spec['format'] == 'precomputed-assignments':
+        count = len(json.loads(after['index.json']))
+    else:
+        count = len(after) - 1
+    return commit, count
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--update', action='store_true', help='Pin a new upstream revision for each source, then fetch it')
+    parser.add_argument('--ref', help='Revision to pin with --update (default: main)')
+    parser.add_argument('--source', type=Path, help='Read a local Git checkout instead of fetching')
+    parser.add_argument('--verify', action='store_true', help='Verify the fetched snapshots against the pins without network access')
+    args = parser.parse_args()
+    if args.ref is not None and not args.update:
+        parser.error('--ref requires --update; the default run fetches the pins')
+    if args.verify and args.update:
+        parser.error('Use either --verify or --update')
+    root = Path(__file__).resolve().parent.parent
+    config_path = root / 'ci/feature-flags-precomputed-fixtures.json'
+    config = json.loads(config_path.read_text())
+    changed = []
+    summary = []
+    counts = []
+    for spec in sources(config):
+        commit, count = sync_source(root, spec, args)
+        if args.verify:
+            continue
+        if commit != spec['commit']:
+            changed.append(spec['name'])
+            spec['commit'] = commit
+        summary.append(f"{spec['name']}@{commit}")
+        counts.append(count)
+        print(f"Feature flags fixtures ({spec['name']}): {commit}; {count} files; "
+              f"pin changed={str(spec['name'] in changed).lower()}")
+    if args.verify:
+        return
     if changed:
-        config['commit'] = commit
         config_path.write_text(json.dumps(config, indent=2) + '\n')
-    count = len(json.loads(after['index.json']))
-    print(f"Feature flags precomputed fixtures: {commit}; {count} files; pin changed={str(changed).lower()}")
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-            output.write(f"changed={str(changed).lower()}\nsource_commit={commit}\nfixture_count={count}\n")
-
+            output.write(f"changed={str(bool(changed)).lower()}\nsource_commit={', '.join(summary)}\n"
+                         f"fixture_count={sum(counts)}\n")
 
 if __name__ == '__main__':
     main()
