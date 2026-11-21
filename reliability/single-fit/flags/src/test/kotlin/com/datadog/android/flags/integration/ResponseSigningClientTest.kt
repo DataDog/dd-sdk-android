@@ -103,9 +103,23 @@ internal class ResponseSigningClientTest {
         assertThat(requests).hasSize(1)
         assertThat(requests.single().header(PREFIX + "signature-version"))
             .isEqualTo(if (mode == ResponseSigningMode.OFF) null else "1")
-        assertThat(requests.single().header("X-stream"))
-            .isEqualTo(if (mode == ResponseSigningMode.OFF) null else "false")
         if (mode == ResponseSigningMode.REQUIRED) assertThat(store.operations).isZero()
+    }
+
+    @ParameterizedTest
+    @EnumSource(ResponseSigningMode::class)
+    fun `M never send X-stream W setEvaluationContext() {all modes}`(mode: ResponseSigningMode) {
+        // Given
+        create(mode)
+        // When
+        repeat(2) {
+            testedClient.setEvaluationContext(EvaluationContext("subject-$it"), null)
+            queue.removeFirst().run()
+        }
+        // Then
+        assertThat(requests).hasSize(2).allSatisfy {
+            assertThat(it.headers.names().map { name -> name.lowercase() }).doesNotContain("x-stream")
+        }
     }
 
     @ParameterizedTest
@@ -371,7 +385,7 @@ internal class ResponseSigningClientTest {
         assertThat(nonces.distinct()).hasSize(2)
         requests.forEach {
             assertThat(it.headers.values(PREFIX + "signature-version")).containsExactly("1")
-            assertThat(it.header("X-stream")).isEqualTo("false")
+            assertThat(it.header("X-stream")).isNull()
             assertThat(it.header("X-DD-FEATURE-FLAGS-CAPABILITIES")?.split(',')).contains("response-signing-v1")
         }
     }

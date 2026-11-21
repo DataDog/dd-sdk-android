@@ -71,9 +71,8 @@ internal class ResponseSigningState(
         val capabilities = original.header("x-dd-feature-flags-capabilities")
             ?.split(',')?.map { it.trim() }?.toMutableSet() ?: mutableSetOf()
         capabilities.add(ResponseSigningVerifier.CAPABILITY)
-        // Whole-body proofs require buffered delivery, regardless of the server rollout.
+        // The edge buffers responses it signs, so the request keeps its ordinary transport selection.
         val request = original.newBuilder()
-            .header("X-stream", "false")
             .header("x-dd-feature-flags-capabilities", capabilities.sorted().joinToString(","))
             .header(ResponseSigningVerifier.PREFIX + "signature-version", ResponseSigningVerifier.SIGNATURE_VERSION)
             .header(ResponseSigningVerifier.PREFIX + "request-nonce", nonce.signingBytes().hex())

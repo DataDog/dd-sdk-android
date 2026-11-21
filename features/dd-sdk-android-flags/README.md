@@ -62,8 +62,8 @@ The `FlagsConfiguration.Builder` supports the following options:
 
 #### Response signing (experimental draft)
 
-Signing-enabled requests set `X-stream: false` because whole-body proofs require buffered delivery.
-Both observe and required modes apply this override. Signing-off requests keep their ordinary transport selection.
+The SDK does not send `X-stream`. Signed and unsigned requests keep their ordinary transport selection.
+The edge buffers the responses that it signs, because a v1 proof covers the whole body.
 
 The first public response-signing protocol is v1. The SDK advertises
 `response-signing-v1`, sends signature version `1`, and verifies the
@@ -103,9 +103,9 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
-An opted-in request adds `response-signing-v1` to `X-DD-FEATURE-FLAGS-CAPABILITIES`, sets
-`X-stream: false`, sends signature version `1`, and sends a fresh 32-character lowercase
-hex nonce in `x-datadog-feature-flags-request-nonce`.
+An opted-in request adds `response-signing-v1` to `X-DD-FEATURE-FLAGS-CAPABILITIES`, sends
+signature version `1`, and sends a fresh 32-character lowercase hex nonce in
+`x-datadog-feature-flags-request-nonce`.
 
 The SDK pins one root: `CN=Datadog Customer Signing Root CA - staging`, SHA-256
 `0e469f3cecc9cd51fd64373879636540512d56e99eecd70361c78b98c47ea934`. A response never
