@@ -20,6 +20,9 @@ enum class ResponseSigningMode {
     /** Reports verification outcomes while accepting otherwise valid unsigned assignments. */
     OBSERVE,
 
-    /** Requires valid proofs; verified assignments remain in memory until their original expiry. */
+    /**
+     * Requires valid proofs. Verified assignments stay in memory only. At proof expiry the client becomes stale and keeps
+     * serving them, unless [FlagsConfiguration.Builder.expireVerifiedFlags] is on.
+     */
     REQUIRED
 }

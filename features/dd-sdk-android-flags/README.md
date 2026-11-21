@@ -128,10 +128,30 @@ or prior successful fetch. Root validity still bounds unchanged SDK support.
   responses when optional verification fails. Authentication, transport, redirect, and
   JSON errors remain failures. Signed and unsigned requests are never retried as a downgrade.
 - `REQUIRED` accepts only valid proofs. A missing or invalid proof yields evaluation defaults.
-  Verified assignments are held only in memory and are checked against their original expiry on every evaluation. Restart,
-  expiry, a changed request scope, or a clock earlier than admission causes defaults.
+  Verified assignments are held only in memory. Restart, a changed request scope, or a clock
+  earlier than admission causes defaults.
   A live RUM application-ID change or stopping the Flags feature immediately invalidates
   prior proofs and prevents in-flight responses from restoring them.
+
+When the proof of the last verified response expires in `REQUIRED` mode:
+
+- By default (`expireVerifiedFlags(false)`), the client keeps serving the last verified flags,
+  and its state changes to `FlagsClientState.Stale`. The OpenFeature provider sends
+  `PROVIDER_STALE`. A network attacker can block refreshes and keep the flags at their last
+  verified values. The attacker cannot forge values. The guarantee is "verified once", not "fresh".
+- With `expireVerifiedFlags(true)`, the client stops serving the flags, its state changes to
+  `FlagsClientState.Error`, and evaluations return defaults. This gives the strict guarantee.
+- A new verified response returns the client to `FlagsClientState.Ready` in both settings.
+  The customer decides when to refetch.
+- `expireVerifiedFlags` has no effect in `OBSERVE` or `OFF` mode.
+
+```kotlin
+@OptIn(ExperimentalFlagsApi::class)
+val strictConfig = FlagsConfiguration.Builder()
+    .experimentalResponseSigning(ResponseSigningMode.REQUIRED)
+    .expireVerifiedFlags(true)
+    .build()
+```
 
 Observe mode keeps unverified persistence in a new namespace scoped to the emitted token,
 endpoint and query, environment, application ID, evaluation context, and semantic headers.

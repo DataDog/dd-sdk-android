@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
@@ -12,10 +14,12 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.FlagsAssignmentAuthorizationException
 import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
+import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.diagnostics.UUIDv7Generator
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
@@ -33,6 +37,8 @@ import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.internal.selection.logIgnoredFlagSelection
 import com.datadog.android.flags.internal.signing.ResponseSigningState
+import com.datadog.android.flags.internal.signing.VerifiedFlagsExpiredException
+import com.datadog.android.flags.internal.signing.VerifiedResponse
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.Executor
@@ -136,6 +142,8 @@ internal class EvaluationsManager(
     private val effects = EvaluationEffects(initializationTerminalLock, internalLogger)
     private var currentState: FlagsClientState = FlagsClientState.NotReady
     private var acceptedTimeoutFallback: AcceptedTimeoutFallback? = null
+    private var proofExpiryToken: Any? = null
+    private var cancelProofExpiry: (() -> Unit)? = null
 
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
@@ -432,6 +440,7 @@ internal class EvaluationsManager(
                 }
                 effects.drain()
                 if (installed) {
+                    response?.proof?.let { scheduleProofExpiry(signing, it) }
                     response?.flagSelectionIgnoredReason?.let { internalLogger.logIgnoredFlagSelection(it) }
                 } else if (admitted) {
                     val message = failureMessage(result == null, authorizationRejected)
@@ -441,6 +450,48 @@ internal class EvaluationsManager(
                 onFetchFinished()
             }
         }
+    }
+
+    // Required mode moves Ready to Stale, or to Error with expireVerifiedFlags, when the installed proof expires.
+    private fun scheduleProofExpiry(signing: ResponseSigningState, proof: VerifiedResponse) {
+        if (signing.configuration.mode != ResponseSigningMode.REQUIRED) return
+        val token = Any()
+        val previous = synchronized(initializationTerminalLock) {
+            proofExpiryToken = token
+            cancelProofExpiry.also { cancelProofExpiry = null }
+        }
+        previous?.invoke()
+        val delayMs = (proof.expiresAt - signing.now()).coerceAtLeast(0) * MILLIS_PER_SECOND
+        val cancel = initializationTimeoutScheduler.schedule(delayMs) { onProofExpired(signing, token) }
+        val superseded = synchronized(initializationTerminalLock) {
+            if (proofExpiryToken === token) cancelProofExpiry = cancel
+            proofExpiryToken !== token
+        }
+        if (superseded) cancel()
+    }
+
+    private fun onProofExpired(signing: ResponseSigningState, token: Any) {
+        val expired = synchronized(initializationTerminalLock) {
+            if (proofExpiryToken !== token || currentState != FlagsClientState.Ready) return
+            proofExpiryToken = null
+            cancelProofExpiry = null
+            val expireFlags = signing.configuration.expireVerifiedFlags
+            enqueueState(
+                if (expireFlags) {
+                    FlagsClientState.Error(VerifiedFlagsExpiredException(VERIFIED_FLAGS_EXPIRED_MESSAGE))
+                } else {
+                    FlagsClientState.Stale
+                }
+            )
+            expireFlags
+        }
+        effects.drain()
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            { if (expired) VERIFIED_FLAGS_EXPIRED_MESSAGE else VERIFIED_FLAGS_STALE_MESSAGE },
+            onlyOnce = true
+        )
     }
 
     private fun failureMessage(networkFailed: Boolean, authorizationRejected: Boolean): String = when {
@@ -722,6 +773,13 @@ internal class EvaluationsManager(
 
     companion object {
         private const val SUPERSEDED_MESSAGE = "A newer evaluation context replaced this request."
+        private const val MILLIS_PER_SECOND = 1000L
+        internal const val VERIFIED_FLAGS_STALE_MESSAGE =
+            "The proof of the last verified flag assignments expired. The client keeps serving them as stale" +
+                " until a new verified response arrives."
+        internal const val VERIFIED_FLAGS_EXPIRED_MESSAGE =
+            "The proof of the last verified flag assignments expired. Evaluations return defaults" +
+                " until a new verified response arrives."
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
         private const val INVALID_RESPONSE_MESSAGE = "Unable to read the feature flags response."
         private const val NETWORK_REQUEST_FAILED_MESSAGE =

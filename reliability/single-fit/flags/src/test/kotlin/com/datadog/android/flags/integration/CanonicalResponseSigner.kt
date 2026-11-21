@@ -44,14 +44,32 @@ internal object CanonicalResponseSigner {
     val root = checkNotNull(javaClass.getResource("/response-signing-chain/roots/root-a.pem")).readText()
         .lines().filter { it.isNotBlank() && !it.startsWith("-----") }.joinToString("")
 
-    fun response(request: Request, body: String, credentialName: String = DEFAULT_CREDENTIAL): Response =
-        httpResponse(request, body = body).newBuilder()
-            .headers(signedHeaders(request, body.toByteArray(Charsets.UTF_8), credentialName)).build()
+    /** [minimumNotBefore] adds the draft revocation header, bound into the transcript. */
+    fun response(
+        request: Request,
+        body: String,
+        credentialName: String = DEFAULT_CREDENTIAL,
+        issuedAt: Long = now,
+        minimumNotBefore: Long? = null
+    ): Response = httpResponse(request, body = body).newBuilder()
+        .headers(signedHeaders(request, body.toByteArray(Charsets.UTF_8), credentialName, issuedAt, minimumNotBefore))
+        .build()
+
+    fun notBefore(credentialName: String): Long = (
+        CertificateFactory.getInstance("X.509")
+            .generateCertificate(bytes(leafCertificate(credentialName)).inputStream()) as X509Certificate
+        ).notBefore.time / 1000
 
     fun leafCertificate(credentialName: String): String =
         credential(credentialName)["certificate_der_base64"].asString
 
-    private fun signedHeaders(request: Request, body: ByteArray, credentialName: String): Headers {
+    private fun signedHeaders(
+        request: Request,
+        body: ByteArray,
+        credentialName: String,
+        issuedAt: Long,
+        minimumNotBefore: Long?
+    ): Headers {
         val credential = credential(credentialName)
         val leaf = bytes(credential["certificate_der_base64"].asString)
         val intermediates = credential.getAsJsonArray("intermediates_der_base64").map { it.asString }
@@ -81,12 +99,16 @@ internal object CanonicalResponseSigner {
         }
         transcript.writeByte(0)
         transcript.writeShort(200)
-        transcript.writeLong(now)
-        transcript.writeLong(now + 300)
+        transcript.writeLong(issuedAt)
+        transcript.writeLong(issuedAt + 300)
         transcript.writeLong(body.size.toLong())
         transcript.write(sha(body)); transcript.write(sha(leaf))
         transcript.writeByte(intermediates.size)
         intermediates.forEach { transcript.write(sha(bytes(it))) }
+        minimumNotBefore?.let {
+            transcript.writeByte(1)
+            transcript.writeLong(it)
+        }
         val key = KeyFactory.getInstance(
             "EC"
         ).generatePrivate(PKCS8EncodedKeySpec(bytes(credential["private_key_pkcs8_der_base64"].asString)))
@@ -98,9 +120,11 @@ internal object CanonicalResponseSigner {
             .add(PREFIX + "signing-certificate", credential["certificate_der_base64"].asString)
             .add(PREFIX + "signing-chain", intermediates.joinToString(","))
             .add(PREFIX + "certificate-id", sha(leaf).toByteString().hex())
-            .add(PREFIX + "issued-at", now.toString())
-            .add(PREFIX + "expires-at", (now + 300).toString())
-            .add(PREFIX + "signature", signature.toByteString().base64()).build()
+            .add(PREFIX + "issued-at", issuedAt.toString())
+            .add(PREFIX + "expires-at", (issuedAt + 300).toString())
+            .add(PREFIX + "signature", signature.toByteString().base64())
+            .apply { minimumNotBefore?.let { add(PREFIX + "minimum-not-before", it.toString()) } }
+            .build()
     }
 
     private fun bytes(value: String): ByteArray = checkNotNull(value.decodeBase64()).toByteArray()

@@ -18,12 +18,13 @@ import com.datadog.android.flags.ResponseSigningMode
  */
 internal fun FlagsConfiguration.Builder.responseSigningWithTestRoots(
     mode: ResponseSigningMode,
-    roots: List<String>
+    roots: List<String>,
+    expireVerifiedFlags: Boolean = false
 ): FlagsConfiguration.Builder {
     experimentalResponseSigning(mode)
     val configuration = Class.forName("com.datadog.android.flags.internal.signing.ResponseSigningConfiguration")
-        .getDeclaredConstructor(ResponseSigningMode::class.java, List::class.java)
-        .newInstance(mode, roots.toList())
+        .getDeclaredConstructor(ResponseSigningMode::class.java, List::class.java, Boolean::class.javaPrimitiveType)
+        .newInstance(mode, roots.toList(), expireVerifiedFlags)
     FlagsConfiguration.Builder::class.java.getDeclaredField("responseSigning").apply {
         isAccessible = true
         set(this@responseSigningWithTestRoots, configuration)

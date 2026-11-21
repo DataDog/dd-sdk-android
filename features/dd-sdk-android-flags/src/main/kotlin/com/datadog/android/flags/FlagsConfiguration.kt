@@ -95,7 +95,32 @@ data class FlagsConfiguration internal constructor(
          */
         @ExperimentalFlagsApi
         fun experimentalResponseSigning(mode: ResponseSigningMode): Builder {
-            responseSigning = ResponseSigningConfiguration(mode)
+            responseSigning = responseSigning.copy(mode = mode)
+            return this
+        }
+
+        /**
+         * Experimental. Response signing is in preview and works only on the Datadog staging site. The API can change
+         * or be removed in a minor release, based on customer feedback.
+         *
+         * Sets what happens to verified flags when the proof of the last verified response expires. This option has
+         * an effect only with [ResponseSigningMode.REQUIRED].
+         * - `false` (default): the client keeps serving the last verified flags, and its state changes to
+         *   [com.datadog.android.flags.model.FlagsClientState.Stale]. A network attacker can block refreshes and keep
+         *   the flags at their last verified values. The attacker cannot forge values. The guarantee is "verified
+         *   once", not "fresh".
+         * - `true`: the client stops serving the flags, its state changes to
+         *   [com.datadog.android.flags.model.FlagsClientState.Error], and evaluations return defaults. This gives the
+         *   strict guarantee.
+         *
+         * A new verified response returns the client to [com.datadog.android.flags.model.FlagsClientState.Ready].
+         *
+         * @param enabled `true` to stop serving verified flags at proof expiry.
+         * @return this builder.
+         */
+        @ExperimentalFlagsApi
+        fun expireVerifiedFlags(enabled: Boolean): Builder {
+            responseSigning = responseSigning.copy(expireVerifiedFlags = enabled)
             return this
         }
 

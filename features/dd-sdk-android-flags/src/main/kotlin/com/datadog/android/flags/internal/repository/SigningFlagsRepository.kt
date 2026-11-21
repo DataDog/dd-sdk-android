@@ -36,6 +36,7 @@ internal class SigningFlagsRepository(
     }
     private val verified = AtomicReference<VerifiedFlags?>(null)
     private val required = signing.configuration.mode == ResponseSigningMode.REQUIRED
+    private val keepExpired = required && !signing.configuration.expireVerifiedFlags
     override val firstFlags = FirstFlagsLatch()
     private val empty = NoOpFlagsRepository()
     private var ordinaryScope: String? = null
@@ -58,7 +59,10 @@ internal class SigningFlagsRepository(
 
     override fun waitForPersistenceLoad() = ordinary().waitForPersistenceLoad()
 
-    private fun current(): VerifiedFlags? = verified.get()?.takeIf { signing.permits(it.context, it.proof) }
+    // By default, required mode keeps serving the last verified flags after proof expiry; the client reports Stale.
+    private fun current(): VerifiedFlags? = verified.get()?.takeIf {
+        signing.permits(it.context, it.proof, allowExpired = keepExpired)
+    }
 
     override fun installFlagsAndContext(
         context: EvaluationContext,

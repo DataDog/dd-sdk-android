@@ -21,6 +21,7 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.stub.StubDataStoreHandler
 import com.datadog.android.core.stub.StubExecutorService
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.core.stub.StubScheduledExecutorService
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.Flags
@@ -56,6 +57,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 
 @ExtendWith(ForgeExtension::class)
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
@@ -67,6 +69,9 @@ internal class ResponseSigningClientTest {
     private var now = CanonicalResponseSigner.now
     private var cancelledChecks = 0
     private val requests = mutableListOf<Request>()
+    private val scheduledExecutors = mutableListOf<StubScheduledExecutorService>()
+    private var signedAt: Long? = null
+    private var minimumNotBefore: Long? = null
     private var responseKind = "valid"
     private var credentialName = CanonicalResponseSigner.DEFAULT_CREDENTIAL
     private var observeFullEvaluationData = false
@@ -220,9 +225,9 @@ internal class ResponseSigningClientTest {
     }
 
     @Test
-    fun `M enforce original expiry on every read W resolveBooleanValue() {required cache}`() {
+    fun `M enforce original expiry on every read W resolveBooleanValue() {required, expireVerifiedFlags}`() {
         // Given
-        create(ResponseSigningMode.REQUIRED)
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = true)
         testedClient.setEvaluationContext(EvaluationContext("subject"), null)
         queue.removeFirst().run()
         // When
@@ -231,6 +236,75 @@ internal class ResponseSigningClientTest {
         // Then
         assertThat(actual).isFalse()
         assertThat(store.operations).isZero()
+    }
+
+    @Test
+    fun `M go stale and keep verified flags W proof expires {required, default}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        // When
+        advanceClock(PROOF_WINDOW_SECONDS)
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        // When a new verified response arrives
+        signedAt = now
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        // When the app restarts
+        stubCore.stopFeatures()
+        create(ResponseSigningMode.REQUIRED)
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+        assertThat(store.operations).isZero()
+    }
+
+    @Test
+    fun `M go to error and return defaults W proof expires {required, expireVerifiedFlags}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = true)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // When
+        advanceClock(PROOF_WINDOW_SECONDS)
+        // Then
+        val state = testedClient.state.getCurrentState()
+        assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat((state as FlagsClientState.Error).error).hasMessageContaining("expired")
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+        // When a new verified response arrives
+        signedAt = now
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        // When the app restarts
+        stubCore.stopFeatures()
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = true)
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+        assertThat(store.operations).isZero()
+    }
+
+    @ParameterizedTest
+    @EnumSource(ResponseSigningMode::class, names = ["OFF", "OBSERVE"])
+    fun `M keep state W proof expires {expireVerifiedFlags outside required}`(mode: ResponseSigningMode) {
+        // Given
+        create(mode, expireVerifiedFlags = true)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // When
+        advanceClock(PROOF_WINDOW_SECONDS)
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
     }
 
     @Test
@@ -640,8 +714,19 @@ internal class ResponseSigningClientTest {
     }
 
     /** [mode] null builds a client that never calls `experimentalResponseSigning()`; [roots] null uses the pinned anchor. */
-    private fun create(mode: ResponseSigningMode?, roots: List<String>? = listOf(CanonicalResponseSigner.root)) {
+    private fun advanceClock(seconds: Long) {
+        now += seconds
+        scheduledExecutors.toList().forEach { it.runDueTasks() }
+    }
+
+    private fun create(
+        mode: ResponseSigningMode?,
+        roots: List<String>? = listOf(CanonicalResponseSigner.root),
+        expireVerifiedFlags: Boolean = false
+    ) {
         val core = object : InternalSdkCore by stubCore {
+            override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService =
+                StubScheduledExecutorService(executorContext) { now * 1000 }.also { scheduledExecutors += it }
             override fun getDatadogContext(withFeatureContexts: Set<String>) = fakeDatadogContext
             override fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
                 stubCore.setContextUpdateReceiver(listener)
@@ -676,8 +761,8 @@ internal class ResponseSigningClientTest {
             .rumIntegrationEnabled(false).useCustomFlagEndpoint(endpoint)
         when {
             mode == null -> Unit
-            roots == null -> builder.experimentalResponseSigning(mode)
-            else -> builder.responseSigningWithTestRoots(mode, roots)
+            roots == null -> builder.experimentalResponseSigning(mode).expireVerifiedFlags(expireVerifiedFlags)
+            else -> builder.responseSigningWithTestRoots(mode, roots, expireVerifiedFlags)
         }
         Flags.enable(builder.build(), core)
         testedClient = FlagsClient.Builder(sdkCore = core).build()
@@ -690,7 +775,13 @@ internal class ResponseSigningClientTest {
               "allocationKey":"test","variationKey":"on","reason":"TARGETING_MATCH","extraLogging":{}
             }}}}}
         """.trimIndent()
-        val headers = CanonicalResponseSigner.response(request, json, credentialName).headers
+        val headers = CanonicalResponseSigner.response(
+            request,
+            json,
+            credentialName,
+            issuedAt = signedAt ?: CanonicalResponseSigner.now,
+            minimumNotBefore = minimumNotBefore
+        ).headers
         val response = Response.Builder().request(request).protocol(Protocol.HTTP_1_1).message("test")
             .code(if (responseKind == "403") 403 else 200)
             .headers(if (responseKind.startsWith("unsigned")) Headers.Builder().build() else headers)
@@ -752,5 +843,6 @@ internal class ResponseSigningClientTest {
 
     private companion object {
         const val PREFIX = "x-datadog-feature-flags-"
+        const val PROOF_WINDOW_SECONDS = 300L
     }
 }

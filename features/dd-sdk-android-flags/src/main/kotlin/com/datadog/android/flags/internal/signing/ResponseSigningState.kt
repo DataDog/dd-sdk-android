@@ -19,10 +19,12 @@ import java.security.SecureRandom
 /**
  * @param mode the customer opt-in; OFF sends today's requests unchanged
  * @param testTrustedRoots test-only anchors; empty in production, which pins [ResponseSigningTrustRoots.STAGING_ROOT]
+ * @param expireVerifiedFlags REQUIRED only: true stops serving verified flags at proof expiry instead of going stale
  */
 internal data class ResponseSigningConfiguration(
     val mode: ResponseSigningMode = ResponseSigningMode.OFF,
-    val testTrustedRoots: List<String> = emptyList()
+    val testTrustedRoots: List<String> = emptyList(),
+    val expireVerifiedFlags: Boolean = false
 ) {
     val anchors: List<String> get() = testTrustedRoots.ifEmpty { listOf(ResponseSigningTrustRoots.STAGING_ROOT) }
 }
@@ -63,10 +65,13 @@ internal class ResponseSigningState(
         true
     }
 
-    fun permits(context: EvaluationContext, proof: VerifiedResponse): Boolean = synchronized(lock) {
-        identity.active && identity === this.context.snapshot() && context == requestedContext &&
-            proof.scope == expectedScope && now() in proof.verifiedAt until proof.expiresAt
-    }
+    /** [allowExpired] keeps an expired proof admissible; the identity, context, scope and lower time bound still apply. */
+    fun permits(context: EvaluationContext, proof: VerifiedResponse, allowExpired: Boolean = false): Boolean =
+        synchronized(lock) {
+            val now = now()
+            identity.active && identity === this.context.snapshot() && context == requestedContext &&
+                proof.scope == expectedScope && now >= proof.verifiedAt && (allowExpired || now < proof.expiresAt)
+        }
 
     fun prepare(original: Request, requestGeneration: Long): Request? = try {
         val nonce = ByteArray(NONCE_BYTES)
