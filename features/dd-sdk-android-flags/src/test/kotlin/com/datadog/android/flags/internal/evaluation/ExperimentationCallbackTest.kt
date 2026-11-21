@@ -104,6 +104,6 @@ internal class ExperimentationCallbackTest {
     )
     private fun manager(mode: ExperimentationOptOutMode, states: FlagsStateManager) = EvaluationsManager(
         mockCore, mockExecutor, mockLogger, mockRepository, mockReader, mockMapper, states,
-        null, { _, _ -> {} }, ExperimentationOptOut(mode)
+        null, { _, _ -> {} }, null, ExperimentationOptOut(mode)
     )
 }

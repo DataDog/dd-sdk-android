@@ -4,16 +4,22 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.integration
 
+import com.datadog.android.DatadogSite
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.integration.FlagsClientTest.Companion.createStubSdkCore
 import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeConfigurator
 import com.datadog.android.flags.integration.tests.utils.CanonicalFixtureMatcher
 import com.datadog.android.flags.integration.tests.utils.httpResponse
+import com.datadog.android.flags.integration.tests.utils.responseSigningWithTestRoots
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionReason
@@ -41,11 +47,12 @@ import java.util.concurrent.ConcurrentLinkedQueue
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class CanonicalPrecomputedTest {
-    @ParameterizedTest(name = "{0}, restored={1}")
+    @ParameterizedTest(name = "{0}, restored={1}, signed={2}")
     @MethodSource("fixtures")
     fun `M satisfy canonical contract W setEvaluationContext() and resolve()`(
         path: String,
         restored: Boolean,
+        signed: Boolean,
         forge: Forge
     ) {
         // Given
@@ -57,11 +64,20 @@ internal class CanonicalPrecomputedTest {
         require(targetingKey != null && targetingKey.isJsonPrimitive && targetingKey.asJsonPrimitive.isString) {
             "$path: Android requires a string targetingKey; null-context fixtures must exclude android upstream"
         }
-        var core = createStubSdkCore(forge)
+        var core = createStubSdkCore(forge, DatadogSite.STAGING)
         val store = core.stubDataStore(Feature.FLAGS_FEATURE_NAME)
-        core.stubNetworkResponses { httpResponse(it, body = fixture["response"].toString()) }
+        val responseBody = fixture["response"].toString()
+        if (signed) core.advanceTimeBy(CanonicalResponseSigner.now * 1000)
+        core.stubNetworkResponses {
+            if (signed) CanonicalResponseSigner.response(it, responseBody) else httpResponse(it, body = responseBody)
+        }
         Flags.enable(
-            FlagsConfiguration.Builder().useCustomFlagEndpoint("https://fixture.test/precompute-assignments").build(),
+            FlagsConfiguration.Builder().useCustomFlagEndpoint("https://fixture.test/precompute-assignments")
+                .apply {
+                    if (signed) {
+                        responseSigningWithTestRoots(ResponseSigningMode.REQUIRED, listOf(CanonicalResponseSigner.root))
+                    }
+                }.build(),
             core
         )
         var client = FlagsClient.Builder(sdkCore = core).build()
@@ -199,7 +215,7 @@ internal class CanonicalPrecomputedTest {
                 } else {
                     listOf(false)
                 }
-                modes.map { Arguments.of(path, it) }
+                modes.map { Arguments.of(path, it, false) } + Arguments.of(path, false, true)
             }
         }
     }

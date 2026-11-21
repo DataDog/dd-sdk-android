@@ -4,9 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags
 
 import com.datadog.android.flags.internal.selection.FlagSelection
+import com.datadog.android.flags.internal.signing.ResponseSigningConfiguration
 import com.datadog.android.flags.model.ErrorCode
 
 private const val DEFAULT_INITIALIZATION_TIMEOUT_MS = 5_000L
@@ -25,6 +28,7 @@ data class FlagsConfiguration internal constructor(
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
     internal val initializationTimeoutMs: Long?,
+    internal val responseSigning: ResponseSigningConfiguration = ResponseSigningConfiguration(),
     internal val flagSelection: FlagSelection?
 ) {
     /**
@@ -51,12 +55,14 @@ data class FlagsConfiguration internal constructor(
         rumIntegrationEnabled = rumIntegrationEnabled,
         gracefulModeEnabled = gracefulModeEnabled,
         initializationTimeoutMs = initializationTimeoutMs,
+        responseSigning = responseSigning,
         flagSelection = flagSelection
     )
 
     /**
      * A Builder class for a [FlagsConfiguration].
      */
+    @Suppress("TooManyFunctions") // Each public option has one builder method.
     class Builder {
         private var trackExposures: Boolean = true
         private var trackEvaluations: Boolean = true
@@ -67,6 +73,32 @@ data class FlagsConfiguration internal constructor(
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
+        private var responseSigning = ResponseSigningConfiguration()
+
+        /**
+         * Experimental. Response signing is in preview and works only on the Datadog staging site. The API can change
+         * or be removed in a minor release, based on customer feedback.
+         *
+         * Opts into assignment response verification. Signing is off by default.
+         *
+         * Staging only; production is not supported yet. Signing works only when the SDK targets
+         * [com.datadog.android.DatadogSite.STAGING]. The SDK pins the Datadog staging root and accepts any valid leaf
+         * and intermediate chain under it, so routine certificate rotation needs no SDK update. Production support
+         * comes in a later release. On any other site:
+         * - [ResponseSigningMode.REQUIRED] fails closed. The client logs an error, sends no assignment request, and
+         *   fails every fetch with [UnsupportedOperationException].
+         * - [ResponseSigningMode.OBSERVE] has no effect. The client logs a warning and sends unsigned requests, so
+         *   flags are not verified.
+         *
+         * @param mode OFF by default; OBSERVE accepts unverified data, REQUIRED uses verified memory only.
+         * @return this builder.
+         */
+        @ExperimentalFlagsApi
+        fun experimentalResponseSigning(mode: ResponseSigningMode): Builder {
+            responseSigning = ResponseSigningConfiguration(mode)
+            return this
+        }
+
         private var flagSelection: FlagSelection? = null
 
         /**
@@ -254,6 +286,7 @@ data class FlagsConfiguration internal constructor(
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled,
             initializationTimeoutMs = initializationTimeoutMs,
+            responseSigning = responseSigning,
             flagSelection = flagSelection
         )
 

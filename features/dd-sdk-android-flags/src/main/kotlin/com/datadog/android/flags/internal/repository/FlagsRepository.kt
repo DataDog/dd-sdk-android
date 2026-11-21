@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.repository
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.signing.VerifiedResponse
 import com.datadog.android.flags.model.EvaluationContext
 
 internal interface FlagsRepository {
@@ -21,6 +22,16 @@ internal interface FlagsRepository {
         obfuscation: FlagKeyObfuscation? = null,
         observeFullEvaluationData: Boolean = false
     ): FlagsInstallation
+
+    fun installSignedFlagsAndContext(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>,
+        obfuscation: FlagKeyObfuscation?,
+        proof: VerifiedResponse?,
+        observeFullEvaluationData: Boolean
+    ): FlagsInstallation? = installFlagsAndContext(context, flags, obfuscation, observeFullEvaluationData)
+
+    fun restoreVerifiedFlags(): FlagsInstallation? = null
 
     /** Waits for initial persistence loading, up to the repository's timeout. Call without holding locks. */
     fun waitForPersistenceLoad()

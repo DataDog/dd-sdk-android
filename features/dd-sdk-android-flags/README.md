@@ -60,6 +60,109 @@ Flags.enable(flagsConfig)
 
 The `FlagsConfiguration.Builder` supports the following options:
 
+#### Response signing (experimental)
+
+Response signing is experimental. `ResponseSigningMode` and
+`FlagsConfiguration.Builder.experimentalResponseSigning()` require `@OptIn(ExperimentalFlagsApi::class)`.
+The API can change or be removed in a minor release, based on customer feedback.
+
+The SDK does not send `X-stream`. Signed and unsigned requests keep their ordinary transport selection.
+The edge buffers the responses that it signs, because a v1 proof covers the whole body.
+
+The first public response-signing protocol is v1. The SDK advertises
+`response-signing-v1`, sends signature version `1`, and verifies the
+`datadog.feature-flags.precomputed-assignments.v1` transcript. Earlier POC v1/v2
+and draft v3 labels are not supported public versions; public v1 rejects their proofs.
+X.509 v3 certificate encoding is unchanged.
+
+A v1 response carries the leaf in `x-datadog-feature-flags-signing-certificate` and
+1 to 3 intermediates in `x-datadog-feature-flags-signing-chain`. The chain value is
+standard base64 DER entries joined by `,` without spaces. Index 0 issued the leaf, each
+next entry issued the previous one, and a pinned root issued the last entry. The SDK
+rejects a response that has only the old `x-datadog-feature-flags-signing-intermediate`
+header. The transcript ends with `SHA256(leaf)`, one count byte, and the SHA-256 of each
+intermediate in header order. The leaf extended key usage must contain the FFE
+assignment-signing purpose and must not contain `anyExtendedKeyUsage`. The purpose OID
+is a placeholder until Datadog assigns the production value. An intermediate at
+index `i` must have a path length of at least `i`. An intermediate or root extended key
+usage, if present, must contain the FFE purpose or `anyExtendedKeyUsage`. A root path
+length, if present, must admit every intermediate.
+
+Response signing is disabled by default. A client that does not opt in sends the same
+requests as before and handles responses as before.
+
+Staging only; production is not supported yet. Signing works only when the SDK targets
+`DatadogSite.STAGING`. Production has no root or EKU yet, and support comes in a later release.
+For every other site:
+
+- `REQUIRED` fails closed. The client logs an error once, sends no assignment request, and fails
+  every fetch with `UnsupportedOperationException`. The client state is `Error`, and evaluations
+  return defaults. Remove `REQUIRED` or use `OBSERVE`.
+- `OBSERVE` has no effect. The client logs a warning once and sends unchanged requests, so flags
+  are not verified.
+
+```kotlin
+@OptIn(ExperimentalFlagsApi::class)
+val flagsConfig = FlagsConfiguration.Builder()
+    .experimentalResponseSigning(ResponseSigningMode.REQUIRED)
+    .build()
+```
+
+An opted-in request adds `response-signing-v1` to `X-DD-FEATURE-FLAGS-CAPABILITIES`, sends
+signature version `1`, and sends a fresh 32-character lowercase hex nonce in
+`x-datadog-feature-flags-request-nonce`.
+
+The SDK pins one root: `CN=Datadog Customer Signing Root CA - staging`, SHA-256
+`0e469f3cecc9cd51fd64373879636540512d56e99eecd70361c78b98c47ea934`. A response never
+supplies the root. The SDK uses no system trust store and downloads no certificates.
+Every certificate, including the root, must satisfy `notBefore <= now < notAfter`.
+Each child validity must be inside its parent validity. The SDK does not check leaf issuance freshness.
+
+The server rotates the leaf daily inside a 120-hour validity window. Each response carries
+its own leaf and chain. The SDK does not pin or cache a leaf or intermediate identity, so any
+valid chain under the root passes. Routine leaf and intermediate rotation needs no SDK update
+or prior successful fetch. Root validity still bounds unchanged SDK support.
+
+- `OFF` preserves existing transport and persistence and performs no signing work.
+- `OBSERVE` reports bounded verified/unverified telemetry and accepts otherwise-valid
+  responses when optional verification fails. Authentication, transport, redirect, and
+  JSON errors remain failures. Signed and unsigned requests are never retried as a downgrade.
+- `REQUIRED` accepts only valid proofs. A missing or invalid proof yields evaluation defaults.
+  Verified assignments are held only in memory and are checked against their original expiry on every evaluation. Restart,
+  expiry, a changed request scope, or a clock earlier than admission causes defaults.
+  A live RUM application-ID change or stopping the Flags feature immediately invalidates
+  prior proofs and prevents in-flight responses from restoring them.
+
+Observe mode keeps unverified persistence in a new namespace scoped to the emitted token,
+endpoint and query, environment, application ID, evaluation context, and semantic headers.
+It reads that namespace only after forming the request, so the first opt-in is a cold start.
+Old client-name-only cache entries are not imported. A valid proof also creates a separate
+verified memory fallback, which unsigned observations cannot overwrite or extend.
+Persisted entries are never treated as verified.
+
+The draft verifies complete buffered JSON assignment responses over HTTPS, before parsing
+or installing them. It does not introduce a streaming protocol. The shared conformance
+corpus and native host-JVM tests are development evidence; Android device/provider tests,
+iOS API review, production anchor provisioning, and operational rollout approval remain
+release prerequisites.
+
+The signing fixtures use `ci/sync-response-signing-fixtures.py` and the weekly `Response signing fixtures` workflow.
+`src/test/resources/response-signing-v1/SOURCE.json` records the central commit and file checksums.
+The JVM and Android instrumented verifier tests discover every manifest-listed suite and check its checksum and counts.
+They assert acceptance decisions and exact transcripts for every response vector.
+A case `anchor_der_base64` replaces the file anchor for that case.
+Clients do not run the `signing_cases`, because they hold no signing keys.
+`rejection_reason` is a rule code; the tests do not compare native error messages.
+`ResponseSigningChainTest` adds test-CA-issued chains and minted profile cases, including
+nonminimal KeyUsage named bits, with test-only credentials in `src/test/resources/response-signing-chain/`.
+
+```shell
+python3 ci/sync-response-signing-fixtures.py --ref <full-upstream-sha>
+python3 ci/sync-response-signing-fixtures.py --verify
+python3 ci/sync-response-signing-fixtures.py --check
+./gradlew :features:dd-sdk-android-flags:connectedDebugAndroidTest
+```
+
 #### Disable RUM integration
 
 By default, flag evaluations are automatically sent to RUM (Real User Monitoring) and attached to the current view if RUM is enabled. You can disable this integration:
@@ -569,7 +672,7 @@ Upstream CI requires a generated obfuscated companion for each applicable plain 
 
 Cases cover values, defaults, errors, reasons, variants, emission gates, duplicate evaluations, and numeric boundaries.
 Obfuscation cases cover fixed digests, salts, Unicode, whitespace, malformed metadata, and plaintext event identity.
-The suite uses the feature integration harness. It feeds the fixture response, with its numeric tokens and `observeFullEvaluationData` value, through the real download, parse, and persistence path. Each valid fixture also runs after cache restoration without networking. It checks public getters, response rejection, and real exposure and evaluation records.
+The suite uses the feature integration harness. Each fixture also runs through required signature verification. It feeds the fixture response, with its numeric tokens and `observeFullEvaluationData` value, through the real download, parse, and persistence path. Each valid fixture also runs after cache restoration without networking. It checks public getters, response rejection, and real exposure and evaluation records.
 Matchers compare JSON types strictly: `true` does not match `1`. A `_count` that is not a positive integer fails the test.
 The suite prints a report with the fixture revision, the executed evaluations, and the exclusions.
 

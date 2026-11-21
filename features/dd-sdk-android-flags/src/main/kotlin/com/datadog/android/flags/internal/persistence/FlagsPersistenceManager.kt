@@ -24,6 +24,7 @@ internal class FlagsPersistenceManager(
     private val flagSelection: CanonicalFlagSelection?,
     private val internalLogger: InternalLogger,
     experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
+    private val responseSigningCacheScope: String? = null,
     onStateLoaded: (FlagsStateEntry?) -> Unit
 ) {
     private val serializer = FlagsStateSerializer(internalLogger)
@@ -56,7 +57,8 @@ internal class FlagsPersistenceManager(
             lastUpdateTimestamp = currentTimestamp,
             obfuscation = obfuscation,
             observeFullEvaluationData = observeFullEvaluationData,
-            flagSelection = flagSelection
+            flagSelection = flagSelection,
+            responseSigningCacheScope = responseSigningCacheScope
         )
 
         dataStore.setValue(

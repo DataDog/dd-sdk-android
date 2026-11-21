@@ -8,6 +8,8 @@ package com.datadog.android.flags.integration
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import com.datadog.android.DatadogSite
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.flags.Flags
@@ -224,15 +226,17 @@ class FlagsClientTest {
     // endregion
 
     companion object {
-        internal fun createStubSdkCore(forge: Forge): StubSDKCore {
+        internal fun createStubSdkCore(forge: Forge, site: DatadogSite? = null): StubSDKCore {
             // FlagsFeature reads the debuggable flag from the ApplicationInfo; a mock reports a release build.
             val mockApplicationInfo = mock<ApplicationInfo>()
             val mockApplication = mock<Application> {
                 on { applicationInfo } doReturn mockApplicationInfo
             }
+            if (site == null) return StubSDKCore(forge = forge, mockContext = mockApplication)
             return StubSDKCore(
                 forge = forge,
-                mockContext = mockApplication
+                mockContext = mockApplication,
+                datadogContext = forge.getForgery<DatadogContext>().copy(source = "android", site = site)
             )
         }
     }

@@ -27,9 +27,12 @@ import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResponse
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResult
+import com.datadog.android.flags.internal.net.SignedAssignmentsResponse
+import com.datadog.android.flags.internal.repository.FlagsInstallation
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.internal.selection.logIgnoredFlagSelection
+import com.datadog.android.flags.internal.signing.ResponseSigningState
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.Executor
@@ -102,9 +105,11 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param flagStateManager channel for notifying state change listeners
  * @param initializationTimeoutMs optional maximum duration of the first context operation
  * @param initializationTimeoutScheduler schedules the first context timeout
+ * @param signing verifies proof lifetime and request scope before admission; null without signing opt-in
  * @param experimentationOptOut validates contexts and prevents superseded installations
  * @param callbackExecutor delivers customer callbacks outside state delivery and network operations
  * @param assignmentAuthorization extracts assignment credentials and enforces subject isolation
+ * @param unsupportedSigningError fails every fetch without a request; null unless signing is required but unavailable
  */
 @Suppress("TooManyFunctions") // Each step of the fetch, install and completion lifecycle is a separate function.
 internal class EvaluationsManager(
@@ -117,10 +122,12 @@ internal class EvaluationsManager(
     private val flagStateManager: FlagsStateManager,
     private val initializationTimeoutMs: Long?,
     private val initializationTimeoutScheduler: InitializationTimeoutScheduler,
+    private val signing: ResponseSigningState? = null,
     private val experimentationOptOut: ExperimentationOptOut,
     private val callbackExecutor: Executor = InlineExecutor,
     private val assignmentAuthorization: AssignmentAuthorization =
-        AssignmentAuthorization(internalLogger, experimentationOptOut.stateLock)
+        AssignmentAuthorization(internalLogger, experimentationOptOut.stateLock),
+    private val unsupportedSigningError: Throwable? = null
 ) {
     private val instanceId = UUIDv7Generator.generate(sdkCore.timeProvider.getDeviceTimestampMillis()).toString()
     private val fetchSequence = AtomicLong(0)
@@ -166,22 +173,46 @@ internal class EvaluationsManager(
         callback: EvaluationContextCallback?,
         onFetchFinished: () -> Unit
     ) {
-        if (request.invalid) {
-            val error = FlagsInvalidContextException(ExperimentationOptOut.INVALID_CONTEXT_MESSAGE)
+        var generation: Long? = null
+        if (signing != null && !experimentationOptOut.ifLatest(request) {
+                generation = signing.begin(request.context)
+            }
+        ) {
             synchronized(initializationTerminalLock) {
-                ifCurrent(request) { enqueueState(FlagsClientState.Error(error)) }
-                enqueueCompletion(InitializationResult(callback), error)
+                enqueueCompletion(InitializationResult(callback), FlagsContextSupersededException(SUPERSEDED_MESSAGE))
             }
             effects.drain()
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { ExperimentationOptOut.INVALID_CONTEXT_MESSAGE }
-            )
             onFetchFinished()
             return
         }
-        fetchEvaluations(request, callback, onFetchFinished)
+        // Unsupported required signing fails before any request; the client logged it once at build.
+        val rejection = unsupportedSigningError ?: if (request.invalid) {
+            FlagsInvalidContextException(ExperimentationOptOut.INVALID_CONTEXT_MESSAGE)
+        } else {
+            null
+        }
+        if (rejection != null) {
+            synchronized(initializationTerminalLock) {
+                ifCurrent(request) { enqueueState(FlagsClientState.Error(rejection)) }
+                enqueueCompletion(InitializationResult(callback), rejection)
+            }
+            effects.drain()
+            if (rejection is FlagsInvalidContextException) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { ExperimentationOptOut.INVALID_CONTEXT_MESSAGE }
+                )
+            }
+            onFetchFinished()
+            return
+        }
+        val registeredGeneration = generation
+        if (signing != null && registeredGeneration != null) {
+            fetchSignedEvaluations(request, registeredGeneration, callback, onFetchFinished, signing)
+        } else {
+            fetchEvaluations(request, callback, onFetchFinished)
+        }
     }
 
     @Suppress("LongMethod") // Keep diagnostics and opt-out checks with the fetch lifecycle.
@@ -242,7 +273,7 @@ internal class EvaluationsManager(
                 when (result) {
                     is PrecomputedAssignmentsResponse -> {
                         val response = result
-                        val assignments = mapAssignments(response, request, supportsObfuscation)
+                        val assignments = mapAssignments(response.body, request, supportsObfuscation)
                         if (assignments != null) {
                             installFlags(
                                 request,
@@ -272,6 +303,8 @@ internal class EvaluationsManager(
                         authorizationRejected = true
                     )
 
+                    // Only the signed read returns this type; an unsigned fetch treats it as a network failure.
+                    is SignedAssignmentsResponse,
                     null -> handleRequestFailure(
                         request,
                         initializationCompletion,
@@ -289,18 +322,139 @@ internal class EvaluationsManager(
     }
 
     private fun mapAssignments(
-        response: PrecomputedAssignmentsResponse,
+        body: String,
         request: ExperimentationOptOut.Request,
         supportsObfuscation: Boolean
     ): PrecomputedAssignments? {
         val experimentationOptOut = request.takeIf { it.optedOut }
         val assignments = if (request.assignmentAuthorization?.token == null) {
-            precomputeMapper.map(response.body, experimentationOptOut)
+            precomputeMapper.map(body, experimentationOptOut)
         } else {
-            precomputeMapper.map(response.body, experimentationOptOut, redactErrors = true)
+            precomputeMapper.map(body, experimentationOptOut, redactErrors = true)
         }
         return assignments?.takeIf { it.obfuscation == null || supportsObfuscation }
     }
+
+    // Keep proof, cancellation and context gates atomic with installation.
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
+    private fun fetchSignedEvaluations(
+        request: ExperimentationOptOut.Request,
+        generation: Long,
+        callback: EvaluationContextCallback?,
+        onFetchFinished: () -> Unit,
+        signing: ResponseSigningState
+    ) {
+        val context = request.context
+        val sequence = fetchSequence.incrementAndGet()
+        val diagnostics = Diagnostics(
+            Sdk(instanceId),
+            Fetch(sequence, if (sequence == 1L) Trigger.INITIALIZATION else Trigger.CONTEXT_CHANGE)
+        )
+        val cachedContext = AtomicReference<EvaluationContext?>()
+        val completion = startInitializationTimeout(
+            request,
+            callback,
+            cachedContext,
+            { signing.isCurrent(generation) }
+        ) {
+            ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+            effects.drain()
+        }
+        if (completion == null) {
+            ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+            effects.drain()
+        }
+        completionAwareExecutor(onFetchFinished).executeSafe(FETCH_AND_STORE_OPERATION_NAME, internalLogger) {
+            try {
+                val datadogContext = if (sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null) {
+                    (sdkCore as? InternalSdkCore)?.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))
+                } else {
+                    null
+                }
+                val supportsObfuscation = datadogContext?.source == "android"
+                val result = datadogContext?.let {
+                    assignmentsReader.readSignedPrecomputedFlags(
+                        context,
+                        it,
+                        diagnostics,
+                        request.assignmentAuthorization?.token,
+                        generation
+                    ) {
+                        flagsRepository.waitForPersistenceLoad()
+                        @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts a nullable snapshot.
+                        cachedContext.set(
+                            if (flagsRepository.hasConfiguration()) flagsRepository.getEvaluationContext() else null
+                        )
+                    }
+                }
+                val response = result as? SignedAssignmentsResponse
+                val assignments = response?.let { mapAssignments(it.json, request, supportsObfuscation) }
+                val authorizationRejected = result === PrecomputedAssignmentsResult.AuthorizationRejected
+                val eligible = assignments != null && sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null
+                val throwable = failure(networkFailed = result == null, authorizationRejected = authorizationRejected)
+                var installed = false
+                val admitted = signing.admit(generation) {
+                    synchronized(initializationTerminalLock) {
+                        val outcome = takeCompletion(completion, callback)
+                        val current = ifCurrent(request) {
+                            val installation = if (eligible && !response.isCancelled()) {
+                                flagsRepository.installSignedFlagsAndContext(
+                                    context,
+                                    assignments.flags,
+                                    assignments.obfuscation,
+                                    response.proof,
+                                    assignments.observeFullEvaluationData
+                                )
+                            } else {
+                                null
+                            }
+                            if (installation != null) {
+                                completeInstallation(request, installation, outcome)
+                                installed = true
+                            } else {
+                                flagsRepository.restoreVerifiedFlags()?.let { effects.enqueue { it.complete {} } }
+                                applyRequestFailure(
+                                    request,
+                                    outcome,
+                                    cachedContext.get(),
+                                    authorizationRejected,
+                                    throwable
+                                )
+                            }
+                        }
+                        if (!current) enqueueCompletion(outcome, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
+                    }
+                }
+                if (!admitted) {
+                    synchronized(initializationTerminalLock) {
+                        enqueueCompletion(takeCompletion(completion, callback), throwable)
+                    }
+                }
+                effects.drain()
+                if (installed) {
+                    response?.flagSelectionIgnoredReason?.let { internalLogger.logIgnoredFlagSelection(it) }
+                } else if (admitted) {
+                    val message = failureMessage(result == null, authorizationRejected)
+                    internalLogger.log(InternalLogger.Level.WARN, InternalLogger.Target.USER, { message })
+                }
+            } finally {
+                onFetchFinished()
+            }
+        }
+    }
+
+    private fun failureMessage(networkFailed: Boolean, authorizationRejected: Boolean): String = when {
+        authorizationRejected -> AssignmentAuthorization.AUTHORIZATION_FAILED
+        networkFailed -> NETWORK_REQUEST_FAILED_MESSAGE
+        else -> INVALID_RESPONSE_MESSAGE
+    }
+
+    private fun failure(networkFailed: Boolean, authorizationRejected: Boolean): Throwable =
+        if (authorizationRejected) {
+            FlagsAssignmentAuthorizationException()
+        } else {
+            NetworkRequestFailedException(failureMessage(networkFailed, authorizationRejected = false))
+        }
 
     // Executor construction does not run the task. Rejection is rethrown only
     // to executeSafe, which logs it without exposing it to the caller.
@@ -323,52 +477,55 @@ internal class EvaluationsManager(
         networkFailed: Boolean,
         authorizationRejected: Boolean
     ) {
-        val message = when {
-            authorizationRejected -> AssignmentAuthorization.AUTHORIZATION_FAILED
-            networkFailed -> NETWORK_REQUEST_FAILED_MESSAGE
-            else -> INVALID_RESPONSE_MESSAGE
-        }
+        val message = failureMessage(networkFailed, authorizationRejected)
         internalLogger.log(InternalLogger.Level.WARN, InternalLogger.Target.USER, { message })
-        val throwable = if (authorizationRejected) {
-            FlagsAssignmentAuthorizationException()
-        } else {
-            NetworkRequestFailedException(message)
-        }
+        val throwable = failure(networkFailed, authorizationRejected)
         synchronized(initializationTerminalLock) {
             val result = takeCompletion(initializationCompletion, callback)
             val current = ifCurrent(request) {
-                val timeoutFallback = acceptedTimeoutFallback?.takeIf { it.request === request }
-                if (timeoutFallback != null) acceptedTimeoutFallback = null
-                if (authorizationRejected) {
-                    assignmentAuthorization.onAuthorizationRejected(request.assignmentAuthorization)
-                }
-                val installedContext = fallbackContext(request, cachedContext)
-                val fallback = assignmentAuthorization.fallback(
-                    request.assignmentAuthorization,
-                    installedContext,
-                    experimentationOptOut.enabled
-                )
-                if (fallback.usable) {
-                    if (fallback.authorizationProtected) {
-                        assignmentAuthorization.onAssignmentsAccepted(request.assignmentAuthorization)
-                    }
-                }
-                // The timeout already published Stale for this request. A late failure cannot make that accepted
-                // cache ineligible, but a request that had no timeout fallback still uses the terminal result.
-                if (timeoutFallback == null) {
-                    if (fallback.usable) {
-                        enqueueState(FlagsClientState.Stale)
-                    } else {
-                        enqueueState(FlagsClientState.Error(throwable))
-                    }
-                }
-                enqueueCompletion(result, throwable)
+                applyRequestFailure(request, result, cachedContext, authorizationRejected, throwable)
             }
             if (!current) {
                 enqueueCompletion(result, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
             }
         }
         effects.drain()
+    }
+
+    // Callers hold initializationTerminalLock and checked that the request is current.
+    private fun applyRequestFailure(
+        request: ExperimentationOptOut.Request,
+        result: InitializationResult?,
+        cachedContext: EvaluationContext?,
+        authorizationRejected: Boolean,
+        throwable: Throwable
+    ) {
+        val timeoutFallback = acceptedTimeoutFallback?.takeIf { it.request === request }
+        if (timeoutFallback != null) acceptedTimeoutFallback = null
+        if (authorizationRejected) {
+            assignmentAuthorization.onAuthorizationRejected(request.assignmentAuthorization)
+        }
+        val installedContext = fallbackContext(request, cachedContext)
+        val fallback = assignmentAuthorization.fallback(
+            request.assignmentAuthorization,
+            installedContext,
+            experimentationOptOut.enabled
+        )
+        if (fallback.usable) {
+            if (fallback.authorizationProtected) {
+                assignmentAuthorization.onAssignmentsAccepted(request.assignmentAuthorization)
+            }
+        }
+        // The timeout already published Stale for this request. A late failure cannot make that accepted
+        // cache ineligible, but a request that had no timeout fallback still uses the terminal result.
+        if (timeoutFallback == null) {
+            if (fallback.usable) {
+                enqueueState(FlagsClientState.Stale)
+            } else {
+                enqueueState(FlagsClientState.Error(throwable))
+            }
+        }
+        enqueueCompletion(result, throwable)
     }
 
     private fun installFlags(
@@ -417,9 +574,17 @@ internal class EvaluationsManager(
             assignments.obfuscation,
             assignments.observeFullEvaluationData
         )
+        completeInstallation(request, installation, takeCompletion(initializationCompletion, callback))
+    }
+
+    // Callers hold initializationTerminalLock and checked that the request is current.
+    private fun completeInstallation(
+        request: ExperimentationOptOut.Request,
+        installation: FlagsInstallation,
+        result: InitializationResult?
+    ) {
         assignmentAuthorization.onAssignmentsAccepted(request.assignmentAuthorization)
         if (acceptedTimeoutFallback?.request === request) acceptedTimeoutFallback = null
-        val result = takeCompletion(initializationCompletion, callback)
         currentState = FlagsClientState.Ready
         effects.enqueue {
             installation.complete {
@@ -435,6 +600,7 @@ internal class EvaluationsManager(
         request: ExperimentationOptOut.Request,
         callback: EvaluationContextCallback?,
         cachedContext: AtomicReference<EvaluationContext?>,
+        isCurrent: () -> Boolean = { true },
         beforeScheduling: () -> Unit
     ): InitializationCompletion? {
         val timeoutMs = initializationTimeoutMs
@@ -455,7 +621,7 @@ internal class EvaluationsManager(
                         request
                     }
                     val newerFailed = target !== request && currentState is FlagsClientState.Error
-                    if (target != null && !newerFailed) {
+                    if (isCurrent() && target != null && !newerFailed) {
                         if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
                             val installedContext = fallbackContext(
                                 target,
