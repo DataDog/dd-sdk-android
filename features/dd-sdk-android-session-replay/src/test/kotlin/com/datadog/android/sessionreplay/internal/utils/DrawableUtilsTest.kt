@@ -16,7 +16,6 @@ import android.graphics.drawable.Drawable.ConstantState
 import android.util.AndroidRuntimeException
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.internal.thread.NamedExecutionUnit
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
@@ -42,18 +41,14 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.stream.Stream
 
 @Extensions(
@@ -94,9 +89,6 @@ internal class DrawableUtilsTest {
     private lateinit var mockConfig: Bitmap.Config
 
     @Mock
-    private lateinit var mockExecutorService: ExecutorService
-
-    @Mock
     private lateinit var mockBitmapCreationCallback: ResourceResolver.BitmapCreationCallback
 
     @Mock
@@ -124,12 +116,7 @@ internal class DrawableUtilsTest {
         whenever(mockBitmap.config).thenReturn(mockConfig)
         whenever(mockBitmapCachesManager.getBitmapByProperties(any(), any(), any())).thenReturn(null)
 
-        whenever(mockExecutorService.execute(any())) doAnswer {
-            val runnable = it.getArgument<Runnable>(0)
-            runnable.run()
-        }
-
-        testedDrawableUtils = createDrawableUtils(mockExecutorService)
+        testedDrawableUtils = createDrawableUtils()
     }
 
     // region createBitmap
@@ -481,56 +468,7 @@ internal class DrawableUtilsTest {
     }
 
     @Test
-    fun `M name the drawing task W createBitmapOfApproxSizeFromDrawable()`() {
-        // When
-        drawBitmap()
-
-        // Then
-        argumentCaptor<Runnable> {
-            verify(mockExecutorService).execute(capture())
-            assertThat((firstValue as NamedExecutionUnit).name).isEqualTo("drawoncanvas")
-        }
-    }
-
-    @Test
-    fun `M fail the capture W createBitmapOfApproxSizeFromDrawable() { drawing queue full }`(
-        @Mock mockDrawingExecutor: ThreadPoolExecutor,
-        @Mock mockDrawingQueue: BlockingQueue<Runnable>
-    ) {
-        // Given
-        whenever(mockDrawingExecutor.queue).thenReturn(mockDrawingQueue)
-        whenever(mockDrawingQueue.remainingCapacity()).thenReturn(0)
-        testedDrawableUtils = createDrawableUtils(mockDrawingExecutor)
-
-        // When
-        drawBitmap()
-
-        // Then
-        verify(mockBitmapCreationCallback).onFailure()
-        verify(mockDrawingExecutor, never()).execute(any())
-    }
-
-    @Test
-    fun `M fail the capture W createBitmapOfApproxSizeFromDrawable() { drawing rejected }`() {
-        // Given
-        val fakeRejection = RejectedExecutionException()
-        whenever(mockExecutorService.execute(any())).thenThrow(fakeRejection)
-
-        // When
-        drawBitmap()
-
-        // Then
-        verify(mockBitmapCreationCallback).onFailure()
-        mockLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Unable to schedule Session Replay image drawing",
-            throwable = fakeRejection
-        )
-    }
-
-    @Test
-    fun `M fail the capture and propagate W createBitmapOfApproxSizeFromDrawable() { drawing throws error }`() {
+    fun `M propagate without completing W createBitmapOfApproxSizeFromDrawable() { setBounds throws error }`() {
         // Given
         val fakeError = StackOverflowError()
         doThrow(fakeError).whenever(mockDrawable).setBounds(any(), any(), any(), any())
@@ -540,15 +478,13 @@ internal class DrawableUtilsTest {
 
         // Then
         assertThat(actualError).isSameAs(fakeError)
-        verify(mockBitmapCreationCallback).onFailure()
-        verify(mockBitmapCreationCallback, never()).onReady(any())
+        verifyNoInteractions(mockBitmapCreationCallback)
     }
 
-    private fun createDrawableUtils(executorService: ExecutorService): DrawableUtils = DrawableUtils(
+    private fun createDrawableUtils(): DrawableUtils = DrawableUtils(
         bitmapWrapper = mockBitmapWrapper,
         canvasWrapper = mockCanvasWrapper,
         bitmapCachesManager = mockBitmapCachesManager,
-        executorService = executorService,
         internalLogger = mockLogger
     )
 

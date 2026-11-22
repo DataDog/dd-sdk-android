@@ -6,10 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.PendingImageRequests.Companion.HEAP_FRACTION
 import com.datadog.android.sessionreplay.internal.recorder.resources.PendingImageRequests.Companion.MAX_PENDING_BYTES
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -24,6 +26,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -52,6 +55,9 @@ internal class PendingImageRequestsTest {
     @StringForgery
     lateinit var fakeKey: String
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @StringForgery
     lateinit var fakeResourceId: String
 
@@ -61,7 +67,8 @@ internal class PendingImageRequestsTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockBuildSdkVersionProvider.isAtLeastO).thenReturn(true)
-        testedRequests = PendingImageRequests(mockBuildSdkVersionProvider, maxHeapBytes = Long.MAX_VALUE)
+        testedRequests =
+            PendingImageRequests(mockInternalLogger, mockBuildSdkVersionProvider, maxHeapBytes = Long.MAX_VALUE)
     }
 
     @Test
@@ -222,7 +229,7 @@ internal class PendingImageRequestsTest {
     ) {
         // Given
         whenever(mockBuildSdkVersionProvider.isAtLeastO).thenReturn(false)
-        testedRequests = PendingImageRequests(mockBuildSdkVersionProvider, fakeMaxHeapBytes)
+        testedRequests = PendingImageRequests(mockInternalLogger, mockBuildSdkVersionProvider, fakeMaxHeapBytes)
         startRequest(fakeKey, fakeMaxHeapBytes / HEAP_FRACTION, mockCallback)
 
         // When
@@ -239,7 +246,7 @@ internal class PendingImageRequestsTest {
         @StringForgery fakeOtherKey: String
     ) {
         // Given
-        testedRequests = PendingImageRequests(mockBuildSdkVersionProvider, fakeMaxHeapBytes)
+        testedRequests = PendingImageRequests(mockInternalLogger, mockBuildSdkVersionProvider, fakeMaxHeapBytes)
         startRequest(fakeKey, MAX_PENDING_BYTES - 1, mockCallback)
 
         // When
@@ -248,6 +255,35 @@ internal class PendingImageRequestsTest {
         // Then
         assertThat(otherRequest).isNotNull
         verifyNoInteractions(mockOtherCallback)
+    }
+
+    @Test
+    fun `M complete every capture and log W onSuccess() or onFailure() { a callback throws }`(
+        @BoolForgery fakeSucceeded: Boolean
+    ) {
+        // Given
+        val fakeError = IllegalStateException()
+        doThrow(fakeError).whenever(mockCallback).onSuccess(fakeResourceId)
+        doThrow(fakeError).whenever(mockCallback).onFailure()
+        val request = startRequest(fakeKey, fakeByteCount, mockCallback)
+        testedRequests.start(fakeKey, fakeByteCount, mockOtherCallback)
+
+        // When
+        if (fakeSucceeded) request.onSuccess(fakeResourceId) else request.onFailure()
+
+        // Then
+        if (fakeSucceeded) {
+            verify(mockOtherCallback).onSuccess(fakeResourceId)
+        } else {
+            verify(mockOtherCallback).onFailure()
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            PendingImageRequests.CAPTURE_CALLBACK_FAILED,
+            fakeError,
+            onlyOnce = true
+        )
     }
 
     private fun startRequest(

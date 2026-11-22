@@ -10,7 +10,6 @@ import android.content.ComponentCallbacks2
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
-import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 
 internal class BitmapCachesManager(
@@ -22,13 +21,22 @@ internal class BitmapCachesManager(
     private var isResourcesCacheRegisteredForCallbacks: Boolean = false
     private var isBitmapPoolRegisteredForCallbacks: Boolean = false
 
-    @MainThread
     internal fun registerCallbacks(applicationContext: Context) {
         registerResourceLruCacheForCallbacks(applicationContext)
         registerBitmapPoolForCallbacks(applicationContext)
     }
 
-    @MainThread
+    internal fun unregisterCallbacks(applicationContext: Context) {
+        if (isResourcesCacheRegisteredForCallbacks && resourcesLRUCache is ComponentCallbacks2) {
+            applicationContext.unregisterComponentCallbacks(resourcesLRUCache)
+        }
+        if (isBitmapPoolRegisteredForCallbacks) {
+            applicationContext.unregisterComponentCallbacks(bitmapPool)
+        }
+        isResourcesCacheRegisteredForCallbacks = false
+        isBitmapPoolRegisteredForCallbacks = false
+    }
+
     private fun registerResourceLruCacheForCallbacks(applicationContext: Context) {
         if (isResourcesCacheRegisteredForCallbacks) return
 
@@ -44,7 +52,6 @@ internal class BitmapCachesManager(
         }
     }
 
-    @MainThread
     private fun registerBitmapPoolForCallbacks(applicationContext: Context) {
         if (isBitmapPoolRegisteredForCallbacks) return
 
