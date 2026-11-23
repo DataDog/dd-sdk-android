@@ -110,7 +110,14 @@ constructor(
         return CapturePipelineSelector(
             compositionEnabled = compositionTreeRecordingEnabled,
             compositionFactory = {
-                compositionPipelineFactory.create(recordWriter, rumContextProvider, application)
+                compositionPipelineFactory.create(
+                    resourceDataStoreManager,
+                    resourceWriter,
+                    recordWriter,
+                    rumContextProvider,
+                    application,
+                    embeddedContentSlotRegistry
+                )
             },
             legacyFactory = {
                 SessionReplayRecorder(

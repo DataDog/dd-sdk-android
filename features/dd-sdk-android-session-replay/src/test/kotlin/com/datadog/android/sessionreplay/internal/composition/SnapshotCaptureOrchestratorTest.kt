@@ -165,6 +165,9 @@ internal class SnapshotCaptureOrchestratorTest {
         assertThat(fakeFixture.consumedCaptures).hasSize(1)
         assertThat(fakeFixture.consumedCaptures.single().generation).isEqualTo(processing.request.generation)
         assertThat(fakeFixture.consumedCaptures.single().snapshot).isSameAs(fakeFixture.fakeSnapshot)
+        // The expiry timer is deliberately never cancelled - see the fire-and-forget comment in
+        // SnapshotCaptureOrchestrator.beginCapture() - so it is still sitting there, unresolved,
+        // even after the generation it was guarding against has already completed successfully.
         assertThat(fakeFixture.expiryTask().cancelled).isFalse()
     }
 
@@ -414,7 +417,9 @@ internal class SnapshotCaptureOrchestratorTest {
 
         // Then
         assertThat(fakeProcessing.cancelled).isTrue()
-        assertThat(fakeFixture.expiryTask().cancelled).isTrue()
+        // The expiry timer is deliberately never cancelled - see the fire-and-forget comment in
+        // SnapshotCaptureOrchestrator.beginCapture().
+        assertThat(fakeFixture.expiryTask().cancelled).isFalse()
     }
 
     @Test
@@ -462,7 +467,9 @@ internal class SnapshotCaptureOrchestratorTest {
         assertThat(fakeFixture.producerCaptures).isEqualTo(1)
         assertThat(fakeFixture.fakeProcessor.pending).isEmpty()
         assertThat(fakeFixture.consumedCaptures).isEmpty()
-        assertThat(fakeFixture.expiryTask().cancelled).isTrue()
+        // The expiry timer is deliberately never cancelled - see the fire-and-forget comment in
+        // SnapshotCaptureOrchestrator.beginCapture().
+        assertThat(fakeFixture.expiryTask().cancelled).isFalse()
     }
 
     @Test

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
@@ -344,6 +345,64 @@ internal class SnapshotCompletionQueueTest {
                 )
             )
         )
+    }
+
+    @Test
+    fun `M drain the resource data queue W process()`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String,
+        @Forgery fakeTree: CompositionTestTree
+    ) {
+        // Given: any resource bytes this generation's pixel captures resolved were already
+        // queued upstream, in PixelFallbackSnapshotProcessor/ResourceResolver, well before this
+        // processor ever sees the capture - nothing actually persists or uploads them, though,
+        // until something calls DataQueueHandler.tryToConsumeItems(). Verified regardless of the
+        // wire-mapping outcome below (Success here), since resource queueing already happened
+        // independently of it.
+        val stubWireMapper: CapturedTreeWireMapper = mock {
+            on { mapFullSnapshot(fakeTree.snapshot) } doReturn CaptureWireMappingResult.Success(mock())
+        }
+        val mockResourceDataQueueHandler: DataQueueHandler = mock()
+        val testedProcessor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = mockRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value),
+            recordWriter = mock(),
+            internalLogger = mock(),
+            wireMapper = stubWireMapper,
+            resourceDataQueueHandler = mockResourceDataQueueHandler
+        )
+        val fakeClock = FakeClock().apply { nowNs = 9L }
+
+        // When
+        testedProcessor.process(CompletedSnapshotCapture(generation(fakeClock, deadlineNs = 10L), fakeTree.snapshot))
+
+        // Then
+        verify(mockResourceDataQueueHandler).tryToConsumeItems()
+    }
+
+    @Test
+    fun `M drain the resource data queue W process() { invalid RUM context }`(
+        @Forgery fakeTree: CompositionTestTree
+    ) {
+        // Given: even when this capture's own generation gets dropped outright (an early-return
+        // path, before any wire-mapping is even attempted), any resources it already queued must
+        // still be drained - they were spent regardless of what happens to this specific capture.
+        val stubRumContextProvider: RumContextProvider = mock {
+            on { getRumContext() } doReturn SessionReplayRumContext()
+        }
+        val mockResourceDataQueueHandler: DataQueueHandler = mock()
+        val testedProcessor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = stubRumContextProvider,
+            recordWriter = mock(),
+            internalLogger = mock(),
+            resourceDataQueueHandler = mockResourceDataQueueHandler
+        )
+        val fakeClock = FakeClock().apply { nowNs = 9L }
+
+        // When
+        testedProcessor.process(CompletedSnapshotCapture(generation(fakeClock, deadlineNs = 10L), fakeTree.snapshot))
+
+        // Then
+        verify(mockResourceDataQueueHandler).tryToConsumeItems()
     }
 
     @Test

@@ -23,10 +23,13 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTex
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 
@@ -64,10 +67,14 @@ internal class DefaultCompositionPipelineFactory(
     private val recordingTimeBankFactory: () -> TimeBank = { RecordingTimeBank() }
 ) : CompositionPipelineFactory {
 
+    @Suppress("LongMethod")
     override fun create(
+        resourceDataStoreManager: ResourceDataStoreManager,
+        resourceWriter: ResourcesWriter,
         recordWriter: RecordWriter,
         rumContextProvider: RumContextProvider,
-        application: Application
+        application: Application,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): Recorder {
         val internalLogger = sdkCore.internalLogger
         val windowSource = createWindowSource(internalLogger)
@@ -75,18 +82,34 @@ internal class DefaultCompositionPipelineFactory(
         // Construction has a capture deadline and must not queue behind completion mapping or writes.
         val constructionExecutor = sdkCore.createSingleThreadExecutorService(CONSTRUCTION_EXECUTOR_NAME)
         val completionExecutor = sdkCore.createSingleThreadExecutorService(COMPLETION_EXECUTOR_NAME)
+        val resourceResolverBundle = buildResourceResolver(
+            appContext = application,
+            sdkCore = sdkCore,
+            resourceDataStoreManager = resourceDataStoreManager,
+            resourcesWriter = resourceWriter,
+            recordWriter = recordWriter,
+            rumContextProvider = rumContextProvider,
+            embeddedContentSlotRegistry = embeddedContentSlotRegistry,
+            timeProvider = sdkCore.timeProvider,
+            eventProcessingExecutorName = "sr-composition-event-processing",
+            drawablesExecutorName = "sr-composition-drawables"
+        )
         val completionQueue = SnapshotCompletionQueue(
             executorService = completionExecutor,
             processor = DefaultSnapshotCompletionProcessor(
                 rumContextProvider = rumContextProvider,
                 recordWriter = recordWriter,
-                internalLogger = internalLogger
+                internalLogger = internalLogger,
+                resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler
             ),
             internalLogger = internalLogger
         )
         val orchestrator = SnapshotCaptureOrchestrator(
             producer = snapshotProducerFactory(windowSource, rumContextProvider),
-            processor = ExecutorCapturedSnapshotProcessor(constructionExecutor, internalLogger),
+            processor = ChainedCapturedSnapshotProcessor(
+                ExecutorCapturedSnapshotProcessor(constructionExecutor, internalLogger),
+                PixelFallbackSnapshotProcessor(resourceResolverBundle.resourceResolver)
+            ),
             consumer = completionQueue,
             timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
             captureScheduler = HandlerCaptureTaskScheduler(),
@@ -124,7 +147,9 @@ internal class DefaultCompositionPipelineFactory(
             ),
             completionQueue = completionQueue,
             constructionExecutor = constructionExecutor,
-            internalLogger = internalLogger
+            internalLogger = internalLogger,
+            resourceResolver = resourceResolverBundle.resourceResolver,
+            resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler
         )
     }
 
