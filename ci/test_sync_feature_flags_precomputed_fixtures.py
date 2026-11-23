@@ -65,6 +65,11 @@ class SnapshotTest(unittest.TestCase):
                          ['SOURCE.json', 'corpus.json', 'generate.sh', 'nested/case.json'])
         sync.verify(self.tree, self.tree_spec)
 
+    def test_tree_source_keeps_explicit_file_mapping(self):
+        spec = dict(self.tree_spec, files={'response-signing/v1/corpus.json': 'renamed.json'})
+        snapshot = sync.snapshot(Path(self.temporary.name) / 'upstream', 'HEAD', spec)
+        self.assertEqual(sorted(snapshot), ['SOURCE.json', 'generate.sh', 'nested/case.json', 'renamed.json'])
+
     def test_tree_source_rejects_symbolic_links(self):
         upstream = Path(self.temporary.name) / 'upstream'
         (upstream / 'response-signing/v1/link.json').symlink_to('corpus.json')
@@ -173,6 +178,18 @@ class UpdateTest(unittest.TestCase):
         result = self._run('--verify')
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('checksums', result.stderr)
+
+    def test_changed_source_specification_imports_again(self):
+        self._update(self._head())
+        config = json.loads(self.config.read_text())
+        config['sources'][1]['path'] = 'response-signing/v1/nested/'
+        self.config.write_text(json.dumps(config))
+        result = self._run('--verify')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('source specification', result.stderr)
+        self._run('--source', str(self.upstream)).check_returncode()
+        self.assertEqual(sorted(sync.read_snapshot(self.consumer / 'signing')), ['SOURCE.json', 'case.json'])
+        self.assertEqual(self._run('--verify').returncode, 0)
 
     def test_rejects_invalid_manifest(self):
         for sources in ([], [{'name': 'x', 'format': 'zip', 'path': 'x/', 'destination': 'x', 'commit': '0' * 40}],
