@@ -71,8 +71,7 @@ The edge buffers the responses that it signs, because a v1 proof covers the whol
 
 The first public response-signing protocol is v1. The SDK advertises
 `response-signing-v1`, sends signature version `1`, and verifies the
-`datadog.feature-flags.precomputed-assignments.v1` transcript. Earlier POC v1/v2
-and draft v3 labels are not supported public versions; public v1 rejects their proofs.
+`datadog.feature-flags.precomputed-assignments.v1` transcript.
 X.509 v3 certificate encoding is unchanged.
 
 A v1 response carries the leaf in `x-datadog-feature-flags-signing-certificate` and
@@ -121,10 +120,10 @@ Each child validity must be inside its parent validity. The SDK does not check l
 The server rotates the leaf daily inside a 120-hour validity window. Each response carries
 its own leaf and chain. The SDK does not pin or cache a leaf or intermediate identity, so any
 valid chain under the root passes. Routine leaf and intermediate rotation needs no SDK update
-or prior successful fetch. Root validity still bounds unchanged SDK support.
+or prior successful fetch. An SDK version stops verifying responses after its bundled root certificate expires.
 
 - `OFF` preserves existing transport and persistence and performs no signing work.
-- `OBSERVE` reports bounded verified/unverified telemetry with the reason code and accepts otherwise-valid
+- `OBSERVE` reports bounded telemetry on whether each response is verified, with the reason code, and accepts otherwise-valid
   responses when optional verification fails. Authentication, transport, redirect, and
   JSON errors remain failures. Signed and unsigned requests are never retried as a downgrade.
 - `REQUIRED` accepts only valid proofs. A missing or invalid proof yields evaluation defaults.
@@ -139,8 +138,14 @@ or prior successful fetch. Root validity still bounds unchanged SDK support.
 When verification fails, the SDK keeps the reason. In `REQUIRED` mode, the fetch fails with
 `FlagsResponseSigningException`, and `reason.code` is the cross-SDK code. It is never the network
 error. The SDK logs `Flag response signing failed (<code>): <what failed>. <fix hint>.` once per code,
-as an error in `REQUIRED` mode and as a warning in `OBSERVE` mode. Telemetry reports
-`Flag response signing v1: unverified (<code>)`.
+as an error in `REQUIRED` mode and as a warning in `OBSERVE` mode.
+
+Telemetry uses one bounded event, `flags.response_signing`, on the core telemetry channel. It has
+the fields `mode` (`observe` or `required`), `result` (`verified` or `unverified`), `reason` (a code
+below, only when unverified), `sdk_version` and `site`. `OBSERVE` reports every result, `REQUIRED`
+reports failures only, and `OFF` reports nothing. Each distinct `(mode, result, reason)` is sent once
+per Flags feature. The event never carries flag keys or values, headers, tokens, nonces, certificate
+bytes, serials, URLs or the targeting context.
 
 | Code | Meaning |
 | --- | --- |
@@ -196,8 +201,11 @@ val strictConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
-Observe mode keeps unverified persistence in a new namespace scoped to the emitted token,
-endpoint and query, environment, application ID, evaluation context, and semantic headers.
+Observe mode keeps one persisted entry per client, tagged with a hash of the request scope: the
+emitted token, endpoint and query, environment, evaluation context, and semantic headers. The RUM
+application ID is not part of the scope. When a transport changes the request, the entry uses the
+scope of the request that the transport sent. A client built in another signing mode removes the
+entries that this mode left on disk.
 It reads that namespace only after forming the request, so the first opt-in is a cold start.
 Old client-name-only cache entries are not imported. A valid proof also creates a separate
 verified memory fallback, which unsigned observations cannot overwrite or extend.
@@ -215,7 +223,7 @@ writes them to the git-ignored `src/test/resources/response-signing-v1/` and `sr
 folders before unit tests and instrumented test assets are built. `SOURCE.json` in each folder records the commit and
 file checksums.
 The JVM and Android instrumented verifier tests discover every manifest-listed suite and check its checksum and counts.
-They assert acceptance decisions and exact transcripts for every response vector.
+They assert acceptance decisions and exact transcripts for all response vectors in the manifest.
 A case `anchor_der_base64` replaces the file anchor for that case.
 Clients do not run the `signing_cases`, because they hold no signing keys.
 `rejection_reason` is a rule code; the tests do not compare native error messages.
@@ -390,6 +398,9 @@ before its result is processed fails with `FlagsContextSupersededException`, unl
 Treat this exception as cancellation. OpenFeature maps it to coroutine cancellation instead of a provider error.
 This applies whether the superseded fetch succeeds or fails. A result processed before replacement keeps its original outcome.
 In `DISABLED`, previous assignments remain available and superseded requests retain their ordinary completion behavior.
+With response signing enabled, a superseded request whose callback has not already completed fails with
+`FlagsContextSupersededException` in every opt-out mode, and the initialization timeout still applies
+to the newer request. `OBSERVE` keeps the previous assignments readable while a refresh is in flight.
 
 | Mode | Behavior when the subject timestamp is present |
 | --- | --- |
@@ -737,7 +748,7 @@ Upstream CI requires a generated obfuscated companion for each applicable plain 
 
 Cases cover values, defaults, errors, reasons, variants, emission gates, duplicate evaluations, and numeric boundaries.
 Obfuscation cases cover fixed digests, salts, Unicode, whitespace, malformed metadata, and plaintext event identity.
-The suite uses the feature integration harness. Each fixture also runs through required signature verification. It feeds the fixture response, with its numeric tokens and `observeFullEvaluationData` value, through the real download, parse, and persistence path. Each valid fixture also runs after cache restoration without networking. It checks public getters, response rejection, and real exposure and evaluation records.
+The suite uses the feature integration harness. Each fixture also runs through required signature verification. It feeds the fixture response, with its numeric tokens and `observeFullEvaluationData` value, through the real download, parse, and persistence path. Valid unsigned fixtures run after cache restoration without networking. The suite checks public getters, response rejection, and real exposure and evaluation records.
 Matchers compare JSON types strictly: `true` does not match `1`. A `_count` that is not a positive integer fails the test.
 The suite prints a report with the fixture revision, the executed evaluations, and the exclusions.
 

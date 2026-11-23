@@ -1255,8 +1255,7 @@ datadog:
       # region SQLDelight
       - "com.squareup.sqldelight.android.AndroidSqliteDriver.Callback.onCorruption(androidx.sqlite.db.SupportSQLiteDatabase)"
       # endregion
-      # region Response signing v3
-      - "java.io.ByteArrayInputStream.constructor(kotlin.ByteArray?)"
+      # region Response signing v1
       - "java.util.LinkedHashMap.containsKey(kotlin.String)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(com.datadog.android.flags.internal.repository.SigningFlagsRepository.VerifiedFlags?)"
       - "java.util.concurrent.atomic.AtomicReference.set(com.datadog.android.flags.internal.repository.SigningFlagsRepository.VerifiedFlags?)"

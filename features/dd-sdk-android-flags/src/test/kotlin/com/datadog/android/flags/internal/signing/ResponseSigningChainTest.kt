@@ -22,6 +22,7 @@ import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.decodeHex
 import okio.ByteString.Companion.toByteString
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
@@ -360,6 +361,35 @@ internal class ResponseSigningChainTest {
             }
         )
     }
+
+    @TestFactory
+    fun `M allow issued-at at most 30 s ahead W verify()`(): List<DynamicTest> {
+        val chain = ProfileCase("clock allowance", true).mint()
+        val request = request()
+        val signed = chain.sign(request, BODY, MINTED_NOW)
+        return listOf(30L to true, 31L to false).map { (ahead, expected) ->
+            DynamicTest.dynamicTest("issued-at $ahead s ahead") {
+                // When
+                val result = ResponseSigningVerifier(listOf(chain.root))
+                    .verification(request, 200, signed, BODY, MINTED_NOW - ahead)
+                // Then
+                assertThat(result.proof != null).isEqualTo(expected)
+                if (!expected) assertThat(result.failure).isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
+            }
+        }
+    }
+
+    @TestFactory
+    fun `M reject constructed universal types other than SEQUENCE and SET W SigningDer read()`(): List<DynamicTest> =
+        listOf("300424020400", "300430022400", "3004a0022c00").map { value ->
+            DynamicTest.dynamicTest(value) {
+                // When + Then
+                assertThatThrownBy { SigningDer.read(signingHex(value)) }
+                    .isInstanceOf(IllegalArgumentException::class.java)
+            }
+        } + DynamicTest.dynamicTest("SEQUENCE and SET stay accepted") {
+            assertThat(SigningDer.read(signingHex("3005310302010a")).children).hasSize(1)
+        }
 
     @Test
     fun `M format the user message W reason code`() {

@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATU
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.internal.DatadogFlagsClient
@@ -32,12 +33,14 @@ import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
+import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.SigningFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.internal.signing.ResponseSigningState
+import com.datadog.android.flags.internal.signing.ResponseSigningTelemetry
 import com.datadog.android.flags.internal.signing.ResponseSigningTrustRoots
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
@@ -395,6 +398,7 @@ interface FlagsClient {
      */
     companion object {
         private const val SIGNING_MILLIS_PER_SECOND = 1000
+        private const val OBSERVE_STATE_SUFFIX = "-signing-v1-observe"
         private const val RESPONSE_SIGNING_STAGING_ONLY =
             "Flags response signing is supported only on the Datadog staging site in this SDK version. " +
                 "Production support comes in a later release."
@@ -495,6 +499,7 @@ interface FlagsClient {
             evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
             val signingMode = configuration.responseSigning.mode
+            val signingDatadogContext = (featureSdkCore as? InternalSdkCore)?.getDatadogContext()
             val signingContext = flagsFeature.signingContext?.takeIf { signingAvailable(featureSdkCore, signingMode) }
             // No production anchor exists yet, so required signing off staging must not accept unsigned flags.
             val unsupportedSigningError = if (signingMode == ResponseSigningMode.REQUIRED && signingContext == null) {
@@ -518,7 +523,15 @@ interface FlagsClient {
                     configuration.responseSigning,
                     featureSdkCore.internalLogger,
                     context = it,
-                    minimumNotBefore = flagsFeature.minimumNotBefore
+                    minimumNotBefore = flagsFeature.minimumNotBefore,
+                    telemetry = ResponseSigningTelemetry(
+                        featureSdkCore.internalLogger,
+                        flagsFeature.signingTelemetrySent,
+                        signingDatadogContext?.site?.let { site ->
+                            ResponseSigningTelemetry.siteName(site.intakeEndpoint)
+                        }.orEmpty(),
+                        signingDatadogContext?.sdkVersion.orEmpty()
+                    )
                 ) {
                     featureSdkCore.timeProvider.getDeviceTimestampMillis() / SIGNING_MILLIS_PER_SECOND
                 }
@@ -533,6 +546,7 @@ interface FlagsClient {
             }
             val datastore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)
                 ?.dataStore
+            datastore?.let { removeOtherModeEntries(it, name, signingMode) }
             val ordinaryRepository: (String, String?) -> FlagsRepository = { instanceName, scope ->
                 if (datastore != null) {
                     DefaultFlagsRepository(
@@ -553,7 +567,7 @@ interface FlagsClient {
             } else {
                 signing?.let {
                     SigningFlagsRepository(
-                        { scope -> ordinaryRepository("$name-signing-v1-observe", scope) },
+                        { scope -> ordinaryRepository(observeStateName(name), scope) },
                         it,
                         deliverFirstFlags
                     )
@@ -627,6 +641,24 @@ interface FlagsClient {
                 evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled,
                 assignmentAuthorization = assignmentAuthorization
             )
+        }
+
+        private fun observeStateName(name: String): String = name + OBSERVE_STATE_SUFFIX
+
+        // A mode change must not leave the other mode's persisted targeting data on disk.
+        private fun removeOtherModeEntries(dataStore: DataStoreHandler, name: String, mode: ResponseSigningMode) {
+            val names = when (mode) {
+                ResponseSigningMode.OFF -> listOf(observeStateName(name))
+                ResponseSigningMode.OBSERVE -> emptyList()
+                ResponseSigningMode.REQUIRED -> listOf(name, observeStateName(name))
+            }
+            names.forEach { instanceName ->
+                ExperimentationOptOutMode.values().forEach { optOut ->
+                    listOf(false, true).forEach { selected ->
+                        dataStore.removeValue(FlagsPersistenceManager.stateKey(instanceName, optOut, selected))
+                    }
+                }
+            }
         }
 
         // The staging site is the only site with a pinned anchor. Elsewhere OBSERVE keeps today's requests.

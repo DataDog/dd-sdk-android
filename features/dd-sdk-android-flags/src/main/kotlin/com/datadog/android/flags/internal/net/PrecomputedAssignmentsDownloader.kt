@@ -128,6 +128,11 @@ internal class PrecomputedAssignmentsDownloader(
                 }
                 val proof = verification.proof
                 if (prepared != null) state.report(verification.failure)
+                if (prepared != null && !required &&
+                    !ResponseSigningVerifier.matchesRequest(prepared, response.request)
+                ) {
+                    state.rescope(generation, response.request)
+                }
                 if (proof == null && required) {
                     return PrecomputedAssignmentsResult.SigningRejected(
                         verification.failure ?: ResponseSigningFailureReason.INVALID_PROOF

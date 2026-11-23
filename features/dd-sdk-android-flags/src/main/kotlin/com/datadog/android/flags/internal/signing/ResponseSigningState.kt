@@ -15,6 +15,7 @@ import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Request
 import java.io.IOException
+import java.security.ProviderException
 import java.security.SecureRandom
 
 /**
@@ -31,11 +32,13 @@ internal data class ResponseSigningConfiguration(
 }
 
 /** Serializes request generations with admission; no response can change trust anchors. */
+@Suppress("TooManyFunctions") // Each generation, scope and admission check is a separate locked operation.
 internal class ResponseSigningState(
     val configuration: ResponseSigningConfiguration,
     private val logger: InternalLogger,
     private val context: ResponseSigningContext = ResponseSigningContext(),
     minimumNotBefore: MinimumNotBeforeStore = InMemoryMinimumNotBeforeStore(),
+    private val telemetry: ResponseSigningTelemetry = ResponseSigningTelemetry(logger, mutableSetOf(), "", ""),
     private val nowSeconds: () -> Long
 ) {
     val lock = context.lock
@@ -44,9 +47,10 @@ internal class ResponseSigningState(
     private var requestedContext: EvaluationContext? = null
     private var expectedScope: String? = null
     val verifier = ResponseSigningVerifier(configuration.anchors, minimumNotBefore) { reason ->
+        // Draft revocation details stay in debug output; telemetry carries only the shared event.
         logger.log(
             InternalLogger.Level.INFO,
-            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            InternalLogger.Target.MAINTAINER,
             { "Flag response signing v1: $reason" },
             onlyOnce = true
         )
@@ -56,16 +60,33 @@ internal class ResponseSigningState(
 
     fun currentScope(): String? = synchronized(lock) { if (identity === context.snapshot()) expectedScope else null }
 
+    // The previous scope stays readable until prepare() replaces it, as OFF keeps previous assignments during a
+    // fetch. Only a new feature identity (stop or restart) clears it.
     fun begin(context: EvaluationContext): Long = synchronized(lock) {
         generation += 1
         requestedContext = context
-        identity = this.context.snapshot()
-        expectedScope = null
+        val snapshot = this.context.snapshot()
+        if (identity !== snapshot) {
+            identity = snapshot
+            expectedScope = null
+        }
         generation
     }
 
     fun isCurrent(requestGeneration: Long): Boolean = synchronized(lock) {
-        requestGeneration == generation && identity.active && identity === context.snapshot()
+        requestGeneration == generation && isIdentityCurrent()
+    }
+
+    /** Whether [requestGeneration] is still the latest request, whatever the feature lifecycle did. */
+    fun isLatest(requestGeneration: Long): Boolean = synchronized(lock) { requestGeneration == generation }
+
+    /** Lifecycle validity only; a newer request generation does not make it false. */
+    fun isIdentityCurrent(): Boolean = synchronized(lock) { identity.active && identity === context.snapshot() }
+
+    /** OBSERVE: an accepted response whose request a transport changed persists under that request's own scope. */
+    fun rescope(requestGeneration: Long, emitted: Request) {
+        val scope = ResponseSigningVerifier.unverifiedScope(emitted)
+        admit(requestGeneration) { expectedScope = scope }
     }
 
     fun admit(requestGeneration: Long, action: () -> Unit): Boolean = synchronized(lock) {
@@ -106,7 +127,7 @@ internal class ResponseSigningState(
         prepareUnverified(original, requestGeneration, ResponseSigningFailureReason.UNSUPPORTED_REQUEST)
     } catch (_: IllegalStateException) {
         prepareUnverified(original, requestGeneration, ResponseSigningFailureReason.UNSUPPORTED_REQUEST)
-    } catch (_: java.security.ProviderException) {
+    } catch (_: ProviderException) {
         prepareUnverified(original, requestGeneration, ResponseSigningFailureReason.UNAVAILABLE_CRYPTO)
     }
 
@@ -123,20 +144,9 @@ internal class ResponseSigningState(
         return Preparation(null, failure)
     }
 
-    /** Telemetry for every outcome; a failure also logs the user message, an error when signing is required. */
+    /** The shared telemetry event for every outcome; a failure also logs the user message (an error when required). */
     fun report(failure: ResponseSigningFailureReason?) {
-        logger.log(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.TELEMETRY,
-            {
-                if (failure == null) {
-                    "Flag response signing v1: verified"
-                } else {
-                    "Flag response signing v1: unverified (${failure.code})"
-                }
-            },
-            onlyOnce = true
-        )
+        telemetry.report(configuration.mode, failure)
         if (failure == null) return
         logger.log(
             if (configuration.mode == ResponseSigningMode.REQUIRED) {

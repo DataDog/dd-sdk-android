@@ -367,7 +367,8 @@ internal class EvaluationsManager(
             request,
             callback,
             cachedContext,
-            { signing.isCurrent(generation) }
+            // A newer context keeps the initialization deadline; only a lifecycle change cancels its transition.
+            { signing.isIdentityCurrent() }
         ) {
             ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
             effects.drain()
@@ -441,8 +442,14 @@ internal class EvaluationsManager(
                     }
                 }
                 if (!admitted) {
+                    // A newer context superseded this request; a lifecycle change keeps the ordinary failure.
+                    val failure = if (signing.isLatest(generation)) {
+                        throwable
+                    } else {
+                        FlagsContextSupersededException(SUPERSEDED_MESSAGE)
+                    }
                     synchronized(initializationTerminalLock) {
-                        enqueueCompletion(takeCompletion(completion, callback), throwable)
+                        enqueueCompletion(takeCompletion(completion, callback), failure)
                     }
                 }
                 effects.drain()

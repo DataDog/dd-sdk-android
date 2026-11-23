@@ -28,7 +28,7 @@ data class FlagsConfiguration internal constructor(
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
     internal val initializationTimeoutMs: Long?,
-    internal val responseSigning: ResponseSigningConfiguration = ResponseSigningConfiguration(),
+    internal val responseSigning: ResponseSigningConfiguration,
     internal val flagSelection: FlagSelection?
 ) {
     /**
@@ -74,6 +74,7 @@ data class FlagsConfiguration internal constructor(
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
         private var responseSigning = ResponseSigningConfiguration()
+        private var flagSelection: FlagSelection? = null
 
         /**
          * Experimental. Response signing is in preview and works only on the Datadog staging site. The API can change
@@ -124,8 +125,6 @@ data class FlagsConfiguration internal constructor(
             responseSigning = responseSigning.copy(expireVerifiedFlags = enabled)
             return this
         }
-
-        private var flagSelection: FlagSelection? = null
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.

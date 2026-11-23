@@ -28,6 +28,8 @@ import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.FlagsContextSupersededException
+import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsResponseSigningException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.ResponseSigningMode
@@ -167,8 +169,7 @@ internal class ResponseSigningClientTest {
             mode == ResponseSigningMode.OBSERVE
         )
         assertThat(requests).hasSize(1)
-        assertThat(stubCore.telemetryEventsWritten().map { it.message })
-            .contains("Flag response signing v1: unverified (missing-proof)")
+        assertThat(signingEvents()).anyMatch { it["result"] == "unverified" && it["reason"] == "missing-proof" }
     }
 
     @ParameterizedTest
@@ -435,8 +436,7 @@ internal class ResponseSigningClientTest {
         assertThat(results).allSatisfy { assertThat(it.value).isTrue() }
         assertThat(results.map { it.flagMetadata["__dd_observe_full_evaluation_data"] })
             .containsExactly(false, true, false)
-        assertThat(stubCore.telemetryEventsWritten().map { it.message })
-            .noneMatch { it.startsWith("Flag response signing v1: unverified") }
+        assertThat(signingEvents()).noneMatch { it["result"] == "unverified" }
     }
 
     @ParameterizedTest
@@ -821,6 +821,132 @@ internal class ResponseSigningClientTest {
         }
     }
 
+    private fun signingEvents(): List<Map<String, Any?>> = stubCore.telemetryEventsWritten()
+        .filter { it.message == "flags.response_signing" }
+        .map { it.additionalProperties }
+
+    @Test
+    fun `M send no signing telemetry W setEvaluationContext() {OFF}`() {
+        // Given
+        create(ResponseSigningMode.OFF)
+        responseKind = "unsigned"
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        assertThat(signingEvents()).isEmpty()
+    }
+
+    @Test
+    fun `M send the bounded event W setEvaluationContext() {OBSERVE verified and unverified}`() {
+        // Given
+        create(ResponseSigningMode.OBSERVE)
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject-1"), null)
+        queue.removeFirst().run()
+        responseKind = "unsigned"
+        repeat(2) {
+            testedClient.setEvaluationContext(EvaluationContext("subject-$it-unsigned"), null)
+            queue.removeFirst().run()
+        }
+        // Then
+        assertThat(signingEvents()).hasSize(2)
+        assertThat(signingEvents()).allSatisfy {
+            assertThat(it.keys).isSubsetOf("mode", "result", "reason", "sdk_version", "site")
+            assertThat(it["mode"]).isEqualTo("observe")
+        }
+        assertThat(signingEvents().map { it["result"] to it["reason"] })
+            .containsExactlyInAnyOrder("verified" to null, "unverified" to "missing-proof")
+    }
+
+    @Test
+    fun `M complete as superseded W setEvaluationContext() {newer context before admission}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        val failuresA = mutableListOf<Throwable>()
+        val failuresB = mutableListOf<Throwable>()
+        testedClient.setEvaluationContext(EvaluationContext("subject-a"), failureCallback(failuresA))
+        testedClient.setEvaluationContext(EvaluationContext("subject-b"), failureCallback(failuresB))
+        // When
+        queue.removeFirst().run()
+        queue.removeFirst().run()
+        // Then
+        assertThat(failuresA.single()).isInstanceOf(FlagsContextSupersededException::class.java)
+        assertThat(failuresB).isEmpty()
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+    }
+
+    @Test
+    fun `M apply the initialization timeout W setEvaluationContext() {newer context while pending}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject-a"), null)
+        testedClient.setEvaluationContext(EvaluationContext("subject-b"), null)
+        // When
+        advanceClock(INITIALIZATION_TIMEOUT_SECONDS + 1)
+        // Then
+        val state = testedClient.state.getCurrentState()
+        assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(
+            (state as FlagsClientState.Error).error
+        ).isInstanceOf(FlagsInitializationTimeoutException::class.java)
+    }
+
+    @Test
+    fun `M keep observe assignments readable W setEvaluationContext() {refresh in flight}`() {
+        // Given
+        create(ResponseSigningMode.OBSERVE)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+    }
+
+    @Test
+    fun `M persist under the emitted scope W setEvaluationContext() {OBSERVE, transport changed the token}`() {
+        // Given
+        create(ResponseSigningMode.OBSERVE)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        val preparedScope = store.writtenScopes.last()
+        stubCore.stopFeatures()
+        create(ResponseSigningMode.OBSERVE)
+        responseKind = "emitted-token"
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        assertThat(store.writtenScopes.last()).isNotEqualTo(preparedScope)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ResponseSigningMode::class, names = ["OFF", "REQUIRED"])
+    fun `M remove the other mode's persisted entries W build() {mode change}`(mode: ResponseSigningMode) {
+        // Given: an OFF entry, then an OBSERVE entry for the same client name.
+        create(null)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        stubCore.stopFeatures()
+        create(ResponseSigningMode.OBSERVE)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        stubCore.stopFeatures()
+        assertThat(store.values.keys).anyMatch { it.endsWith("-signing-v1-observe") }
+        assertThat(store.values.keys).anyMatch { !it.endsWith("-signing-v1-observe") }
+        // When
+        create(mode)
+        // Then
+        assertThat(store.values.keys).noneMatch { it.endsWith("-signing-v1-observe") }
+        if (mode == ResponseSigningMode.REQUIRED) {
+            assertThat(store.values).isEmpty()
+        } else {
+            assertThat(store.values).isNotEmpty()
+        }
+    }
+
     private fun failureCallback(failures: MutableList<Throwable>) = object : EvaluationContextCallback {
         override fun onSuccess() = Unit
         override fun onFailure(error: Throwable) {
@@ -950,6 +1076,7 @@ internal class ResponseSigningClientTest {
         val values = mutableMapOf<String, String>()
         val writtenScopes = mutableListOf<String>()
         var operations = 0
+        var removals = 0
         override fun <T : Any> setValue(
             key: String,
             data: T,
@@ -975,8 +1102,10 @@ internal class ResponseSigningClientTest {
             operations++
             delegate.value(key, version, callback, deserializer)
         }
+
+        // A removal deletes stale targeting data; it is not a read or write of flag data.
         override fun removeValue(key: String, callback: DataStoreWriteCallback?) {
-            operations++
+            removals++
             values.remove(key)
             delegate.removeValue(key, callback)
         }
@@ -985,6 +1114,7 @@ internal class ResponseSigningClientTest {
     companion object {
         const val PREFIX = "x-datadog-feature-flags-"
         const val PROOF_WINDOW_SECONDS = 300L
+        const val INITIALIZATION_TIMEOUT_SECONDS = 5L
 
         @JvmStatic
         fun expiryCases(): List<Arguments> = listOf(true, false).flatMap { expire ->

@@ -17,7 +17,10 @@ enum class ResponseSigningMode {
     /** Preserves the existing transport and cache behavior without cryptographic work. */
     OFF,
 
-    /** Reports verification outcomes while accepting otherwise valid unsigned assignments. */
+    /**
+     * Reports verification outcomes while accepting otherwise valid unsigned assignments. Its persisted assignments are
+     * scoped to the request, so a new context, token or environment can start without them, where OFF keeps them.
+     */
     OBSERVE,
 
     /**

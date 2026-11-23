@@ -55,6 +55,8 @@ internal class SigningDer private constructor(
             val value = signingSlice(bytes, offset, end)
             val children = mutableListOf<SigningDer>()
             if (tag and 32 != 0) {
+                // Only SEQUENCE and SET may be constructed universal types in this profile, as in the browser.
+                signingCheck(tag and 192 != 0 || tag == 0x30 || tag == 0x31)
                 while (offset < end) {
                     val child = parse(bytes, offset, end, depth + 1, budget)
                     children.add(child.first)
