@@ -36,8 +36,10 @@ internal sealed interface PrecomputedAssignmentsResult {
 
 /**
  * [flagSelectionIgnoredReason] is the sanitized `DD-Flag-Selection-Ignored` reason, or null when the header is absent.
+ * [etag] is the response `ETag` header, or null when the header is absent or empty.
  */
 internal data class PrecomputedAssignmentsResponse(
     val body: String,
-    val flagSelectionIgnoredReason: String?
+    val flagSelectionIgnoredReason: String?,
+    val etag: String? = null
 ) : PrecomputedAssignmentsResult
