@@ -14,6 +14,8 @@ SUITE (datetime_utils);
 
 SUITE (backtrace_generation);
 
+SUITE (backtrace_limits);
+
 SUITE (signal_monitor);
 
 SUITE (string_utils);
@@ -53,6 +55,7 @@ int run_test_suites() {
     RUN_SUITE(signal_monitor);
     RUN_SUITE(string_utils);
     RUN_SUITE(crash_log);
+    RUN_SUITE(backtrace_limits);
     // This test fails on Bitrise on the first backtrace line assertion even and was not able to
     // detect why so far. My guess is related with Linux environment, I actually logged the line
     // and checked the regEx on top and was passing locally. We will disable this test for now as
@@ -161,6 +164,3 @@ Java_com_datadog_android_ndk_NdkTests_updateAppStartTime(
         jlong app_start_time_ms) {
     update_app_start_time_millis(app_start_time_ms);
 }
-
-
-

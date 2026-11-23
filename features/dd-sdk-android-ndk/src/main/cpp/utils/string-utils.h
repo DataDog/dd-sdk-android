@@ -16,13 +16,16 @@ namespace stringutils {
     template<typename... Args>
     std::string format(const char* formatter, Args... args) {
         // first we compute the size of the buffer required to format this string
-        // we will add 1 at the end for the end of string /0 character
-        const size_t size = snprintf(nullptr, 0, formatter, args...);
-        char buffer[size + 1];
-        snprintf(buffer, size + 1, formatter, args...);
-        return std::string(buffer, buffer + size);
+        const int size = snprintf(nullptr, 0, formatter, args...);
+        if (size <= 0) {
+            return {};
+        }
+        // Formatted into the string's own memory (not a variable-length array on the stack),
+        // which also holds the end of string /0 character.
+        std::string result(static_cast<size_t>(size), '\0');
+        snprintf(&result[0], result.size() + 1, formatter, args...);
+        return result;
     }
 }
 
 #endif
-

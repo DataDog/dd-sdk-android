@@ -102,15 +102,21 @@ bool generate_backtrace(char *backtrace_ptr, size_t start_index, size_t max_size
     const size_t number_of_captured_frames = capture_backtrace(buffer, max_stack_frames);
     std::string backtrace;
     backtrace.reserve(max_size);
+    std::string line;
+    line.reserve(max_characters_per_stack_frame);
+    bool complete = true;
     for (size_t idx = start_index; idx < number_of_captured_frames; ++idx) {
         // we will iterate through all the stack addresses and translate each address in
         // readable information
-        get_info_from_address(idx - start_index, buffer[idx], backtrace);
-        if (backtrace.length() > max_size) {
-            // No reason to continue, we're at the max size we're willing to dedicate to
-            // this string
+        line.clear();
+        get_info_from_address(idx - start_index, buffer[idx], line);
+        if (backtrace.length() + line.length() >= max_size) {
+            // No room left for this whole line (and the end of string \0 character): stop here
+            // rather than cutting the line, so every frame in the report is complete.
+            complete = false;
             break;
         }
+        backtrace.append(line);
     }
-    return copyString(backtrace, backtrace_ptr, max_size);
+    return copyString(backtrace, backtrace_ptr, max_size) && complete;
 }
