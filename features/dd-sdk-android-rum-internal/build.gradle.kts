@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlinRuntime)
+    implementation(libs.androidXAnnotation)
 
     testImplementation(project(":tools:unit")) {
         attributes {
