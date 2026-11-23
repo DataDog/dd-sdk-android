@@ -4,16 +4,28 @@ Read and follow all guidance in [CONTRIBUTING.md](CONTRIBUTING.md).
 Use the [documentation map](docs/README.md) to select current SDK guidance and
 Foundation validation commands. Follow the module rules and validation tasks below.
 
-Include necessary documentation with each implementation change. Review accuracy,
-reader purpose, navigation, and instruction scope. Record actual validation evidence
-in task output or reports. Include validation in PR descriptions only when relevant
-to review, following the [PR preparation skill](ai/skills/sdk-pr-prepare/SKILL.md).
-For staged documentation validation, use a provisioned FactoryKit environment:
+Assess documentation impact from changed behavior and reader needs. Include necessary
+documentation with each implementation change. Code-only or test-only fixes with no
+reader impact can require no documentation change. Record the reason and keep correct
+explanations unchanged. Revise a README or map only for a concrete reader need or
+navigation gap. Review accuracy, reader purpose, navigation, and instruction scope
+for affected documentation. Do not require diagrams, design documents, or a prose
+review exercise for an internal code or test fix. Literate conventions apply only
+after explicit adoption.
+
+Record actual validation evidence in task output or reports. Include validation in
+PR descriptions only when relevant to review, following the
+[PR preparation skill](ai/skills/sdk-pr-prepare/SKILL.md).
+Before a Foundation command, follow the [runtime selection route](docs/README.md#factorykit-runtime).
+Use the verified exact executable without shell activation. For staged documentation validation:
 
 ```sh
-python ci/scripts/foundation_check.py --snapshot index --against HEAD --format json
+"$factorykit_executable" --root . foundation gate \
+  --entry-point ci/scripts/foundation_check.py --snapshot index --against HEAD --format json
 ```
 
+Report an unavailable runtime as not-run evidence and follow the same installation
+route. Retain existing installation authority without another permission question.
 This manual gate supplements the existing module validation tasks.
 
 # Module Map
