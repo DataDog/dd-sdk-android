@@ -123,7 +123,7 @@ internal object CanonicalResponseSigner {
             .add(PREFIX + "issued-at", issuedAt.toString())
             .add(PREFIX + "expires-at", (issuedAt + 300).toString())
             .add(PREFIX + "signature", signature.toByteString().base64())
-            .apply { minimumNotBefore?.let { add(PREFIX + "minimum-not-before", it.toString()) } }
+            .apply { minimumNotBefore?.let { add(PREFIX + "minimum-leaf-not-before", it.toString()) } }
             .build()
     }
 

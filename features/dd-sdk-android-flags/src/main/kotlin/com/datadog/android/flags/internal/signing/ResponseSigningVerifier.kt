@@ -95,10 +95,7 @@ internal class ResponseSigningVerifier(
             verifySignature(chain.leaf.publicKey, transcript(request, status, headers, body), signature),
             ResponseSigningFailureReason.INVALID_SIGNATURE
         )
-        val chainNotBefore = chain.intermediates.fold(chain.leaf.notBefore) { oldest, certificate ->
-            minOf(oldest, certificate.notBefore)
-        }
-        applyMinimumNotBefore(chain.anchorId, chainNotBefore, announcedMinimum)
+        applyMinimumLeafNotBefore(chain.anchorId, chain.leaf.notBefore, announcedMinimum)
         return VerifiedResponse(scope(request), now, expires)
     }
 
@@ -150,16 +147,17 @@ internal class ResponseSigningVerifier(
         return VerifiedChain(leaf, intermediates, anchor ?: signingFailure())
     }
 
-    // Draft revocation: runs only after the signature, so only an authentic chain can raise or meet the floor.
-    private fun applyMinimumNotBefore(anchorId: String, chainNotBefore: Long, announced: Long?) {
+    // Draft leaf-only revocation: runs only after the signature, so only an authentic chain can raise or meet the
+    // floor. Intermediates are never compared with the floor; a long-lived intermediate must not cap or revoke.
+    private fun applyMinimumLeafNotBefore(anchorId: String, leafNotBefore: Long, announced: Long?) {
         val floor = minimumNotBefore.get(anchorId)
-        if (floor != null && chainNotBefore < floor) {
+        if (floor != null && leafNotBefore < floor) {
             report(REVOKED_CERTIFICATE)
             signingFailure(ResponseSigningFailureReason.REVOKED_CERTIFICATE)
         }
         if (announced == null) return
-        // A response must never revoke a certificate of its own chain.
-        if (announced > chainNotBefore) {
+        // A response must never revoke its own leaf.
+        if (announced > leafNotBefore) {
             report(MINIMUM_NOT_BEFORE_IGNORED)
         } else {
             minimumNotBefore.raise(anchorId, announced)
@@ -293,7 +291,7 @@ internal class ResponseSigningVerifier(
     companion object {
         const val PREFIX = "x-datadog-feature-flags-"
         private const val NONCE_HEADER = PREFIX + "request-nonce"
-        private const val MINIMUM_NOT_BEFORE_HEADER = PREFIX + "minimum-not-before"
+        private const val MINIMUM_LEAF_NOT_BEFORE_HEADER = PREFIX + "minimum-leaf-not-before"
         const val CAPABILITY = "response-signing-v1"
         const val SIGNATURE_VERSION = "1"
         private const val DOMAIN = "datadog.feature-flags.precomputed-assignments.v1"
@@ -472,9 +470,9 @@ internal class ResponseSigningVerifier(
             return value
         }
 
-        /** Draft `minimum-not-before`: absent, or exactly one canonical unix-seconds value. */
+        /** Draft `minimum-leaf-not-before`: absent, or exactly one canonical unix-seconds value. */
         private fun minimumNotBefore(headers: Headers): Long? {
-            val values = headers.values(MINIMUM_NOT_BEFORE_HEADER)
+            val values = headers.values(MINIMUM_LEAF_NOT_BEFORE_HEADER)
             signingCheck(values.size <= 1)
             return values.firstOrNull()?.let { seconds(it) }
         }

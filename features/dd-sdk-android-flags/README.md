@@ -154,7 +154,7 @@ as an error in `REQUIRED` mode and as a warning in `OBSERVE` mode. Telemetry rep
 | `invalid-signature` | The signature does not match the request and response. |
 | `expired-proof` | The proof is expired or not yet valid. |
 | `unsupported-site` | Signing is not available on this Datadog site. |
-| `revoked-certificate` | Draft revocation: a certificate is older than the stored minimum not-before. |
+| `revoked-certificate` | Draft revocation: the leaf is older than the stored minimum leaf not-before. |
 
 When the proof of the last verified response expires in `REQUIRED` mode:
 
@@ -171,23 +171,22 @@ When the proof of the last verified response expires in `REQUIRED` mode:
   The customer decides when to refetch.
 - `expireVerifiedFlags` has no effect in `OBSERVE` or `OFF` mode.
 
-Minimum not-before revocation (draft wire, pending the edge and the shared fixtures):
+Minimum leaf not-before revocation (draft wire, pending the edge and the shared fixtures):
 
-- A response can carry `x-datadog-feature-flags-minimum-not-before`: unix seconds, one canonical
+- A response can carry `x-datadog-feature-flags-minimum-leaf-not-before`: unix seconds, one canonical
   decimal value. When present, the SDK appends `0x01` and the value as a big-endian u64 to the
   v1 transcript, after the certificate hashes. When absent, the transcript is unchanged.
 - The SDK accepts the value only from a fully verified response. It ignores a value that is
-  lower than the stored value. It ignores a value that is greater than the `notBefore` of any
-  certificate in the response chain, with the reason `minimum-not-before-ignored`, because a
-  response must never revoke its own chain.
+  lower than the stored value. It ignores a value that is greater than the `notBefore` of the
+  leaf in the same response, with the reason `minimum-not-before-ignored`, because a response
+  must never revoke its own leaf.
 - The SDK stores the highest value per trust anchor (the key is SHA-256 of the root DER) in
   SharedPreferences. This is the only data that `REQUIRED` mode persists. It holds no flag data.
-- On each verification, the SDK rejects a chain if the leaf or any intermediate has a `notBefore`
-  lower than the stored value, with the reason `revoked-certificate`. `REQUIRED` fails closed, and
-  `OBSERVE` accepts the response as unverified. Both modes store new values.
-- Because a value cannot exceed the `notBefore` of the current chain, it can revoke only
-  certificates that are older than every certificate in that chain, for example an old
-  intermediate generation after an intermediate rotation.
+- On each verification, the SDK rejects a leaf whose `notBefore` is lower than the stored value,
+  with the reason `revoked-certificate`. `REQUIRED` fails closed, and `OBSERVE` accepts the
+  response as unverified. Both modes store new values.
+- The floor applies to leaves only. The SDK never compares it with intermediates, so a new leaf
+  under older, long-lived intermediates still verifies.
 
 ```kotlin
 @OptIn(ExperimentalFlagsApi::class)

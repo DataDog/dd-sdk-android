@@ -393,7 +393,7 @@ internal class ResponseSigningChainTest {
 
     // endregion
 
-    // region Minimum not-before (draft wire)
+    // region Minimum leaf not-before (draft wire)
 
     @Test
     fun `M reject an older chain W verify() {stored minimum not-before}`() {
@@ -453,8 +453,66 @@ internal class ResponseSigningChainTest {
     }
 
     @Test
-    fun `M ignore a value above the chain W verify() {value between the old and new leaf}`() {
-        // Given: intermediates from Nov 19-20, leaves from Nov 20 06:00 and Nov 21 01:00.
+    fun `M reject an old leaf under the same intermediates W verify() {stored leaf floor}`() {
+        // Given: intermediates from Nov 19, leaves from Nov 20 06:00 (previous) and Nov 21 01:00 (new).
+        val generations = Generations.mint()
+        val store = InMemoryMinimumNotBeforeStore()
+        val reasons = mutableListOf<String>()
+        val verifier = ResponseSigningVerifier(listOf(generations.root), store) { reasons += it }
+        val request = request()
+        // When
+        val raising = verifier.verify(
+            request,
+            200,
+            generations.newLeaf.sign(request, BODY, NOV_21_0200, NOV_20_1200),
+            BODY,
+            NOV_21_0200
+        )
+        val previous = verifier.verify(
+            request,
+            200,
+            generations.previousLeaf.sign(request, BODY, NOV_21_0200),
+            BODY,
+            NOV_21_0200
+        )
+        // Then
+        assertThat(raising).isNotNull()
+        assertThat(store.get(generations.anchorId)).isEqualTo(NOV_20_1200)
+        assertThat(previous).isNull()
+        assertThat(reasons).containsExactly(ResponseSigningVerifier.REVOKED_CERTIFICATE)
+    }
+
+    @Test
+    fun `M accept a new leaf with older intermediates W verify() {stored leaf floor}`() {
+        // Given: the floor (Nov 20 12:00) is later than both intermediates (Nov 19), not later than the new leaf.
+        val generations = Generations.mint()
+        val store = InMemoryMinimumNotBeforeStore()
+        val reasons = mutableListOf<String>()
+        val verifier = ResponseSigningVerifier(listOf(generations.root), store) { reasons += it }
+        val request = request()
+        verifier.verify(
+            request,
+            200,
+            generations.newLeaf.sign(request, BODY, NOV_21_0200, NOV_20_1200),
+            BODY,
+            NOV_21_0200
+        )
+        // When
+        val current = verifier.verify(
+            request,
+            200,
+            generations.newLeaf.sign(request, BODY, NOV_21_0200),
+            BODY,
+            NOV_21_0200
+        )
+        // Then
+        assertThat(current).isNotNull()
+        assertThat(reasons).isEmpty()
+    }
+
+    @Test
+    fun `M ignore a value above the leaf W verify() {value later than the leaf notBefore}`() {
+        // Given
         val generations = Generations.mint()
         val store = InMemoryMinimumNotBeforeStore()
         val reasons = mutableListOf<String>()
@@ -464,7 +522,7 @@ internal class ResponseSigningChainTest {
         val announcing = verifier.verify(
             request,
             200,
-            generations.newLeaf.sign(request, BODY, NOV_21_0200, NOV_20_1200),
+            generations.newLeaf.sign(request, BODY, NOV_21_0200, NOV_21_0200),
             BODY,
             NOV_21_0200
         )
@@ -472,10 +530,10 @@ internal class ResponseSigningChainTest {
         assertThat(announcing).isNotNull()
         assertThat(reasons).containsExactly(ResponseSigningVerifier.MINIMUM_NOT_BEFORE_IGNORED)
         assertThat(store.get(generations.anchorId)).isNull()
-        listOf(generations.newLeaf, generations.previousLeaf).forEach { credential ->
-            assertThat(verifier.verify(request, 200, credential.sign(request, BODY, NOV_21_0200), BODY, NOV_21_0200))
-                .isNotNull()
-        }
+        assertThat(
+            verifier.verify(request, 200, generations.newLeaf.sign(request, BODY, NOV_21_0200), BODY, NOV_21_0200)
+        )
+            .isNotNull()
     }
 
     @TestFactory
@@ -744,10 +802,10 @@ internal class ResponseSigningChainTest {
     companion object {
         private const val PREFIX = "x-datadog-feature-flags-"
         private const val CHAIN = PREFIX + "signing-chain"
-        private const val MINIMUM_NOT_BEFORE = PREFIX + "minimum-not-before"
+        private const val MINIMUM_NOT_BEFORE = PREFIX + "minimum-leaf-not-before"
         private const val CERTIFICATE_ID = PREFIX + "certificate-id"
 
-        // Minimum not-before scenario (unix seconds, UTC): staging-like intermediates are older than the leaves.
+        // Minimum leaf not-before scenario (unix seconds, UTC): staging-like intermediates are older than the leaves.
         private const val NOV_01 = 1793491200L
         private const val NOV_19 = 1795046400L
         private const val NOV_20_1200 = 1795176000L

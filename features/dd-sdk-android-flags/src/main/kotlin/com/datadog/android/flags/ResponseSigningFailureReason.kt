@@ -90,10 +90,10 @@ enum class ResponseSigningFailureReason(
         "Response signing supports only the staging site in this release. Production is not supported yet"
     ),
 
-    /** Draft revocation: a certificate in the chain is older than the stored minimum not-before. */
+    /** Draft revocation: the leaf is older than the stored minimum leaf not-before. */
     REVOKED_CERTIFICATE(
         "revoked-certificate",
-        "A certificate in the chain is older than the stored minimum not-before",
+        "The leaf certificate is older than the stored minimum leaf not-before",
         "Contact Datadog support"
     );
 
