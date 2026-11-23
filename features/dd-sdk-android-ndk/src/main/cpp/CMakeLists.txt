@@ -20,6 +20,8 @@ add_library( # Sets the name of the library.
         utils/datetime-utils.h
         utils/backtrace-handler.cpp
         utils/backtrace-handler.h
+        utils/fp-unwinder.c
+        utils/fp-unwinder.h
         )
 find_library( # Sets the name of the path variable.
         log-lib

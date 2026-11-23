@@ -8,6 +8,7 @@
 #ifndef BACKTRACE_HANDLER_H
 #define BACKTRACE_HANDLER_H
 
+#include <stdbool.h>
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -23,6 +24,17 @@ const size_t max_serialized_report_size = max_stack_size + 512;
 
 // We cannot use a namespace here as this function will be called from C file (signal_monitor.c)
 bool generate_backtrace(char *backtrace_ptr, size_t start_index, size_t max_size);
+
+/**
+ * Same as generate_backtrace, for a crash: when the unwinder stops at code without unwind tables,
+ * the frames after it are recovered from the frame pointer chain (arm64) and added after the
+ * unwinder's ones.
+ * @param user_context the crash signal's context (ucontext_t)
+ */
+bool generate_crash_backtrace(char *backtrace_ptr,
+                              size_t start_index,
+                              size_t max_size,
+                              const void *user_context);
 
 #ifdef __cplusplus
 }

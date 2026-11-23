@@ -11,9 +11,15 @@
 #include <unwind.h>
 #include <string>
 
+#include "fp-unwinder.h"
+
 struct BacktraceState {
     uintptr_t *current;
     uintptr_t *end;
+    // whether the unwind stopped because the buffer was full
+    bool filled;
+    // the frame pointer of the last frame reached (arm64)
+    uintptr_t last_frame_pointer;
 };
 
 namespace {
@@ -23,18 +29,27 @@ namespace {
         if (pointer_to_stack_line) {
             // we have reached the end of the given buffer size so we stop the unwind loop
             if (state->current == state->end) {
+                state->filled = true;
                 return _URC_END_OF_STACK;
             } else {
                 // we set the state->current to current+1, and we set
                 // its value as the pointer of the current stack line
                 *state->current++ = pointer_to_stack_line;
+#if defined(__aarch64__)
+                state->last_frame_pointer = _Unwind_GetGR(context, 29);
+#endif
             }
         }
         return _URC_NO_REASON;
     }
 
-    size_t capture_backtrace(uintptr_t *buffer, size_t max) {
-        BacktraceState state = {buffer, buffer + max};
+    // Always inlined, as the release build already did before generate_crash_backtrace existed: the
+    // number of our own frames at the top of the trace must stay the same (see
+    // stack_frames_start_index).
+    __attribute__((always_inline)) inline size_t capture_backtrace(uintptr_t *buffer,
+                                                                   size_t max,
+                                                                   BacktraceState &state) {
+        state = {buffer, buffer + max, false, 0};
         // unwinds the backtrace and fills the buffer with stack lines addresses
         _Unwind_Backtrace(unwind_callback, &state);
         return state.current - buffer;
@@ -94,29 +109,58 @@ bool copyString(const std::string &str, char *ptr, size_t max_size) {
     return copy_size == str_size;
 }
 
-bool generate_backtrace(char *backtrace_ptr, size_t start_index, size_t max_size) {
-    // define the buffer which will hold pointers to stack memory addresses
-    uintptr_t buffer[max_stack_frames];
-    // we will now unwind the stack and capture all the memory addresses up to max_stack_frames in
-    // the buffer
-    const size_t number_of_captured_frames = capture_backtrace(buffer, max_stack_frames);
-    std::string backtrace;
-    backtrace.reserve(max_size);
-    std::string line;
-    line.reserve(max_characters_per_stack_frame);
-    bool complete = true;
-    for (size_t idx = start_index; idx < number_of_captured_frames; ++idx) {
-        // we will iterate through all the stack addresses and translate each address in
-        // readable information
-        line.clear();
-        get_info_from_address(idx - start_index, buffer[idx], line);
-        if (backtrace.length() + line.length() >= max_size) {
-            // No room left for this whole line (and the end of string \0 character): stop here
-            // rather than cutting the line, so every frame in the report is complete.
-            complete = false;
-            break;
+namespace {
+    // Always inlined into both entry points, so that the frames at the top of the trace (the ones
+    // skipped by start_index) are the same as before.
+    __attribute__((always_inline)) inline bool generate(char *backtrace_ptr,
+                                                        size_t start_index,
+                                                        size_t max_size,
+                                                        const void *user_context) {
+        // define the buffer which will hold pointers to stack memory addresses
+        uintptr_t buffer[max_stack_frames];
+        // we will now unwind the stack and capture all the memory addresses up to max_stack_frames in
+        // the buffer
+        BacktraceState state = {};
+        size_t number_of_captured_frames = capture_backtrace(buffer, max_stack_frames, state);
+        if (user_context != nullptr) {
+            // For a crash, recover the frames the unwinder could not reach (code without unwind
+            // tables), after the ones it found.
+            number_of_captured_frames = fp_unwinder_append_frames(buffer,
+                                                                  number_of_captured_frames,
+                                                                  max_stack_frames,
+                                                                  state.filled,
+                                                                  state.last_frame_pointer,
+                                                                  user_context);
         }
-        backtrace.append(line);
+        std::string backtrace;
+        backtrace.reserve(max_size);
+        std::string line;
+        line.reserve(max_characters_per_stack_frame);
+        bool complete = true;
+        for (size_t idx = start_index; idx < number_of_captured_frames; ++idx) {
+            // we will iterate through all the stack addresses and translate each address in
+            // readable information
+            line.clear();
+            get_info_from_address(idx - start_index, buffer[idx], line);
+            if (backtrace.length() + line.length() >= max_size) {
+                // No room left for this whole line (and the end of string \0 character): stop here
+                // rather than cutting the line, so every frame in the report is complete.
+                complete = false;
+                break;
+            }
+            backtrace.append(line);
+        }
+        return copyString(backtrace, backtrace_ptr, max_size) && complete;
     }
-    return copyString(backtrace, backtrace_ptr, max_size) && complete;
+}
+
+bool generate_backtrace(char *backtrace_ptr, size_t start_index, size_t max_size) {
+    return generate(backtrace_ptr, start_index, max_size, nullptr);
+}
+
+bool generate_crash_backtrace(char *backtrace_ptr,
+                              size_t start_index,
+                              size_t max_size,
+                              const void *user_context) {
+    return generate(backtrace_ptr, start_index, max_size, user_context);
 }

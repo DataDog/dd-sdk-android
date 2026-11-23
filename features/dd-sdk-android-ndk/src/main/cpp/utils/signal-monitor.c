@@ -367,13 +367,16 @@ void handle_signal(int signum, siginfo_t *info, void *user_context) {
         const int signal = handled_signals[i].signal_value;
         if (signal == signum) {
 
-            // in case the stacktrace is bigger than the required size it will be truncated
-            // because we are unwinding the stack strace at this level we are always going to
-            // have for the top 3 levels at the top of the trace the executed lines from our
-            // library: handle_signal, generate_backtrace and capture_backtrace.
-            // If you are changing this code make sure to start from the new frame
-            // index when generating the backtrace.
-            generate_backtrace(backtrace_scratch, stack_frames_start_index, max_stack_size);
+            // In case the stacktrace is bigger than the required size, its last frames are left out.
+            // The first stack_frames_start_index frames are skipped: generate_crash_backtrace
+            // (capture_backtrace is always inlined into it), handle_signal, then the kernel's
+            // signal return trampoline, or ART's signal chain handler for the signals it claims
+            // (e.g. SIGSEGV). If you are changing this code make sure to start from the new
+            // frame index when generating the backtrace.
+            generate_crash_backtrace(backtrace_scratch,
+                                     stack_frames_start_index,
+                                     max_stack_size,
+                                     user_context);
 
 
             write_crash_report(signal,
@@ -586,4 +589,3 @@ void stop_monitoring() {
     uninstall_handlers();
     pthread_mutex_unlock(&mutex);
 }
-
