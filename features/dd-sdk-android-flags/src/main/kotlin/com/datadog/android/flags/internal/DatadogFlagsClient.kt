@@ -412,6 +412,8 @@ internal class DatadogFlagsClient(
     )
 
     private fun evaluationSnapshot(flagKey: String): EvaluationSnapshot {
+        // A read after expires-at changes the state at once, even before the expiry timer runs.
+        evaluationsManager.checkProofExpiry()
         flagsRepository.waitForPersistenceLoad()
         // Keep the subject decision alive until it has been captured with the
         // assignments. Repository reads inside this lock must not wait for persistence.

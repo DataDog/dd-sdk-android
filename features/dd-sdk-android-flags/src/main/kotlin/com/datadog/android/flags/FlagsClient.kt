@@ -398,9 +398,10 @@ interface FlagsClient {
         private const val RESPONSE_SIGNING_STAGING_ONLY =
             "Flags response signing is supported only on the Datadog staging site in this SDK version. " +
                 "Production support comes in a later release."
-        internal const val RESPONSE_SIGNING_REQUIRED_UNAVAILABLE_MESSAGE = RESPONSE_SIGNING_STAGING_ONLY +
-            " ResponseSigningMode.REQUIRED fails every flag fetch on this site and sends no request." +
-            " Remove ResponseSigningMode.REQUIRED or use ResponseSigningMode.OBSERVE."
+        internal val RESPONSE_SIGNING_REQUIRED_UNAVAILABLE_MESSAGE =
+            ResponseSigningFailureReason.UNSUPPORTED_SITE.message +
+                " ResponseSigningMode.REQUIRED fails every flag fetch on this site and sends no request." +
+                " Remove ResponseSigningMode.REQUIRED or use ResponseSigningMode.OBSERVE."
         internal const val RESPONSE_SIGNING_OBSERVE_UNAVAILABLE_MESSAGE = RESPONSE_SIGNING_STAGING_ONLY +
             " ResponseSigningMode.OBSERVE has no effect on this site: requests are sent without signing," +
             " and flags are not verified."
@@ -497,7 +498,7 @@ interface FlagsClient {
             val signingContext = flagsFeature.signingContext?.takeIf { signingAvailable(featureSdkCore, signingMode) }
             // No production anchor exists yet, so required signing off staging must not accept unsigned flags.
             val unsupportedSigningError = if (signingMode == ResponseSigningMode.REQUIRED && signingContext == null) {
-                UnsupportedOperationException(RESPONSE_SIGNING_REQUIRED_UNAVAILABLE_MESSAGE)
+                FlagsResponseSigningException(ResponseSigningFailureReason.UNSUPPORTED_SITE)
             } else {
                 null
             }

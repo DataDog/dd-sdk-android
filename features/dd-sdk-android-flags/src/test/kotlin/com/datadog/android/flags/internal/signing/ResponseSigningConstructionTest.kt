@@ -14,7 +14,6 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.InternalSdkCore
@@ -22,6 +21,8 @@ import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.FlagsResponseSigningException
+import com.datadog.android.flags.ResponseSigningFailureReason
 import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.FlagsFeature
@@ -78,14 +79,10 @@ internal class ResponseSigningConstructionTest {
             .isEqualTo(if (observeOffStaging) 1 else 0)
         assertThat(userMessages(InternalLogger.Level.ERROR).count { it == REQUIRED_MESSAGE })
             .isEqualTo(if (requiredOffStaging) 1 else 0)
-        if (mode == ResponseSigningMode.OFF) {
-            verify(mockCore, never()).setContextUpdateReceiver(any())
-        } else {
-            val receiver = argumentCaptor<FeatureContextUpdateReceiver>()
-            verify(mockCore).setContextUpdateReceiver(receiver.capture())
-            assertThat(receiver.lastValue).isSameAs(feature.signingContext)
+        // RUM is not part of the signing identity, so the feature registers no context receiver.
+        verify(mockCore, never()).setContextUpdateReceiver(any())
+        if (mode != ResponseSigningMode.OFF) {
             feature.onStop()
-            verify(mockCore).removeContextUpdateReceiver(receiver.lastValue)
             assertThat(checkNotNull(feature.signingContext).snapshot().active).isFalse()
         }
     }
@@ -102,12 +99,17 @@ internal class ResponseSigningConstructionTest {
 
         // Then
         failures.forEach { failure ->
-            assertThat(failure).isInstanceOf(UnsupportedOperationException::class.java)
-                .hasMessage(REQUIRED_MESSAGE)
+            assertThat(failure).isInstanceOf(FlagsResponseSigningException::class.java)
+            assertThat((failure as FlagsResponseSigningException).reason)
+                .isEqualTo(ResponseSigningFailureReason.UNSUPPORTED_SITE)
+            assertThat(failure).hasMessage(
+                "Flag response signing failed (unsupported-site): Signing is not available on this Datadog site." +
+                    " Response signing supports only the staging site in this release. Production is not supported yet."
+            )
         }
         val state = client.state.getCurrentState()
         assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
-        assertThat((state as FlagsClientState.Error).error).isInstanceOf(UnsupportedOperationException::class.java)
+        assertThat((state as FlagsClientState.Error).error).isInstanceOf(FlagsResponseSigningException::class.java)
         assertThat(client.resolveBooleanValue("any-flag", true)).isTrue()
         verify(mockCalls, never()).newCall(any())
         assertThat(userMessages(InternalLogger.Level.ERROR).count { it == REQUIRED_MESSAGE }).isEqualTo(1)
@@ -123,7 +125,7 @@ internal class ResponseSigningConstructionTest {
         val failure = fetch(client, "user")
 
         // Then
-        assertThat(failure).isNotInstanceOf(UnsupportedOperationException::class.java)
+        assertThat(failure).isNotInstanceOf(FlagsResponseSigningException::class.java)
         verify(mockCalls).newCall(any())
         assertThat(userMessages(InternalLogger.Level.ERROR)).doesNotContain(REQUIRED_MESSAGE)
         assertThat(userMessages(InternalLogger.Level.WARN).count { it == OBSERVE_MESSAGE }).isEqualTo(1)
@@ -201,7 +203,7 @@ internal class ResponseSigningConstructionTest {
     companion object {
         private const val DEFAULT_TIMEOUT_MS = 5_000L
         private const val OBSERVE_MESSAGE = FlagsClient.RESPONSE_SIGNING_OBSERVE_UNAVAILABLE_MESSAGE
-        private const val REQUIRED_MESSAGE = FlagsClient.RESPONSE_SIGNING_REQUIRED_UNAVAILABLE_MESSAGE
+        private val REQUIRED_MESSAGE = FlagsClient.RESPONSE_SIGNING_REQUIRED_UNAVAILABLE_MESSAGE
 
         @JvmStatic
         fun modesAndSites(): List<Arguments> = ResponseSigningMode.values().flatMap { mode ->

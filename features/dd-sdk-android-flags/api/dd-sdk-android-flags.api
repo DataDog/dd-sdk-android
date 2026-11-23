@@ -104,12 +104,34 @@ public final class com/datadog/android/flags/FlagsInitializationTimeoutException
 public final class com/datadog/android/flags/FlagsInvalidContextException : java/lang/IllegalArgumentException {
 }
 
+public final class com/datadog/android/flags/FlagsResponseSigningException : java/lang/RuntimeException {
+	public final fun getReason ()Lcom/datadog/android/flags/ResponseSigningFailureReason;
+}
+
 public abstract interface class com/datadog/android/flags/FlagsStateListener {
 	public abstract fun onStateChanged (Lcom/datadog/android/flags/model/FlagsClientState;)V
 }
 
 public abstract interface class com/datadog/android/flags/FlagsSubscription {
 	public abstract fun unsubscribe ()V
+}
+
+public final class com/datadog/android/flags/ResponseSigningFailureReason : java/lang/Enum {
+	public static final field EXPIRED_PROOF Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field INVALID_CERTIFICATE Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field INVALID_PROOF Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field INVALID_SIGNATURE Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field MISSING_ANCHOR Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field MISSING_PROOF Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field RESPONSE_TOO_LARGE Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field REVOKED_CERTIFICATE Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field UNAVAILABLE_CRYPTO Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field UNSUPPORTED_REQUEST Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field UNSUPPORTED_SITE Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public final fun getCode ()Ljava/lang/String;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static fun values ()[Lcom/datadog/android/flags/ResponseSigningFailureReason;
 }
 
 public final class com/datadog/android/flags/ResponseSigningMode : java/lang/Enum {

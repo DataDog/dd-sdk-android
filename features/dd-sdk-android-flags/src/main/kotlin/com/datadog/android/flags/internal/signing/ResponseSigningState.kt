@@ -10,6 +10,7 @@ package com.datadog.android.flags.internal.signing
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.ExperimentalFlagsApi
+import com.datadog.android.flags.ResponseSigningFailureReason
 import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Request
@@ -81,7 +82,10 @@ internal class ResponseSigningState(
                 proof.scope == expectedScope && now >= proof.verifiedAt && (allowExpired || now < proof.expiresAt)
         }
 
-    fun prepare(original: Request, requestGeneration: Long): Request? = try {
+    /** The signed request, or the reason that the SDK could not prepare one; exactly one is set. */
+    class Preparation(val request: Request?, val failure: ResponseSigningFailureReason?)
+
+    fun prepare(original: Request, requestGeneration: Long): Preparation = try {
         val nonce = ByteArray(NONCE_BYTES)
         SecureRandom().nextBytes(nonce)
         val capabilities = original.header("x-dd-feature-flags-capabilities")
@@ -93,34 +97,55 @@ internal class ResponseSigningState(
             .header(ResponseSigningVerifier.PREFIX + "signature-version", ResponseSigningVerifier.SIGNATURE_VERSION)
             .header(ResponseSigningVerifier.PREFIX + "request-nonce", nonce.signingBytes().hex())
             .build()
-        signingCheck(original.header("dd-application-id") == identity.applicationId)
         val scope = ResponseSigningVerifier.scope(request)
         admit(requestGeneration) { expectedScope = scope }
-        request
+        Preparation(request, null)
     } catch (_: IllegalArgumentException) {
-        prepareUnverified(original, requestGeneration)
+        prepareUnverified(original, requestGeneration, ResponseSigningFailureReason.UNSUPPORTED_REQUEST)
     } catch (_: IOException) {
-        prepareUnverified(original, requestGeneration)
+        prepareUnverified(original, requestGeneration, ResponseSigningFailureReason.UNSUPPORTED_REQUEST)
     } catch (_: IllegalStateException) {
-        prepareUnverified(original, requestGeneration)
+        prepareUnverified(original, requestGeneration, ResponseSigningFailureReason.UNSUPPORTED_REQUEST)
     } catch (_: java.security.ProviderException) {
-        prepareUnverified(original, requestGeneration)
+        prepareUnverified(original, requestGeneration, ResponseSigningFailureReason.UNAVAILABLE_CRYPTO)
     }
 
-    private fun prepareUnverified(original: Request, requestGeneration: Long): Request? {
-        report(false)
+    private fun prepareUnverified(
+        original: Request,
+        requestGeneration: Long,
+        failure: ResponseSigningFailureReason
+    ): Preparation {
+        report(failure)
         if (configuration.mode == ResponseSigningMode.OBSERVE) {
             val scope = ResponseSigningVerifier.unverifiedScope(original)
             admit(requestGeneration) { expectedScope = scope }
         }
-        return null
+        return Preparation(null, failure)
     }
 
-    fun report(verified: Boolean) {
+    /** Telemetry for every outcome; a failure also logs the user message, an error when signing is required. */
+    fun report(failure: ResponseSigningFailureReason?) {
         logger.log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.TELEMETRY,
-            { if (verified) "Flag response signing v1: verified" else "Flag response signing v1: unverified" },
+            {
+                if (failure == null) {
+                    "Flag response signing v1: verified"
+                } else {
+                    "Flag response signing v1: unverified (${failure.code})"
+                }
+            },
+            onlyOnce = true
+        )
+        if (failure == null) return
+        logger.log(
+            if (configuration.mode == ResponseSigningMode.REQUIRED) {
+                InternalLogger.Level.ERROR
+            } else {
+                InternalLogger.Level.WARN
+            },
+            InternalLogger.Target.USER,
+            { failure.message },
             onlyOnce = true
         )
     }

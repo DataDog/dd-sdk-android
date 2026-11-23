@@ -4,7 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.internal.signing
+
+import com.datadog.android.flags.ExperimentalFlagsApi
 
 /** Bounded, canonical DER envelope reader for the restricted signing certificate profile. */
 @Suppress("MagicNumber") // DER tags, length forms and bit masks are wire constants.

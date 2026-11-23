@@ -9,6 +9,7 @@
 package com.datadog.android.flags.integration
 
 import com.datadog.android.DatadogSite
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
@@ -27,6 +28,8 @@ import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.FlagsResponseSigningException
+import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.integration.FlagsClientTest.Companion.createStubSdkCore
 import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeConfigurator
@@ -55,7 +58,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.MethodSource
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 
@@ -70,6 +75,7 @@ internal class ResponseSigningClientTest {
     private var cancelledChecks = 0
     private val requests = mutableListOf<Request>()
     private val scheduledExecutors = mutableListOf<StubScheduledExecutorService>()
+    private val userMessages = mutableListOf<String>()
     private var signedAt: Long? = null
     private var minimumNotBefore: Long? = null
     private var responseKind = "valid"
@@ -162,7 +168,34 @@ internal class ResponseSigningClientTest {
         )
         assertThat(requests).hasSize(1)
         assertThat(stubCore.telemetryEventsWritten().map { it.message })
-            .contains("Flag response signing v1: unverified")
+            .contains("Flag response signing v1: unverified (missing-proof)")
+    }
+
+    @ParameterizedTest
+    @EnumSource(ResponseSigningMode::class, names = ["OBSERVE", "REQUIRED"])
+    fun `M report the reason code W setEvaluationContext() {signing rejects the response}`(mode: ResponseSigningMode) {
+        listOf("unsigned" to "missing-proof", "tampered" to "invalid-signature").forEach { (kind, code) ->
+            // Given
+            create(mode)
+            responseKind = kind
+            val failures = mutableListOf<Throwable>()
+            // When
+            testedClient.setEvaluationContext(EvaluationContext("subject-$kind"), failureCallback(failures))
+            queue.removeFirst().run()
+            // Then
+            assertThat(userMessages).anyMatch { it.startsWith("Flag response signing failed ($code): ") }
+            assertThat(userMessages).noneMatch { it.contains("check your network connection") }
+            if (mode == ResponseSigningMode.REQUIRED) {
+                val failure = failures.single()
+                assertThat(failure).isInstanceOf(FlagsResponseSigningException::class.java)
+                assertThat((failure as FlagsResponseSigningException).reason.code).isEqualTo(code)
+                val state = testedClient.state.getCurrentState() as FlagsClientState.Error
+                assertThat(state.error).isInstanceOf(FlagsResponseSigningException::class.java)
+            } else {
+                assertThat(failures).isEmpty()
+            }
+            stubCore.stopFeatures()
+        }
     }
 
     @ParameterizedTest
@@ -293,6 +326,47 @@ internal class ResponseSigningClientTest {
         assertThat(store.operations).isZero()
     }
 
+    @ParameterizedTest(name = "expireVerifiedFlags={0}, from Stale={1}, by read={2}")
+    @MethodSource("expiryCases")
+    fun `M apply expiry W proof expires {required}`(expireVerifiedFlags: Boolean, fromStale: Boolean, byRead: Boolean) {
+        // Given
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = expireVerifiedFlags)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        if (fromStale) {
+            // A rejected refresh keeps the still-valid verified flags and reports Stale.
+            responseKind = "unsigned"
+            testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+            queue.removeFirst().run()
+            assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        }
+        val states = mutableListOf<FlagsClientState>()
+        testedClient.state.addListener(object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                states += newState
+            }
+        })
+        states.clear()
+        // When
+        if (byRead) now += PROOF_WINDOW_SECONDS else advanceClock(PROOF_WINDOW_SECONDS)
+        val value = testedClient.resolveBooleanValue("critical-demo", false)
+        // Then
+        val state = testedClient.state.getCurrentState()
+        if (expireVerifiedFlags) {
+            assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
+            assertThat(states.filterIsInstance<FlagsClientState.Error>()).hasSize(1)
+            assertThat(value).isFalse()
+        } else {
+            assertThat(state).isEqualTo(FlagsClientState.Stale)
+            assertThat(states.filterIsInstance<FlagsClientState.Error>()).isEmpty()
+            assertThat(value).isTrue()
+        }
+        // The timer that fires after a read-time change does not send a second event.
+        val events = states.size
+        scheduledExecutors.toList().forEach { it.runDueTasks() }
+        assertThat(states).hasSize(events)
+    }
+
     @ParameterizedTest
     @EnumSource(ResponseSigningMode::class, names = ["OFF", "OBSERVE"])
     fun `M keep state W proof expires {expireVerifiedFlags outside required}`(mode: ResponseSigningMode) {
@@ -362,7 +436,7 @@ internal class ResponseSigningClientTest {
         assertThat(results.map { it.flagMetadata["__dd_observe_full_evaluation_data"] })
             .containsExactly(false, true, false)
         assertThat(stubCore.telemetryEventsWritten().map { it.message })
-            .doesNotContain("Flag response signing v1: unverified")
+            .noneMatch { it.startsWith("Flag response signing v1: unverified") }
     }
 
     @ParameterizedTest
@@ -417,8 +491,8 @@ internal class ResponseSigningClientTest {
         // Then
         assertThat(requests).isEmpty()
         assertThat(failures).hasSize(2).allSatisfy {
-            assertThat(it).isInstanceOf(UnsupportedOperationException::class.java)
-                .hasMessageContaining("supported only on the Datadog staging site")
+            assertThat(it).isInstanceOf(FlagsResponseSigningException::class.java)
+                .hasMessageStartingWith("Flag response signing failed (unsupported-site): ")
         }
         assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
@@ -563,7 +637,7 @@ internal class ResponseSigningClientTest {
     }
 
     @Test
-    fun `M invalidate cached app scope W resolveBooleanValue() {RUM app changes}`() {
+    fun `M keep verified flags W resolveBooleanValue() {RUM app changes}`() {
         // Given
         updateApp("application-a")
         create(ResponseSigningMode.REQUIRED)
@@ -573,12 +647,13 @@ internal class ResponseSigningClientTest {
         updateApp("application-b")
         val actual = testedClient.resolveBooleanValue("critical-demo", false)
         // Then
-        assertThat(actual).isFalse()
+        assertThat(actual).isTrue()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         assertThat(requests).hasSize(1)
     }
 
     @Test
-    fun `M discard old app response W setEvaluationContext() {RUM changes during fetch}`() {
+    fun `M keep the response W setEvaluationContext() {RUM app changes during fetch}`() {
         // Given
         updateApp("application-a")
         create(ResponseSigningMode.REQUIRED)
@@ -586,12 +661,51 @@ internal class ResponseSigningClientTest {
         // When
         testedClient.setEvaluationContext(EvaluationContext("subject"), null)
         queue.removeFirst().run()
-        // Then
-        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+        // Then the transcript still binds the application ID that the request sent.
+        assertThat(requests.single().header("dd-application-id")).isEqualTo("application-a")
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         testedClient.setEvaluationContext(EvaluationContext("subject"), null)
         queue.removeFirst().run()
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
         assertThat(requests.last().header("dd-application-id")).isEqualTo("application-b")
+    }
+
+    @Test
+    fun `M keep verified flags W resolveBooleanValue() {RUM starts after init}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        assertThat(requests.single().header("dd-application-id")).isNull()
+        // When
+        updateApp("application-a")
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        assertThat(requests.last().header("dd-application-id")).isEqualTo("application-a")
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+    }
+
+    @Test
+    fun `M keep verified flags W resolveBooleanValue() {RUM stops}`() {
+        // Given
+        updateApp("application-a")
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // When
+        fakeDatadogContext = fakeDatadogContext.copy(featuresContext = emptyMap())
+        stubCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, false) { it.clear() }
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        assertThat(requests.last().header("dd-application-id")).isNull()
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
     }
 
     @Test
@@ -707,6 +821,13 @@ internal class ResponseSigningClientTest {
         }
     }
 
+    private fun failureCallback(failures: MutableList<Throwable>) = object : EvaluationContextCallback {
+        override fun onSuccess() = Unit
+        override fun onFailure(error: Throwable) {
+            failures += error
+        }
+    }
+
     private fun updateApp(applicationId: String, sessionId: String = "session") {
         val context = mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId, sessionId))
         fakeDatadogContext = fakeDatadogContext.copy(featuresContext = mapOf(Feature.RUM_FEATURE_NAME to context))
@@ -725,6 +846,26 @@ internal class ResponseSigningClientTest {
         expireVerifiedFlags: Boolean = false
     ) {
         val core = object : InternalSdkCore by stubCore {
+            override val internalLogger: InternalLogger = object : InternalLogger by stubCore.internalLogger {
+                override fun log(
+                    level: InternalLogger.Level,
+                    target: InternalLogger.Target,
+                    messageBuilder: () -> String,
+                    throwable: Throwable?,
+                    onlyOnce: Boolean,
+                    additionalProperties: Map<String, Any?>?
+                ) {
+                    if (target == InternalLogger.Target.USER) userMessages += messageBuilder()
+                    stubCore.internalLogger.log(
+                        level,
+                        target,
+                        messageBuilder,
+                        throwable,
+                        onlyOnce,
+                        additionalProperties
+                    )
+                }
+            }
             override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService =
                 StubScheduledExecutorService(executorContext) { now * 1000 }.also { scheduledExecutors += it }
             override fun getDatadogContext(withFeatureContexts: Set<String>) = fakeDatadogContext
@@ -841,8 +982,15 @@ internal class ResponseSigningClientTest {
         }
     }
 
-    private companion object {
+    companion object {
         const val PREFIX = "x-datadog-feature-flags-"
         const val PROOF_WINDOW_SECONDS = 300L
+
+        @JvmStatic
+        fun expiryCases(): List<Arguments> = listOf(true, false).flatMap { expire ->
+            listOf(true, false).flatMap { fromStale ->
+                listOf(true, false).map { byRead -> Arguments.of(expire, fromStale, byRead) }
+            }
+        }
     }
 }

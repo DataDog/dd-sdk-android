@@ -86,7 +86,8 @@ data class FlagsConfiguration internal constructor(
          * and intermediate chain under it, so routine certificate rotation needs no SDK update. Production support
          * comes in a later release. On any other site:
          * - [ResponseSigningMode.REQUIRED] fails closed. The client logs an error, sends no assignment request, and
-         *   fails every fetch with [UnsupportedOperationException].
+         *   fails every fetch with [FlagsResponseSigningException] and
+         *   [ResponseSigningFailureReason.UNSUPPORTED_SITE].
          * - [ResponseSigningMode.OBSERVE] has no effect. The client logs a warning and sends unsigned requests, so
          *   flags are not verified.
          *

@@ -96,7 +96,7 @@ Staging only; production is not supported yet. Signing works only when the SDK t
 For every other site:
 
 - `REQUIRED` fails closed. The client logs an error once, sends no assignment request, and fails
-  every fetch with `UnsupportedOperationException`. The client state is `Error`, and evaluations
+  every fetch with `FlagsResponseSigningException` (reason `unsupported-site`). The client state is `Error`, and evaluations
   return defaults. Remove `REQUIRED` or use `OBSERVE`.
 - `OBSERVE` has no effect. The client logs a warning once and sends unchanged requests, so flags
   are not verified.
@@ -124,14 +124,37 @@ valid chain under the root passes. Routine leaf and intermediate rotation needs 
 or prior successful fetch. Root validity still bounds unchanged SDK support.
 
 - `OFF` preserves existing transport and persistence and performs no signing work.
-- `OBSERVE` reports bounded verified/unverified telemetry and accepts otherwise-valid
+- `OBSERVE` reports bounded verified/unverified telemetry with the reason code and accepts otherwise-valid
   responses when optional verification fails. Authentication, transport, redirect, and
   JSON errors remain failures. Signed and unsigned requests are never retried as a downgrade.
 - `REQUIRED` accepts only valid proofs. A missing or invalid proof yields evaluation defaults.
   Verified assignments are held only in memory. Restart, a changed request scope, or a clock
   earlier than admission causes defaults.
-  A live RUM application-ID change or stopping the Flags feature immediately invalidates
-  prior proofs and prevents in-flight responses from restoring them.
+  Stopping the Flags feature immediately invalidates prior proofs and prevents in-flight
+  responses from restoring them.
+- RUM is not part of the signing scope. A RUM start, a RUM stop or a change of the RUM
+  application ID keeps the verified flags, keeps an in-flight response, and does not change the
+  state. Each response transcript still binds the `dd-application-id` that its request sent.
+
+When verification fails, the SDK keeps the reason. In `REQUIRED` mode, the fetch fails with
+`FlagsResponseSigningException`, and `reason.code` is the cross-SDK code. It is never the network
+error. The SDK logs `Flag response signing failed (<code>): <what failed>. <fix hint>.` once per code,
+as an error in `REQUIRED` mode and as a warning in `OBSERVE` mode. Telemetry reports
+`Flag response signing v1: unverified (<code>)`.
+
+| Code | Meaning |
+| --- | --- |
+| `unsupported-request` | The SDK cannot sign this request shape. |
+| `unavailable-crypto` | The platform crypto API is not available. |
+| `missing-anchor` | No trusted root is configured for this site. |
+| `missing-proof` | The response has no signature headers. |
+| `invalid-proof` | The signature headers are present but not valid. |
+| `response-too-large` | The body is larger than the signed size limit. |
+| `invalid-certificate` | The certificate chain does not chain to the pinned root, or a chain rule fails. |
+| `invalid-signature` | The signature does not match the request and response. |
+| `expired-proof` | The proof is expired or not yet valid. |
+| `unsupported-site` | Signing is not available on this Datadog site. |
+| `revoked-certificate` | Draft revocation: a certificate is older than the stored minimum not-before. |
 
 When the proof of the last verified response expires in `REQUIRED` mode:
 
@@ -140,7 +163,10 @@ When the proof of the last verified response expires in `REQUIRED` mode:
   `PROVIDER_STALE`. A network attacker can block refreshes and keep the flags at their last
   verified values. The attacker cannot forge values. The guarantee is "verified once", not "fresh".
 - With `expireVerifiedFlags(true)`, the client stops serving the flags, its state changes to
-  `FlagsClientState.Error`, and evaluations return defaults. This gives the strict guarantee.
+  `FlagsClientState.Error`, and evaluations return defaults. This applies from `Ready` and from
+  `Stale`. This gives the strict guarantee.
+- The SDK detects expiry with a timer at `expires-at` and with a check on each flag read, so
+  the state and its event change at the first of the two.
 - A new verified response returns the client to `FlagsClientState.Ready` in both settings.
   The customer decides when to refetch.
 - `expireVerifiedFlags` has no effect in `OBSERVE` or `OFF` mode.

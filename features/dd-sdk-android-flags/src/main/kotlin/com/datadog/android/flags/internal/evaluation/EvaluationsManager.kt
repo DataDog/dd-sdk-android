@@ -19,6 +19,7 @@ import com.datadog.android.flags.FlagsAssignmentAuthorizationException
 import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
+import com.datadog.android.flags.FlagsResponseSigningException
 import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.diagnostics.UUIDv7Generator
@@ -117,7 +118,8 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param assignmentAuthorization extracts assignment credentials and enforces subject isolation
  * @param unsupportedSigningError fails every fetch without a request; null unless signing is required but unavailable
  */
-@Suppress("TooManyFunctions") // Each step of the fetch, install and completion lifecycle is a separate function.
+// Each step of the fetch, install and completion lifecycle is a separate function.
+@Suppress("TooManyFunctions", "LargeClass")
 internal class EvaluationsManager(
     private val sdkCore: FeatureSdkCore,
     private val executorService: ExecutorService,
@@ -143,6 +145,7 @@ internal class EvaluationsManager(
     private var currentState: FlagsClientState = FlagsClientState.NotReady
     private var acceptedTimeoutFallback: AcceptedTimeoutFallback? = null
     private var proofExpiryToken: Any? = null
+    private var proofExpiresAt: Long = Long.MAX_VALUE
     private var cancelProofExpiry: (() -> Unit)? = null
 
     /**
@@ -311,8 +314,9 @@ internal class EvaluationsManager(
                         authorizationRejected = true
                     )
 
-                    // Only the signed read returns this type; an unsigned fetch treats it as a network failure.
+                    // Only the signed read returns these types; an unsigned fetch treats them as a network failure.
                     is SignedAssignmentsResponse,
+                    is PrecomputedAssignmentsResult.SigningRejected,
                     null -> handleRequestFailure(
                         request,
                         initializationCompletion,
@@ -399,7 +403,10 @@ internal class EvaluationsManager(
                 val assignments = response?.let { mapAssignments(it.json, request, supportsObfuscation) }
                 val authorizationRejected = result === PrecomputedAssignmentsResult.AuthorizationRejected
                 val eligible = assignments != null && sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null
-                val throwable = failure(networkFailed = result == null, authorizationRejected = authorizationRejected)
+                val signingRejected = result as? PrecomputedAssignmentsResult.SigningRejected
+                // The signing state already logged the reason; the caller gets a signing error, not a network error.
+                val throwable = signingRejected?.let { FlagsResponseSigningException(it.reason) }
+                    ?: failure(networkFailed = result == null, authorizationRejected = authorizationRejected)
                 var installed = false
                 val admitted = signing.admit(generation) {
                     synchronized(initializationTerminalLock) {
@@ -442,7 +449,7 @@ internal class EvaluationsManager(
                 if (installed) {
                     response?.proof?.let { scheduleProofExpiry(signing, it) }
                     response?.flagSelectionIgnoredReason?.let { internalLogger.logIgnoredFlagSelection(it) }
-                } else if (admitted) {
+                } else if (admitted && signingRejected == null) {
                     val message = failureMessage(result == null, authorizationRejected)
                     internalLogger.log(InternalLogger.Level.WARN, InternalLogger.Target.USER, { message })
                 }
@@ -458,6 +465,7 @@ internal class EvaluationsManager(
         val token = Any()
         val previous = synchronized(initializationTerminalLock) {
             proofExpiryToken = token
+            proofExpiresAt = proof.expiresAt
             cancelProofExpiry.also { cancelProofExpiry = null }
         }
         previous?.invoke()
@@ -470,12 +478,26 @@ internal class EvaluationsManager(
         if (superseded) cancel()
     }
 
+    /** Read-time expiry check; the timer at expires-at does the same when no read happens. */
+    fun checkProofExpiry() {
+        val signing = signing ?: return
+        val token = synchronized(initializationTerminalLock) {
+            proofExpiryToken?.takeIf { signing.now() >= proofExpiresAt }
+        } ?: return
+        onProofExpired(signing, token)
+    }
+
+    // Ready goes Stale by default; with expireVerifiedFlags, Ready and Stale go to Error.
     private fun onProofExpired(signing: ResponseSigningState, token: Any) {
-        val expired = synchronized(initializationTerminalLock) {
-            if (proofExpiryToken !== token || currentState != FlagsClientState.Ready) return
+        val expireFlags = signing.configuration.expireVerifiedFlags
+        val cancelTimer = synchronized(initializationTerminalLock) {
+            val applies = currentState == FlagsClientState.Ready ||
+                (expireFlags && currentState == FlagsClientState.Stale)
+            if (proofExpiryToken !== token || !applies) return
             proofExpiryToken = null
+            proofExpiresAt = Long.MAX_VALUE
+            val cancel = cancelProofExpiry
             cancelProofExpiry = null
-            val expireFlags = signing.configuration.expireVerifiedFlags
             enqueueState(
                 if (expireFlags) {
                     FlagsClientState.Error(VerifiedFlagsExpiredException(VERIFIED_FLAGS_EXPIRED_MESSAGE))
@@ -483,13 +505,14 @@ internal class EvaluationsManager(
                     FlagsClientState.Stale
                 }
             )
-            expireFlags
+            cancel
         }
+        cancelTimer?.invoke()
         effects.drain()
         internalLogger.log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            { if (expired) VERIFIED_FLAGS_EXPIRED_MESSAGE else VERIFIED_FLAGS_STALE_MESSAGE },
+            { if (expireFlags) VERIFIED_FLAGS_EXPIRED_MESSAGE else VERIFIED_FLAGS_STALE_MESSAGE },
             onlyOnce = true
         )
     }

@@ -4,9 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.internal.signing
 
 import android.content.SharedPreferences
+import com.datadog.android.flags.ExperimentalFlagsApi
+import com.datadog.android.flags.ResponseSigningFailureReason
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import okhttp3.Headers
@@ -296,6 +300,95 @@ internal class ResponseSigningChainTest {
                 assertThat(result != null).isEqualTo(case.expected)
             }
         }
+    }
+
+    // endregion
+
+    // region Reason codes
+
+    @TestFactory
+    fun `M report the reason code W verification() {rejected response}`(): List<DynamicTest> {
+        val chain = ProfileCase("reason control", true).mint()
+        val other = ProfileCase("other root", true).mint()
+        val request = request()
+        val signed = chain.sign(request, BODY, MINTED_NOW)
+        val large = ByteArray(ResponseSigningVerifier.MAX_RESPONSE_BYTES + 1)
+        return listOf(
+            Triple("no proof headers", listOf(chain.root), Headers.Builder().build()) to
+                ResponseSigningFailureReason.MISSING_PROOF,
+            Triple(
+                "malformed certificate-id",
+                listOf(chain.root),
+                signed.newBuilder().set(CERTIFICATE_ID, "00").build()
+            ) to
+                ResponseSigningFailureReason.INVALID_PROOF,
+            Triple("other root", listOf(other.root), signed) to ResponseSigningFailureReason.INVALID_CERTIFICATE,
+            Triple("no anchor", emptyList<String>(), signed) to ResponseSigningFailureReason.MISSING_ANCHOR
+        ).map { (case, expected) ->
+            DynamicTest.dynamicTest(case.first) {
+                // When
+                val result = ResponseSigningVerifier(
+                    case.second
+                ).verification(request, 200, case.third, BODY, MINTED_NOW)
+                // Then
+                assertThat(result.proof).isNull()
+                assertThat(result.failure).isEqualTo(expected)
+            }
+        } + listOf(
+            DynamicTest.dynamicTest("changed body") {
+                val result = ResponseSigningVerifier(listOf(chain.root))
+                    .verification(request, 200, signed, BODY + ' '.code.toByte(), MINTED_NOW)
+                assertThat(result.failure).isEqualTo(ResponseSigningFailureReason.INVALID_SIGNATURE)
+            },
+            DynamicTest.dynamicTest("expired proof") {
+                val result = ResponseSigningVerifier(listOf(chain.root))
+                    .verification(request, 200, signed, BODY, MINTED_NOW + 400)
+                assertThat(result.failure).isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
+            },
+            DynamicTest.dynamicTest("body above the signed limit") {
+                val result = ResponseSigningVerifier(
+                    listOf(chain.root)
+                ).verification(request, 200, signed, large, MINTED_NOW)
+                assertThat(result.failure).isEqualTo(ResponseSigningFailureReason.RESPONSE_TOO_LARGE)
+            },
+            DynamicTest.dynamicTest("verified") {
+                val result = ResponseSigningVerifier(
+                    listOf(chain.root)
+                ).verification(request, 200, signed, BODY, MINTED_NOW)
+                assertThat(result.proof).isNotNull()
+                assertThat(result.failure).isNull()
+            }
+        )
+    }
+
+    @Test
+    fun `M format the user message W reason code`() {
+        assertThat(ResponseSigningFailureReason.values().map { it.code }).containsExactly(
+            "unsupported-request", "unavailable-crypto", "missing-anchor", "missing-proof", "invalid-proof",
+            "response-too-large", "invalid-certificate", "invalid-signature", "expired-proof", "unsupported-site",
+            "revoked-certificate"
+        )
+        assertThat(ResponseSigningFailureReason.MISSING_PROOF.message).isEqualTo(
+            "Flag response signing failed (missing-proof): The response has no signature headers." +
+                " A proxy, CDN or custom endpoint removed the signature headers, or the organization is not enrolled."
+        )
+    }
+
+    @Test
+    fun `M report revoked-certificate W verification() {stored minimum not-before}`() {
+        val generations = Generations.mint()
+        val store = InMemoryMinimumNotBeforeStore()
+        val verifier = ResponseSigningVerifier(listOf(generations.root), store)
+        val request = request()
+        verifier.verify(request, 200, generations.newLeaf.sign(request, BODY, NOV_21_0200, NOV_19), BODY, NOV_21_0200)
+        val result = verifier.verification(
+            request,
+            200,
+            generations.oldLeaf.sign(request, BODY, NOV_21_0200),
+            BODY,
+            NOV_21_0200
+        )
+        assertThat(result.failure).isEqualTo(ResponseSigningFailureReason.REVOKED_CERTIFICATE)
     }
 
     // endregion
@@ -652,6 +745,7 @@ internal class ResponseSigningChainTest {
         private const val PREFIX = "x-datadog-feature-flags-"
         private const val CHAIN = PREFIX + "signing-chain"
         private const val MINIMUM_NOT_BEFORE = PREFIX + "minimum-not-before"
+        private const val CERTIFICATE_ID = PREFIX + "certificate-id"
 
         // Minimum not-before scenario (unix seconds, UTC): staging-like intermediates are older than the leaves.
         private const val NOV_01 = 1793491200L

@@ -4,10 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.internal.net
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.flags.ExperimentalFlagsApi
+import com.datadog.android.flags.ResponseSigningFailureReason
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
 import com.datadog.android.flags.internal.signing.VerifiedResponse
 import com.datadog.android.flags.model.EvaluationContext
@@ -58,6 +62,9 @@ internal interface PrecomputedAssignmentsReader {
 
 internal sealed interface PrecomputedAssignmentsResult {
     data object AuthorizationRejected : PrecomputedAssignmentsResult
+
+    /** Required signing rejected the response, or could not prepare the request. */
+    data class SigningRejected(val reason: ResponseSigningFailureReason) : PrecomputedAssignmentsResult
 }
 
 /**

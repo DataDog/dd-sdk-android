@@ -4,8 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.internal.signing
 
+import com.datadog.android.flags.ExperimentalFlagsApi
+import com.datadog.android.flags.ResponseSigningFailureReason
 import okio.Buffer
 import okio.ByteString
 import okio.ByteString.Companion.decodeHex
@@ -22,12 +26,18 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 
-internal fun signingCheck(condition: Boolean) {
-    if (!condition) signingFailure()
+internal fun signingCheck(
+    condition: Boolean,
+    reason: ResponseSigningFailureReason = ResponseSigningFailureReason.INVALID_PROOF
+) {
+    if (!condition) signingFailure(reason)
 }
 
 @Suppress("ThrowingInternalException") // Every signing entrypoint catches this bounded validation failure.
-internal fun signingFailure(): Nothing = throw IllegalArgumentException("Invalid response signing v1 input")
+internal fun signingFailure(
+    reason: ResponseSigningFailureReason = ResponseSigningFailureReason.INVALID_PROOF,
+    cause: Throwable? = null
+): Nothing = throw SigningCheckException(reason, cause)
 
 internal fun ByteArray.signingBytes(): ByteString = try {
     toByteString()

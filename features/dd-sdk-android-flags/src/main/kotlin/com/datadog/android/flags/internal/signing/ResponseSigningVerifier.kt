@@ -4,8 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.internal.signing
 
+import com.datadog.android.flags.ExperimentalFlagsApi
+import com.datadog.android.flags.ResponseSigningFailureReason
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import okhttp3.Headers
@@ -15,6 +19,8 @@ import okio.Buffer
 import okio.ByteString.Companion.decodeBase64
 import java.io.IOException
 import java.security.GeneralSecurityException
+import java.security.NoSuchAlgorithmException
+import java.security.ProviderException
 import java.security.PublicKey
 import java.util.Locale
 
@@ -36,15 +42,28 @@ internal class ResponseSigningVerifier(
 ) {
     private val anchors = anchors.toList()
 
-    fun verify(request: Request, status: Int, headers: Headers, body: ByteArray, now: Long): VerifiedResponse? = try {
-        verifyProof(request, status, headers, body, now)
-    } catch (_: GeneralSecurityException) {
-        null
-    } catch (_: IllegalArgumentException) {
-        null
-    } catch (_: IOException) {
-        null
-    }
+    /** The proof, or the reason that verification failed; exactly one is set. */
+    class Verification(val proof: VerifiedResponse?, val failure: ResponseSigningFailureReason?)
+
+    fun verify(request: Request, status: Int, headers: Headers, body: ByteArray, now: Long): VerifiedResponse? =
+        verification(request, status, headers, body, now).proof
+
+    fun verification(request: Request, status: Int, headers: Headers, body: ByteArray, now: Long): Verification =
+        try {
+            Verification(verifyProof(request, status, headers, body, now), null)
+        } catch (exception: SigningCheckException) {
+            Verification(null, exception.reason)
+        } catch (_: NoSuchAlgorithmException) {
+            Verification(null, ResponseSigningFailureReason.UNAVAILABLE_CRYPTO)
+        } catch (_: ProviderException) {
+            Verification(null, ResponseSigningFailureReason.UNAVAILABLE_CRYPTO)
+        } catch (_: GeneralSecurityException) {
+            Verification(null, ResponseSigningFailureReason.INVALID_CERTIFICATE)
+        } catch (_: IllegalArgumentException) {
+            Verification(null, ResponseSigningFailureReason.INVALID_PROOF)
+        } catch (_: IOException) {
+            Verification(null, ResponseSigningFailureReason.INVALID_PROOF)
+        }
 
     private fun verifyProof(
         request: Request,
@@ -53,7 +72,13 @@ internal class ResponseSigningVerifier(
         body: ByteArray,
         now: Long
     ): VerifiedResponse {
-        signingCheck(status == 200 && body.size <= MAX_RESPONSE_BYTES)
+        signingCheck(anchors.isNotEmpty(), ResponseSigningFailureReason.MISSING_ANCHOR)
+        signingCheck(
+            headers.toMultimap().keys.any { it.startsWith(PREFIX) },
+            ResponseSigningFailureReason.MISSING_PROOF
+        )
+        signingCheck(body.size <= MAX_RESPONSE_BYTES, ResponseSigningFailureReason.RESPONSE_TOO_LARGE)
+        signingCheck(status == 200)
         signingCheck(single(headers, PREFIX + "signature-version") == SIGNATURE_VERSION)
         val leafBytes = base64(single(headers, PREFIX + "signing-certificate"), 4096)
         val chainBytes = chain(headers)
@@ -61,7 +86,45 @@ internal class ResponseSigningVerifier(
         val issued = seconds(single(headers, PREFIX + "issued-at"))
         val expires = seconds(single(headers, PREFIX + "expires-at"))
         val announcedMinimum = minimumNotBefore(headers)
-        signingCheck(now >= 0 && issued <= now + 30 && expires > now && expires > issued && expires - issued <= 300)
+        signingCheck(expires > issued && expires - issued <= 300)
+        signingCheck(now >= 0 && issued <= now + 30 && expires > now, ResponseSigningFailureReason.EXPIRED_PROOF)
+        val chain = chainCheck { verifiedChain(leafBytes, chainBytes, now, issued, expires) }
+        val signature = base64(single(headers, PREFIX + "signature"), 72)
+        strictSignature(signature)
+        signingCheck(
+            verifySignature(chain.leaf.publicKey, transcript(request, status, headers, body), signature),
+            ResponseSigningFailureReason.INVALID_SIGNATURE
+        )
+        val chainNotBefore = chain.intermediates.fold(chain.leaf.notBefore) { oldest, certificate ->
+            minOf(oldest, certificate.notBefore)
+        }
+        applyMinimumNotBefore(chain.anchorId, chainNotBefore, announcedMinimum)
+        return VerifiedResponse(scope(request), now, expires)
+    }
+
+    private class VerifiedChain(val leaf: Certificate, val intermediates: List<Certificate>, val anchorId: String)
+
+    /** Any parse, profile, path or validity failure of the chain is [ResponseSigningFailureReason.INVALID_CERTIFICATE]. */
+    private fun chainCheck(block: () -> VerifiedChain): VerifiedChain = try {
+        block()
+    } catch (exception: SigningCheckException) {
+        signingFailure(
+            if (exception.reason == ResponseSigningFailureReason.INVALID_PROOF) {
+                ResponseSigningFailureReason.INVALID_CERTIFICATE
+            } else {
+                exception.reason
+            },
+            exception
+        )
+    }
+
+    private fun verifiedChain(
+        leafBytes: ByteArray,
+        chainBytes: List<ByteArray>,
+        now: Long,
+        issued: Long,
+        expires: Long
+    ): VerifiedChain {
         val leaf = certificate(leafBytes)
         // Index 0 issued the leaf; each next intermediate issued the previous one.
         val intermediates = chainBytes.map { certificate(it) }
@@ -84,14 +147,7 @@ internal class ResponseSigningVerifier(
         signingCheck(anchor != null && leaf.issuedBy(intermediates[0]))
         signingCheck(intermediates.zipWithNext().all { (child, parent) -> child.issuedBy(parent) })
         signingCheck(leaf.covers(now, issued, expires) && intermediates.all { it.covers(now, issued, expires) })
-        val signature = base64(single(headers, PREFIX + "signature"), 72)
-        strictSignature(signature)
-        signingCheck(verifySignature(leaf.publicKey, transcript(request, status, headers, body), signature))
-        val chainNotBefore = intermediates.fold(leaf.notBefore) { oldest, certificate ->
-            minOf(oldest, certificate.notBefore)
-        }
-        applyMinimumNotBefore(anchor ?: signingFailure(), chainNotBefore, announcedMinimum)
-        return VerifiedResponse(scope(request), now, expires)
+        return VerifiedChain(leaf, intermediates, anchor ?: signingFailure())
     }
 
     // Draft revocation: runs only after the signature, so only an authentic chain can raise or meet the floor.
@@ -99,7 +155,7 @@ internal class ResponseSigningVerifier(
         val floor = minimumNotBefore.get(anchorId)
         if (floor != null && chainNotBefore < floor) {
             report(REVOKED_CERTIFICATE)
-            signingFailure()
+            signingFailure(ResponseSigningFailureReason.REVOKED_CERTIFICATE)
         }
         if (announced == null) return
         // A response must never revoke a certificate of its own chain.
@@ -262,8 +318,9 @@ internal class ResponseSigningVerifier(
         private const val MAX_REQUEST_BYTES = 1024 * 1024
         private const val HTTPS_PORT = 443
         private const val HTTP_PORT = 80
+        private const val APPLICATION_ID_HEADER = "dd-application-id"
         private val SEMANTIC_HEADERS =
-            listOf("content-type", "dd-application-id", "x-rkyv", "x-use-cache", "x-dd-feature-flags-capabilities")
+            listOf("content-type", APPLICATION_ID_HEADER, "x-rkyv", "x-use-cache", "x-dd-feature-flags-capabilities")
 
         fun transcript(request: Request, status: Int, headers: Headers, body: ByteArray): ByteArray {
             val minimum = minimumNotBefore(headers)
@@ -283,19 +340,22 @@ internal class ResponseSigningVerifier(
         }
 
         fun matchesRequest(expected: Request, actual: Request): Boolean = try {
-            scope(expected) == scope(actual) &&
+            requestTranscript(expected, includeNonce = false).signingBytes()
+                .contentEquals(requestTranscript(actual, includeNonce = false).signingBytes()) &&
                 expected.header(NONCE_HEADER) == actual.header(NONCE_HEADER)
         } catch (_: IllegalArgumentException) {
             false
         }
 
+        /** Cache and admission scope; omits the RUM application ID, which each transcript still binds. */
         fun scope(request: Request): String = requestTranscript(
             request,
-            includeNonce = false
+            includeNonce = false,
+            includeApplicationId = false
         ).signingBytes().signingBytes().sha256().hex()
 
         fun unverifiedScope(request: Request): String? = try {
-            requestTranscript(request, includeNonce = false, validateSigning = false)
+            requestTranscript(request, includeNonce = false, validateSigning = false, includeApplicationId = false)
                 .signingBytes().signingBytes().sha256().hex()
         } catch (_: IllegalArgumentException) {
             null
@@ -305,7 +365,8 @@ internal class ResponseSigningVerifier(
         private fun requestTranscript(
             request: Request,
             includeNonce: Boolean = true,
-            validateSigning: Boolean = true
+            validateSigning: Boolean = true,
+            includeApplicationId: Boolean = true
         ): Buffer {
             val url = request.url
             val nonce = if (validateSigning) single(request.headers, NONCE_HEADER) else ""
@@ -340,7 +401,7 @@ internal class ResponseSigningVerifier(
             val scopedBytes = if (includeNonce) requestBytes else withoutDiagnostics(requestBytes)
             result.write(scopedBytes.signingBytes().sha256())
             result.write(single(request.headers, "dd-client-token").toByteArray(Charsets.UTF_8).signingBytes().sha256())
-            SEMANTIC_HEADERS.forEach { name ->
+            SEMANTIC_HEADERS.filter { includeApplicationId || it != APPLICATION_ID_HEADER }.forEach { name ->
                 val values = request.headers.values(name)
                 signingCheck(values.size <= 1)
                 result.writeByte(if (values.isEmpty()) 0 else 1)

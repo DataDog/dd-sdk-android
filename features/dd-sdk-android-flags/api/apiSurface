@@ -49,10 +49,23 @@ data class com.datadog.android.flags.FlagsConfiguration
 class com.datadog.android.flags.FlagsContextSupersededException : IllegalStateException
 class com.datadog.android.flags.FlagsInitializationTimeoutException : RuntimeException
 class com.datadog.android.flags.FlagsInvalidContextException : IllegalArgumentException
+class com.datadog.android.flags.FlagsResponseSigningException : RuntimeException
 interface com.datadog.android.flags.FlagsStateListener
   fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)
 interface com.datadog.android.flags.FlagsSubscription
   fun unsubscribe()
+enum com.datadog.android.flags.ResponseSigningFailureReason
+  - UNSUPPORTED_REQUEST
+  - UNAVAILABLE_CRYPTO
+  - MISSING_ANCHOR
+  - MISSING_PROOF
+  - INVALID_PROOF
+  - RESPONSE_TOO_LARGE
+  - INVALID_CERTIFICATE
+  - INVALID_SIGNATURE
+  - EXPIRED_PROOF
+  - UNSUPPORTED_SITE
+  - REVOKED_CERTIFICATE
 enum com.datadog.android.flags.ResponseSigningMode
   - OFF
   - OBSERVE

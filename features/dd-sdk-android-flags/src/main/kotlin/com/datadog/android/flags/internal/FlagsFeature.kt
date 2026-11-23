@@ -155,7 +155,6 @@ internal class FlagsFeature(
         isInitialized = true
         signingContext?.let {
             it.start()
-            sdkCore.setContextUpdateReceiver(it)
             // Some test or wrapper contexts return no preferences; the floor then lives in memory only.
             val preferences: SharedPreferences? = appContext.getSharedPreferences(
                 SharedPreferencesMinimumNotBeforeStore.PREFERENCES_NAME,
@@ -176,10 +175,7 @@ internal class FlagsFeature(
     }
 
     override fun onStop() {
-        signingContext?.let {
-            it.stop()
-            sdkCore.removeContextUpdateReceiver(it)
-        }
+        signingContext?.stop()
         dataWriter = NoOpRecordWriter()
         isInitialized = false // Allow re-initialization if feature is restarted
         synchronized(registeredClients) {

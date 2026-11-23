@@ -12,6 +12,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.ExperimentalFlagsApi
+import com.datadog.android.flags.ResponseSigningFailureReason
 import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.model.AssignmentAuthorizationErrorResponse
@@ -91,8 +92,14 @@ internal class PrecomputedAssignmentsDownloader(
         if (!state.isCurrent(generation)) return null
         val credentialUsed = assignmentToken != null
         val original = requestFactory.create(context, datadogContext, diagnostics, assignmentToken) ?: return null
-        val prepared = state.prepare(original, generation)
-        if (prepared == null && state.configuration.mode == ResponseSigningMode.REQUIRED) return null
+        val preparation = state.prepare(original, generation)
+        val prepared = preparation.request
+        val required = state.configuration.mode == ResponseSigningMode.REQUIRED
+        if (prepared == null && required) {
+            return PrecomputedAssignmentsResult.SigningRejected(
+                preparation.failure ?: ResponseSigningFailureReason.UNSUPPORTED_REQUEST
+            )
+        }
         onPrepared()
         val request = prepared ?: original
         val transport =
@@ -106,21 +113,26 @@ internal class PrecomputedAssignmentsDownloader(
                 }
                 if (redirected(response, request) || call.isCanceled()) return null
                 val body = response.body ?: return null
-                if (state.configuration.mode == ResponseSigningMode.REQUIRED &&
-                    body.source().request(ResponseSigningVerifier.MAX_RESPONSE_BYTES.toLong() + 1)
-                ) {
-                    return null
+                if (required && body.source().request(ResponseSigningVerifier.MAX_RESPONSE_BYTES.toLong() + 1)) {
+                    state.report(ResponseSigningFailureReason.RESPONSE_TOO_LARGE)
+                    return PrecomputedAssignmentsResult.SigningRejected(ResponseSigningFailureReason.RESPONSE_TOO_LARGE)
                 }
                 val bytes = body.bytes()
-                val proof = if (prepared != null &&
-                    ResponseSigningVerifier.matchesRequest(prepared, response.request)
-                ) {
-                    state.verifier.verify(prepared, response.code, response.headers, bytes, state.now())
-                } else {
-                    null
+                val verification = when {
+                    // Preparation already reported its failure.
+                    prepared == null -> ResponseSigningVerifier.Verification(null, preparation.failure)
+                    // A transport that rewrote the request cannot match the signed request.
+                    !ResponseSigningVerifier.matchesRequest(prepared, response.request) ->
+                        ResponseSigningVerifier.Verification(null, ResponseSigningFailureReason.UNSUPPORTED_REQUEST)
+                    else -> state.verifier.verification(prepared, response.code, response.headers, bytes, state.now())
                 }
-                state.report(proof != null)
-                if (proof == null && state.configuration.mode == ResponseSigningMode.REQUIRED) return null
+                val proof = verification.proof
+                if (prepared != null) state.report(verification.failure)
+                if (proof == null && required) {
+                    return PrecomputedAssignmentsResult.SigningRejected(
+                        verification.failure ?: ResponseSigningFailureReason.INVALID_PROOF
+                    )
+                }
                 SignedAssignmentsResponse(
                     bytes.toString(Charsets.UTF_8),
                     proof,

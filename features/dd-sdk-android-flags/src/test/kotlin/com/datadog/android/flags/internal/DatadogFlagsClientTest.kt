@@ -785,7 +785,9 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result.value).isTrue()
         verify(mockProcessor).processEvent(fakeKey, fakeContext, fakeFlag)
-        verifyNoInteractions(mockEvaluationsManager)
+        // A read checks proof expiry only; it starts no fetch.
+        verify(mockEvaluationsManager).checkProofExpiry()
+        verifyNoMoreInteractions(mockEvaluationsManager)
         if (enabled) {
             verifyNoInteractions(mockRumEvaluationLogger, mockEvaluationsFeature)
         } else {
