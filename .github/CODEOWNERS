@@ -14,3 +14,9 @@
 /features/dd-sdk-android-flags-openfeature/ @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
 /features/dd-sdk-android-flags-openfeature/README.md @DataDog/documentation @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
 /reliability/single-fit/flags @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
+
+# Shared FFE fixture pin and importer. FFE updates the pin without other team approval.
+/ci/feature-flags-precomputed-fixtures.json @DataDog/feature-flagging-and-experimentation-sdk
+/ci/feature-flags-precomputed-fixtures-pr.md @DataDog/feature-flagging-and-experimentation-sdk
+/ci/sync-feature-flags-precomputed-fixtures.py @DataDog/feature-flagging-and-experimentation-sdk
+/ci/test_sync_feature_flags_precomputed_fixtures.py @DataDog/feature-flagging-and-experimentation-sdk
