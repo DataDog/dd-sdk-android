@@ -499,7 +499,8 @@ static size_t walk(uintptr_t *frames,
         frames[total++] = lr;
         recovered++;
     }
-    if (unwinder_stopped_after_crash && is_java_runtime[ADDRESS_LR] && follows_call(lr)) {
+    if ((unwinder_stopped_at_crash || unwinder_stopped_after_crash) && is_java_runtime[ADDRESS_LR] &&
+        follows_call(lr)) {
         /* the crashed function was called from Java code: x29 is not a frame chain there */
         return total;
     }

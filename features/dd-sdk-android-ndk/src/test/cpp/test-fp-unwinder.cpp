@@ -134,7 +134,8 @@ namespace {
             }
             for (int i = 0; i < info->dlpi_phnum; i++) {
                 const ElfW(Phdr) &header = info->dlpi_phdr[i];
-                if (header.p_type != PT_LOAD || (header.p_flags & PF_X) == 0) {
+                // readable too: execute-only code (e.g. on API 29) can't be read as data
+                if (header.p_type != PT_LOAD || (header.p_flags & (PF_R | PF_X)) != (PF_R | PF_X)) {
                     continue;
                 }
                 const auto *code = reinterpret_cast<const uint32_t *>(info->dlpi_addr + header.p_vaddr);
@@ -538,6 +539,25 @@ TEST test_fp_unwinder_stops_when_the_crashed_function_was_called_from_java_runti
     PASS();
 }
 
+TEST test_fp_unwinder_stops_when_the_crashed_code_without_tables_was_called_from_java_runtime_code(void) {
+    // Given
+    const uintptr_t java_runtime = libart_return_address();
+    if (java_runtime == 0) {
+        SKIPm("libart is not loaded in this process");
+    }
+    build_chain(no_tables, 3);
+    uintptr_t frames[16] = {code_with_tables(), trampoline_address()};
+    const ucontext_t context = crash_context(code_without_tables(), java_runtime, chain_start());
+
+    // When
+    const size_t total = fp_unwinder_append_frames(frames, 2, 16, false, 0, &context);
+
+    // Then: only the crashed pc
+    ASSERT_EQ_FMT((size_t) 3, total, "%zu");
+    ASSERT_EQ(code_without_tables(), frames[2]);
+    PASS();
+}
+
 TEST test_fp_unwinder_respects_the_frame_limit(void) {
     // Given
     build_chain(no_tables, 3);
@@ -633,6 +653,7 @@ SUITE (fp_unwinder) {
     RUN_TEST(test_fp_unwinder_ends_at_the_outermost_frame_record);
     RUN_TEST(test_fp_unwinder_adds_lr_into_code_with_tables_when_the_crashed_code_has_none);
     RUN_TEST(test_fp_unwinder_stops_when_the_crashed_function_was_called_from_java_runtime_code);
+    RUN_TEST(test_fp_unwinder_stops_when_the_crashed_code_without_tables_was_called_from_java_runtime_code);
     RUN_TEST(test_fp_unwinder_respects_the_frame_limit);
     RUN_TEST(test_fp_unwinder_adds_nothing_when_the_unwinder_reached_java_runtime_code);
     RUN_TEST(test_fp_unwinder_stops_after_the_first_java_runtime_frame);

@@ -10,6 +10,8 @@
 #include "greatest/greatest.h"
 #include "utils/backtrace-handler.h"
 
+extern void appendJsonEscaped(std::string &out, const char *text);
+
 namespace {
     // Lines in the backtrace end with the two characters '\' 'n'.
     const char *const line_end = "\\n";
@@ -55,7 +57,20 @@ TEST test_generate_backtrace_keeps_nothing_when_no_whole_line_fits(void) {
     PASS();
 }
 
+TEST test_append_json_escaped_escapes_quotes_backslashes_and_control_characters(void) {
+    // Given
+    std::string escaped = "prefix ";
+
+    // When
+    appendJsonEscaped(escaped, "/data/a\"b\\c\x01" "d");
+
+    // Then
+    ASSERT_STR_EQ("prefix /data/a\\\"b\\\\c\\u0001d", escaped.c_str());
+    PASS();
+}
+
 SUITE (backtrace_limits) {
     RUN_TEST(test_generate_backtrace_keeps_only_whole_lines_when_the_size_is_exceeded);
     RUN_TEST(test_generate_backtrace_keeps_nothing_when_no_whole_line_fits);
+    RUN_TEST(test_append_json_escaped_escapes_quotes_backslashes_and_control_characters);
 }

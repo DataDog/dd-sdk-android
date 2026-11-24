@@ -13,6 +13,8 @@
 
 #include "fp-unwinder.h"
 
+void appendJsonEscaped(std::string &out, const char *text);
+
 struct BacktraceState {
     uintptr_t *current;
     uintptr_t *end;
@@ -80,11 +82,11 @@ namespace {
             append_hex_address_no_prefix(offset, backtrace);
 
             backtrace.append("  ");
-            backtrace.append(info.dli_fname);
+            appendJsonEscaped(backtrace, info.dli_fname);
 
             if (info.dli_sname) {
                 backtrace.append(" (");
-                backtrace.append(info.dli_sname);
+                appendJsonEscaped(backtrace, info.dli_sname);
 
                 if (info.dli_saddr) {
                     uintptr_t symbol_offset = address - (uintptr_t)info.dli_saddr;
@@ -98,6 +100,24 @@ namespace {
         }
 
         backtrace.append("\\n");
+    }
+}
+
+// Appends text escaped for a JSON string (the stack trace is written into the crash report's JSON
+// as is): library paths and symbol names could contain quotes, backslashes or control characters.
+void appendJsonEscaped(std::string &out, const char *text) {
+    for (const char *c = text; *c != '\0'; ++c) {
+        const auto byte = static_cast<unsigned char>(*c);
+        if (byte == '"' || byte == '\\') {
+            out.push_back('\\');
+            out.push_back(*c);
+        } else if (byte < 0x20) {
+            char escaped[7];
+            std::snprintf(escaped, sizeof(escaped), "\\u%04x", byte);
+            out.append(escaped);
+        } else {
+            out.push_back(*c);
+        }
     }
 }
 
