@@ -20,6 +20,7 @@ import java.util.Map;
 public final class Baggage {
     private static final char PAIR_SEPARATOR = ',';
     private static final char KEY_VALUE_SEPARATOR = '=';
+    private static final char PROPERTY_SEPARATOR = ';';
     private static final PercentEscaper UTF_ESCAPER = PercentEscaper.create();
 
     private final HashMap<String, String> values = new HashMap<>();
@@ -98,8 +99,57 @@ public final class Baggage {
         return baggage;
     }
 
+    /**
+     * Removes every list member with the given key from a raw baggage header value. The key of each
+     * member is decoded like in {@link #from(String)} before comparison, while the other members are
+     * kept byte-for-byte, including empty values, properties and malformed members.
+     *
+     * @param header the raw baggage header value.
+     * @param key the decoded key to remove.
+     * @return {@code header} itself when no member has the key, {@code null} when no member is left,
+     * or the remaining members otherwise.
+     */
+    @Nullable
+    public static String removeKey(@NonNull final String header, @NonNull final String key) {
+        final String[] members = header.split(String.valueOf(PAIR_SEPARATOR), -1);
+        final StringBuilder kept = new StringBuilder(header.length());
+        boolean removed = false;
+        boolean hasContent = false;
+        boolean first = true;
+        for (final String member : members) {
+            if (key.equals(memberKey(member))) {
+                removed = true;
+                continue;
+            }
+            if (!first) {
+                kept.append(PAIR_SEPARATOR);
+            }
+            first = false;
+            kept.append(member);
+            hasContent = hasContent || !member.trim().isEmpty();
+        }
+        if (!removed) {
+            return header;
+        }
+        return hasContent ? kept.toString() : null;
+    }
+
     @NonNull
-    public static String urlDecode(@NonNull final String value) {
+    private static String memberKey(@NonNull final String member) {
+        String key = member;
+        final int kvSeparatorInd = key.indexOf(KEY_VALUE_SEPARATOR);
+        if (kvSeparatorInd != -1) {
+            key = key.substring(0, kvSeparatorInd);
+        }
+        final int propertySeparatorInd = key.indexOf(PROPERTY_SEPARATOR);
+        if (propertySeparatorInd != -1) {
+            key = key.substring(0, propertySeparatorInd);
+        }
+        return urlDecode(key.trim());
+    }
+
+    @NonNull
+    private static String urlDecode(@NonNull final String value) {
         String decoded = value;
         try {
             // Suppressing decode(String s, Charset charset) because it requires minSdk = 33.

@@ -130,25 +130,10 @@ object _TraceInternalProxy {
         if (span.getTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID) != null) return null
         var changed = false
         val cleanedValues = headerValues.mapNotNull { value ->
-            val members = value.split(BAGGAGE_MEMBER_SEPARATOR)
-            val kept = members.filterNot { isUserAnonymousIdMember(it) }
-            if (kept.size == members.size) {
-                value
-            } else {
-                changed = true
-                kept.joinToString(BAGGAGE_MEMBER_SEPARATOR).takeIf { kept.any { member -> member.isNotBlank() } }
-            }
+            Baggage.removeKey(value, HttpCodec.BAGGAGE_USER_ANONYMOUS_ID).also { changed = changed || it != value }
         }
         return cleanedValues.takeIf { changed }
     }
-
-    private fun isUserAnonymousIdMember(member: String): Boolean {
-        // Decoded like Baggage.from does, so an encoded key can't bypass the removal.
-        val key = Baggage.urlDecode(member.substringBefore('=').substringBefore(';').trim())
-        return key == HttpCodec.BAGGAGE_USER_ANONYMOUS_ID
-    }
-
-    private const val BAGGAGE_MEMBER_SEPARATOR = ","
 
     /**
      * Creates an [ApmNetworkInstrumentation] instance from the provided configuration.

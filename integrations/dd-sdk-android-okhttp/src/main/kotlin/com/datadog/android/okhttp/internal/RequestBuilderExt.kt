@@ -18,6 +18,8 @@ internal fun Request.Builder.removeRetainedUserAnonymousIdBaggage(span: DatadogS
     val existing = try {
         build().headers(TracingInterceptor.W3C_BAGGAGE_KEY)
     } catch (_: IllegalStateException) {
+        // build() only throws when no URL is set, which can't happen here: the builder comes from
+        // request.newBuilder() of the intercepted request. Keeping the headers as they are is safe.
         return
     }
     val cleanedValues = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, existing) ?: return

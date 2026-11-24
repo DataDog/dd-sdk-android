@@ -40,7 +40,45 @@ internal class BaggageTest {
         assertThat(baggage.toString()).isEqualTo(expectedString)
     }
 
+    @ParameterizedTest
+    @MethodSource("removeKeySamples")
+    fun `M remove only matching members W removeKey`(
+        headerValue: String,
+        expected: String?
+    ) {
+        assertThat(Baggage.removeKey(headerValue, REMOVED_KEY)).isEqualTo(expected)
+    }
+
+    @ParameterizedTest
+    @MethodSource("headersWithoutKey")
+    fun `M return same header W removeKey { no matching member }`(
+        headerValue: String
+    ) {
+        assertThat(Baggage.removeKey(headerValue, REMOVED_KEY)).isSameAs(headerValue)
+    }
+
     private companion object {
+        const val REMOVED_KEY = "user.anonymous_id"
+
+        @JvmStatic
+        fun removeKeySamples() = listOf(
+            Arguments.of("user.anonymous_id=old", null),
+            Arguments.of("user.anonymous_id=old,user.anonymous_id=other", null),
+            Arguments.of("custom=,user.anonymous_id=old", "custom="),
+            Arguments.of("user.id=user+id;prop=value,user.anonymous_id=old", "user.id=user+id;prop=value"),
+            Arguments.of(" user.anonymous_id ;p=1 , custom=a", " custom=a"),
+            Arguments.of("user%2Eanonymous%5Fid=old,user.id=user%2Bid", "user.id=user%2Bid"),
+            Arguments.of("not a member,,=x,user.anonymous_id=old,k=%zz", "not a member,,=x,k=%zz"),
+            Arguments.of("k=%zz,user%zz=x,user.anonymous_id=old", "k=%zz,user%zz=x")
+        )
+
+        @JvmStatic
+        fun headersWithoutKey() = listOf(
+            Arguments.of("user.id=userId,user.anonymous_idx=other"),
+            Arguments.of("custom=,k=%zz"),
+            Arguments.of("")
+        )
+
         @JvmStatic
         fun invalidBaggageHeaderSamples() = listOf(
             Arguments.of(null),
