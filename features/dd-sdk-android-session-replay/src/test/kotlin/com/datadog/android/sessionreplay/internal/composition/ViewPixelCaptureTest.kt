@@ -20,6 +20,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.internal.composition.mapper.ViewRasterizer
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -102,6 +103,43 @@ internal class ViewPixelCaptureTest {
         verifyNoInteractions(mockRasterizer)
         assertThat(fakePending).isEmpty()
     }
+
+    @Test
+    fun `M leave the container to the fallback W capture() { image privacy masks the container }`(forge: Forge) {
+        // Given
+        val stubParent: ViewGroup = mock()
+        val stubResources = resources()
+        whenever(stubParent.resources).thenReturn(stubResources)
+        whenever(stubParent.width).thenReturn(100)
+        whenever(stubParent.height).thenReturn(50)
+
+        // When
+        val result = ViewPixelCapture(mock(), rasterizer = mockRasterizer)
+            .capture(stubParent, maskedContext(forge))
+
+        // Then
+        assertThat(result).isNull()
+        verifyNoInteractions(mockRasterizer)
+        assertThat(fakePending).isEmpty()
+    }
+
+    @Test
+    fun `M emit a terminal placeholder W capture() { image privacy masks a leaf view }`(forge: Forge) {
+        // When
+        val result = ViewPixelCapture(mock(), rasterizer = mockRasterizer)
+            .capture(view(), maskedContext(forge)) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.isTerminal).isTrue()
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+        verifyNoInteractions(mockRasterizer)
+        assertThat(fakePending).isEmpty()
+    }
+
+    private fun maskedContext(forge: Forge): CapturedMappingContext = fakeContext.copy(
+        imagePrivacy = forge.anElementFrom(ImagePrivacy.MASK_ALL, ImagePrivacy.MASK_LARGE_ONLY),
+        bounds = CapturedBounds(0, 0, 1000, 500)
+    )
 
     private fun view(): View {
         val stubView: View = mock()

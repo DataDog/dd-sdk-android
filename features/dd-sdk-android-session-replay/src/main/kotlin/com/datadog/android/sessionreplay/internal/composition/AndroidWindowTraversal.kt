@@ -167,7 +167,13 @@ internal class AndroidWindowTraversal(
         val bounds = pixels?.toNormalizedBounds(state.density)
             ?: viewBoundsResolver.resolveViewGlobalBounds(view, state.density).toCaptured()
         val ownPrivacy = resolveEffectivePrivacy(view, item.inheritedPrivacy, internalLogger)
-        val mappingContext = mappingContext(state, identity, bounds, ownPrivacy)
+        val mappingContext = mappingContext(
+            state,
+            identity,
+            bounds,
+            ownPrivacy,
+            isCompositionHost = kind == CapturedLayerKind.COMPOSE_HOST
+        )
         val composition = if (kind == CapturedLayerKind.COMPOSE_HOST) {
             captureComposition(view, mappingContext, state, context)
         } else {
@@ -218,7 +224,8 @@ internal class AndroidWindowTraversal(
         state: CopyState,
         identity: CapturedIdentity,
         bounds: CapturedBounds,
-        privacy: EffectivePrivacy
+        privacy: EffectivePrivacy,
+        isCompositionHost: Boolean
     ) = CapturedMappingContext(
         state.identityFactory,
         identity,
@@ -226,7 +233,8 @@ internal class AndroidWindowTraversal(
         bounds,
         imagePrivacy = privacy.imagePrivacy,
         textAndInputPrivacy = privacy.textAndInputPrivacy,
-        pendingPixelCaptureSink = state.pendingPixelCaptureSink
+        pendingPixelCaptureSink = state.pendingPixelCaptureSink,
+        isCompositionHost = isCompositionHost
     )
 
     @UiThread

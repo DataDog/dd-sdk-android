@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.composition.mapper
 
+import android.content.Context
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
@@ -18,7 +19,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.ListView
 import android.widget.ScrollView
+import androidx.recyclerview.widget.RecyclerView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
@@ -34,6 +37,7 @@ import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -334,22 +338,124 @@ internal class CapturedPixelFallbackMapperTest {
         // were an ordinary backgroundless scrolling container.
         val mockScrollView: ScrollView = mock()
         val mockDrawable: Drawable = mock()
-        whenever(mockScrollView.width).thenReturn(100)
-        whenever(mockScrollView.height).thenReturn(100)
+        eligibleView(mockView = mockScrollView)
         whenever(mockScrollView.background).thenReturn(mockDrawable)
-        whenever(mockScrollView.getGlobalVisibleRect(any())).thenAnswer { invocation ->
-            invocation.getArgument<Rect>(0).set(0, 0, 100, 100)
-            true
-        }
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockScrollView, 1f))
             .thenReturn(GlobalBounds(0, 0, 100, 100))
-        val mappingContext = mappingContext(ImagePrivacy.MASK_ALL, scope = fakeScope)
+        val registered = mutableListOf<PendingPixelCapture>()
+        val mappingContext = mappingContext(
+            ImagePrivacy.MASK_NONE,
+            sink = PendingPixelCaptureSink { registered += it },
+            scope = fakeScope
+        )
 
         // When
         val result = testedMapper.map(mockScrollView, mappingContext) as CapturedViewMapperResult.Wireframes
 
-        // Then: still reaches the privacy gate - it has real content to protect.
-        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+        // Then
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+        assertThat(registered).hasSize(1)
+    }
+
+    @Test
+    fun `M delegate to fallback and keep the children W map { image privacy masks a container }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakePrivacy = forge.anElementFrom(ImagePrivacy.MASK_ALL, ImagePrivacy.MASK_LARGE_ONLY)
+        val mockContainer: ViewGroup = mock()
+        val mockRasterizer: ViewRasterizer = mock()
+        val testedContainerMapper = CapturedPixelFallbackMapper(
+            fallbackMapper = mockFallbackMapper,
+            internalLogger = mockInternalLogger,
+            viewBoundsResolver = mockViewBoundsResolver,
+            viewRasterizer = mockRasterizer
+        )
+        eligibleView(mockView = mockContainer)
+        whenever(mockContainer.background).thenReturn(mock<Drawable>())
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockContainer, 1f))
+            .thenReturn(GlobalBounds(0, 0, 1000, 500))
+        whenever(mockFallbackMapper.map(any(), any())).thenReturn(CapturedViewMapperResult.None)
+
+        // When
+        val result = testedContainerMapper.map(mockContainer, mappingContext(fakePrivacy))
+
+        // Then
+        assertThat(result).isSameAs(CapturedViewMapperResult.None)
+        verifyNoInteractions(mockRasterizer)
+    }
+
+    @Test
+    fun `M delegate to fallback W map { list view with no background }`() {
+        // Given
+        val mockListView: ListView = mock()
+        eligibleView(mockView = mockListView)
+        val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
+
+        // When
+        testedMapper.map(mockListView, mappingContext)
+
+        // Then
+        verify(mockFallbackMapper).map(mockListView, mappingContext)
+        verifyNoInteractions(mockViewBoundsResolver)
+    }
+
+    @Test
+    fun `M delegate to fallback W map { subclass of RecyclerView with no background }`() {
+        // Given
+        val mockRecyclerView: CustomRecyclerView = mock()
+        eligibleView(mockView = mockRecyclerView)
+        val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
+
+        // When
+        testedMapper.map(mockRecyclerView, mappingContext)
+
+        // Then
+        verify(mockFallbackMapper).map(mockRecyclerView, mappingContext)
+        verifyNoInteractions(mockViewBoundsResolver)
+    }
+
+    @Test
+    fun `M consider for capture W map { container that is not a scrolling list }`() {
+        // Given
+        val mockContainer: ViewGroup = mock()
+        eligibleView(mockView = mockContainer)
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockContainer, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
+
+        // When
+        val result = testedMapper.map(mockContainer, mappingContext) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+    }
+
+    @Test
+    fun `M delegate to fallback without capturing W map and capture { composition host }`() {
+        // Given
+        val mockHost: ViewGroup = mock()
+        val mockRasterizer: ViewRasterizer = mock()
+        val testedHostMapper = CapturedPixelFallbackMapper(
+            fallbackMapper = mockFallbackMapper,
+            internalLogger = mockInternalLogger,
+            viewBoundsResolver = mockViewBoundsResolver,
+            viewRasterizer = mockRasterizer
+        )
+        eligibleView(mockView = mockHost)
+        val fakeFallbackData = CapturedViewData.Mapped(CapturedViewMapperResult.None)
+        whenever(mockFallbackMapper.map(any(), any())).thenReturn(CapturedViewMapperResult.None)
+        whenever(mockFallbackMapper.capture(any(), any())).thenReturn(fakeFallbackData)
+        val mappingContext = mappingContext(ImagePrivacy.MASK_NONE).copy(isCompositionHost = true)
+
+        // When
+        val mapped = testedHostMapper.map(mockHost, mappingContext)
+        val captured = testedHostMapper.capture(mockHost, mappingContext)
+
+        // Then
+        assertThat(mapped).isSameAs(CapturedViewMapperResult.None)
+        assertThat(captured).isSameAs(fakeFallbackData)
+        verifyNoInteractions(mockRasterizer)
     }
 
     @Test
@@ -563,3 +669,5 @@ internal class CapturedPixelFallbackMapperTest {
         verify(mockFallbackMapper).map(mockViewGroup, mappingContext)
     }
 }
+
+private open class CustomRecyclerView(context: Context) : RecyclerView(context)

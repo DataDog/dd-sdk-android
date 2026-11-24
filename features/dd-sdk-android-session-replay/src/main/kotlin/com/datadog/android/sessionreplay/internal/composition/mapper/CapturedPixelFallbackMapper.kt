@@ -11,6 +11,7 @@ import android.graphics.Canvas
 import android.graphics.Rect
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AbsListView
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.ScrollView
@@ -51,7 +52,7 @@ internal class CapturedPixelFallbackMapper(
         // ImageView and ImageButton also draw an image above that background, so they must
         // still reach pixel capture.
         val fallbackResult = fallbackMapper.map(view, mappingContext)
-        if (view.willNotDraw() || (fallbackResult is CapturedViewMapperResult.Wireframes && !hasImageContent(view))) {
+        if (isDescribedWithoutPixels(view, mappingContext, fallbackResult is CapturedViewMapperResult.Wireframes)) {
             return fallbackResult
         }
 
@@ -84,9 +85,24 @@ internal class CapturedPixelFallbackMapper(
     override fun capture(view: View, mappingContext: CapturedMappingContext): CapturedViewData {
         val fallback = fallbackMapper.capture(view, mappingContext)
         // Solid backgrounds retain their copied opacity/coverage flags and deferred style mapping.
-        if (view.willNotDraw() || (fallback.isOcclusionBounded && !hasImageContent(view))) return fallback
+        if (isDescribedWithoutPixels(view, mappingContext, fallback.isOcclusionBounded)) return fallback
         return CapturedViewData.Mapped(map(view, mappingContext))
     }
+
+    /**
+     * Whether [view] needs no pixels: it draws nothing, its fallback output already describes it
+     * ([hasFallbackOutput]) unless an image draws above that, or it is a composition host, whose
+     * content is described by its decomposition and which a raster would duplicate while bypassing
+     * the privacy modifiers inside it.
+     */
+    @UiThread
+    private fun isDescribedWithoutPixels(
+        view: View,
+        mappingContext: CapturedMappingContext,
+        hasFallbackOutput: Boolean
+    ): Boolean = mappingContext.isCompositionHost ||
+        view.willNotDraw() ||
+        (hasFallbackOutput && !hasImageContent(view))
 
     @UiThread
     private fun hasImageContent(view: View): Boolean = view is ImageView && view.drawable != null
@@ -95,13 +111,28 @@ internal class CapturedPixelFallbackMapper(
      * `NestedScrollView`/`RecyclerView` are matched by class name rather than type, the same way
      * [com.datadog.android.sessionreplay.internal.composition.AndroidWindowTraversal] recognizes a
      * Compose host - this module doesn't depend on `androidx.core`/`androidx.recyclerview`, and a
-     * hard dependency isn't worth adding just to widen this check.
+     * hard dependency isn't worth adding just to widen this check. Apps and libraries subclass both
+     * routinely, so a name is matched anywhere up the superclass chain, as a type check would.
      */
     private fun isEdgeEffectOnlyContainer(view: View): Boolean = when (view) {
-        is ScrollView, is HorizontalScrollView -> true
-        else ->
-            view.javaClass.name == "androidx.core.widget.NestedScrollView" ||
-                view.javaClass.name == "androidx.recyclerview.widget.RecyclerView"
+        is ScrollView, is HorizontalScrollView, is AbsListView -> true
+        else -> view.hasSuperclassNamed(EDGE_EFFECT_ONLY_CLASS_NAMES)
+    }
+
+    private fun View.hasSuperclassNamed(names: Set<String>): Boolean {
+        var type: Class<*>? = javaClass
+        while (type != null) {
+            if (type.name in names) return true
+            type = type.superclass
+        }
+        return false
+    }
+
+    private companion object {
+        val EDGE_EFFECT_ONLY_CLASS_NAMES = setOf(
+            "androidx.core.widget.NestedScrollView",
+            "androidx.recyclerview.widget.RecyclerView"
+        )
     }
 }
 
@@ -119,8 +150,11 @@ internal class DefaultViewRasterizer(
     override fun rasterize(view: View): Bitmap? {
         var bitmap: Bitmap? = null
         return try {
-            bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            // A view over the raster budget is drawn smaller rather than allocated at full resolution.
+            val (width, height) = PixelCaptureEligibility.rasterSize(view.width, view.height)
+            bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
+            canvas.scale(width / view.width.toFloat(), height / view.height.toFloat())
             // Match the scroll translation normally applied by the parent before View.draw.
             canvas.translate(-view.scrollX.toFloat(), -view.scrollY.toFloat())
             view.clipBounds?.let(canvas::clipRect)
@@ -132,7 +166,8 @@ internal class DefaultViewRasterizer(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.TELEMETRY,
                 { "Failed to rasterize view for pixel-fallback capture" },
-                e
+                e,
+                onlyOnce = true
             )
             null
         }

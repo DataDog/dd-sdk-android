@@ -54,7 +54,8 @@ internal class ViewPixelCapture(
     ): CapturedViewMapperResult? {
         val imageBounds = GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
         val label = PixelCaptureEligibility.placeholderLabelFor(context.imagePrivacy, imageBounds)
-        if (label != null) return placeholder(context, bounds, label)
+        // A placeholder is terminal: over a container it would hide children that are captured on their own.
+        if (label != null) return if (view is ViewGroup) null else placeholder(context, bounds, label)
         if (containsRestrictedContent(view, context, bounds)) return null
         val wireframe = captureBitmap(view, context, bounds, pixels, rasterize) ?: return null
         return CapturedViewMapperResult.Wireframes(listOf(wireframe), isTerminal = true)

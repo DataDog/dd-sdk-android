@@ -22,6 +22,8 @@ import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptur
  * UI-thread copy, [imagePrivacy] and [textAndInputPrivacy] carry the view's effective privacy
  * (after per-view overrides) for mappers that mask while capturing. Contexts rebuilt for
  * worker-side mapping keep the privacy defaults, so masking cannot be deferred to that step.
+ * [isCompositionHost] marks a view whose content is described by its own decomposition, so mappers
+ * must not capture or mask it as a whole.
  */
 internal data class CapturedMappingContext(
     val identityFactory: CapturedIdentityFactory,
@@ -31,7 +33,8 @@ internal data class CapturedMappingContext(
     val bounds: CapturedBounds? = null,
     val imagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL,
     val textAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
-    val pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp
+    val pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp,
+    val isCompositionHost: Boolean = false
 )
 
 internal sealed interface CapturedViewMapperResult {
