@@ -7,6 +7,7 @@
 package com.datadog.android.flags.integration
 
 import com.datadog.android.flags.integration.tests.utils.CanonicalFixtureMatcher
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import org.assertj.core.api.Assertions.assertThat
@@ -92,6 +93,27 @@ internal class CanonicalFixtureMatcherTest {
         assertThatThrownBy { CanonicalFixtureMatcher.count(JsonObject()) }
             .isInstanceOf(AssertionError::class.java)
             .hasMessageContaining("Invalid _count")
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        delimiter = '|',
+        value = [
+            "9007199254740992.0|9007199254740993",
+            "0.0|1e-400",
+            "{\"a\":[9007199254740992.0]}|{\"a\":[9007199254740993]}",
+            "[0.0]|[1e-400]"
+        ]
+    )
+    fun `M not match rounded or underflowed values W jsonEquals()`(actual: String, expected: String) {
+        // Given
+        val actualValue = Gson().toJsonTree(Gson().fromJson(actual, Any::class.java))
+
+        // When
+        val result = CanonicalFixtureMatcher.jsonEquals(actualValue, json(expected))
+
+        // Then
+        assertThat(result).isFalse()
     }
 
     private fun json(text: String) = JsonParser.parseString(text)
