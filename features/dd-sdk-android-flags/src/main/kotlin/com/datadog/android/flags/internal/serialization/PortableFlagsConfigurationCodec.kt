@@ -59,19 +59,32 @@ internal class PortableFlagsConfigurationCodec {
         val payload = parseObject(response.asString)
         val attributes = FlagsJson.objectValue(FlagsJson.objectValue(payload?.get("data")).get("attributes"))
         val createdAt = attributes.get("createdAt")
-        return if (isString(createdAt) || isNumber(createdAt)) {
-            val flags = FlagsJson.objectValue(attributes.get("flags"))
+        val flags = FlagsJson.objectValue(attributes.get("flags"))
+        val evaluationErrors = attributes.get("flagEvaluationErrors")?.let { FlagsJson.objectValue(it) }
+            ?: JsonObject()
+        val conflictingKeys = evaluationErrors.keySet().any { flags.has(it) }
+        return if ((isString(createdAt) || isNumber(createdAt)) && !conflictingKeys) {
             val obfuscation = FlagsJson.readObfuscation(attributes)
-            if (obfuscation != null) FlagsJson.validateKeys(flags.keySet().iterator())
+            if (obfuscation != null) {
+                FlagsJson.validateKeys(flags.keySet().iterator())
+                FlagsJson.validateKeys(evaluationErrors.keySet().iterator())
+            }
+            val dependentFlags = DependentFlagsJson(attributes, obfuscated = obfuscation != null)
             val consent = FlagsJson.readConsent(attributes)
             val assignments = mutableMapOf<String, PrecomputedFlag>()
             val errors = mutableMapOf<String, String>()
             flags.entrySet().forEach { (key, value) ->
-                val assignment = readFlag(value)
+                val assignment = readFlag(value, dependentFlags)
                 if (assignment == null) {
                     errors[key] = "Invalid precomputed flag configuration"
                 } else {
                     assignments[key] = assignment.copy(observeFullEvaluationData = consent)
+                }
+            }
+            // A valid evaluation error leaves its flag absent, so the caller gets the default value.
+            evaluationErrors.entrySet().forEach { (key, value) ->
+                if (!dependentFlags.isValidEvaluationError(value)) {
+                    errors[key] = "Invalid precomputed flag evaluation error"
                 }
             }
             Precomputed(
@@ -96,12 +109,14 @@ internal class PortableFlagsConfigurationCodec {
             (context == null || (context is JsonObject && validContext(context)))
     }
 
-    private fun readFlag(value: JsonElement): PrecomputedFlag? {
+    private fun readFlag(value: JsonElement, dependentFlags: DependentFlagsJson): PrecomputedFlag? {
         val flag = value as? JsonObject
         val doLog = flag?.get("doLog")
         val variant = flag?.get("variationValue")
         val validDoLog = doLog?.isJsonPrimitive == true && doLog.asJsonPrimitive.isBoolean
-        val validMetadata = flag?.let { STRING_FIELDS.all { key -> isString(it.get(key)) } } == true && validDoLog
+        val validMetadata = flag?.let {
+            STRING_FIELDS.all { key -> isString(it.get(key)) } && dependentFlags.isValidAssignment(it)
+        } == true && validDoLog
         if (flag == null || variant == null || !validMetadata) {
             return null
         }

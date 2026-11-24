@@ -203,17 +203,8 @@ internal class PortableFlagsConfigurationCodecTest {
         ]
     )
     fun `M report malformed flag values W decode()`(changes: String) {
-        // Given
-        val fakeWire = wire()
-        val entry = fakeWire.getAsJsonObject("precomputed")
-        val response = json(entry.get("response").asString)
-        val flag = response.getAsJsonObject("data").getAsJsonObject("attributes")
-            .getAsJsonObject("flags").getAsJsonObject("flag")
-        json(changes).entrySet().forEach { (key, value) -> flag.add(key, value) }
-        entry.addProperty("response", response.toString())
-
         // When
-        val decoded = testedCodec.decode(fakeWire.toString())
+        val decoded = testedCodec.decode(wire(flagFields = changes).toString())
 
         // Then
         val precomputed = checkNotNull(decoded.precomputed)
@@ -516,6 +507,174 @@ internal class PortableFlagsConfigurationCodecTest {
         }
     }
 
+    @Test
+    fun `M keep flags with valid evaluation errors absent W decode() and encode()`() {
+        // Given
+        val fakeDependencies = """[{"flagKey":"parent","isPresentInAssignment":false,"reason":null},
+            {"flagKey":"other","reason":"ERROR","errorCode":"FLAG_NOT_FOUND","errorMessage":"missing"}]"""
+        val fakeWire = wire(
+            metadata = """{"flagEvaluationErrors":{"failed":{"reason":"ERROR","errorCode":"GENERAL",
+                "errorMessage":"failed","dependencyEvaluations":$fakeDependencies}}}""",
+            flagFields = """{"dependencyEvaluations":$fakeDependencies}"""
+        )
+
+        // When
+        val decoded = testedCodec.decode(fakeWire.toString())
+        val restored = testedCodec.decode(testedCodec.encode(decoded))
+
+        // Then
+        for (configuration in listOf(decoded, restored)) {
+            assertThat(configuration.failure).isNull()
+            val precomputed = checkNotNull(configuration.precomputed)
+            assertThat(precomputed.assignments.flags.keys).containsExactly("flag")
+            assertThat(precomputed.flagErrors).isEmpty()
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["null", "[]", "\"error\"", "1"])
+    fun `M reject non-object flag evaluation errors W decode()`(errors: String) {
+        // When
+        val decoded = testedCodec.decode(wire(metadata = """{"flagEvaluationErrors":$errors}""").toString())
+
+        // Then
+        assertThat(decoded.failure).isEqualTo(Failure.INVALID_PRECOMPUTED)
+        assertThat(decoded.precomputed).isNull()
+    }
+
+    @Test
+    fun `M reject flag with assignment and evaluation error W decode()`() {
+        // Given
+        val fakeWire = wire(metadata = """{"flagEvaluationErrors":{"flag":$EVALUATION_ERROR}}""")
+
+        // When
+        val decoded = testedCodec.decode(fakeWire.toString())
+
+        // Then
+        assertThat(decoded.failure).isEqualTo(Failure.INVALID_PRECOMPUTED)
+        assertThat(decoded.precomputed).isNull()
+    }
+
+    @ParameterizedTest
+    @CsvSource("$OTHER_DIGEST,true", "failed,false")
+    fun `M validate evaluation error keys in encoded payload W decode()`(key: String, accepted: Boolean) {
+        // Given
+        val fakeMetadata = json(ENCODING).apply { add("flagEvaluationErrors", json("""{"$key":$EVALUATION_ERROR}""")) }
+
+        // When
+        val decoded = testedCodec.decode(wire(key = DIGEST, metadata = fakeMetadata.toString()).toString())
+
+        // Then
+        assertThat(decoded.failure).isEqualTo(if (accepted) null else Failure.INVALID_PRECOMPUTED)
+        if (accepted) assertThat(decoded.precomputed?.flagErrors).isEmpty()
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "null", "{}", "{\"reason\":\"ERROR\"}", "{\"reason\":\"STATIC\",\"errorCode\":\"GENERAL\"}",
+            "{\"reason\":\"ERROR\",\"errorCode\":\"PARSE_ERROR\"}",
+            "{\"reason\":\"ERROR\",\"errorCode\":\"GENERAL\",\"errorMessage\":\"\"}",
+            "{\"reason\":\"ERROR\",\"errorCode\":\"GENERAL\",\"errorMessage\":null}",
+            "{\"reason\":\"ERROR\",\"errorCode\":\"GENERAL\",\"dependencyEvaluations\":{}}"
+        ]
+    )
+    fun `M report invalid flag evaluation error W decode()`(error: String) {
+        // When
+        val decoded = testedCodec.decode(wire(metadata = """{"flagEvaluationErrors":{"failed":$error}}""").toString())
+
+        // Then
+        val precomputed = checkNotNull(decoded.precomputed)
+        assertThat(precomputed.assignments.flags.keys).containsExactly("flag")
+        assertThat(precomputed.flagErrors)
+            .containsExactlyEntriesOf(mapOf("failed" to "Invalid precomputed flag evaluation error"))
+    }
+
+    @Test
+    fun `M report error reason in assignment W decode()`() {
+        // When
+        val decoded = testedCodec.decode(wireWithFlagField("reason", "\"ERROR\"").toString())
+
+        // Then
+        val precomputed = checkNotNull(decoded.precomputed)
+        assertThat(precomputed.assignments.flags.keys).containsExactly("flag")
+        assertThat(precomputed.flagErrors)
+            .containsExactlyEntriesOf(mapOf("modified" to "Invalid precomputed flag configuration"))
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "null", "{}", "[null]", "[{}]", "[{\"flagKey\":\"\",\"isPresentInAssignment\":true}]",
+            "[{\"flagKey\":\"parent\"}]", "[{\"flagKey\":\"parent\",\"isPresentInAssignment\":\"true\"}]",
+            "[{\"flagKey\":\"parent\",\"isPresentInAssignment\":true,\"reason\":\"STATIC\"}]",
+            "[{\"flagKey\":\"parent\",\"reason\":\"ERROR\"}]",
+            "[{\"flagKey\":\"parent\",\"reason\":\"ERROR\",\"errorCode\":\"GENERAL\",\"errorMessage\":\"\"}]",
+            "[{\"flagKey\":\"parent\",\"reason\":\"ERROR\",\"errorCode\":\"GENERAL\"," +
+                "\"isPresentInAssignment\":true}]",
+            "[{\"flagKey\":\"parent\",\"isPresentInAssignment\":true}," +
+                "{\"flagKey\":\"parent\",\"isPresentInAssignment\":false}]"
+        ]
+    )
+    fun `M report invalid dependency evaluations W decode()`(dependencies: String) {
+        // When
+        val decoded = testedCodec.decode(wireWithFlagField("dependencyEvaluations", dependencies).toString())
+
+        // Then
+        val precomputed = checkNotNull(decoded.precomputed)
+        assertThat(precomputed.assignments.flags.keys).containsExactly("flag")
+        assertThat(precomputed.flagErrors)
+            .containsExactlyEntriesOf(mapOf("modified" to "Invalid precomputed flag configuration"))
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "$DEPENDENCY_KEY_SCHEME,$ENCRYPTED_KEY,true",
+        "$DEPENDENCY_KEY_SCHEME,AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBka,false",
+        "$DEPENDENCY_KEY_SCHEME,${ENCRYPTED_KEY}AAA,false",
+        "$DEPENDENCY_KEY_SCHEME,$ENCRYPTED_KEY+,false",
+        "$DEPENDENCY_KEY_SCHEME,parent,false",
+        "unknown,$ENCRYPTED_KEY,false"
+    )
+    fun `M validate encrypted dependency keys W decode()`(scheme: String, flagKey: String, accepted: Boolean) {
+        // When
+        val decoded = testedCodec.decode(encodedWireWithDependencies(scheme, "[${dependency(flagKey)}]").toString())
+
+        // Then
+        val precomputed = checkNotNull(decoded.precomputed)
+        assertThat(precomputed.assignments.flags.containsKey(DIGEST)).isEqualTo(accepted)
+        assertThat(precomputed.flagErrors.containsKey(DIGEST)).isEqualTo(!accepted)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M accept only empty dependency evaluations W decode() {no dependency key scheme}`(empty: Boolean) {
+        // Given
+        val fakeDependencies = if (empty) "[]" else "[${dependency(ENCRYPTED_KEY)}]"
+
+        // When
+        val decoded = testedCodec.decode(encodedWireWithDependencies(null, fakeDependencies).toString())
+
+        // Then
+        val precomputed = checkNotNull(decoded.precomputed)
+        assertThat(precomputed.assignments.flags.containsKey(DIGEST)).isEqualTo(empty)
+        assertThat(precomputed.flagErrors.containsKey(DIGEST)).isEqualTo(!empty)
+    }
+
+    private fun dependency(flagKey: String) = """{"flagKey":"$flagKey","isPresentInAssignment":true}"""
+
+    private fun encodedWireWithDependencies(scheme: String?, dependencies: String): JsonObject {
+        val metadata = json(ENCODING)
+        scheme?.let {
+            metadata.getAsJsonObject("obfuscation").add("dependencyKeyEncryption", json("""{"scheme":"$it"}"""))
+        }
+        return wire(
+            key = DIGEST,
+            metadata = metadata.toString(),
+            flagFields = """{"dependencyEvaluations":$dependencies}"""
+        )
+    }
+
     private fun nestedArray(depth: Int): String = "[".repeat(depth) + "null" + "]".repeat(depth)
 
     // Avoid recursive JSON serialization while constructing intentionally excessive nesting.
@@ -538,7 +697,8 @@ internal class PortableFlagsConfigurationCodecTest {
         key: String = "flag",
         type: String = "boolean",
         value: String = "true",
-        metadata: String = "{}"
+        metadata: String = "{}",
+        flagFields: String = "{}"
     ): JsonObject {
         val attributes = json(
             """{"createdAt":"2026-01-01T00:00:00Z","observeFullEvaluationData":true,
@@ -547,6 +707,8 @@ internal class PortableFlagsConfigurationCodecTest {
               "variationValue":$value,"reason":"TARGETING_MATCH","doLog":true,"serialId":42}}}"""
         )
         json(metadata).entrySet().forEach { (name, field) -> attributes.add(name, field) }
+        val flag = attributes.getAsJsonObject("flags").getAsJsonObject(key)
+        json(flagFields).entrySet().forEach { (name, field) -> flag.add(name, field) }
         val response = JsonObject().apply { add("data", JsonObject().apply { add("attributes", attributes) }) }
         return JsonObject().apply {
             addProperty("version", 1)
@@ -562,5 +724,9 @@ internal class PortableFlagsConfigurationCodecTest {
         const val DIGEST = "9817872c144b018abd77e3915bd77e2c27f4f534dccff8ffaca27361e3a5e1ee"
         const val ENCODING = """{"obfuscated":true,"obfuscation":{
             "scheme":"flag-key-sha256-v1","salt":"000102030405060708090a0b0c0d0e0f"}}"""
+        const val OTHER_DIGEST = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        const val EVALUATION_ERROR = """{"reason":"ERROR","errorCode":"GENERAL"}"""
+        const val DEPENDENCY_KEY_SCHEME = "dependency-key-hkdf-sha256-aes-256-gcm-v1"
+        const val ENCRYPTED_KEY = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGw"
     }
 }
