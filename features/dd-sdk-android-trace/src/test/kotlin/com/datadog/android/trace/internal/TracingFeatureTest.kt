@@ -84,8 +84,8 @@ internal class TracingFeatureTest {
         val ddSpanToSpanEventMapper = traceWriter.ddSpanToSpanEventMapper
         assertThat(ddSpanToSpanEventMapper).isInstanceOfSatisfying(CoreTracerSpanToSpanEventMapper::class.java) {
             assertThat(it.networkInfoEnabled).isEqualTo(fakeNetworkInfoEnabled)
-            assertThat(it.clientSideStatsEnabled).isEqualTo(fakeClientStatsEnabled)
         }
+        assertThat(traceWriter.clientSideStatsEnabled).isEqualTo(fakeClientStatsEnabled)
     }
 
     @Test

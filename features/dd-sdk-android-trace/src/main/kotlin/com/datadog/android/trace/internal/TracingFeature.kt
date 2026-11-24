@@ -72,7 +72,8 @@ internal class TracingFeature(
         val internalLogger = sdkCore.internalLogger
         return CoreTraceWriter(
             sdkCore,
-            ddSpanToSpanEventMapper = CoreTracerSpanToSpanEventMapper(networkInfoEnabled, clientSideStatsEnabled),
+            ddSpanToSpanEventMapper = CoreTracerSpanToSpanEventMapper(networkInfoEnabled),
+            clientSideStatsEnabled = clientSideStatsEnabled,
             eventMapper = SpanEventMapperWrapper(spanEventMapper, internalLogger),
             serializer = SpanEventSerializer(internalLogger),
             internalLogger = internalLogger

@@ -60,10 +60,7 @@ internal class ClientStatsFeature(
         val executor = sdkCore.createScheduledExecutorService("client-side-stats-aggregator")
         val concentrator = StatsConcentrator(
             sdkCore = internalSdkCore,
-            ddSpanToSpanEventMapper = CoreTracerSpanToSpanEventMapper(
-                networkInfoEnabled,
-                clientSideStatsEnabled = true
-            ),
+            ddSpanToSpanEventMapper = CoreTracerSpanToSpanEventMapper(networkInfoEnabled),
             eventMapper = SpanEventMapperWrapper(spanEventMapper, sdkCore.internalLogger),
             executorService = executor,
             statsWriter = BatchStatsWriter(sdkCore, Config.get().runtimeId),
