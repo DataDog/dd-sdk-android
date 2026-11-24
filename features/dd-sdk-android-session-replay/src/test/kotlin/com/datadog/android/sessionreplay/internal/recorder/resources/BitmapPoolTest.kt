@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.Bitmap
-import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.utils.CacheUtils
 import fr.xgouchet.elmyr.Forge
@@ -27,7 +26,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -52,9 +50,6 @@ internal class BitmapPoolTest {
     @Mock
     lateinit var mockCacheUtils: CacheUtils<String, Bitmap>
 
-    @Mock
-    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
-
     @Spy
     lateinit var spyBitmapPoolHelper: BitmapPoolHelper
 
@@ -77,7 +72,6 @@ internal class BitmapPoolTest {
         }.`when`(spyBitmapPoolHelper).safeCall<Any>(any())
 
         testedCache = BitmapPool(
-            buildSdkVersionProvider = mockBuildSdkVersionProvider,
             bitmapPoolHelper = spyBitmapPoolHelper,
             cacheUtils = mockCacheUtils
         )
@@ -172,17 +166,6 @@ internal class BitmapPoolTest {
     }
 
     @Test
-    fun `M add to pool W put() { and bitmap not in pool, api N+ }`() {
-        // When
-        whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
-        testedCache.put(mockBitmap)
-        val actual = testedCache.getBitmapByProperties(width, height, mockConfig)
-
-        // Then
-        assertThat(actual).isEqualTo(mockBitmap)
-    }
-
-    @Test
     fun `M not allow immutable bitmaps W put()`() {
         // Given
         whenever(mockBitmap.isMutable).thenReturn(false)
@@ -215,20 +198,20 @@ internal class BitmapPoolTest {
         // Given
         val countDownLatch = CountDownLatch(3)
         testedCache.put(mockBitmap)
-        var numBmpsRetrievedFromPool = 0
+        var numBitmapsRetrievedFromPool = 0
 
         // When
         repeat(3) {
             Thread {
                 val result = testedCache.get(fakeKey)
-                if (result != null) numBmpsRetrievedFromPool++
+                if (result != null) numBitmapsRetrievedFromPool++
                 countDownLatch.countDown()
             }.start()
         }
 
         // Then
         countDownLatch.await(5, TimeUnit.SECONDS)
-        assertThat(numBmpsRetrievedFromPool).isEqualTo(1)
+        assertThat(numBitmapsRetrievedFromPool).isEqualTo(1)
     }
 
     @Test

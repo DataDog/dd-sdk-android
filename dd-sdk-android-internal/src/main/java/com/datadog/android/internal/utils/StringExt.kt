@@ -32,3 +32,21 @@ fun String.fromBase64(): String? {
         null
     }
 }
+
+/**
+ * Replaces each non-whitespace Unicode code point with `x`, preserving whitespace.
+ */
+fun String.obfuscate(): String {
+    return buildString(length) {
+        this@obfuscate.codePoints().forEach { codePoint ->
+            if (Character.isWhitespace(codePoint)) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // codePoints() only emits valid code points.
+                appendCodePoint(codePoint)
+            } else {
+                append(CHARACTER_MASK)
+            }
+        }
+    }
+}
+
+private const val CHARACTER_MASK = 'x'

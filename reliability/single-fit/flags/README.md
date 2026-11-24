@@ -69,11 +69,11 @@ then builds the privacy test APK using those copied AARs through `-PflagsArtifac
 The job retains both AARs and the APK as artifacts, with their SHA-256 hashes recorded in
 `build/flags-device-artifacts/SHA256SUMS`.
 The macOS `test-pyramid:core-it-and-ndk` job verifies those hashes and uses
-`ci/scripts/run_core_it_and_ndk_apks.py` to run the prebuilt APK on Android API 23, 28 and 37.
+`ci/scripts/run_core_it_and_ndk_apks.py` to run the prebuilt APK on Android API 24, 28 and 37.
 The three emulators run concurrently; each runs core integration and Flags privacy tests, and
 API 37 also runs NDK tests. No Gradle build runs on the emulator host.
-The runner uploads `instrumentation-results-api-{23,28,37}-flags-privacy.xml` and retains the
-corresponding `instrumentation-output-api-{23,28,37}-flags-privacy.txt` logs.
+The runner uploads `instrumentation-results-api-{24,28,37}-flags-privacy.xml` and retains the
+corresponding `instrumentation-output-api-{24,28,37}-flags-privacy.txt` logs.
 
 To run just the prebuilt privacy APK on an already booted device, first build and copy the AARs
 as above, then:

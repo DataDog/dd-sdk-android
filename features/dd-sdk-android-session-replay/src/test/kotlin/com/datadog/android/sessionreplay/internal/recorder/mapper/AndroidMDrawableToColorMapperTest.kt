@@ -8,7 +8,8 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 //noinspection SuspiciousImport
 import android.R
-import android.graphics.Paint
+import android.content.res.ColorStateList
+import android.graphics.ColorFilter
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -18,13 +19,11 @@ import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.StateListDrawable
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.mapper.AndroidMDrawableToColorMapper.Companion.fillPaintField
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -32,6 +31,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -43,20 +43,29 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(value = ForgeConfigurator::class)
-open class AndroidMDrawableToColorMapperTest {
+internal open class AndroidMDrawableToColorMapperTest {
 
     lateinit var testedMapper: DrawableToColorMapper
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockGradientDrawable: GradientDrawable
+
+    @Mock
+    lateinit var mockColorStateList: ColorStateList
+
+    @Mock
+    lateinit var mockColorFilter: ColorFilter
+
     @BeforeEach
     fun `set up`() {
         testedMapper = createTestedMapper()
-    }
-
-    open fun createTestedMapper(): DrawableToColorMapper {
-        return AndroidMDrawableToColorMapper()
+        whenever(mockGradientDrawable.color) doReturn mockColorStateList
+        whenever(mockGradientDrawable.state) doReturn intArrayOf(R.attr.state_enabled)
+        whenever(mockGradientDrawable.alpha) doReturn 255
+        whenever(mockGradientDrawable.colorFilter) doReturn mockColorFilter
     }
 
     @Test
@@ -153,45 +162,68 @@ open class AndroidMDrawableToColorMapperTest {
     }
 
     @Test
-    open fun `M map GradientDrawable to fill paint's color W mapDrawableToColor()`(
-        @IntForgery drawableColor: Int
+    fun `M map GradientDrawable to state fill color with combined alpha W mapDrawableToColor()`(
+        @IntForgery fakeColor: Int,
+        @IntForgery(min = 16, max = 255) fakeColorAlpha: Int,
+        @IntForgery(min = 16, max = 255) fakeDrawableAlpha: Int,
+        @IntForgery fakeDefaultColor: Int
     ) {
         // Given
-        val baseColor = drawableColor and 0xFFFFFF
-        val baseAlpha = (drawableColor.toLong() and 0xFF000000) shr 24
-        assumeTrue(baseAlpha != 0L)
-        val mockFillPaint = mock<Paint>().apply {
-            whenever(this.color) doReturn baseColor
-            whenever(this.alpha) doReturn baseAlpha.toInt()
-        }
-        val gradientDrawable = GradientDrawable().apply {
-            fillPaintField?.set(this, mockFillPaint)
-        }
+        val fakeFillColor = (fakeColor and 0x00FFFFFF) or (fakeColorAlpha shl 24)
+        whenever(mockColorStateList.defaultColor) doReturn fakeDefaultColor
+        whenever(mockColorStateList.getColorForState(mockGradientDrawable.state, fakeDefaultColor))
+            .doReturn(fakeFillColor)
+        whenever(mockGradientDrawable.alpha) doReturn fakeDrawableAlpha
+        val expectedAlpha = fakeColorAlpha * fakeDrawableAlpha / 255
+        val expectedColor = (fakeColor and 0x00FFFFFF) or (expectedAlpha shl 24)
 
         // When
-        val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
+        val result = testedMapper.mapDrawableToColor(mockGradientDrawable, mockInternalLogger)
 
         // Then
-        assertThat(result).isEqualTo(drawableColor)
+        assertThat(result).isEqualTo(expectedColor)
     }
 
     @Test
-    fun `M map GradientDrawable to fill paint's color W mapDrawableToColor() {fully transparent}`(
-        @IntForgery drawableColor: Int
+    fun `M map GradientDrawable to null W mapDrawableToColor() {transparent fill}`(
+        @IntForgery fakeColor: Int
     ) {
         // Given
-        val baseColor = drawableColor and 0xFFFFFF
-        val baseAlpha = 0L
-        val mockFillPaint = mock<Paint>().apply {
-            whenever(this.color) doReturn baseColor
-            whenever(this.alpha) doReturn baseAlpha.toInt()
-        }
-        val gradientDrawable = GradientDrawable().apply {
-            fillPaintField?.set(this, mockFillPaint)
-        }
+        whenever(mockColorStateList.getColorForState(any(), any())) doReturn (fakeColor and 0x00FFFFFF)
 
         // When
-        val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
+        val result = testedMapper.mapDrawableToColor(mockGradientDrawable, mockInternalLogger)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M map GradientDrawable to null W mapDrawableToColor() {transparent drawable}`(
+        @IntForgery fakeColor: Int
+    ) {
+        // Given
+        whenever(mockColorStateList.getColorForState(any(), any())) doReturn (fakeColor or 0xFF000000.toInt())
+        whenever(mockGradientDrawable.alpha) doReturn 0
+
+        // When
+        val result = testedMapper.mapDrawableToColor(mockGradientDrawable, mockInternalLogger)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M map GradientDrawable to null W mapDrawableToColor() {combined alpha rounds to zero}`(
+        @IntForgery fakeColor: Int
+    ) {
+        // Given
+        val fakeFillColor = (fakeColor and 0x00FFFFFF) or (1 shl 24)
+        whenever(mockColorStateList.getColorForState(any(), any())) doReturn fakeFillColor
+        whenever(mockGradientDrawable.alpha) doReturn 1
+
+        // When
+        val result = testedMapper.mapDrawableToColor(mockGradientDrawable, mockInternalLogger)
 
         // Then
         assertThat(result).isNull()
@@ -204,6 +236,7 @@ open class AndroidMDrawableToColorMapperTest {
         // Given
         val currentStateDrawable = mock<ColorDrawable>().apply {
             whenever(this.color) doReturn drawableColor
+            whenever(this.alpha) doReturn (drawableColor ushr 24)
         }
 
         val stateListDrawable = mock<StateListDrawable>().apply {
@@ -283,55 +316,31 @@ open class AndroidMDrawableToColorMapperTest {
     }
 
     @Test
-    fun `M return null W resolveGradientDrawableNPlus() {public API path, no color filter}`(
-        @IntForgery fillColor: Int
+    fun `M map GradientDrawable to null W mapDrawableToColor() {no color filter}`(
+        @IntForgery fakeColor: Int
     ) {
         // Given
-        val baseAlpha = (fillColor.toLong() and 0xFF000000) shr 24
-        assumeTrue(baseAlpha != 0L)
-        val testableMMapper = TestableMMapper().apply { fakeResolvedColor = fillColor }
-        val gradientDrawable = GradientDrawable() // colorFilter is null by default
+        whenever(mockColorStateList.getColorForState(any(), any())) doReturn (fakeColor or 0xFF000000.toInt())
+        whenever(mockGradientDrawable.colorFilter) doReturn null
 
         // When
-        val result = testableMMapper.resolveGradientDrawableNPlus(gradientDrawable)
+        val result = testedMapper.mapDrawableToColor(mockGradientDrawable, mockInternalLogger)
 
         // Then
         assertThat(result).isNull()
     }
 
     @Test
-    fun `M return null W resolveGradientDrawableNPlus() {public API path, fully transparent}`(
-        @IntForgery fillColor: Int
-    ) {
+    fun `M map GradientDrawable to null W mapDrawableToColor() {no fill color}`() {
         // Given
-        val testableMMapper = TestableMMapper().apply { fakeResolvedColor = fillColor and 0x00FFFFFF }
-        val gradientDrawable = GradientDrawable()
+        whenever(mockGradientDrawable.color) doReturn null
 
         // When
-        val result = testableMMapper.resolveGradientDrawableNPlus(gradientDrawable)
+        val result = testedMapper.mapDrawableToColor(mockGradientDrawable, mockInternalLogger)
 
         // Then
         assertThat(result).isNull()
     }
 
-    @Test
-    fun `M return null W resolveGradientDrawableNPlus() {public API path, no fill color}`() {
-        // Given
-        val testableMMapper = TestableMMapper().apply { fakeResolvedColor = null }
-        val gradientDrawable = GradientDrawable()
-
-        // When
-        val result = testableMMapper.resolveGradientDrawableNPlus(gradientDrawable)
-
-        // Then
-        assertThat(result).isNull()
-    }
-
-    // Seam to test the N+ public API branch: only overrides resolveGradientFillColor so that
-    // resolveGradientDrawableNPlus is the real production code under test.
-    private class TestableMMapper : AndroidMDrawableToColorMapper() {
-        var fakeResolvedColor: Int? = null
-
-        override fun resolveGradientFillColor(drawable: GradientDrawable): Int? = fakeResolvedColor
-    }
+    protected open fun createTestedMapper(): DrawableToColorMapper = AndroidMDrawableToColorMapper()
 }

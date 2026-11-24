@@ -10,15 +10,12 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.os.Build
 import android.telephony.TelephonyManager
-import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.getSystemServiceAs
 
-@RequiresApi(Build.VERSION_CODES.N)
 internal class CallbackNetworkInfoProvider(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val internalLogger: InternalLogger

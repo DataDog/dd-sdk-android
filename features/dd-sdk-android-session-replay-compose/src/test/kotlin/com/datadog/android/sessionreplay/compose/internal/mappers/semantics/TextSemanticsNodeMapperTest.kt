@@ -13,11 +13,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.obfuscate
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -106,14 +106,18 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
             fakeBounds,
             fakeDensity
         )
+
+        // When
         val actual = testedTextSemanticsNodeMapper.map(
             mockNode,
             fakeUiContext,
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
+
+        // Then
         val expectedText = if (fakeUiContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_ALL) {
-            StringObfuscator.getStringObfuscator().obfuscate(fakeTextLayoutInfo.text)
+            fakeTextLayoutInfo.text.obfuscate()
         } else {
             fakeTextLayoutInfo.text
         }
@@ -144,13 +148,17 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
             fakeBounds,
             fakeDensity
         )
+
+        // When
         val actual = testedTextSemanticsNodeMapper.map(
             mockNode,
             fakeUiContext,
             mockAsyncJobStatusCallback,
             mockInternalLogger
         )
-        val expectedText = StringObfuscator.getStringObfuscator().obfuscate(fakeTextLayoutInfo.text)
+
+        // Then
+        val expectedText = fakeTextLayoutInfo.text.obfuscate()
         val expected = MobileSegment.Wireframe.TextWireframe(
             id = fakeSemanticsId.toLong(),
             x = (fakeBounds.left / fakeDensity).toLong(),
@@ -170,9 +178,8 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
 
     @Test
     fun `M pass down the override privacy W privacy is override`(forge: Forge) {
-        val mockSemanticsNode = mockSemanticsNodeWithBound {}
-
         // Given
+        val mockSemanticsNode = mockSemanticsNodeWithBound {}
         val fakeTextInputPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java)
 
         whenever(mockSemanticsUtils.getTextAndInputPrivacyOverride(mockSemanticsNode)) doReturn fakeTextInputPrivacy

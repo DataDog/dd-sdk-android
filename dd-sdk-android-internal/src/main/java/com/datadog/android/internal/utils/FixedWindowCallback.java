@@ -131,7 +131,6 @@ public class FixedWindowCallback implements Window.Callback {
         return delegate.onPreparePanel(featureId, view, menu);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onProvideKeyboardShortcuts(List<KeyboardShortcutGroup> data, @Nullable Menu menu, int deviceId) {
         delegate.onProvideKeyboardShortcuts(data, menu, deviceId);

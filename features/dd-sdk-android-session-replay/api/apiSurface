@@ -86,10 +86,6 @@ class com.datadog.android.sessionreplay._SessionReplayInternalProxy
 class com.datadog.android.sessionreplay.internal.TouchPrivacyManager
   constructor(com.datadog.android.sessionreplay.TouchPrivacy)
   fun addTouchOverrideArea(android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy)
-interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
-  fun obfuscate(String): String
-  companion object 
-    fun getStringObfuscator(): StringObfuscator
 interface com.datadog.android.sessionreplay.recorder.InteropViewCallback
   fun map(android.view.View, MappingContext): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 data class com.datadog.android.sessionreplay.recorder.MappingContext

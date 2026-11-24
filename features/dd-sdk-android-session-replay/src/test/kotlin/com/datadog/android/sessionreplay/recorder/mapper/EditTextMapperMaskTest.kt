@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.recorder.mapper
 
+import com.datadog.android.internal.utils.obfuscate
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.extension.ExtendWith
@@ -30,7 +30,7 @@ internal class EditTextMapperMaskTest : EditTextMapperTest() {
     }
 
     override fun expectedPrivacyCompliantHint(hint: String): String {
-        return StringObfuscator.getStringObfuscator().obfuscate(hint)
+        return hint.obfuscate()
     }
 
     override fun privacyOption(): TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL

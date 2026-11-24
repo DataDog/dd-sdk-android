@@ -6,7 +6,6 @@
 
 package com.datadog.tools.unit.extensions
 
-import android.annotation.SuppressLint
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
@@ -94,7 +93,6 @@ class TestConfigurationExtension :
         callTestConfigurations(forge, reverseCallOrder, operation)
     }
 
-    @SuppressLint("NewApi")
     private fun ExtensionContext.callTestConfigurations(
         forge: Forge,
         reverseCallOrder: Boolean,
@@ -116,7 +114,6 @@ class TestConfigurationExtension :
         }
     }
 
-    @SuppressLint("NewApi")
     private fun ExtensionContext.getForge(): Forge? {
         return ForgeExtension.getForge(this)
     }

@@ -20,7 +20,6 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal._TraceInternalProxy.setTraceId128BitGenerationEnabled
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
-import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.TracerBuilder
@@ -42,6 +41,7 @@ class OtelTracerProvider internal constructor(
 ) : TracerProvider {
 
     private val tracers: MutableMap<String, Tracer> = mutableMapOf()
+
     override fun get(instrumentationName: String): Tracer {
         val tracer = tracers[instrumentationName]
         return if (tracer == null) {
@@ -129,37 +129,22 @@ class OtelTracerProvider internal constructor(
          * Builds a [TracerProvider] based on the current state of this Builder.
          */
         fun build(): TracerProvider {
-            return executeIfJavaFunctionPackageExists(
-                internalLogger = sdkCore.internalLogger,
-                defaultActionReturnValue = TracerProvider.noop()
-            ) {
-                val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
-                val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
-                if (tracingFeature != null && internalCoreWriterProvider != null) {
-                    // update meta for the configuration telemetry reporting, can be done directly from this thread
-                    sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) {
-                        it[IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] = true
-                        it[OPENTELEMETRY_API_VERSION_CONFIG_KEY] =
-                            BuildConfig.OPENTELEMETRY_API_VERSION_NAME
-                    }
+            val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
+            if (tracingFeature is InternalCoreWriterProvider) {
+                // update meta for the configuration telemetry reporting, can be done directly from this thread
+                sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) {
+                    it[IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] = true
+                    it[OPENTELEMETRY_API_VERSION_CONFIG_KEY] =
+                        BuildConfig.OPENTELEMETRY_API_VERSION_NAME
                 }
-
-                OtelTracerProvider(createDatadogTracer(), sdkCore.internalLogger)
             }
-        }
 
-        private fun createDatadogTracer(): DatadogTracer {
-            val datadogTracer = builderDelegate
-                .withServiceName(serviceName)
-                .also(_TraceInternalProxy::setSdkV2Compatible)
-                .build()
-
-            return datadogTracer
+            return OtelTracerProvider(createDatadogTracer(), sdkCore.internalLogger)
         }
 
         /**
          * Sets the tracing header styles that may be injected by this tracer.
-         * @param headerTypes the list of header types injected (default = datadog style headers)
+         * @param headerTypes the header types injected (default = Datadog and W3C Trace Context headers)
          */
         fun setTracingHeaderTypes(headerTypes: Set<TracingHeaderType>): Builder {
             builderDelegate.withTracingHeadersTypes(headerTypes)
@@ -209,7 +194,7 @@ class OtelTracerProvider internal constructor(
 
         /**
          * Sets the trace rate limit. This is the maximum number of traces per second that will be
-         * accepted. Please not that this property is used in conjunction with the sample rate. If no sample rate
+         * accepted. Please note that this property is used in conjunction with the sample rate. If no sample rate
          * is provided this property and its related logic will be ignored.
          * @param traceRateLimit the trace rate limit as a value between 1 and Int.MAX_VALUE (default is Int.MAX_VALUE)
          */
@@ -221,8 +206,8 @@ class OtelTracerProvider internal constructor(
         }
 
         /**
-         * Enables the trace bundling with the current active View. If this feature is enabled all
-         * the spans from this moment on will be bundled with the current view information and you
+         * Enables the trace bundling with the current active View. If this feature is enabled, all
+         * the spans from this moment on will be bundled with the current view information, and you
          * will be able to see all the traces sent during a specific view in the RUM Explorer.
          * @param enabled true by default
          */
@@ -232,6 +217,11 @@ class OtelTracerProvider internal constructor(
         }
 
         // endregion
+
+        private fun createDatadogTracer(): DatadogTracer = builderDelegate
+            .withServiceName(serviceName)
+            .also { _TraceInternalProxy.setSdkV2Compatible(it) }
+            .build()
     }
 
     // region Internal
@@ -253,18 +243,12 @@ class OtelTracerProvider internal constructor(
     internal companion object {
         init {
             // We need to add the DatadogContextStorageWrapper and this should be executed before
-            // before io.opentelemetry.context.LazyStorage is loaded in the class loader to take effect.
-            // For now we should assume that our users are using `OtelTracerProvider` first in their code.
+            // io.opentelemetry.context.LazyStorage is loaded in the class loader to take effect.
+            // For now, we should assume that our users are using `OtelTracerProvider` first in their code.
             // Later on maybe we should consider a method
             // DatdogOpenTelemetry.initialize() to be called in the Application#onCreate class.
-            executeIfJavaFunctionPackageExists(
-                internalLogger = null,
-                defaultActionReturnValue = null
-            ) {
-                // suppressing the lint warning as we call this safely on Android 23 and below
-                @Suppress("NewApi")
-                ContextStorage.addWrapper(DatadogContextStorageWrapper())
-            }
+
+            ContextStorage.addWrapper(DatadogContextStorageWrapper())
         }
 
         internal const val IS_OPENTELEMETRY_ENABLED_CONFIG_KEY = "is_opentelemetry_enabled"
@@ -272,15 +256,10 @@ class OtelTracerProvider internal constructor(
         internal const val TRACER_ALREADY_EXISTS_WARNING_MESSAGE =
             "Tracer for %s already exists. Returning existing instance."
         internal const val DEFAULT_TRACER_NAME = "android"
-        internal const val KEEP_ALL_SAMPLE_RATE_PERCENT = 100.0
 
         internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
             "Default service name is missing during" +
                 " OtelTracerProvider creation, did you initialize SDK?"
-        internal const val RUM_CONTEXT_MISSING_ERROR_MESSAGE =
-            "You are trying to bundle the traces with a RUM context, " +
-                "but the RUM context is missing. " +
-                "You should check if the RUM feature is enabled for your SDK instance."
 
         // the minimum closed spans required for triggering a flush and deliver
         // everything to the writer

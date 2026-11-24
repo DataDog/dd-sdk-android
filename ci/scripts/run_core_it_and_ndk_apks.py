@@ -37,8 +37,8 @@ def main() -> int:
     return run_instrumented_apks(
         (
             emulator_for_api_level(
-                label="api-23",
-                api_level=23,
+                label="api-24",
+                api_level=24,
                 runs=(core_it_run, flags_privacy_run),
             ),
             emulator_for_api_level(

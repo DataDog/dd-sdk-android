@@ -7,8 +7,8 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import androidx.compose.ui.text.AnnotatedString
+import com.datadog.android.internal.utils.obfuscate
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 
 private const val FIXED_INPUT_MASK = "***"
 
@@ -27,7 +27,7 @@ internal fun transformCapturedText(
     TextAndInputPrivacy.MASK_ALL -> if (isInput) {
         FIXED_INPUT_MASK
     } else {
-        StringObfuscator.getStringObfuscator().obfuscate(originalText)
+        originalText.obfuscate()
     }
 }
 

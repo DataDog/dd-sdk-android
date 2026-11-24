@@ -9,6 +9,7 @@
 package java.nio.file
 
 /**
- * A fake placeholder class to let AssertJ work in instrumented tests for API<24.
+ * Class-loading placeholder for AssertJ on API 24–25, before Android provides this type in API 26.
+ * Does not implement filesystem operations.
  */
 class Path

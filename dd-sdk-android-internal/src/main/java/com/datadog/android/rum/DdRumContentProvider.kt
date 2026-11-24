@@ -13,6 +13,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.util.Log
 import androidx.annotation.VisibleForTesting
+import com.datadog.android.internal.time.DefaultAppStartTimeProvider
 
 /**
  * A Content provider used to monitor the Application startup time efficiently.
@@ -98,7 +99,8 @@ class DdRumContentProvider : ContentProvider() {
         }
 
         /**
-         * fallback for APIs below Android N, see [com.datadog.android.internal.time.DefaultAppStartTimeProvider].
+         * Content provider creation time in nanoseconds, measured with [System.nanoTime].
+         * Used by [DefaultAppStartTimeProvider] when the computed process start time is implausible.
          * Should be set from the outside only in tests.
          */
         var createTimeNs: Long = System.nanoTime()

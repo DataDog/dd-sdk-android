@@ -8,9 +8,6 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 //noinspection SuspiciousImport
 import android.R
-import android.annotation.SuppressLint
-import android.graphics.Paint
-import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -21,17 +18,14 @@ import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.StateListDrawable
 import android.graphics.drawable.VectorDrawable
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.utils.ALPHA_SHIFT_ANDROID
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
-import com.datadog.android.sessionreplay.utils.MASK_COLOR
+import com.datadog.android.sessionreplay.utils.MASK_RGB
 import com.datadog.android.sessionreplay.utils.MAX_ALPHA_VALUE
 
 /**
- * Drawable utility object needed in the Session Replay Wireframe Mappers.
- * This class is meant for internal usage so please use it carefully as it might change in time.
+ * Maps supported drawables to a single color for Session Replay wireframes.
  */
 @Suppress("TooManyFunctions")
 internal open class AndroidMDrawableToColorMapper(
@@ -76,7 +70,7 @@ internal open class AndroidMDrawableToColorMapper(
     }
 
     /**
-     * Resolves the color from a [ShapeDrawable].
+     * Resolves the paint color from a [ShapeDrawable].
      * @param drawable the shape drawable
      * @param internalLogger the internalLogger to report warnings
      * @return the color to map to or null if not applicable
@@ -121,69 +115,21 @@ internal open class AndroidMDrawableToColorMapper(
     }
 
     /**
-     * Resolves the color from a [GradientDrawable].
-     * @param drawable the color drawable
+     * Resolves the state-dependent fill color of a [GradientDrawable], including its alpha.
+     * @param drawable the gradient drawable
      * @param internalLogger the internalLogger to report warnings
      * @return the color to map to or null if not applicable
      */
     protected open fun resolveGradientDrawable(drawable: GradientDrawable, internalLogger: InternalLogger): Int? {
-        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            resolveGradientDrawableReflection(drawable, internalLogger)
-        } else {
-            resolveGradientDrawableNPlus(drawable)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.N)
-    internal fun resolveGradientDrawableNPlus(drawable: GradientDrawable): Int? {
         val resolvedColor = resolveGradientFillColor(drawable)
+        // Without an accessible color filter, a tint may be missing from the resolved fill color.
         if (resolvedColor == null || drawable.colorFilter == null) return null
+
         val colorAlpha = (resolvedColor ushr ALPHA_SHIFT_ANDROID) and MAX_ALPHA_VALUE
         val fillAlpha = (colorAlpha * drawable.alpha) / MAX_ALPHA_VALUE
         return if (fillAlpha == 0) null else mergeColorAndAlpha(resolvedColor, fillAlpha)
     }
 
-    @Suppress("SwallowedException")
-    private fun resolveGradientDrawableReflection(drawable: GradientDrawable, internalLogger: InternalLogger): Int? {
-        val fillPaint = try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // Can't throw NPE here
-            fillPaintField?.get(drawable) as? Paint
-        } catch (_: IllegalArgumentException) {
-            null
-        } catch (_: IllegalAccessException) {
-            null
-        } catch (_: ExceptionInInitializerError) {
-            null
-        }
-
-        if (fillPaint == null) return null
-        val filterColor = try {
-            fillPaint.colorFilter?.let {
-                @Suppress("UnsafeThirdPartyFunctionCall") // Can't throw NPE here
-                mColorField?.get(it) as? Int
-            } ?: fillPaint.color
-        } catch (e: IllegalArgumentException) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to read ColorFilter.mColorField field through reflection" },
-                e
-            )
-            fillPaint.color
-        } catch (e: IllegalAccessException) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to read ColorFilter.mColorField field through reflection" },
-                e
-            )
-            fillPaint.color
-        }
-        val fillAlpha = (fillPaint.alpha * drawable.alpha) / MAX_ALPHA_VALUE
-        return if (fillAlpha == 0) null else mergeColorAndAlpha(filterColor, fillAlpha)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.N)
     protected open fun resolveGradientFillColor(drawable: GradientDrawable): Int? {
         val colorStateList = drawable.color ?: return null
         return colorStateList.getColorForState(drawable.state, colorStateList.defaultColor)
@@ -196,11 +142,11 @@ internal open class AndroidMDrawableToColorMapper(
      * @return a color with the RGB component matching the input color, and alpha component matching the alpha input
      */
     protected fun mergeColorAndAlpha(color: Int, alpha: Int): Int {
-        return ((color.toLong() and MASK_COLOR) or (alpha.toLong() shl ALPHA_SHIFT_ANDROID)).toInt()
+        return ((color.toLong() and MASK_RGB) or (alpha.toLong() shl ALPHA_SHIFT_ANDROID)).toInt()
     }
 
     /**
-     * Resolves the color from an [StateListDrawable].
+     * Resolves the color from a [StateListDrawable].
      * @param drawable the color drawable
      * @param internalLogger the internalLogger to report warnings
      * @return the color to map to or null if not applicable
@@ -232,46 +178,5 @@ internal open class AndroidMDrawableToColorMapper(
      */
     private fun resolveInsetDrawable(drawable: InsetDrawable, internalLogger: InternalLogger): Int? {
         return drawable.drawable?.let { mapDrawableToColor(it, internalLogger) }
-    }
-
-    companion object {
-        // mFillPaint is @UnsupportedAppUsage — skip reflection on API 24+ where getColor() is public.
-        @SuppressLint("DiscouragedPrivateApi")
-        @Suppress("PrivateAPI", "SwallowedException", "TooGenericExceptionCaught")
-        internal val fillPaintField = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            try {
-                GradientDrawable::class.java.getDeclaredField("mFillPaint").apply {
-                    this.isAccessible = true
-                }
-            } catch (_: NoSuchFieldException) {
-                null
-            } catch (_: SecurityException) {
-                null
-            } catch (_: NullPointerException) {
-                null
-            }
-        } else {
-            null
-        }
-
-        // PorterDuffColorFilter.mColor is blocked (max-target-o) on API 28+ and unused on API 29+
-        // (AndroidQDrawableToColorMapper overrides resolveGradientDrawable). Skip reflection on P+.
-        @Suppress("PrivateAPI", "SwallowedException", "TooGenericExceptionCaught")
-        internal val mColorField = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-            try {
-                @Suppress("SoonBlockedPrivateApi")
-                PorterDuffColorFilter::class.java.getDeclaredField("mColor").apply {
-                    this.isAccessible = true
-                }
-            } catch (_: NoSuchFieldException) {
-                null
-            } catch (_: SecurityException) {
-                null
-            } catch (_: NullPointerException) {
-                null
-            }
-        } else {
-            null
-        }
     }
 }

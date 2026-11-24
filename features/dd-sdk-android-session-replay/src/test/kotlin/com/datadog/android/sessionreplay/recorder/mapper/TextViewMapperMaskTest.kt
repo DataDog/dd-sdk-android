@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.recorder.mapper
 
+import com.datadog.android.internal.utils.obfuscate
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.extension.ExtendWith
@@ -29,7 +29,7 @@ internal class TextViewMapperMaskTest : TextViewMapperTest() {
         return if (fakeMappingContext.hasOptionSelectorParent) {
             TextViewMapper.FIXED_INPUT_MASK
         } else {
-            StringObfuscator.getStringObfuscator().obfuscate(text)
+            text.obfuscate()
         }
     }
 

@@ -94,7 +94,6 @@ internal class FrameStatesAggregatorTest {
         on { version } doReturn Build.VERSION_CODES.VANILLA_ICE_CREAM
         on { isAtLeastS } doReturn true
         on { isAtLeastO } doReturn true
-        on { isAtLeastN } doReturn true
     }
 
     @BeforeEach
@@ -113,8 +112,6 @@ internal class FrameStatesAggregatorTest {
 
     @Test
     fun `M register jankStats W onActivityStarted() {}`() {
-        // Given
-
         // When
         testedJankListener.onActivityStarted(mockActivity)
 
@@ -168,8 +165,6 @@ internal class FrameStatesAggregatorTest {
 
     @Test
     fun `M pause stats W onActivityStarted() + onActivityStopped() {}`() {
-        // Given
-
         // When
         testedJankListener.onActivityStarted(mockActivity)
         testedJankListener.onActivityStopped(mockActivity)
@@ -238,8 +233,6 @@ internal class FrameStatesAggregatorTest {
 
     @Test
     fun `M remove window W onActivityDestroyed() { no more activities for window }`() {
-        // Given
-
         // When
         testedJankListener.onActivityStarted(mockActivity)
         testedJankListener.onActivityStopped(mockActivity)
@@ -271,8 +264,6 @@ internal class FrameStatesAggregatorTest {
 
     @Test
     fun `M do nothing W onActivityStopped() {}`() {
-        // Given
-
         // When
         testedJankListener.onActivityStopped(mockActivity)
 
@@ -282,8 +273,6 @@ internal class FrameStatesAggregatorTest {
 
     @Test
     fun `M resume stats W onActivityStarted() + onActivityStopped() + onActivityStarted() {}`() {
-        // Given
-
         // When
         testedJankListener.onActivityStarted(mockActivity)
         testedJankListener.onActivityStopped(mockActivity)
@@ -372,7 +361,7 @@ internal class FrameStatesAggregatorTest {
         // Given
         whenever(mockWindow.addOnFrameMetricsAvailableListener(any(), any())) doThrow IllegalStateException()
 
-        // When
+        // When / Then
         assertDoesNotThrow {
             testedJankListener.onActivityStarted(mockActivity)
         }
@@ -383,7 +372,7 @@ internal class FrameStatesAggregatorTest {
         // Given
         whenever(mockWindow.removeOnFrameMetricsAvailableListener(any())) doThrow IllegalArgumentException()
 
-        // When
+        // When / Then
         assertDoesNotThrow {
             testedJankListener.onActivityStarted(mockActivity)
             testedJankListener.onActivityDestroyed(mockActivity)
@@ -392,7 +381,7 @@ internal class FrameStatesAggregatorTest {
 
     @Test
     fun `M not call addOnFrameMetricsAvailableListener() W onActivityStarted { ANDROID_SDK less than S } `(
-        @IntForgery(min = Build.VERSION_CODES.M, max = Build.VERSION_CODES.S) apiVersion: Int
+        @IntForgery(min = Build.VERSION_CODES.N, max = Build.VERSION_CODES.S) apiVersion: Int
     ) {
         // There is a bug in AndroidFramework that could throw NPE, so we are subscribing to the FrameMetrics only since S
         // https://github.com/DataDog/dd-sdk-android/issues/2556
@@ -435,7 +424,7 @@ internal class FrameStatesAggregatorTest {
 
     @Test
     fun `M not call addOnFrameMetricsAvailableListener() W onActivityDestroyed { ANDROID_SDK less than S } `(
-        @IntForgery(min = Build.VERSION_CODES.M, max = Build.VERSION_CODES.S) apiVersion: Int
+        @IntForgery(min = Build.VERSION_CODES.N, max = Build.VERSION_CODES.S) apiVersion: Int
     ) {
         // There is a bug in AndroidFramework that could throw NPE, so we are subscribing to the FrameMetrics only since S
         // https://github.com/DataDog/dd-sdk-android/issues/2556
@@ -482,10 +471,13 @@ internal class FrameStatesAggregatorTest {
 
     @Test
     fun `M forward FrameData W onFrame`(forge: Forge) {
+        // Given
         val frameData = forge.getForgery<FrameData>()
 
+        // When
         testedJankListener.onFrame(frameData)
 
+        // Then
         verify(mockFPSVitalListener).onFrame(frameData)
     }
 

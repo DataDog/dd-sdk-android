@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.vitals
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application.ActivityLifecycleCallbacks
 import android.content.Context
@@ -108,7 +107,7 @@ internal class FrameStatesAggregator(
                     }
                 }
             } catch (iae: IllegalArgumentException) {
-                // Android N+:
+                // API 24+:
                 // android.view.View.removeFrameMetricsListener() may throw it (attempt to remove
                 // OnFrameMetricsAvailableListener that was never added). Unclear why, because
                 // JankStats registers listener in the constructor, so if we have the instance,
@@ -120,7 +119,7 @@ internal class FrameStatesAggregator(
                     iae
                 )
             } catch (npe: NullPointerException) {
-                // Between Android N and Android P (included):
+                // API 24–28:
                 // android.view.View.removeFrameMetricsListener() may throw an NPE(attempt to remove
                 // OnFrameMetricsAvailableListener that was never added). Unclear why, because
                 // JankStats registers listener in the constructor, so if we have the instance,
@@ -280,10 +279,8 @@ internal class FrameStatesAggregator(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     inner class DDFrameMetricsListener : Window.OnFrameMetricsAvailableListener {
 
-        @RequiresApi(Build.VERSION_CODES.N)
         override fun onFrameMetricsAvailable(
             window: Window,
             frameMetrics: FrameMetrics,
@@ -302,28 +299,25 @@ internal class FrameStatesAggregator(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     private fun FrameMetricsData.update(frameMetrics: FrameMetrics, dropCountSinceLastInvocation: Int) = apply {
         displayRefreshRate = display?.refreshRate?.toDouble() ?: SIXTY_FPS
-        if (buildSdkVersionProvider.isAtLeastN) {
-            droppedFrames = dropCountSinceLastInvocation
-            unknownDelayDuration = frameMetrics.getMetric(FrameMetrics.UNKNOWN_DELAY_DURATION)
-            inputHandlingDuration = frameMetrics.getMetric(FrameMetrics.INPUT_HANDLING_DURATION)
-            animationDuration = frameMetrics.getMetric(FrameMetrics.ANIMATION_DURATION)
-            layoutMeasureDuration = frameMetrics.getMetric(FrameMetrics.LAYOUT_MEASURE_DURATION)
-            drawDuration = frameMetrics.getMetric(FrameMetrics.DRAW_DURATION)
-            syncDuration = frameMetrics.getMetric(FrameMetrics.SYNC_DURATION)
-            commandIssueDuration = frameMetrics.getMetric(FrameMetrics.COMMAND_ISSUE_DURATION)
-            swapBuffersDuration = frameMetrics.getMetric(FrameMetrics.SWAP_BUFFERS_DURATION)
-            totalDuration = frameMetrics.getMetric(FrameMetrics.TOTAL_DURATION)
-            firstDrawFrame = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) == IS_FIRST_DRAW_FRAME
-        }
-        @SuppressLint("InlinedApi")
+        droppedFrames = dropCountSinceLastInvocation
+        unknownDelayDuration = frameMetrics.getMetric(FrameMetrics.UNKNOWN_DELAY_DURATION)
+        inputHandlingDuration = frameMetrics.getMetric(FrameMetrics.INPUT_HANDLING_DURATION)
+        animationDuration = frameMetrics.getMetric(FrameMetrics.ANIMATION_DURATION)
+        layoutMeasureDuration = frameMetrics.getMetric(FrameMetrics.LAYOUT_MEASURE_DURATION)
+        drawDuration = frameMetrics.getMetric(FrameMetrics.DRAW_DURATION)
+        syncDuration = frameMetrics.getMetric(FrameMetrics.SYNC_DURATION)
+        commandIssueDuration = frameMetrics.getMetric(FrameMetrics.COMMAND_ISSUE_DURATION)
+        swapBuffersDuration = frameMetrics.getMetric(FrameMetrics.SWAP_BUFFERS_DURATION)
+        totalDuration = frameMetrics.getMetric(FrameMetrics.TOTAL_DURATION)
+        firstDrawFrame = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) == IS_FIRST_DRAW_FRAME
+
         if (buildSdkVersionProvider.isAtLeastO) {
             intendedVsyncTimestamp = frameMetrics.getMetric(FrameMetrics.INTENDED_VSYNC_TIMESTAMP)
             vsyncTimestamp = frameMetrics.getMetric(FrameMetrics.VSYNC_TIMESTAMP)
         }
-        @SuppressLint("InlinedApi")
+
         if (buildSdkVersionProvider.isAtLeastS) {
             gpuDuration = frameMetrics.getMetric(FrameMetrics.GPU_DURATION)
             deadline = frameMetrics.getMetric(FrameMetrics.DEADLINE)

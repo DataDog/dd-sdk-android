@@ -12,13 +12,10 @@ import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
 import androidx.annotation.VisibleForTesting
 import androidx.collection.LruCache
-import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.internal.utils.CacheUtils
-import java.util.concurrent.atomic.AtomicInteger
 
 @Suppress("TooManyFunctions")
 internal class BitmapPool(
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val bitmapPoolHelper: BitmapPoolHelper = BitmapPoolHelper(),
     private val cacheUtils: CacheUtils<String, Bitmap> = CacheUtils(),
     @get:VisibleForTesting internal val bitmapsBySize: HashMap<String, HashSet<Bitmap>> = HashMap(),
@@ -42,11 +39,10 @@ internal class BitmapPool(
             }
 
             val dimensionsKey = bitmapPoolHelper.generateKey(oldValue)
-            val bitmapGroup = bitmapsBySize[dimensionsKey] ?: HashSet()
 
             bitmapPoolHelper.safeCall {
                 @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
-                bitmapGroup.remove(oldValue)
+                bitmapsBySize[dimensionsKey]?.remove(oldValue)
             }
 
             bitmapPoolHelper.safeCall {
@@ -58,7 +54,7 @@ internal class BitmapPool(
         }
     }
 ) : Cache<String, Bitmap>, ComponentCallbacks2 {
-    private val bitmapIndex = AtomicInteger(0)
+    private var bitmapIndex = 0
 
     @Synchronized
     override fun put(value: Bitmap) {
@@ -107,12 +103,8 @@ internal class BitmapPool(
     override fun onConfigurationChanged(newConfig: Configuration) {}
 
     @Deprecated("Deprecated in Java")
-    @Synchronized
     override fun onLowMemory() {
-        bitmapPoolHelper.safeCall {
-            @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
-            cache.evictAll()
-        }
+        clear()
     }
 
     @Synchronized
@@ -140,7 +132,7 @@ internal class BitmapPool(
     }
 
     private fun addBitmapToPool(key: String, bitmap: Bitmap) {
-        val cacheIndex = bitmapIndex.incrementAndGet()
+        val cacheIndex = ++bitmapIndex
         val cacheKey = "$key-$cacheIndex"
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
@@ -148,18 +140,9 @@ internal class BitmapPool(
             cache.put(cacheKey, bitmap)
         }
 
-        if (buildSdkVersionProvider.isAtLeastN) {
-            bitmapPoolHelper.safeCall {
-                @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
-                bitmapsBySize.putIfAbsent(key, HashSet())
-            }
-        } else {
-            if (bitmapsBySize[key] == null) bitmapsBySize[key] = HashSet()
-        }
-
         bitmapPoolHelper.safeCall {
             @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
-            bitmapsBySize[key]?.add(bitmap)
+            bitmapsBySize.getOrPut(key) { HashSet() }.add(bitmap)
         }
     }
 

@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.system
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -64,7 +63,6 @@ internal class BroadcastReceiverSystemInfoProvider(
 
     // region SystemInfoProvider
 
-    @SuppressLint("InlinedApi")
     override fun register(context: Context) {
         registerIntentFilter(context, Intent.ACTION_BATTERY_CHANGED)
         registerIntentFilter(context, PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)

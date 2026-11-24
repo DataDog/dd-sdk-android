@@ -13,8 +13,8 @@ import android.widget.TextView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.utils.densityNormalized
+import com.datadog.android.internal.utils.obfuscate
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -99,7 +99,7 @@ open class TextViewMapper<in T : TextView>(
             TextAndInputPrivacy.MASK_ALL -> if (isOption) {
                 FIXED_INPUT_MASK
             } else {
-                StringObfuscator.getStringObfuscator().obfuscate(originalText)
+                originalText.obfuscate()
             }
 
             TextAndInputPrivacy.MASK_ALL_INPUTS -> if (isOption) FIXED_INPUT_MASK else originalText

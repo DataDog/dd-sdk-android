@@ -600,7 +600,6 @@ public abstract interface class com/datadog/android/internal/system/BuildSdkVers
 	public static final field Companion Lcom/datadog/android/internal/system/BuildSdkVersionProvider$Companion;
 	public abstract fun getVersion ()I
 	public abstract fun isAtLeastBaklava ()Z
-	public abstract fun isAtLeastN ()Z
 	public abstract fun isAtLeastO ()Z
 	public abstract fun isAtLeastP ()Z
 	public abstract fun isAtLeastQ ()Z
@@ -839,8 +838,7 @@ public abstract class com/datadog/android/internal/time/BaseTimeProvider : com/d
 
 public final class com/datadog/android/internal/time/DefaultAppStartTimeProvider : com/datadog/android/internal/time/AppStartTimeProvider {
 	public static final field Companion Lcom/datadog/android/internal/time/DefaultAppStartTimeProvider$Companion;
-	public fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/internal/system/BuildSdkVersionProvider;)V
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/internal/system/BuildSdkVersionProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lkotlin/jvm/functions/Function0;)V
 	public fun getAppStartTimeNs ()J
 	public fun getAppUptimeNs ()J
 }
@@ -976,6 +974,7 @@ public final class com/datadog/android/internal/utils/StringBuilderExtKt {
 
 public final class com/datadog/android/internal/utils/StringExtKt {
 	public static final fun fromBase64 (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun obfuscate (Ljava/lang/String;)Ljava/lang/String;
 	public static final fun toBase64 (Ljava/lang/String;)Ljava/lang/String;
 }
 

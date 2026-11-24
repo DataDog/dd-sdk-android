@@ -377,7 +377,7 @@ test-pyramid:core-it-and-ndk:
 test-pyramid:legacy-integration-instrumented-min-api:
   extends: .instrumented-apk-job
   script:
-    - python3 ci/scripts/run_legacy_integration_apks.py --api-level 23
+    - python3 ci/scripts/run_legacy_integration_apks.py --api-level 24
   variables:
     INSTRUMENTATION_ARGUMENTS: "-e disableLeakCanary true"
 

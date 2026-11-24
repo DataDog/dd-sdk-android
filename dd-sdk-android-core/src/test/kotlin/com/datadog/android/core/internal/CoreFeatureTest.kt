@@ -18,7 +18,6 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -208,6 +207,7 @@ internal class CoreFeatureTest {
             .isInstanceOf(KronosTimeProvider::class.java)
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
     fun `M initialize system info provider W initialize`() {
         // When
@@ -221,9 +221,15 @@ internal class CoreFeatureTest {
         // Then
         assertThat(testedFeature.systemInfoProvider)
             .isInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
+        argumentCaptor<BroadcastReceiver> {
+            verify(appContext.mockInstance, atLeastOnce())
+                .registerReceiver(capture(), any(), isNull(), any())
+
+            assertThat(allValues)
+                .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
+        }
     }
 
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
     fun `M initialize network info provider W initialize`() {
         // When
@@ -235,42 +241,8 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        argumentCaptor<BroadcastReceiver> {
-            verify(appContext.mockInstance, atLeastOnce())
-                .registerReceiver(capture(), any(), isNull(), any())
-
-            assertThat(allValues)
-                .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
-                .containsInstanceOf(BroadcastReceiverNetworkInfoProvider::class.java)
-        }
-    }
-
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    @Test
-    fun `M initialize network info provider W initialize {N}`() {
-        // Given
-        whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
-
-        // When
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
-
-        // Then
-        argumentCaptor<BroadcastReceiver> {
-            verify(appContext.mockInstance, atLeastOnce())
-                .registerReceiver(capture(), any(), isNull(), any())
-
-            assertThat(allValues)
-                .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
-            assertThat(allValues.none { it is BroadcastReceiverNetworkInfoProvider })
-                .isTrue
-            verify(mockConnectivityMgr)
-                .registerDefaultNetworkCallback(isA<CallbackNetworkInfoProvider>())
-        }
+        verify(mockConnectivityMgr)
+            .registerDefaultNetworkCallback(isA<CallbackNetworkInfoProvider>())
     }
 
     @Test
