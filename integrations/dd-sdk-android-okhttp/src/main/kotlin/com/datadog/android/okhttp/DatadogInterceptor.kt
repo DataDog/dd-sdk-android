@@ -21,6 +21,7 @@ import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.internal.graphql.OkHttpGraphQLAdapter
 import com.datadog.android.okhttp.internal.isStreaming
 import com.datadog.android.okhttp.internal.mimeType
+import com.datadog.android.okhttp.internal.toHttpResponseInfo
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
@@ -260,7 +261,10 @@ open class DatadogInterceptor internal constructor(
             kind,
             attributes +
                 rumResourceAttributesProvider.onProvideAttributes(request, response, null) +
-                resourceHeaderAttributes
+                resourceHeaderAttributes +
+                _RumInternalProxy.resolveCacheDeliveryAttributes(
+                    response.toHttpResponseInfo(sdkCore.internalLogger)
+                )
         )
     }
 

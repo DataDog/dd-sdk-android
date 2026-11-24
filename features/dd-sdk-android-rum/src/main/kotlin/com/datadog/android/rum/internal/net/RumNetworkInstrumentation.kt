@@ -120,7 +120,8 @@ class RumNetworkInstrumentation internal constructor(
             responseInfo.getRumResourceKind(),
             attributes +
                 rumResourceAttributesProvider.onProvideAttributes(requestInfo, responseInfo, null) +
-                resourceHeaderAttributes
+                resourceHeaderAttributes +
+                responseInfo.createCacheDeliveryAttributes()
         )
     }
 

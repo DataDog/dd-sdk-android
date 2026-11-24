@@ -40,6 +40,8 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class RumResourceScope(
@@ -116,7 +118,8 @@ internal class RumResourceScope(
     }
 
     override fun getCustomAttributes(): Map<String, Any?> {
-        return parentScope.getCustomAttributes() + resourceAttributes
+        // the cache delivery attributes only feed the resource fields, in any event this scope sends
+        return parentScope.getCustomAttributes() + resourceAttributes - CACHE_DELIVERY_ATTRIBUTES
     }
 
     override fun isActive(): Boolean {
@@ -290,6 +293,11 @@ internal class RumResourceScope(
             ResourceEvent.Response(headers = ResourceEvent.RequestHeaders(it.toMutableMap()))
         }
 
+        val cacheDeliveryType =
+            resolveDeliveryType(resourceAttributes[RumAttributes.RESOURCE_DELIVERY_TYPE])
+        val cacheTransferSize =
+            resolveTransferSize(resourceAttributes[RumAttributes.RESOURCE_TRANSFER_SIZE])
+
         sdkCore.newRumEventWriteOperation(writeScope, writer) {
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
@@ -308,6 +316,8 @@ internal class RumResourceScope(
                     method = method.toResourceMethod(),
                     statusCode = statusCode,
                     size = size,
+                    transferSize = cacheTransferSize,
+                    deliveryType = cacheDeliveryType,
                     dns = finalTiming?.dns(),
                     connect = finalTiming?.connect(),
                     ssl = finalTiming?.ssl(),
@@ -416,6 +426,57 @@ internal class RumResourceScope(
         } else {
             duration
         }
+    }
+
+    private fun resolveDeliveryType(value: Any?): ResourceEvent.DeliveryType? {
+        if (value == null) return null
+        return try {
+            ResourceEvent.DeliveryType.fromJson(value.toString())
+        } catch (e: NoSuchElementException) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.TELEMETRY,
+                { INVALID_DELIVERY_TYPE_MESSAGE },
+                e,
+                onlyOnce = true,
+                additionalProperties = mapOf(INVALID_VALUE_PROPERTY to value.toString())
+            )
+            null
+        }
+    }
+
+    private fun resolveTransferSize(value: Any?): Long? {
+        if (value == null) return null
+        val transferSize = when (value) {
+            // cross-platform SDKs may forward whole numbers as floating point values, but a
+            // fractional, infinite or NaN value isn't a byte count: toLong() would turn it into a
+            // made-up size
+            is Double -> value.toWholeLongOrNull()
+            is Float -> value.toDouble().toWholeLongOrNull()
+            // only integral types convert exactly: toLong() truncates or wraps arbitrary precision
+            // numbers (e.g. BigDecimal, BigInteger) into a made-up size
+            is Long, is Int, is Short, is Byte, is AtomicLong, is AtomicInteger -> (value as Number).toLong()
+            else -> null
+        }
+        return if (transferSize != null && transferSize >= 0) {
+            transferSize
+        } else {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.TELEMETRY,
+                { INVALID_TRANSFER_SIZE_MESSAGE },
+                onlyOnce = true,
+                additionalProperties = mapOf(INVALID_VALUE_PROPERTY to value.toString())
+            )
+            null
+        }
+    }
+
+    private fun Double.toWholeLongOrNull(): Long? {
+        // toLong() drops the fraction, turns NaN into 0 and clamps out of range values to
+        // Long.MAX_VALUE / MIN_VALUE: only a value that converts back unchanged is a whole number
+        val longValue = toLong()
+        return longValue.takeIf { it.toDouble() == this && it != Long.MAX_VALUE }
     }
 
     private fun resolveResourceProvider(): ResourceEvent.Provider? {
@@ -648,6 +709,16 @@ internal class RumResourceScope(
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
             "resource: %s was 0 or negative. In order to keep the resource event" +
             " we forced it to 1ns."
+
+        // fixed messages, so that onlyOnce reports each kind of invalid value once
+        internal const val INVALID_DELIVERY_TYPE_MESSAGE = "[Cache] Ignoring invalid resource delivery type"
+        internal const val INVALID_TRANSFER_SIZE_MESSAGE = "[Cache] Ignoring invalid resource transfer size"
+        internal const val INVALID_VALUE_PROPERTY = "invalid_value"
+
+        private val CACHE_DELIVERY_ATTRIBUTES = setOf(
+            RumAttributes.RESOURCE_DELIVERY_TYPE,
+            RumAttributes.RESOURCE_TRANSFER_SIZE
+        )
 
         @Suppress("LongParameterList")
         fun fromEvent(

@@ -12,6 +12,8 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
+import com.datadog.android.api.instrumentation.network.HttpCacheDelivery
+import com.datadog.android.api.instrumentation.network.HttpCacheInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestBody
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
@@ -92,6 +94,9 @@ internal class RumNetworkInstrumentationTest {
 
     @Mock
     lateinit var mockResponseInfo: HttpResponseInfo
+
+    @Mock(extraInterfaces = [HttpCacheInfo::class])
+    lateinit var mockCachedResponseInfo: HttpResponseInfo
 
     @StringForgery
     lateinit var fakeNetworkInstrumentationName: String
@@ -336,6 +341,76 @@ internal class RumNetworkInstrumentationTest {
             assertThat(firstValue).containsAllEntriesOf(fakePassedAttributes)
             assertThat(firstValue).containsAllEntriesOf(fakeProviderAttributes)
         }
+    }
+
+    @Test
+    fun `M let cache delivery attributes take precedence W stopResource() { conflicting attributes }`(
+        @IntForgery(min = 200, max = 600) fakeStatusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeConflictingAttributes = {
+            mapOf(
+                RumAttributes.RESOURCE_DELIVERY_TYPE to forge.anAlphabeticalString(),
+                RumAttributes.RESOURCE_TRANSFER_SIZE to forge.aPositiveLong()
+            )
+        }
+        stubCachedResponseInfo(fakeStatusCode)
+        stubProviderAttributes(fakeConflictingAttributes())
+
+        // When
+        testedInstrumentation.stopResource(fakeRequestInfo, mockCachedResponseInfo, fakeConflictingAttributes())
+
+        // Then
+        assertThat(captureStopResourceAttributes())
+            .containsEntry(RumAttributes.RESOURCE_DELIVERY_TYPE, "cache")
+            .containsEntry(RumAttributes.RESOURCE_TRANSFER_SIZE, 0L)
+    }
+
+    @Test
+    fun `M let network load attributes take precedence W stopResource() { conflicting attributes }`(
+        @IntForgery(min = 200, max = 600) fakeStatusCode: Int,
+        @LongForgery(min = 1) fakeNetworkBytes: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeConflictingAttributes = {
+            mapOf(
+                RumAttributes.RESOURCE_DELIVERY_TYPE to forge.anAlphabeticalString(),
+                RumAttributes.RESOURCE_TRANSFER_SIZE to forge.aPositiveLong()
+            )
+        }
+        stubCachedResponseInfo(fakeStatusCode, HttpCacheDelivery.NetworkLoad(fakeNetworkBytes))
+        stubProviderAttributes(fakeConflictingAttributes())
+
+        // When
+        testedInstrumentation.stopResource(fakeRequestInfo, mockCachedResponseInfo, fakeConflictingAttributes())
+
+        // Then
+        assertThat(captureStopResourceAttributes())
+            .containsEntry(RumAttributes.RESOURCE_DELIVERY_TYPE, "other")
+            .containsEntry(RumAttributes.RESOURCE_TRANSFER_SIZE, fakeNetworkBytes)
+    }
+
+    @Test
+    fun `M keep provider cache delivery attributes W stopResource() { delivery unknown }`(
+        @IntForgery(min = 200, max = 600) fakeStatusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeProviderAttributes = mapOf(
+            RumAttributes.RESOURCE_DELIVERY_TYPE to forge.anAlphabeticalString(),
+            RumAttributes.RESOURCE_TRANSFER_SIZE to forge.aLong()
+        )
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+        whenever(mockResponseInfo.headers) doReturn emptyMap()
+        stubProviderAttributes(fakeProviderAttributes)
+
+        // When
+        testedInstrumentation.stopResource(fakeRequestInfo, mockResponseInfo)
+
+        // Then
+        assertThat(captureStopResourceAttributes()).containsAllEntriesOf(fakeProviderAttributes)
     }
 
     @Test
@@ -829,6 +904,37 @@ internal class RumNetworkInstrumentationTest {
                 "Default SDK instance"
             )
         )
+    }
+
+    private fun stubProviderAttributes(attributes: Map<String, Any?>) {
+        whenever(
+            mockRumResourceAttributesProvider.onProvideAttributes(
+                any<HttpRequestInfo>(),
+                anyOrNull<HttpResponseInfo>(),
+                anyOrNull()
+            )
+        ) doReturn attributes
+    }
+
+    private fun captureStopResourceAttributes(): Map<String, Any?> {
+        return argumentCaptor<Map<String, Any?>> {
+            verify(mockRumMonitor).stopResource(
+                any<ResourceId>(),
+                anyOrNull(),
+                anyOrNull(),
+                any<RumResourceKind>(),
+                capture()
+            )
+        }.firstValue
+    }
+
+    private fun stubCachedResponseInfo(
+        statusCode: Int,
+        delivery: HttpCacheDelivery = HttpCacheDelivery.LocalHit
+    ) {
+        whenever(mockCachedResponseInfo.statusCode) doReturn statusCode
+        whenever(mockCachedResponseInfo.headers) doReturn emptyMap()
+        whenever((mockCachedResponseInfo as HttpCacheInfo).cacheDelivery) doReturn delivery
     }
 
     companion object {

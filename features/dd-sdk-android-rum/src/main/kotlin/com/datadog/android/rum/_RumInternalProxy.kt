@@ -9,6 +9,7 @@ package com.datadog.android.rum
 import android.app.Activity
 import android.content.Intent
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.event.EventMapper
 import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
@@ -17,6 +18,7 @@ import com.datadog.android.rum.RumConfiguration.Builder
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.net.createCacheDeliveryAttributes
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
@@ -167,5 +169,9 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             rawResponseHeaders: Map<String, List<String>>,
             internalLogger: InternalLogger
         ) = extractor.toResourceAttributes(rawRequestHeaders, rawResponseHeaders, internalLogger)
+
+        fun resolveCacheDeliveryAttributes(
+            responseInfo: HttpResponseInfo
+        ): Map<String, Any?> = responseInfo.createCacheDeliveryAttributes()
     }
 }

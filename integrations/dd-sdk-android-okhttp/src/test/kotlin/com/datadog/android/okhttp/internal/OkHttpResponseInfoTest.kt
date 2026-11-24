@@ -8,6 +8,7 @@ package com.datadog.android.okhttp.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.instrumentation.network.HttpBodySnapshot
+import com.datadog.android.api.instrumentation.network.HttpCacheDelivery
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.okhttp.internal.OkHttpResponseInfo.Companion.ERROR_PEEK_BODY
 import com.datadog.android.utils.verifyLog
@@ -471,6 +472,110 @@ internal class OkHttpResponseInfoTest {
 
     // endregion
 
+    // region cacheDelivery
+
+    // Each test covers inputs that also match a later branch of the `when`, so that reordering the
+    // branches fails a test
+
+    @Test
+    fun `M return Unknown W cacheDelivery { no cache response, no network response }`() {
+        // Given
+        val testedResponseInfos = listOf(
+            cachedResponseInfo(),
+            cachedResponseInfo(priorResponse = fakeNetworkRedirect())
+        )
+
+        // When / Then
+        assertThat(testedResponseInfos.map { it.cacheDelivery }).containsOnly(HttpCacheDelivery.Unknown)
+    }
+
+    @Test
+    fun `M return NetworkLoad without byte count W cacheDelivery { no cache response, network response }`(
+        @IntForgery(min = 200, max = 600) fakeStatusCode: Int
+    ) {
+        // Given
+        val testedResponseInfos = listOf(
+            cachedResponseInfo(networkResponse = fakeBodylessResponse(fakeStatusCode)),
+            cachedResponseInfo(networkResponse = fakeBodylessResponse(HttpSpec.StatusCode.NOT_MODIFIED)),
+            cachedResponseInfo(
+                networkResponse = fakeBodylessResponse(fakeStatusCode),
+                priorResponse = fakeNetworkRedirect()
+            )
+        )
+
+        // When / Then
+        assertThat(testedResponseInfos.map { it.cacheDelivery })
+            .containsOnly(HttpCacheDelivery.NetworkLoad(networkBytes = null))
+    }
+
+    @Test
+    fun `M return LocalHit W cacheDelivery { cache response, no network response }`() {
+        // Given
+        val fakeCachedRedirect = fakeBodylessResponse(HttpSpec.StatusCode.MOVED_PERMANENTLY).newBuilder()
+            .cacheResponse(fakeBodylessResponse(HttpSpec.StatusCode.MOVED_PERMANENTLY))
+            .build()
+        val testedResponseInfos = listOf(
+            cachedResponseInfo(cacheResponse = fakeBodylessResponse(HttpSpec.StatusCode.OK)),
+            cachedResponseInfo(
+                cacheResponse = fakeBodylessResponse(HttpSpec.StatusCode.OK),
+                priorResponse = fakeCachedRedirect
+            ),
+            cachedResponseInfo(
+                cacheResponse = fakeBodylessResponse(HttpSpec.StatusCode.OK),
+                priorResponse = fakeNetworkRedirect()
+            )
+        )
+
+        // When / Then
+        assertThat(testedResponseInfos.map { it.cacheDelivery }).containsOnly(HttpCacheDelivery.LocalHit)
+    }
+
+    @Test
+    fun `M return ValidatedHit without byte count W cacheDelivery { cache response, 304 network response }`() {
+        // Given
+        val testedResponseInfo = cachedResponseInfo(
+            cacheResponse = fakeBodylessResponse(HttpSpec.StatusCode.OK),
+            networkResponse = fakeBodylessResponse(HttpSpec.StatusCode.NOT_MODIFIED),
+            priorResponse = fakeNetworkRedirect()
+        )
+
+        // When / Then
+        assertThat(testedResponseInfo.cacheDelivery).isEqualTo(HttpCacheDelivery.ValidatedHit(networkBytes = null))
+    }
+
+    @Test
+    fun `M return NetworkLoad without byte count W cacheDelivery { cache response, full network download }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeStatusCode = forge.anElementFrom(
+            forge.anInt(min = 200, max = HttpSpec.StatusCode.NOT_MODIFIED),
+            forge.anInt(min = HttpSpec.StatusCode.NOT_MODIFIED + 1, max = 600)
+        )
+        val testedResponseInfo = cachedResponseInfo(
+            cacheResponse = fakeBodylessResponse(HttpSpec.StatusCode.OK),
+            networkResponse = fakeBodylessResponse(fakeStatusCode)
+        )
+
+        // When / Then
+        assertThat(testedResponseInfo.cacheDelivery).isEqualTo(HttpCacheDelivery.NetworkLoad(networkBytes = null))
+    }
+
+    // endregion
+
+    private fun cachedResponseInfo(
+        cacheResponse: Response? = null,
+        networkResponse: Response? = null,
+        priorResponse: Response? = null
+    ): OkHttpResponseInfo {
+        val response = fakeResponse(ByteArray(0)).newBuilder()
+            .cacheResponse(cacheResponse)
+            .networkResponse(networkResponse)
+            .priorResponse(priorResponse)
+            .build()
+        return OkHttpResponseInfo(response, mockInternalLogger)
+    }
+
     private fun fakeResponse(payload: ByteArray, contentType: String? = null): Response =
         Response.Builder()
             .request(Request.Builder().url(FAKE_URL).build())
@@ -483,5 +588,18 @@ internal class OkHttpResponseInfoTest {
     companion object {
         private const val FAKE_URL = "https://example.com/resource"
         private const val CONTENT_TYPE_JSON = "application/json; charset=utf-8"
+
+        private fun fakeNetworkRedirect(): Response =
+            fakeBodylessResponse(HttpSpec.StatusCode.FOUND).newBuilder()
+                .networkResponse(fakeBodylessResponse(HttpSpec.StatusCode.FOUND))
+                .build()
+
+        private fun fakeBodylessResponse(statusCode: Int): Response =
+            Response.Builder()
+                .request(Request.Builder().url(FAKE_URL).build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(statusCode)
+                .message("")
+                .build()
     }
 }

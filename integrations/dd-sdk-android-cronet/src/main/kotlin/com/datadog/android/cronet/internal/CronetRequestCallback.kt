@@ -112,7 +112,7 @@ internal class CronetRequestCallback(
                 val requestInfo = apmTracingState.createRequestInfo() as? CronetHttpRequestInfo
                 apmNetworkInstrumentation?.onResponseSucceeded(
                     apmTracingState,
-                    CronetHttpResponseInfo(response, requestInfo)
+                    CronetHttpResponseInfo(response, requestInfo, metricsReceivedByteCount = null)
                 )
             }
         } ?: apmNetworkInstrumentation?.reportInstrumentationError {
@@ -124,7 +124,7 @@ internal class CronetRequestCallback(
                 val requestInfo = distributedTracingState.createRequestInfo() as? CronetHttpRequestInfo
                 distributedTracingInstrumentation?.onResponseSucceeded(
                     distributedTracingState,
-                    CronetHttpResponseInfo(response, requestInfo)
+                    CronetHttpResponseInfo(response, requestInfo, metricsReceivedByteCount = null)
                 )
             }
         }

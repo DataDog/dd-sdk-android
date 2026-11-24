@@ -83,7 +83,9 @@ public final class com/datadog/android/rum/RumAttributes {
 	public static final field NETWORK_SIGNAL_STRENGTH Ljava/lang/String;
 	public static final field NETWORK_UP_KBPS Ljava/lang/String;
 	public static final field REQUEST_HEADERS Ljava/lang/String;
+	public static final field RESOURCE_DELIVERY_TYPE Ljava/lang/String;
 	public static final field RESOURCE_TIMINGS Ljava/lang/String;
+	public static final field RESOURCE_TRANSFER_SIZE Ljava/lang/String;
 	public static final field RESPONSE_HEADERS Ljava/lang/String;
 	public static final field RULE_PSR Ljava/lang/String;
 	public static final field SDK_VERSION Ljava/lang/String;
@@ -294,6 +296,7 @@ public final class com/datadog/android/rum/_RumInternalProxy {
 
 public final class com/datadog/android/rum/_RumInternalProxy$Companion {
 	public final fun createRumNetworkInstrumentation (Ljava/lang/String;Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;)Lcom/datadog/android/rum/internal/net/RumNetworkInstrumentation;
+	public final fun resolveCacheDeliveryAttributes (Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;)Ljava/util/Map;
 	public final fun setAdditionalConfiguration (Lcom/datadog/android/rum/RumConfiguration$Builder;Ljava/util/Map;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setComposeActionTrackingStrategy (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/tracking/ActionTrackingStrategy;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setDisableJankStats (Lcom/datadog/android/rum/RumConfiguration$Builder;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;

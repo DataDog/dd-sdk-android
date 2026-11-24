@@ -168,6 +168,19 @@ object RumAttributes {
      */
     const val RESPONSE_HEADERS: String = "_dd.response_headers"
 
+    /**
+     * How the resource payload was delivered, as a `resource.delivery_type` schema value: `cache`
+     * when it was served from the device HTTP cache, `other` when it was downloaded over the
+     * network. (String)
+     */
+    const val RESOURCE_DELIVERY_TYPE: String = "_dd.resource.delivery_type"
+
+    /**
+     * The number of bytes received over the network for the resource, `0` for a local cache hit.
+     * (Number)
+     */
+    const val RESOURCE_TRANSFER_SIZE: String = "_dd.resource.transfer_size"
+
     // endregion
 
     // region Error

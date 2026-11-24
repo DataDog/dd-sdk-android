@@ -42,6 +42,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
@@ -1432,4 +1433,125 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     // endregion
+
+    // region Cache delivery
+
+    @Test
+    fun `M let cache delivery attributes take precedence W intercept() { conflicting provider attributes }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        val fakeProviderAttributes = mapOf(
+            DELIVERY_TYPE_ATTRIBUTE to forge.anAlphabeticalString(),
+            TRANSFER_SIZE_ATTRIBUTE to forge.aPositiveLong()
+        )
+        stubProviderAttributes(fakeProviderAttributes)
+        stubCachedChain(statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(captureStopResourceAttributes())
+            .containsEntry(DELIVERY_TYPE_ATTRIBUTE, "cache")
+            .containsEntry(TRANSFER_SIZE_ATTRIBUTE, 0L)
+    }
+
+    @Test
+    fun `M report other without transfer size W intercept() { network load, conflicting provider attributes }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        val fakeProviderAttributes = mapOf(
+            DELIVERY_TYPE_ATTRIBUTE to forge.anAlphabeticalString(),
+            TRANSFER_SIZE_ATTRIBUTE to forge.aPositiveLong()
+        )
+        stubProviderAttributes(fakeProviderAttributes)
+        stubNetworkChain(statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(captureStopResourceAttributes())
+            .containsEntry(DELIVERY_TYPE_ATTRIBUTE, "other")
+            .containsEntry(TRANSFER_SIZE_ATTRIBUTE, null)
+    }
+
+    @Test
+    fun `M keep provider cache delivery attributes W intercept() { delivery unknown }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        val fakeProviderAttributes = mapOf(
+            DELIVERY_TYPE_ATTRIBUTE to forge.anAlphabeticalString(),
+            TRANSFER_SIZE_ATTRIBUTE to forge.aLong()
+        )
+        stubProviderAttributes(fakeProviderAttributes)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(captureStopResourceAttributes()).containsAllEntriesOf(fakeProviderAttributes)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun stubProviderAttributes(attributes: Map<String, Any?>) {
+        whenever(
+            mockRumAttributesProvider.onProvideAttributes(
+                any<Request>(),
+                anyOrNull<Response>(),
+                anyOrNull<Throwable>()
+            )
+        ) doReturn attributes
+    }
+
+    private fun stubNetworkChain(statusCode: Int) {
+        stubChain(mockChain, statusCode)
+        val fakeNetworkResponse = Response.Builder()
+            .request(fakeRequest)
+            .protocol(Protocol.HTTP_1_1)
+            .code(statusCode)
+            .message(forge.anAlphabeticalString())
+            .build()
+        fakeResponse = fakeResponse.newBuilder()
+            .networkResponse(fakeNetworkResponse)
+            .build()
+        whenever(mockChain.proceed(any())) doReturn fakeResponse
+    }
+
+    private fun stubCachedChain(statusCode: Int) {
+        stubChain(mockChain, statusCode)
+        val fakeCacheResponse = Response.Builder()
+            .request(fakeRequest)
+            .protocol(Protocol.HTTP_1_1)
+            .code(statusCode)
+            .message(forge.anAlphabeticalString())
+            .build()
+        fakeResponse = fakeResponse.newBuilder()
+            .cacheResponse(fakeCacheResponse)
+            .build()
+        whenever(mockChain.proceed(any())) doReturn fakeResponse
+    }
+
+    private fun captureStopResourceAttributes(): Map<String, Any?> {
+        return argumentCaptor<Map<String, Any?>> {
+            verify(rumMonitor.mockInstance).stopResource(
+                any<ResourceId>(),
+                any(),
+                anyOrNull(),
+                any(),
+                capture()
+            )
+        }.firstValue
+    }
+
+    // endregion
+
+    companion object {
+        private const val DELIVERY_TYPE_ATTRIBUTE = "_dd.resource.delivery_type"
+        private const val TRANSFER_SIZE_ATTRIBUTE = "_dd.resource.transfer_size"
+    }
 }
