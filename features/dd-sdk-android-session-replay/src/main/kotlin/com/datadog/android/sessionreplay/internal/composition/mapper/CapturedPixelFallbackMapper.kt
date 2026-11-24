@@ -35,13 +35,19 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
  * [IMAGE_DIMEN_CONSIDERED_PII_IN_DP] in either dimension. Whatever *is* captured may contain
  * text, so `PixelFallbackSnapshotProcessor` resolves it separately and fails closed to a
  * placeholder regardless of the image privacy level that let capture proceed at all.
+ *
+ * A pixel capture is terminal, so [capturesContainers] is off until text can be masked: a
+ * container's capture would resolve to a placeholder that hides children which are captured on
+ * their own. It would also lose children drawn outside the container's bounds and composition
+ * hosts nested inside it, which are decomposed rather than drawn.
  */
 internal class CapturedPixelFallbackMapper(
     private val fallbackMapper: CapturedViewMapper<View>,
     private val internalLogger: InternalLogger,
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     viewRasterizer: ViewRasterizer = DefaultViewRasterizer(internalLogger),
-    private val pixelCapture: ViewPixelCapture = ViewPixelCapture(internalLogger, viewBoundsResolver, viewRasterizer)
+    private val pixelCapture: ViewPixelCapture = ViewPixelCapture(internalLogger, viewBoundsResolver, viewRasterizer),
+    private val capturesContainers: Boolean = false
 ) : CapturedViewMapper<View> {
 
     @UiThread
@@ -90,10 +96,10 @@ internal class CapturedPixelFallbackMapper(
     }
 
     /**
-     * Whether [view] needs no pixels: it draws nothing, its fallback output already describes it
-     * ([hasFallbackOutput]) unless an image draws above that, or it is a composition host, whose
-     * content is described by its decomposition and which a raster would duplicate while bypassing
-     * the privacy modifiers inside it.
+     * Whether [view] needs no pixels: it draws nothing, it is a container left to the fallback (see
+     * [capturesContainers]), its fallback output already describes it ([hasFallbackOutput]) unless
+     * an image draws above that, or it is a composition host, whose content is described by its
+     * decomposition and which a raster would duplicate while bypassing the privacy modifiers inside it.
      */
     @UiThread
     private fun isDescribedWithoutPixels(
@@ -102,6 +108,7 @@ internal class CapturedPixelFallbackMapper(
         hasFallbackOutput: Boolean
     ): Boolean = mappingContext.isCompositionHost ||
         view.willNotDraw() ||
+        (view is ViewGroup && !capturesContainers) ||
         (hasFallbackOutput && !hasImageContent(view))
 
     @UiThread

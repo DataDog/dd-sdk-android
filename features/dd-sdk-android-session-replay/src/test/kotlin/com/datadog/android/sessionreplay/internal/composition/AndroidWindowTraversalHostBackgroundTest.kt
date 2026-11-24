@@ -226,7 +226,8 @@ internal class AndroidWindowTraversalHostBackgroundTest : AndroidWindowTraversal
                 viewRasterizer = { view ->
                     rasterized += view
                     mock<Bitmap>()
-                }
+                },
+                capturesContainers = true
             ),
             compositionHostDecomposer = mockDecomposer,
             rootImagePrivacy = ImagePrivacy.MASK_NONE

@@ -78,6 +78,13 @@ internal class CapturedPixelFallbackMapperTest {
         viewBoundsResolver = mockViewBoundsResolver,
         viewRasterizer = fakeViewRasterizer
     )
+    private val testedContainerMapper = CapturedPixelFallbackMapper(
+        fallbackMapper = mockFallbackMapper,
+        internalLogger = mockInternalLogger,
+        viewBoundsResolver = mockViewBoundsResolver,
+        viewRasterizer = fakeViewRasterizer,
+        capturesContainers = true
+    )
 
     private fun mappingContext(
         imagePrivacy: ImagePrivacy,
@@ -322,7 +329,7 @@ internal class CapturedPixelFallbackMapperTest {
         val mappingContext = mappingContext(ImagePrivacy.MASK_ALL, scope = fakeScope)
 
         // When
-        testedMapper.map(mockScrollView, mappingContext)
+        testedContainerMapper.map(mockScrollView, mappingContext)
 
         // Then: never even considered for a placeholder or pixel capture.
         verify(mockFallbackMapper).map(mockScrollView, mappingContext)
@@ -350,7 +357,7 @@ internal class CapturedPixelFallbackMapperTest {
         )
 
         // When
-        val result = testedMapper.map(mockScrollView, mappingContext) as CapturedViewMapperResult.Wireframes
+        val result = testedContainerMapper.map(mockScrollView, mappingContext) as CapturedViewMapperResult.Wireframes
 
         // Then
         assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
@@ -365,11 +372,12 @@ internal class CapturedPixelFallbackMapperTest {
         val fakePrivacy = forge.anElementFrom(ImagePrivacy.MASK_ALL, ImagePrivacy.MASK_LARGE_ONLY)
         val mockContainer: ViewGroup = mock()
         val mockRasterizer: ViewRasterizer = mock()
-        val testedContainerMapper = CapturedPixelFallbackMapper(
+        val testedMapperWithMockRasterizer = CapturedPixelFallbackMapper(
             fallbackMapper = mockFallbackMapper,
             internalLogger = mockInternalLogger,
             viewBoundsResolver = mockViewBoundsResolver,
-            viewRasterizer = mockRasterizer
+            viewRasterizer = mockRasterizer,
+            capturesContainers = true
         )
         eligibleView(mockView = mockContainer)
         whenever(mockContainer.background).thenReturn(mock<Drawable>())
@@ -378,7 +386,7 @@ internal class CapturedPixelFallbackMapperTest {
         whenever(mockFallbackMapper.map(any(), any())).thenReturn(CapturedViewMapperResult.None)
 
         // When
-        val result = testedContainerMapper.map(mockContainer, mappingContext(fakePrivacy))
+        val result = testedMapperWithMockRasterizer.map(mockContainer, mappingContext(fakePrivacy))
 
         // Then
         assertThat(result).isSameAs(CapturedViewMapperResult.None)
@@ -393,7 +401,7 @@ internal class CapturedPixelFallbackMapperTest {
         val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
 
         // When
-        testedMapper.map(mockListView, mappingContext)
+        testedContainerMapper.map(mockListView, mappingContext)
 
         // Then
         verify(mockFallbackMapper).map(mockListView, mappingContext)
@@ -408,7 +416,7 @@ internal class CapturedPixelFallbackMapperTest {
         val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
 
         // When
-        testedMapper.map(mockRecyclerView, mappingContext)
+        testedContainerMapper.map(mockRecyclerView, mappingContext)
 
         // Then
         verify(mockFallbackMapper).map(mockRecyclerView, mappingContext)
@@ -416,7 +424,34 @@ internal class CapturedPixelFallbackMapperTest {
     }
 
     @Test
-    fun `M consider for capture W map { container that is not a scrolling list }`() {
+    fun `M delegate to fallback without capturing W map and capture { container }`() {
+        // Given
+        val mockContainer: ViewGroup = mock()
+        val mockRasterizer: ViewRasterizer = mock()
+        val testedMapperWithMockRasterizer = CapturedPixelFallbackMapper(
+            fallbackMapper = mockFallbackMapper,
+            internalLogger = mockInternalLogger,
+            viewBoundsResolver = mockViewBoundsResolver,
+            viewRasterizer = mockRasterizer
+        )
+        eligibleView(mockView = mockContainer)
+        val fakeFallbackData = CapturedViewData.Mapped(CapturedViewMapperResult.None)
+        whenever(mockFallbackMapper.map(any(), any())).thenReturn(CapturedViewMapperResult.None)
+        whenever(mockFallbackMapper.capture(any(), any())).thenReturn(fakeFallbackData)
+        val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
+
+        // When
+        val mapped = testedMapperWithMockRasterizer.map(mockContainer, mappingContext)
+        val captured = testedMapperWithMockRasterizer.capture(mockContainer, mappingContext)
+
+        // Then
+        assertThat(mapped).isSameAs(CapturedViewMapperResult.None)
+        assertThat(captured).isSameAs(fakeFallbackData)
+        verifyNoInteractions(mockRasterizer)
+    }
+
+    @Test
+    fun `M consider for capture W map { container that is not a scrolling list, containers captured }`() {
         // Given
         val mockContainer: ViewGroup = mock()
         eligibleView(mockView = mockContainer)
@@ -425,7 +460,7 @@ internal class CapturedPixelFallbackMapperTest {
         val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
 
         // When
-        val result = testedMapper.map(mockContainer, mappingContext) as CapturedViewMapperResult.Wireframes
+        val result = testedContainerMapper.map(mockContainer, mappingContext) as CapturedViewMapperResult.Wireframes
 
         // Then
         assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
@@ -440,7 +475,8 @@ internal class CapturedPixelFallbackMapperTest {
             fallbackMapper = mockFallbackMapper,
             internalLogger = mockInternalLogger,
             viewBoundsResolver = mockViewBoundsResolver,
-            viewRasterizer = mockRasterizer
+            viewRasterizer = mockRasterizer,
+            capturesContainers = true
         )
         eligibleView(mockView = mockHost)
         val fakeFallbackData = CapturedViewData.Mapped(CapturedViewMapperResult.None)
@@ -663,7 +699,7 @@ internal class CapturedPixelFallbackMapperTest {
         val mappingContext = mappingContext(ImagePrivacy.MASK_NONE, scope = fakeScope)
 
         // When
-        testedMapper.map(mockViewGroup, mappingContext)
+        testedContainerMapper.map(mockViewGroup, mappingContext)
 
         // Then
         verify(mockFallbackMapper).map(mockViewGroup, mappingContext)
