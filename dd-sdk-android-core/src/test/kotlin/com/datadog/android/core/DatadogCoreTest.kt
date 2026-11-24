@@ -27,7 +27,9 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
+import com.datadog.android.core.internal.utils.CONTEXT_UPDATE_RECEIVER_FAILED
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.tests.stub.StubTimeProvider
@@ -72,8 +74,8 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -983,8 +985,8 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockContextUpdateListener).onContextUpdate(
-            DatadogCore.CORE_CONTEXT_NAME,
-            mapOf(DatadogCore.CORE_CONTEXT_USER_ID_KEY to id)
+            FeatureContextKeys.CORE_CONTEXT,
+            mapOf(FeatureContextKeys.CORE_USER_ID to id)
         )
     }
 
@@ -1002,7 +1004,7 @@ internal class DatadogCoreTest {
         testedCore.clearUserInfo()
 
         // Then
-        verify(mockContextUpdateListener).onContextUpdate(DatadogCore.CORE_CONTEXT_NAME, emptyMap())
+        verify(mockContextUpdateListener).onContextUpdate(FeatureContextKeys.CORE_CONTEXT, emptyMap())
     }
 
     @Test
@@ -1019,8 +1021,8 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockContextUpdateListener).onContextUpdate(
-            DatadogCore.CORE_CONTEXT_NAME,
-            mapOf(DatadogCore.CORE_CONTEXT_ACCOUNT_ID_KEY to id)
+            FeatureContextKeys.CORE_CONTEXT,
+            mapOf(FeatureContextKeys.CORE_ACCOUNT_ID to id)
         )
     }
 
@@ -1038,7 +1040,7 @@ internal class DatadogCoreTest {
         testedCore.clearAccountInfo()
 
         // Then
-        verify(mockContextUpdateListener).onContextUpdate(DatadogCore.CORE_CONTEXT_NAME, emptyMap())
+        verify(mockContextUpdateListener).onContextUpdate(FeatureContextKeys.CORE_CONTEXT, emptyMap())
     }
 
     @Test
@@ -1058,44 +1060,146 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockContextUpdateListener).onContextUpdate(
-            DatadogCore.CORE_CONTEXT_NAME,
+            FeatureContextKeys.CORE_CONTEXT,
             mapOf(
-                DatadogCore.CORE_CONTEXT_USER_ID_KEY to userId,
-                DatadogCore.CORE_CONTEXT_ACCOUNT_ID_KEY to accountId
+                FeatureContextKeys.CORE_USER_ID to userId,
+                FeatureContextKeys.CORE_ACCOUNT_ID to accountId
             )
         )
     }
 
     @Test
-    fun `M deliver identity update to listener W setContextUpdateReceiver() { clearUserInfo during replay }`(
+    fun `M not deliver stale ids to listener W clearUserInfo() + setContextUpdateReceiver() { clear queued first }`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) userId: String
     ) {
         // Given
+        val realContextExecutor = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, LinkedBlockingQueue())
+        testedCore.coreFeature.contextExecutorService = realContextExecutor
         testedCore.coreFeature.userInfoProvider = DatadogUserInfoProvider()
         testedCore.setUserInfo(userId, null, null)
-        val clearThreads = mutableListOf<Thread>()
-        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
-        whenever(mockContextUpdateListener.onContextUpdate(any(), any())) doAnswer {
-            // The replayed snapshot is being delivered: run a concurrent logout and give it time to complete.
-            if (clearThreads.isEmpty()) {
-                clearThreads += Thread { testedCore.clearUserInfo() }.apply { start() }
-                Thread.sleep(CONCURRENT_UPDATE_WAIT_MS)
-            }
-            null
+        val executorBlocked = CountDownLatch(1)
+        val releaseExecutor = CountDownLatch(1)
+        realContextExecutor.execute {
+            executorBlocked.countDown()
+            releaseExecutor.await(LATCH_TIMEOUT_S, TimeUnit.SECONDS)
         }
+        assertThat(executorBlocked.await(LATCH_TIMEOUT_S, TimeUnit.SECONDS)).isTrue()
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
 
         // When
-        testedCore.setContextUpdateReceiver(mockContextUpdateListener)
-        clearThreads.forEach { it.join(CONCURRENT_UPDATE_WAIT_MS * 10) }
+        try {
+            testedCore.clearUserInfo()
+            testedCore.setContextUpdateReceiver(mockContextUpdateListener)
+            releaseExecutor.countDown()
+            realContextExecutor.submit {}.get(LATCH_TIMEOUT_S, TimeUnit.SECONDS)
+        } finally {
+            releaseExecutor.countDown()
+            realContextExecutor.shutdown()
+        }
 
         // Then
-        inOrder(mockContextUpdateListener) {
-            verify(mockContextUpdateListener).onContextUpdate(
-                DatadogCore.CORE_CONTEXT_NAME,
-                mapOf(DatadogCore.CORE_CONTEXT_USER_ID_KEY to userId)
-            )
-            verify(mockContextUpdateListener).onContextUpdate(DatadogCore.CORE_CONTEXT_NAME, emptyMap())
+        verify(mockContextUpdateListener).onContextUpdate(FeatureContextKeys.CORE_CONTEXT, emptyMap())
+        verify(mockContextUpdateListener, never()).onContextUpdate(
+            FeatureContextKeys.CORE_CONTEXT,
+            mapOf(FeatureContextKeys.CORE_USER_ID to userId)
+        )
+    }
+
+    @Test
+    fun `M not invoke removed listener W removeContextUpdateReceiver() { replay still queued }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) userId: String
+    ) {
+        // Given
+        val realContextExecutor = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, LinkedBlockingQueue())
+        testedCore.coreFeature.contextExecutorService = realContextExecutor
+        testedCore.coreFeature.userInfoProvider = DatadogUserInfoProvider()
+        testedCore.setUserInfo(userId, null, null)
+        val executorBlocked = CountDownLatch(1)
+        val releaseExecutor = CountDownLatch(1)
+        realContextExecutor.execute {
+            executorBlocked.countDown()
+            releaseExecutor.await(LATCH_TIMEOUT_S, TimeUnit.SECONDS)
         }
+        assertThat(executorBlocked.await(LATCH_TIMEOUT_S, TimeUnit.SECONDS)).isTrue()
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+
+        // When
+        try {
+            testedCore.setContextUpdateReceiver(mockContextUpdateListener)
+            testedCore.removeContextUpdateReceiver(mockContextUpdateListener)
+            releaseExecutor.countDown()
+            realContextExecutor.submit {}.get(LATCH_TIMEOUT_S, TimeUnit.SECONDS)
+        } finally {
+            releaseExecutor.countDown()
+            realContextExecutor.shutdown()
+        }
+
+        // Then
+        verifyNoInteractions(mockContextUpdateListener)
+    }
+
+    @Test
+    fun `M notify remaining listeners and log W setUserInfo() { a listener throws }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery message: String
+    ) {
+        // Given
+        testedCore.coreFeature.userInfoProvider = DatadogUserInfoProvider()
+        val fakeException = IllegalStateException(message)
+        val throwingListener = mock<FeatureContextUpdateReceiver>()
+        whenever(throwingListener.onContextUpdate(any(), any())) doThrow fakeException
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+        testedCore.featureContextUpdateReceivers += throwingListener
+        testedCore.featureContextUpdateReceivers += mockContextUpdateListener
+
+        // When
+        testedCore.setUserInfo(id, null, null)
+
+        // Then
+        verify(mockContextUpdateListener).onContextUpdate(
+            FeatureContextKeys.CORE_CONTEXT,
+            mapOf(FeatureContextKeys.CORE_USER_ID to id)
+        )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            CONTEXT_UPDATE_RECEIVER_FAILED.format(
+                Locale.US,
+                throwingListener,
+                FeatureContextKeys.CORE_CONTEXT
+            ),
+            fakeException,
+            onlyOnce = true
+        )
+    }
+
+    @Test
+    fun `M log W setContextUpdateReceiver() { listener throws during replay }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery message: String
+    ) {
+        // Given
+        testedCore.coreFeature.userInfoProvider = DatadogUserInfoProvider()
+        testedCore.setUserInfo(id, null, null)
+        val fakeException = IllegalStateException(message)
+        val throwingListener = mock<FeatureContextUpdateReceiver>()
+        whenever(throwingListener.onContextUpdate(any(), any())) doThrow fakeException
+
+        // When
+        testedCore.setContextUpdateReceiver(throwingListener)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            CONTEXT_UPDATE_RECEIVER_FAILED.format(
+                Locale.US,
+                throwingListener,
+                FeatureContextKeys.CORE_CONTEXT
+            ),
+            fakeException,
+            onlyOnce = true
+        )
     }
 
     @Test
@@ -1651,7 +1755,7 @@ internal class DatadogCoreTest {
 
     companion object {
 
-        private const val CONCURRENT_UPDATE_WAIT_MS = 200L
+        private const val LATCH_TIMEOUT_S = 10L
 
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 

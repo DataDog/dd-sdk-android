@@ -40,12 +40,14 @@ import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.internal.time.composeTimeInfo
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
+import com.datadog.android.core.internal.utils.safeOnContextUpdate
 import com.datadog.android.core.internal.utils.safeTryWithLock
 import com.datadog.android.core.internal.utils.safeWithLock
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -65,7 +67,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantLock
 
 /**
  * Internal implementation of the [SdkCore] interface.
@@ -111,9 +112,6 @@ internal class DatadogCore(
     @Suppress("UnsafeThirdPartyFunctionCall") // the argument is always empty
     internal val featureContextUpdateReceivers: MutableSet<FeatureContextUpdateReceiver> =
         Collections.newSetFromMap(ConcurrentHashMap())
-
-    // Guards the core context (user and account id) snapshot against receiver registration.
-    private val coreContextLock = ReentrantLock()
 
     // region SdkCore
 
@@ -262,7 +260,7 @@ internal class DatadogCore(
                 val currentContext = feature.featureContext
                 updateCallback(currentContext)
                 featureContextUpdateReceivers.forEach {
-                    it.onContextUpdate(featureName, currentContext)
+                    it.safeOnContextUpdate(featureName, currentContext, internalLogger)
                 }
             }
         }
@@ -339,25 +337,29 @@ internal class DatadogCore(
         features.forEach {
             val currentContext = getFeatureContext(it.key, false)
             if (currentContext.isNotEmpty()) {
-                listener.onContextUpdate(it.key, currentContext)
+                listener.safeOnContextUpdate(it.key, currentContext, internalLogger)
             }
         }
-        coreContextLock.safeWithLock(internalLogger) {
+        featureContextUpdateReceivers.add(listener)
+        // The core context is replayed on the context thread, in order with the identity mutations that
+        // notify receivers. The snapshot is taken when the replay runs, so it is never older than a
+        // notification the listener has already received.
+        coreFeature.contextExecutorService.executeSafe(
+            "DatadogCore.replayCoreContext",
+            internalLogger
+        ) {
             val currentCoreContext = buildCoreContext()
-            if (currentCoreContext.isNotEmpty()) {
-                listener.onContextUpdate(CORE_CONTEXT_NAME, currentCoreContext)
+            if (currentCoreContext.isNotEmpty() && listener in featureContextUpdateReceivers) {
+                listener.safeOnContextUpdate(FeatureContextKeys.CORE_CONTEXT, currentCoreContext, internalLogger)
             }
-            featureContextUpdateReceivers.add(listener)
         }
     }
 
     // Must be called on the context thread, after the user or account info provider has been mutated.
     private fun notifyCoreContextUpdate() {
-        coreContextLock.safeWithLock(internalLogger) {
-            val coreContext = buildCoreContext()
-            featureContextUpdateReceivers.forEach {
-                it.onContextUpdate(CORE_CONTEXT_NAME, coreContext)
-            }
+        val coreContext = buildCoreContext()
+        featureContextUpdateReceivers.forEach {
+            it.safeOnContextUpdate(FeatureContextKeys.CORE_CONTEXT, coreContext, internalLogger)
         }
     }
 
@@ -365,8 +367,8 @@ internal class DatadogCore(
         val userId = coreFeature.userInfoProvider.getUserInfo().id
         val accountId = coreFeature.accountInfoProvider.getAccountInfo()?.id
         return buildMap {
-            if (userId != null) put(CORE_CONTEXT_USER_ID_KEY, userId)
-            if (accountId != null) put(CORE_CONTEXT_ACCOUNT_ID_KEY, accountId)
+            if (userId != null) put(FeatureContextKeys.CORE_USER_ID, userId)
+            if (accountId != null) put(FeatureContextKeys.CORE_ACCOUNT_ID, accountId)
         }
     }
 
@@ -793,13 +795,6 @@ internal class DatadogCore(
 
     companion object {
         internal const val SHUTDOWN_THREAD_NAME = "datadog_shutdown"
-
-        // Name and keys of the context entry that core publishes to FeatureContextUpdateReceiver
-        // whenever the user or account id changes. It is not a registered feature. Absent keys
-        // mean the value is not set.
-        internal const val CORE_CONTEXT_NAME = "core"
-        internal const val CORE_CONTEXT_USER_ID_KEY = "user_id"
-        internal const val CORE_CONTEXT_ACCOUNT_ID_KEY = "account_id"
 
         internal const val ENV_NAME_VALIDATION_REG_EX = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"
         internal const val MESSAGE_ENV_NAME_NOT_VALID =
