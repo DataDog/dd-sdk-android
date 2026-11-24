@@ -84,7 +84,8 @@ object Rum {
 
         sdkCore.registerFeature(rumFeature)
 
-        if (sdkCore.getFeature(rumFeature.name) == null) {
+        val rumFeatureScope = sdkCore.getFeature(rumFeature.name)
+        if (rumFeatureScope == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
@@ -93,11 +94,9 @@ object Rum {
             return
         }
 
-        sdkCore.getFeature(rumFeature.name)?.dataStore?.let {
-            RumAnonymousIdentifierManager(it, sdkCore).manageAnonymousId(
-                effectiveConfiguration.featureConfiguration.trackAnonymousUser
-            )
-        }
+        RumAnonymousIdentifierManager(rumFeatureScope.dataStore, sdkCore).manageAnonymousId(
+            effectiveConfiguration.featureConfiguration.trackAnonymousUser
+        )
 
         val rumMonitor = createMonitor(sdkCore, rumFeature)
 
