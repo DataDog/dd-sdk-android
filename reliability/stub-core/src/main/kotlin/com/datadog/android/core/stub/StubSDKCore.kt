@@ -246,6 +246,13 @@ class StubSDKCore(
     override val networkInfo: NetworkInfo
         get() = datadogContext.networkInfo
 
+    override val hasAppliedTrackingConsent: Boolean
+        get() = trackingConsent == TrackingConsent.GRANTED
+
+    override fun setTrackingConsent(consent: TrackingConsent) {
+        datadogContext = datadogContext.copy(trackingConsent = consent)
+    }
+
     override val trackingConsent: TrackingConsent
         get() = datadogContext.trackingConsent
 
