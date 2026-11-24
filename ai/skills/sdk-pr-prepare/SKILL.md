@@ -95,13 +95,7 @@ On any failure, fix the issues and re-run the failed part. When `lint` is combin
 **Never suppress linter issues** with `@Suppress("UnsafeThirdPartyFunctionCall")`:
 
 - If the method can throw — add its signature to `detekt_custom_unsafe_calls.yml` with the thrown `Exception` class. Follow the existing file format.
-- If the method never throws — add its signature to `detekt_custom_safe_calls_third_party.yml` (Kotlin stdlib / Java collections) or `detekt_custom_safe_calls_android.yml` (Android APIs). Do NOT use `detekt_custom_safe_calls.yml` — it does not exist.
-
-Common issues to fix directly:
-- `max-line-length` — lines over 120 chars
-- `TooManyFunctions` — split the class
-- `NestedBlockDepth` — extract helpers
-- `ReturnCount` — restructure control flow
+- If the method never throws — add its signature to `detekt_custom_safe_calls_third_party.yml` (Kotlin stdlib / Java collections) or `detekt_custom_safe_calls_android.yml` (Android APIs).
 
 **Do not proceed until all requested checks in this step pass.**
 
@@ -169,7 +163,7 @@ If the working tree is clean, skip to the validation at the end of this step.
 
 Otherwise:
 
-1. **Load the sibling [sdk-commit](../sdk-commit/SKILL.md) skill** via the `Skill` tool or read its SKILL.md. All commit messages MUST follow its rules.
+1. **Load the sibling [sdk-commit](../sdk-commit/SKILL.md) skill** via the `Skill` tool or read its SKILL.md. Commit messages follow its rules.
 2. Stage only files touched by the prepare-pr flow (typically `**/api/*`, `**/transitiveDependencies`, detekt config files, and any source edits you made to fix linter issues). Do not blind `git add -A` — other unrelated changes may still be in the tree.
 3. Draft a commit message per the `sdk-commit` skill. The subject is imperative, English, ≤72 chars, and follows `<TICKET-ID>: <description>` (e.g. `RUM-1234: Regenerate apiSurface and fix detekt warnings`). If the ticket cannot be determined, ask the user before committing. The body lists what was regenerated / fixed and why.
 4. Show the drafted message to the user via `AskUserQuestion` (Approve / Edit / Abort commit) before running `git commit`.
@@ -208,12 +202,7 @@ If the push fails due to non-fast-forward (someone force-pushed upstream), surfa
 
 1. Detect the base branch: use `git config --get branch.<current>.merge` (strip `refs/heads/`) or fall back to `develop` if it exists, otherwise `main`. If the result is the current branch itself (the usual case after `git push -u` in Step 7), ask for the base via `AskUserQuestion` with options `develop` (Recommended) and `main`, plus "Other" for a custom branch.
 2. **Load the sibling [sdk-commit](../sdk-commit/SKILL.md) skill** if it was not loaded in Step 6; otherwise reuse its rules for keeping PR descriptions separate from commit bodies.
-3. Detect a PR template in the repo (in order):
-   - `.github/PULL_REQUEST_TEMPLATE.md`
-   - `.github/pull_request_template.md`
-   - `docs/PULL_REQUEST_TEMPLATE.md`
-   - `PULL_REQUEST_TEMPLATE.md` at repo root
-   - Any file under `.github/PULL_REQUEST_TEMPLATE/`
+3. Read the project PR template, `.github/PULL_REQUEST_TEMPLATE.md` (see `AGENTS.md`).
 4. Draft the PR body — **mandatory, never empty**:
    - If a template exists: follow its prompts and keep applicable sections and the review checklist in order.
    - Otherwise: 2–4 sentences in English covering **what changed**, **why**, and any relevant reviewer context.

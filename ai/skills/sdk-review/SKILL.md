@@ -226,7 +226,7 @@ Do **not** ask the user about each finding individually. Instead, present the fu
    - **Title** — short, category-tagged, e.g. `[UI hot path] Paint allocated in onDraw`.
    - **Location** — `path/to/File.kt:line` (use the current HEAD line, not the diff index).
    - **Category** — one of `UI hot path`, `Binary compatibility`, `Concurrency`, `Redundant sync`, `Main-thread blocking`, `Resource usage`, `PR scope`, `Schemas and build`, `Billing`, `Other`.
-   - **Explanation** — 3–6 sentences. Explain *what* the problem is, *why* it matters (concrete user-visible impact: dropped frames, crash on update, ANR, data corruption, etc.), and *how* a reader can verify it. Quote the offending snippet.
+   - **Explanation** — explain *what* the problem is, *why* it matters (concrete user-visible impact: dropped frames, crash on update, ANR, data corruption, etc.), and *how* a reader can verify it. Quote the offending snippet.
    - **Suggested fix** — one concrete suggestion.
 
 2. After all detailed descriptions, print a **short summary table** at the end with sequential numbers, one row per finding:

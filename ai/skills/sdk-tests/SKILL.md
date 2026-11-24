@@ -288,8 +288,8 @@ mockInternalLogger.verifyLog(
 
 ```kotlin
 mockInternalLogger.verifyApiUsage(
-    expectedApiUsageEvent = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(...),
-    expectedSamplingRate = 15f
+    apiUsage = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(...),
+    samplingRate = 15f
 )
 ```
 
