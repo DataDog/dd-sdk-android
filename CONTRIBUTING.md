@@ -69,6 +69,10 @@ This project hosts the following modules:
     - `tools/lint`: a custom [Lint](https://developer.android.com/studio/write/lint) static analysis rule;
     - `tools/noopfactory`: an annotation processor generating no-op implementation of interfaces;
     - `tools/unit`: a utility library with code to help writing unit tests;
+  - `ci/`: CI configuration and scripts (not a Gradle module):
+    - `ci/pipelines`: the GitLab pipeline definitions;
+    - `ci/scripts`: helper scripts for CI jobs;
+    - `ci/feature-flags-precomputed-fixtures.json`: the pinned commit of the shared feature flags fixtures, with `ci/sync-feature-flags-precomputed-fixtures.py` to fetch them and its tests;
   - `sample/***`: a few sample applications showcasing how to use the library features in production code;
     - `sample/kotlin`: a sample mobile application;
     - `sample/kotlin/sqldelight`: the SQLDelight 1.x sample database, generated in a JVM module;
