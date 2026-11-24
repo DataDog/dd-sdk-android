@@ -42,7 +42,7 @@ object Rum {
      * @param sdkCore SDK instance to register feature in. If not provided, default SDK instance
      * will be used.
      */
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "LongMethod")
     @JvmOverloads
     @JvmStatic
     fun enable(rumConfiguration: RumConfiguration, sdkCore: SdkCore = Datadog.getInstance()) {
@@ -84,8 +84,7 @@ object Rum {
 
         sdkCore.registerFeature(rumFeature)
 
-        val rumFeatureScope = sdkCore.getFeature(rumFeature.name)
-        if (rumFeatureScope == null) {
+        if (sdkCore.getFeature(rumFeature.name) == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
@@ -94,9 +93,11 @@ object Rum {
             return
         }
 
-        RumAnonymousIdentifierManager(rumFeatureScope.dataStore, sdkCore).manageAnonymousId(
-            effectiveConfiguration.featureConfiguration.trackAnonymousUser
-        )
+        sdkCore.getFeature(rumFeature.name)?.dataStore?.let {
+            RumAnonymousIdentifierManager(it, sdkCore).manageAnonymousId(
+                effectiveConfiguration.featureConfiguration.trackAnonymousUser
+            )
+        }
 
         val rumMonitor = createMonitor(sdkCore, rumFeature)
 
