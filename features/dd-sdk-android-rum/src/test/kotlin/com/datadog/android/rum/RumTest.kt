@@ -10,6 +10,7 @@ import android.app.Application
 import android.os.Looper
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.DeterministicSampler
@@ -68,9 +69,16 @@ internal class RumTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockRumFeatureScope: FeatureScope
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockRumFeatureScope.dataStore) doReturn mock()
+        // RUM is not registered before enable() and is registered after registerFeature()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME))
+            .doReturn(null, mockRumFeatureScope)
         whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mock()
@@ -339,6 +347,27 @@ internal class RumTest {
     private fun RumConfiguration.withTimeseries(configuration: TimeseriesConfiguration?) = copy(
         featureConfiguration = featureConfiguration.copy(timeseriesConfiguration = configuration)
     )
+
+    @Test
+    fun `M register no RUM monitor W enable() { RUM feature not registered by SDK core }`(
+        @Forgery fakeRumConfiguration: RumConfiguration
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+
+        // When
+        Rum.enable(fakeRumConfiguration, mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).registerFeature(any())
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            Rum.RUM_FEATURE_NOT_REGISTERED
+        )
+        verify(mockSdkCore, never()).createSingleThreadExecutorService(any())
+        check(GlobalRumMonitor.get(mockSdkCore) is NoOpAdvancedRumMonitor)
+    }
 
     companion object {
         private const val API_USAGE_SAMPLING_RATE = 15f

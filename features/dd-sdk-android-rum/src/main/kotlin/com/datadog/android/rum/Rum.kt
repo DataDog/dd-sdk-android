@@ -42,7 +42,7 @@ object Rum {
      * @param sdkCore SDK instance to register feature in. If not provided, default SDK instance
      * will be used.
      */
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "LongMethod")
     @JvmOverloads
     @JvmStatic
     fun enable(rumConfiguration: RumConfiguration, sdkCore: SdkCore = Datadog.getInstance()) {
@@ -83,6 +83,15 @@ object Rum {
         )
 
         sdkCore.registerFeature(rumFeature)
+
+        if (sdkCore.getFeature(rumFeature.name) == null) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { RUM_FEATURE_NOT_REGISTERED }
+            )
+            return
+        }
 
         sdkCore.getFeature(rumFeature.name)?.dataStore?.let {
             RumAnonymousIdentifierManager(it, sdkCore).manageAnonymousId(
@@ -217,6 +226,10 @@ object Rum {
 
     internal const val RUM_FEATURE_ALREADY_ENABLED =
         "RUM Feature is already enabled in this SDK core, ignoring the call to enable it."
+
+    internal const val RUM_FEATURE_NOT_REGISTERED =
+        "RUM feature could not be registered: the SDK instance is not initialized. " +
+            "No RUM data will be sent."
 
     private fun Configuration.isTimeseriesConfigured(): Boolean {
         return timeseriesConfiguration?.collectTypes?.isNotEmpty() == true
