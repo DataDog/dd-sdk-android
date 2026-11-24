@@ -139,7 +139,7 @@ class StubSDKCore(
     }
 
     /**
-     * Gives the given feature a working in-memory datastore, instead of a mock one.
+     * Gives the given feature a working in-memory datastore, instead of a no-op one.
      * Pass the same [dataStore] to two instances to simulate an application restart.
      * Needs to be called before the feature reads its datastore.
      * @param featureName the name of the feature

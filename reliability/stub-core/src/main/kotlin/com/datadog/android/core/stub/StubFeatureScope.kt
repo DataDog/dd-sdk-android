@@ -15,6 +15,10 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.persistence.Serializer
 import org.mockito.kotlin.mock
 
 @Suppress("UnsafeThirdPartyFunctionCall")
@@ -56,7 +60,7 @@ internal class StubFeatureScope(
     // region FeatureScope
 
     override val dataStore: DataStoreHandler
-        get() = dataStoreProvider() ?: mockFeatureScope.dataStore
+        get() = dataStoreProvider() ?: NoOpDataStoreHandler
 
     override fun withWriteContext(
         withFeatureContexts: Set<String>,
@@ -92,4 +96,26 @@ internal class StubFeatureScope(
     }
 
     // endregion
+
+    // Not a mock: a mock keeps its last invocation, whose read callback would keep the core alive.
+    private object NoOpDataStoreHandler : DataStoreHandler {
+        override fun <T : Any> setValue(
+            key: String,
+            data: T,
+            version: Int,
+            callback: DataStoreWriteCallback?,
+            serializer: Serializer<T>
+        ) = Unit
+
+        override fun <T : Any> value(
+            key: String,
+            version: Int?,
+            callback: DataStoreReadCallback<T>,
+            deserializer: Deserializer<String, T>
+        ) = Unit
+
+        override fun removeValue(key: String, callback: DataStoreWriteCallback?) = Unit
+
+        override fun clearAllData() = Unit
+    }
 }
