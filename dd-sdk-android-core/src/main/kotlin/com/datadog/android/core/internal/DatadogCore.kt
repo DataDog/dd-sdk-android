@@ -89,6 +89,8 @@ internal class DatadogCore(
     private val remoteConfigServiceFactory: RemoteConfigService.Factory = DEFAULT_REMOTE_CONFIG_SERVICE_FACTORY
 ) : InternalSdkCore {
 
+    private val consentSubmissionLock = Any()
+
     // Only the latest request may release the barrier. A rejected task leaves admission closed.
     private val consentGrantBarrier = AtomicReference<Any?>()
 
@@ -170,12 +172,14 @@ internal class DatadogCore(
     /** @inheritDoc */
     @AnyThread
     override fun setTrackingConsent(consent: TrackingConsent) {
-        val request = closeConsentGrantBarrier()
-        coreFeature.contextExecutorService.executeSafe("DatadogCore.setTrackingConsent", internalLogger) {
-            coreFeature.trackingConsentProvider.setConsent(consent)
-            if (consent == TrackingConsent.GRANTED) {
-                @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts null and compares by identity.
-                consentGrantBarrier.compareAndSet(request, null)
+        synchronized(consentSubmissionLock) {
+            val request = closeConsentGrantBarrier()
+            coreFeature.contextExecutorService.executeSafe("DatadogCore.setTrackingConsent", internalLogger) {
+                coreFeature.trackingConsentProvider.setConsent(consent)
+                if (consent == TrackingConsent.GRANTED) {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts null and compares by identity.
+                    consentGrantBarrier.compareAndSet(request, null)
+                }
             }
         }
     }

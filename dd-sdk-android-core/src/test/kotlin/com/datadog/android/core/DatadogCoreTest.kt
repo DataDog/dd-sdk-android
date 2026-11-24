@@ -203,6 +203,42 @@ internal class DatadogCoreTest {
         assertThat(testedCore.hasAppliedTrackingConsent).isTrue()
     }
 
+    @ParameterizedTest
+    @EnumSource(value = TrackingConsent::class, names = ["GRANTED", "NOT_GRANTED"])
+    @Timeout(10)
+    fun `M match the applied consent after competing submissions W setTrackingConsent()`(last: TrackingConsent) {
+        // Given
+        val first = if (last == TrackingConsent.GRANTED) TrackingConsent.NOT_GRANTED else TrackingConsent.GRANTED
+        val queue = LinkedBlockingQueue<Runnable>()
+        val competitor = Thread { testedCore.setTrackingConsent(last) }
+        whenever(mockContextExecutorService.execute(any())) doAnswer { invocation ->
+            if (competitor.state == Thread.State.NEW) {
+                competitor.start()
+                // Let the second setter either contend for submission or finish enqueueing before accepting the first.
+                while (competitor.isAlive) {
+                    if (competitor.state == Thread.State.BLOCKED &&
+                        competitor.stackTrace.firstOrNull()?.methodName == "setTrackingConsent"
+                    ) {
+                        break
+                    }
+                    competitor.join(1)
+                }
+            }
+            queue.put(invocation.getArgument(0))
+        }
+
+        // When
+        testedCore.setTrackingConsent(first)
+        competitor.join()
+        assertThat(queue).hasSize(2)
+        repeat(2) { queue.remove().run() }
+        val applied = testedCore.coreFeature.trackingConsentProvider.getConsent()
+
+        // Then
+        assertThat(testedCore.hasAppliedTrackingConsent).isEqualTo(applied == TrackingConsent.GRANTED)
+        assertThat(applied).isEqualTo(last)
+    }
+
     @Test
     fun `M close admission on rejected update W setTrackingConsent()`() {
         // Given
