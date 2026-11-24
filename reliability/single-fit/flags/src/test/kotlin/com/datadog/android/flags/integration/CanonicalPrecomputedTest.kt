@@ -49,7 +49,7 @@ internal class CanonicalPrecomputedTest {
     fun `M reject the response W setEvaluationContext() { invalid canonical response }`(path: String, forge: Forge) {
         // Given
         val fixture = applicableFixture(path)
-        val core = fixtureCore(fixture, forge)
+        val core = fixtureCore(fixture, forge, StubDataStoreHandler())
         val client = FlagsClient.Builder(sdkCore = core).build()
 
         try {
