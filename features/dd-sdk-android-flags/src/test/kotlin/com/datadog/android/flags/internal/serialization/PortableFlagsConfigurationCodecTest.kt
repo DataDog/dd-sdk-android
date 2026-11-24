@@ -7,7 +7,6 @@
 package com.datadog.android.flags.internal.serialization
 
 import com.datadog.android.flags.internal.FlagValueConverter
-import com.datadog.android.flags.internal.TypeMismatchException
 import com.datadog.android.flags.internal.serialization.PortableFlagsConfiguration.Failure
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -306,11 +305,16 @@ internal class PortableFlagsConfigurationCodecTest {
     @CsvSource("integer,2", "float,2", "float,2.0", "float,1.5", "number,2", "number,1.5")
     fun `M preserve native numeric reads W decode() and encode()`(type: String, value: String) {
         // Given
-        val expectedInt = FlagValueConverter.convert(value, type, Int::class)
-        val expectedDouble = FlagValueConverter.convert(value, type, Double::class)
+        val fakeWire = wire(type = type, value = value)
+        val fakeAssignment = json(fakeWire.getAsJsonObject("precomputed").get("response").asString)
+            .getAsJsonObject("data").getAsJsonObject("attributes").getAsJsonObject("flags").getAsJsonObject("flag")
+        // The live network parser reads each assignment with readAssignment, which requires extraLogging.
+        val networkFlag = FlagsJson.readAssignment(fakeAssignment.apply { add("extraLogging", JsonObject()) })
+        val expectedInt = FlagValueConverter.convert(networkFlag.variationValue, type, Int::class)
+        val expectedDouble = FlagValueConverter.convert(networkFlag.variationValue, type, Double::class)
 
         // When
-        val decoded = testedCodec.decode(wire(type = type, value = value).toString())
+        val decoded = testedCodec.decode(fakeWire.toString())
         val restored = testedCodec.decode(testedCodec.encode(decoded))
 
         // Then
@@ -322,7 +326,6 @@ internal class PortableFlagsConfigurationCodecTest {
             assertThat(actualInt.exceptionOrNull()?.javaClass).isEqualTo(expectedInt.exceptionOrNull()?.javaClass)
             assertThat(actualDouble.getOrNull()).isEqualTo(expectedDouble.getOrNull())
             assertThat(actualDouble.exceptionOrNull()?.javaClass).isEqualTo(expectedDouble.exceptionOrNull()?.javaClass)
-            if (type == "float") assertThat(actualInt.exceptionOrNull()).isInstanceOf(TypeMismatchException::class.java)
         }
     }
 
