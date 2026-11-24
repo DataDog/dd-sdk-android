@@ -35,7 +35,7 @@ when_to_use: >-
 
 - Leave one blank line between the header and the body.
 - Use the body for a short description of what was changed.
-- Any longer explanation MUST go in the body, never in the header.
+- Any longer explanation goes in the body, not in the header.
 - If another skill produces a commit message, place its output in the body — always below the header line.
 
 ### 3. Attribution
@@ -53,13 +53,13 @@ Every text file touched by a commit must end with exactly one newline character,
 
 ### 5. Commit body vs. PR description — keep them separate
 
-The commit body and the GitHub PR description serve different audiences and must NOT be conflated.
+The commit body and the GitHub PR description serve different audiences, so keep them separate.
 
-- **Commit body** (what goes in git history): a brief 1–3 line description of *what* changed and *why*, written for a future reader of `git log`. Keep it technical and concise — it is not a PR description.
-- **PR description** (what goes on GitHub): a separate artifact. Do NOT embed PR descriptions in commit bodies.
+- **Commit body** (what goes in git history): a brief description of *what* changed and *why*, written for a future reader of `git log`. Keep it technical and concise — it is not a PR description.
+- **PR description** (what goes on GitHub): a separate artifact. Don't embed PR descriptions in commit bodies.
 
 **When to add a body to the commit:**
 
-Add a body when the change is non-trivial and a one-line header does not fully capture the intent. A body is NOT needed for tiny, obviously self-explanatory changes.
+Add a body when the change is non-trivial and a one-line header does not fully capture the intent. Skip it for tiny, self-explanatory changes.
 
 Commit bodies are always in English, regardless of session language.

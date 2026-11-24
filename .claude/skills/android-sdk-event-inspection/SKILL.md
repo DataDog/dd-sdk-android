@@ -107,11 +107,11 @@ Each `Curl` log line is a single `curl` command. The `-d` argument contains the 
 ]
 ```
 
-**Session Replay** (`/api/v2/replay`): `multipart/form-data` — image parts (WebP) are only present when recording in image mode; wireframe mode produces a different body structure.
+**Session Replay** (`/api/v2/replay`): `multipart/form-data`. Segment requests carry compressed segment parts (`file<N>`) plus an `event` JSON part; image resources (WebP) are uploaded in separate requests to the same path.
 
 **RUM** (`/api/v2/rum`): newline-delimited JSON events.
 
-**Traces** (`/api/v2/traces`): `application/msgpack` — binary, not readable as text.
+**Traces** (`/api/v2/spans`): newline-delimited JSON span events (`text/plain;charset=UTF-8`).
 
 **Profiling** (`/api/v2/profile`): `multipart/form-data` with a `perfetto.proto` attachment.
 
