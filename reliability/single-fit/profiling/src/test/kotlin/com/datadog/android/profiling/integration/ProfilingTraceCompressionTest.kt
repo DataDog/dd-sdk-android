@@ -123,7 +123,7 @@ class ProfilingTraceCompressionTest {
         handle.writeManualProfile(traceFile)
 
         // Then nothing is stored, the trace file is cleaned up, and the drop is reported as too large
-        assertThat(stubSdkCore.rawEventsWritten(Feature.PROFILING_FEATURE_NAME)).isEmpty()
+        assertThat(stubSdkCore.eventsWritten(Feature.PROFILING_FEATURE_NAME)).isEmpty()
         assertThat(traceFile.exists()).isFalse()
         val writeMetric = writeMetrics().single()
         assertThat(writeMetric["dropped"]).isEqualTo(true)
@@ -140,8 +140,8 @@ class ProfilingTraceCompressionTest {
     }
 
     private fun savedProfiles(): List<ProfilingFeatureTestHandle.SavedProfile> {
-        return stubSdkCore.rawEventsWritten(Feature.PROFILING_FEATURE_NAME).map {
-            checkNotNull(ProfilingFeatureTestHandle.decodeSavedProfile(it.metadata))
+        return stubSdkCore.eventsWritten(Feature.PROFILING_FEATURE_NAME).map {
+            checkNotNull(ProfilingFeatureTestHandle.decodeSavedProfile(it.rawEventMetadata))
         }
     }
 
