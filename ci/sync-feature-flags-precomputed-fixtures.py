@@ -309,18 +309,26 @@ def sync_source(root, spec, args):
                 fetch(source, ref)
                 ref = 'FETCH_HEAD'
             after = snapshot(source, ref, spec)
-            pinned = before if current == pin else None
-            if args.update and pinned is None and json.loads(after['SOURCE.json'])['commit'] != pin:
-                # A fresh checkout has no local snapshot, so read the pinned one to compare.
-                try:
-                    if fetched:
-                        fetch(source, pin)
-                        pinned = snapshot(source, 'FETCH_HEAD', spec)
-                    else:
-                        pinned = snapshot(source, pin, spec)
-                except (Exception, SystemExit):  # pylint: disable=broad-except
-                    # Without a readable pinned snapshot, the new commit counts as a change.
-                    pinned = None
+            pinned = None
+            if args.update and json.loads(after['SOURCE.json'])['commit'] != pin:
+                # Compare with the cached snapshot only when it verifies; otherwise read the pin from Git.
+                if current == pin:
+                    try:
+                        verify(destination, spec)
+                        pinned = before
+                    except (ValueError, KeyError, TypeError):
+                        pinned = None
+                if pinned is None:
+                    try:
+                        if fetched:
+                            fetch(source, pin)
+                            pinned = snapshot(source, 'FETCH_HEAD', spec)
+                        else:
+                            pinned = snapshot(source, pin, spec)
+                    except (Exception, SystemExit) as error:  # pylint: disable=broad-except
+                        # Moving the pin needs proof that the imported files changed.
+                        raise ValueError(f"Cannot read the pinned {spec['name']} snapshot ({pin}); "
+                                         'the update stops and keeps the pin') from error
         # An upstream commit that changes no imported file keeps the pin.
         if pinned is not None and json.loads(after['SOURCE.json'])['commit'] != pin \
                 and {k: v for k, v in pinned.items() if k != 'SOURCE.json'} == \

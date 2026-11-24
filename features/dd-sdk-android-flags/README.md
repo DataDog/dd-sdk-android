@@ -577,7 +577,7 @@ Run from the repository root:
 
 ```sh
 ./gradlew :reliability:single-fit:flags:testReleaseUnitTest --tests '*CanonicalPrecomputedTest*'
-python3 ci/test_sync_feature_flags_precomputed_fixtures.py
+python3 ci/test-sync-feature-flags-precomputed-fixtures.py
 ```
 
 The `pullFeatureFlagsFixtures` task runs only before unit-test resources are processed. It fetches the pinned commit and verifies its digests. When the local snapshot already matches the pin, it only verifies, without networking.

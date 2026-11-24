@@ -2,7 +2,7 @@
 # Unless explicitly stated otherwise, all files in this repository are licensed under the
 # Apache License Version 2.0. This product includes software developed at Datadog
 # (https://www.datadoghq.com/). Copyright 2025-Present Datadog, Inc.
-"""Tests for sync-feature-flags-precomputed-fixtures.py. Run: python3 ci/test_sync_feature_flags_precomputed_fixtures.py"""
+"""Tests for sync-feature-flags-precomputed-fixtures.py. Run: python3 ci/test-sync-feature-flags-precomputed-fixtures.py"""
 import importlib.util
 import json
 import subprocess
@@ -162,6 +162,24 @@ class UpdateTest(unittest.TestCase):
         changed = self._commit('precomputed-assignments/cases/b.json',
                                json.dumps({'name': 'b', 'evaluations': [], 'response': {}}))
         self.assertEqual(self._update(changed), changed)
+
+    def test_update_keeps_the_pin_when_the_cached_snapshot_is_incomplete(self):
+        pinned = self._head()
+        self._update(pinned)
+        (self.consumer / 'fixtures' / 'cases' / 'a.json').unlink()
+        unrelated = self._commit('unrelated/notes.md', 'notes')
+        self.assertEqual(self._update(unrelated), pinned)
+        self.assertTrue((self.consumer / 'fixtures' / 'cases' / 'a.json').is_file())
+
+    def test_update_stops_when_the_old_pin_is_unreadable(self):
+        config = json.loads(self.config.read_text())
+        config['sources'][0]['commit'] = 'f' * 40
+        self.config.write_text(json.dumps(config))
+        unrelated = self._commit('unrelated/notes.md', 'notes')
+        result = self._run('--update', '--ref', unrelated, '--source', str(self.upstream))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('pinned', result.stderr)
+        self.assertEqual(json.loads(self.config.read_text())['sources'][0]['commit'], 'f' * 40)
 
     def test_update_moves_each_pin_independently(self):
         pinned = self._head()
