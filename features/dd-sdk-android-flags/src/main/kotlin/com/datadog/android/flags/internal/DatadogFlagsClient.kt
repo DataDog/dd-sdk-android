@@ -37,7 +37,6 @@ import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.flags.model.UnparsedFlagWithConsent
 import com.datadog.android.flags.model.UnparsedFlagWithFeatures
-import com.datadog.android.privacy.TrackingConsent
 import org.json.JSONObject
 
 /**
@@ -819,9 +818,9 @@ internal class DatadogFlagsClient(
         sendToDatadog: Boolean
     ): Boolean? {
         val target = assignmentAuthorization.targetingContext(context)
-        val consent = (featureSdkCore as? InternalSdkCore)?.trackingConsent
+        val granted = (featureSdkCore as? InternalSdkCore)?.hasAppliedTrackingConsent == true
         val protected = experimentationOptOut.enabled && ExperimentationOptOut.ATTRIBUTE in target.attributes
-        if (consent != TrackingConsent.GRANTED || protected || !isCurrentResolutionContext(target)) return null
+        if (!granted || protected || !isCurrentResolutionContext(target)) return null
         return (exposureProcessor as? ExposureEventsProcessor)?.recordExposure(key, target, flag, sendToDatadog)
     }
 

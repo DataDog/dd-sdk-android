@@ -105,7 +105,7 @@ internal class SnapshotExposureTest {
         val client = proxy()
         val context = EvaluationContext(flagKey)
         val flag = assignment.copy(doLog = true)
-        whenever(core.trackingConsent).thenReturn(consent, TrackingConsent.GRANTED)
+        whenever(core.hasAppliedTrackingConsent).thenReturn(consent == TrackingConsent.GRANTED, true)
 
         // When
         val before = client.admitSnapshotExposure(flagKey, flag, context, true)
@@ -202,7 +202,7 @@ internal class SnapshotExposureTest {
         writeEvents: Boolean = true,
         policy: ExperimentationOptOut = ExperimentationOptOut()
     ): _FlagsInternalProxy {
-        whenever(core.trackingConsent).thenReturn(TrackingConsent.GRANTED)
+        whenever(core.hasAppliedTrackingConsent).thenReturn(true)
         return _FlagsInternalProxy(
             DatadogFlagsClient(
                 core, mock(), repository, FlagsConfiguration.Builder().trackEvaluations(true).build(),

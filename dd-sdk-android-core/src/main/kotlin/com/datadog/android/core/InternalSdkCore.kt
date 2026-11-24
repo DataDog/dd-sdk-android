@@ -43,6 +43,11 @@ interface InternalSdkCore : FeatureSdkCore {
     @InternalApi
     val trackingConsent: TrackingConsent
 
+    /** True when the current grant is applied and can be read without scheduling context work. */
+    @InternalApi
+    val hasAppliedTrackingConsent: Boolean
+        get() = false
+
     /**
      * Root folder for the hosting SDK instance.
      */

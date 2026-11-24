@@ -128,6 +128,41 @@ internal class DatadogTest {
     }
 
     @Test
+    fun `M isolate applied grants by instance W initialize() and stopInstance()`(@StringForgery name: String) {
+        // Given
+        val primary = Datadog.initialize(
+            appContext.mockInstance,
+            fakeConfiguration,
+            TrackingConsent.PENDING
+        ) as DatadogCore
+        val named = Datadog.initialize(
+            name,
+            appContext.mockInstance,
+            fakeConfiguration,
+            TrackingConsent.GRANTED
+        ) as DatadogCore
+
+        // When
+        val initial = listOf(primary.hasAppliedTrackingConsent, named.hasAppliedTrackingConsent)
+        Datadog.stopInstance(name)
+        val restarted = Datadog.initialize(
+            name,
+            appContext.mockInstance,
+            fakeConfiguration,
+            TrackingConsent.NOT_GRANTED
+        ) as DatadogCore
+
+        // Then
+        try {
+            assertThat(initial).containsExactly(false, true)
+            assertThat(named.hasAppliedTrackingConsent).isFalse()
+            assertThat(restarted.hasAppliedTrackingConsent).isFalse()
+        } finally {
+            Datadog.stopInstance(name)
+        }
+    }
+
+    @Test
     fun `M warn W initialize() + initialize()`() {
         // When
         val initialized1 = Datadog.initialize(
