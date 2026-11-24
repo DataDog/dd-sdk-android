@@ -40,6 +40,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Connection
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
@@ -86,6 +87,9 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Mock
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
+
+    @Mock
+    lateinit var mockConnection: Connection
 
     @FloatForgery(0f, 100f)
     var fakeTracingSampleRate: Float = 0f
@@ -1430,6 +1434,66 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val resHeaders = attrsCaptor.firstValue[RumAttributes.RESPONSE_HEADERS] as? Map<String, String>
         assertThat(resHeaders).isNotNull
         assertThat(resHeaders).isEqualTo(fakeActualResponseHeaders)
+    }
+
+    // endregion
+
+    // region Network interceptor
+
+    @Test
+    fun `M warn once W intercept() { registered as a network interceptor }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        stubChain(mockChain, statusCode)
+        whenever(mockChain.connection()) doReturn mockConnection
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            DatadogInterceptor.WARN_NETWORK_INTERCEPTOR,
+            onlyOnce = true
+        )
+    }
+
+    @Test
+    fun `M not report cache delivery W intercept() { registered as a network interceptor }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        stubChain(mockChain, statusCode)
+        whenever(mockChain.connection()) doReturn mockConnection
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(captureStopResourceAttributes()).doesNotContainKeys(DELIVERY_TYPE_ATTRIBUTE, TRANSFER_SIZE_ATTRIBUTE)
+    }
+
+    @Test
+    fun `M not warn W intercept() { registered as an application interceptor }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        stubChain(mockChain, statusCode)
+        whenever(mockChain.connection()) doReturn null
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            DatadogInterceptor.WARN_NETWORK_INTERCEPTOR,
+            onlyOnce = true,
+            mode = never()
+        )
     }
 
     // endregion

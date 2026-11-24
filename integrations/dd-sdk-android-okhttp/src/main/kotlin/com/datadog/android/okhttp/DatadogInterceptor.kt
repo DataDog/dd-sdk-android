@@ -137,6 +137,17 @@ open class DatadogInterceptor internal constructor(
             }
             .safeBuild() ?: originalRequest
 
+        // The chain of an application interceptor never has a connection. A network interceptor gets
+        // neither a cacheResponse nor a networkResponse, so no cache delivery is reported for it.
+        if (chain.connection() != null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { WARN_NETWORK_INTERCEPTOR },
+                onlyOnce = true
+            )
+        }
+
         if (rumFeature != null) {
             val url = request.url.toString()
             val method = toHttpMethod(request.method, internalLogger)
@@ -459,6 +470,12 @@ open class DatadogInterceptor internal constructor(
             "You set up a DatadogInterceptor for %s, but RUM features are disabled. " +
                 "Make sure you initialized the Datadog SDK with a valid Application Id, " +
                 "and that RUM features are enabled."
+
+        internal const val WARN_NETWORK_INTERCEPTOR =
+            "DatadogInterceptor is registered with addNetworkInterceptor(). OkHttp runs its cache " +
+                "before network interceptors, so responses served from the cache are not tracked " +
+                "and no cache status is reported, and each redirect is tracked as a separate " +
+                "resource. Register DatadogInterceptor with addInterceptor() instead."
 
         internal const val ERROR_NO_RESPONSE =
             "The request ended with no response nor any exception."

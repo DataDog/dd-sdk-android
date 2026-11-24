@@ -1140,6 +1140,7 @@ datadog:
       - "okhttp3.HttpUrl.topPrivateDomain()"
       - "okhttp3.HttpUrl.url()"
       - "okhttp3.Interceptor.Chain.call()"
+      - "okhttp3.Interceptor.Chain.connection()"
       - "okhttp3.Interceptor.Chain.request()"
       - "okhttp3.MultipartBody.Builder.constructor(kotlin.String)"
       - "okhttp3.MultipartBody.Builder.addFormDataPart(kotlin.String, kotlin.String?, okhttp3.RequestBody)"
