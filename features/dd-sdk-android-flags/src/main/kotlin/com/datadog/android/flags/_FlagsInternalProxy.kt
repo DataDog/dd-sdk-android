@@ -39,6 +39,43 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
         else -> InternalLogger.UNBOUND
     }
 
+    /** Outcome of recording the supplied assignment in the native exposure cache. */
+    enum class SnapshotExposureDecision {
+        /** The cache recorded a new or changed assignment, including in record-only mode. */
+        ADMITTED,
+
+        /** The cache already held this assignment for the subject and flag. */
+        DUPLICATE,
+
+        /** The successful evaluation lacked the identity or assignment required for an exposure. */
+        INELIGIBLE,
+
+        /** No native verdict was available under the current client or consent policy. */
+        UNAVAILABLE
+    }
+
+    /**
+     * Records a successful evaluation of the supplied assignment. Pass null for a missing subject;
+     * an explicitly empty targeting key is a subject. Record-only calls share the delivery cache.
+     */
+    fun admitSnapshotExposure(
+        flagKey: String,
+        flag: UnparsedFlag,
+        context: EvaluationContext?,
+        sendToDatadog: Boolean
+    ): SnapshotExposureDecision {
+        val hasAssignment = flag.doLog && flag.allocationKey.isNotBlank() && flag.variationKey.isNotBlank()
+        return when {
+            client !is DatadogFlagsClient -> SnapshotExposureDecision.UNAVAILABLE
+            context == null || !hasAssignment -> SnapshotExposureDecision.INELIGIBLE
+            else -> when (client.recordSnapshotExposure(flagKey, flag, context, sendToDatadog)) {
+                true -> SnapshotExposureDecision.DUPLICATE
+                false -> SnapshotExposureDecision.ADMITTED
+                null -> SnapshotExposureDecision.UNAVAILABLE
+            }
+        }
+    }
+
     fun isExperimentationOptOutEnabled(): Boolean =
         (client as? DatadogFlagsClient)?.experimentationOptOut?.enabled == true
 

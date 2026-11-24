@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsClientEventListener
@@ -21,9 +22,11 @@ import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKeyCach
 import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
+import com.datadog.android.flags.internal.model.OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.SplitFeature
 import com.datadog.android.flags.internal.model.forDestination
+import com.datadog.android.flags.internal.model.metadata
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -33,6 +36,8 @@ import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.flags.model.UnparsedFlagWithConsent
+import com.datadog.android.flags.model.UnparsedFlagWithFeatures
+import com.datadog.android.privacy.TrackingConsent
 import org.json.JSONObject
 
 /**
@@ -360,7 +365,9 @@ internal class DatadogFlagsClient(
                 telemetryTargetingKey,
                 observeFullEvaluationData
             ),
-            features = (flag as? PrecomputedFlag)?.features?.forDestination(SplitFeature.DESTINATION_EVALUATION)
+            features = (flag as? UnparsedFlagWithFeatures)?.features?.forDestination(
+                SplitFeature.DESTINATION_EVALUATION
+            )
                 .orEmpty()
         )
     }
@@ -619,28 +626,8 @@ internal class DatadogFlagsClient(
             reason = parseReason(precomputedFlag.reason),
             errorCode = null,
             errorMessage = null,
-            flagMetadata = buildMetadata(precomputedFlag, observeFullEvaluationData)
+            flagMetadata = precomputedFlag.metadata(observeFullEvaluationData)
         )
-
-    private fun buildMetadata(precomputedFlag: PrecomputedFlag, observeFullEvaluationData: Boolean): Map<String, Any> {
-        val metadata = mutableMapOf<String, Any>()
-        precomputedFlag.extraLogging.keys().forEach { key ->
-            val value = precomputedFlag.extraLogging.opt(key)
-            when (value) {
-                is String, is Number, is Boolean -> if (!key.startsWith(RESERVED_METADATA_PREFIX)) metadata[key] = value
-            }
-        }
-        if (precomputedFlag.allocationKey.isNotBlank()) {
-            metadata["allocationKey"] = precomputedFlag.allocationKey
-        }
-        metadata[OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY] = observeFullEvaluationData
-        precomputedFlag.features.forEach { feature ->
-            if (SplitFeature.DESTINATION_HOOK in feature.destinations) {
-                metadata[HOOK_FEATURE_METADATA_PREFIX + feature.key] = feature.value
-            }
-        }
-        return metadata
-    }
 
     private fun <T : Any> createErrorResolution(
         flagKey: String,
@@ -825,6 +812,19 @@ internal class DatadogFlagsClient(
         )
     }
 
+    internal fun recordSnapshotExposure(
+        key: String,
+        flag: UnparsedFlag,
+        context: EvaluationContext,
+        sendToDatadog: Boolean
+    ): Boolean? {
+        val target = assignmentAuthorization.targetingContext(context)
+        val consent = (featureSdkCore as? InternalSdkCore)?.trackingConsent
+        val protected = experimentationOptOut.enabled && ExperimentationOptOut.ATTRIBUTE in target.attributes
+        if (consent != TrackingConsent.GRANTED || protected || !isCurrentResolutionContext(target)) return null
+        return (exposureProcessor as? ExposureEventsProcessor)?.recordExposure(key, target, flag, sendToDatadog)
+    }
+
     /** Records the exposure, and sends it unless exposure tracking is off. */
     internal fun trackFlagExposure(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
         if (!flag.doLog) return
@@ -891,11 +891,5 @@ internal class DatadogFlagsClient(
 
             else -> optOut
         }
-    }
-
-    private companion object {
-        const val OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY = "__dd_observe_full_evaluation_data"
-        const val RESERVED_METADATA_PREFIX = "__dd_"
-        const val HOOK_FEATURE_METADATA_PREFIX = "__dd_feature."
     }
 }
