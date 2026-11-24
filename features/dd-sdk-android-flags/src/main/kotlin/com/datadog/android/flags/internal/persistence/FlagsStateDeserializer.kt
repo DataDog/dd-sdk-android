@@ -12,9 +12,9 @@ import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.serialization.FlagsJson
+import com.datadog.android.flags.internal.serialization.UnsupportedVariationTypeException
 import com.datadog.android.flags.model.EvaluationContext
 import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 
@@ -31,13 +31,10 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
             throw JsonParseException("Missing persisted assignments")
         }
         if (obfuscation != null) FlagsJson.validateKeys(assignments.keys.iterator())
-        val flags = assignments.mapNotNull { (key, value) ->
-            // A malformed object can be skipped; a non-object entry invalidates the cache, as before.
-            deserializePrecomputedFlag(FlagsJson.objectValue(value))?.let { key to it }
-        }.toMap()
+        val (flags, unsupported) = readFlags(assignments)
 
         // A nonempty cache with no readable flags is not a valid empty configuration.
-        if (flags.isEmpty() && assignments.isNotEmpty()) {
+        if (flags.isEmpty() && unsupported == 0 && assignments.isNotEmpty()) {
             null
         } else {
             FlagsStateEntry(
@@ -73,15 +70,29 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
         null
     }
 
-    private fun deserializePrecomputedFlag(flagJson: JsonObject): PrecomputedFlag? = try {
-        FlagsJson.readAssignment(flagJson)
-    } catch (e: JsonParseException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Failed to deserialize precomputed flag, skipping" },
-            e
-        )
-        null
+    /** Returns the readable flags and the number of valid entries with an unsupported variation type. */
+    @Throws(JsonParseException::class)
+    private fun readFlags(assignments: Map<String, Any?>): Pair<Map<String, PrecomputedFlag>, Int> {
+        var unsupported = 0
+        val flags = assignments.mapNotNull { (key, value) ->
+            // A malformed object can be skipped; a non-object entry invalidates the cache, as before.
+            val flagJson = FlagsJson.objectValue(value)
+            try {
+                key to FlagsJson.readAssignment(flagJson)
+            } catch (_: UnsupportedVariationTypeException) {
+                // An older SDK may have cached a type that this SDK does not support. The entry is valid.
+                unsupported++
+                null
+            } catch (e: JsonParseException) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Failed to deserialize precomputed flag, skipping" },
+                    e
+                )
+                null
+            }
+        }.toMap()
+        return flags to unsupported
     }
 }
