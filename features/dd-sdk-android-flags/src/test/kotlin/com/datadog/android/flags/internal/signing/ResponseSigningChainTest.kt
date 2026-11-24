@@ -39,8 +39,6 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.Signature
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.PKCS8EncodedKeySpec
 
@@ -72,7 +70,7 @@ internal class ResponseSigningChainTest {
         DynamicTest.dynamicTest("$name with $roots -> ${if (expected) "accept" else "reject"}") {
             // Given
             val credential = credential(name)
-            val now = credential.leafNotBefore + 60
+            val now = chainNow()
             val request = request()
             val headers = credential.sign(request, BODY, now)
             val testedVerifier = ResponseSigningVerifier(roots.map { root(it) })
@@ -95,7 +93,7 @@ internal class ResponseSigningChainTest {
         val generations =
             listOf("two-intermediates", "rotated-lower-intermediate", "one-intermediate", "two-intermediates")
         val leaves = generations.map { credential(it).leaf.toList() }
-        val now = generations.maxOf { credential(it).leafNotBefore } + 60
+        val now = chainNow()
 
         // When
         val results = generations.map { name ->
@@ -112,7 +110,7 @@ internal class ResponseSigningChainTest {
     fun `M encode v1 domain and every intermediate hash W transcript()`() {
         // Given
         val credential = credential("two-intermediates")
-        val now = credential.leafNotBefore + 60
+        val now = chainNow()
         val request = request()
         val headers = credential.sign(request, BODY, now)
 
@@ -132,7 +130,7 @@ internal class ResponseSigningChainTest {
         // Given
         val credential = credential("two-intermediates")
         val reordered = credential.copy(chain = credential.chain.reversed())
-        val now = credential.leafNotBefore + 60
+        val now = chainNow()
         val request = request()
         val headers = reordered.sign(request, BODY, now)
 
@@ -146,7 +144,7 @@ internal class ResponseSigningChainTest {
     @TestFactory
     fun `M reject malformed proof headers W verify()`(): List<DynamicTest> {
         val credential = credential("two-intermediates")
-        val now = credential.leafNotBefore + 60
+        val now = chainNow()
         val chain = credential.chain.map { it.toByteString().base64() }
         val cases = mapOf<String, (Headers.Builder) -> Unit>(
             "control" to {},
@@ -181,7 +179,7 @@ internal class ResponseSigningChainTest {
     fun `M reject prototype request W verify() {signature version 2 request}`() {
         // Given
         val credential = credential("two-intermediates")
-        val now = credential.leafNotBefore + 60
+        val now = chainNow()
         val request = request().newBuilder().header(PREFIX + "signature-version", "2").build()
         val headers = credential.sign(request, BODY, now)
 
@@ -222,7 +220,7 @@ internal class ResponseSigningChainTest {
     fun `M verify W verify() {explicit default port 443}`() {
         // Given
         val credential = credential("two-intermediates")
-        val now = credential.leafNotBefore + 60
+        val now = chainNow()
         val request = request("https://preview.ff-cdn.datad0g.com:443/precompute-assignments")
         val headers = credential.sign(request, BODY, now)
 
@@ -237,7 +235,7 @@ internal class ResponseSigningChainTest {
     fun `M reject W verify() {plain HTTP}`() {
         // Given
         val credential = credential("two-intermediates")
-        val now = credential.leafNotBefore + 60
+        val now = chainNow()
         val request = request("http://localhost:7676/precompute-assignments")
         val headers = credential.sign(request, BODY, now)
 
@@ -692,12 +690,6 @@ internal class ResponseSigningChainTest {
     }
 
     private data class Credential(val key: PrivateKey, val leaf: ByteArray, val chain: List<ByteArray>) {
-        val leafNotBefore: Long
-            get() = (
-                CertificateFactory.getInstance("X.509")
-                    .generateCertificate(leaf.inputStream()) as X509Certificate
-                ).notBefore.time / 1000
-
         fun sign(request: Request, body: ByteArray, now: Long, minimumNotBefore: Long? = null): Headers {
             val transcript = expectedTranscript(request, body, leaf, chain, now, minimumNotBefore)
             val signature = Signature.getInstance("SHA256withECDSA").apply {
@@ -812,6 +804,9 @@ internal class ResponseSigningChainTest {
 
     private fun root(name: String): String = resourceBytes("$name.pem").toString(Charsets.US_ASCII)
         .lines().filter { it.isNotBlank() && !it.startsWith("-----") }.joinToString("")
+
+    // The shared chain manifest fixes the clock at which every chain credential is valid.
+    private fun chainNow(): Long = resource("manifest.json")["now"].asLong
 
     private fun resource(name: String): JsonObject =
         JsonParser.parseString(resourceBytes(name).toString(Charsets.UTF_8)).asJsonObject

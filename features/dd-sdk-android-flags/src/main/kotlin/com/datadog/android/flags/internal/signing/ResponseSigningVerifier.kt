@@ -73,30 +73,39 @@ internal class ResponseSigningVerifier(
         now: Long
     ): VerifiedResponse {
         signingCheck(anchors.isNotEmpty(), ResponseSigningFailureReason.MISSING_ANCHOR)
-        signingCheck(
-            headers.toMultimap().keys.any { it.startsWith(PREFIX) },
-            ResponseSigningFailureReason.MISSING_PROOF
-        )
+        // Any absent proof header, including the chain header, is a missing proof.
+        val names = headers.toMultimap().keys
+        signingCheck(PROOF_HEADERS.all { it in names }, ResponseSigningFailureReason.MISSING_PROOF)
         signingCheck(body.size <= MAX_RESPONSE_BYTES, ResponseSigningFailureReason.RESPONSE_TOO_LARGE)
         signingCheck(status == 200)
-        signingCheck(single(headers, PREFIX + "signature-version") == SIGNATURE_VERSION)
-        val leafBytes = base64(single(headers, PREFIX + "signing-certificate"), 4096)
+        signingCheck(single(headers, SIGNATURE_VERSION_HEADER) == SIGNATURE_VERSION)
+        val leafBytes = base64(single(headers, SIGNING_CERTIFICATE_HEADER), 4096)
         val chainBytes = chain(headers)
-        signingCheck(single(headers, PREFIX + "certificate-id") == leafBytes.signingBytes().sha256().hex())
-        val issued = seconds(single(headers, PREFIX + "issued-at"))
-        val expires = seconds(single(headers, PREFIX + "expires-at"))
+        signingCheck(single(headers, CERTIFICATE_ID_HEADER) == leafBytes.signingBytes().sha256().hex())
+        val issued = seconds(single(headers, ISSUED_AT_HEADER))
+        val expires = seconds(single(headers, EXPIRES_AT_HEADER))
         val announcedMinimum = minimumNotBefore(headers)
-        signingCheck(expires > issued && expires - issued <= 300)
-        signingCheck(now >= 0 && issued <= now + 30 && expires > now, ResponseSigningFailureReason.EXPIRED_PROOF)
-        val chain = chainCheck { verifiedChain(leafBytes, chainBytes, now, issued, expires) }
-        val signature = base64(single(headers, PREFIX + "signature"), 72)
-        strictSignature(signature)
         signingCheck(
-            verifySignature(chain.leaf.publicKey, transcript(request, status, headers, body), signature),
+            now >= 0 && expires > issued && expires - issued <= 300 && issued <= now + 30 && expires > now,
+            ResponseSigningFailureReason.EXPIRED_PROOF
+        )
+        val chain = chainCheck { verifiedChain(leafBytes, chainBytes, now, issued, expires) }
+        val signature = base64(single(headers, SIGNATURE_HEADER), 72)
+        strictSignature(signature)
+        val transcript = requestCheck { transcript(request, status, headers, body) }
+        signingCheck(
+            verifySignature(chain.leaf.publicKey, transcript, signature),
             ResponseSigningFailureReason.INVALID_SIGNATURE
         )
         applyMinimumLeafNotBefore(chain.anchorId, chain.leaf.notBefore, announcedMinimum)
         return VerifiedResponse(scope(request), now, expires)
+    }
+
+    // The response headers are already valid here, so a transcript failure comes from the request shape.
+    private fun requestCheck(block: () -> ByteArray): ByteArray = try {
+        block()
+    } catch (exception: SigningCheckException) {
+        signingFailure(ResponseSigningFailureReason.UNSUPPORTED_REQUEST, exception)
     }
 
     private class VerifiedChain(val leaf: Certificate, val intermediates: List<Certificate>, val anchorId: String)
@@ -143,7 +152,10 @@ internal class ResponseSigningVerifier(
         }.firstOrNull()
         signingCheck(anchor != null && leaf.issuedBy(intermediates[0]))
         signingCheck(intermediates.zipWithNext().all { (child, parent) -> child.issuedBy(parent) })
-        signingCheck(leaf.covers(now, issued, expires) && intermediates.all { it.covers(now, issued, expires) })
+        signingCheck(
+            leaf.covers(now, issued, expires) && intermediates.all { it.covers(now, issued, expires) },
+            ResponseSigningFailureReason.EXPIRED_PROOF
+        )
         return VerifiedChain(leaf, intermediates, anchor ?: signingFailure())
     }
 
@@ -291,6 +303,22 @@ internal class ResponseSigningVerifier(
     companion object {
         const val PREFIX = "x-datadog-feature-flags-"
         private const val NONCE_HEADER = PREFIX + "request-nonce"
+        private const val SIGNATURE_VERSION_HEADER = PREFIX + "signature-version"
+        private const val SIGNING_CERTIFICATE_HEADER = PREFIX + "signing-certificate"
+        private const val SIGNING_CHAIN_HEADER = PREFIX + "signing-chain"
+        private const val CERTIFICATE_ID_HEADER = PREFIX + "certificate-id"
+        private const val ISSUED_AT_HEADER = PREFIX + "issued-at"
+        private const val EXPIRES_AT_HEADER = PREFIX + "expires-at"
+        private const val SIGNATURE_HEADER = PREFIX + "signature"
+        private val PROOF_HEADERS = listOf(
+            SIGNATURE_VERSION_HEADER,
+            SIGNING_CERTIFICATE_HEADER,
+            SIGNING_CHAIN_HEADER,
+            CERTIFICATE_ID_HEADER,
+            ISSUED_AT_HEADER,
+            EXPIRES_AT_HEADER,
+            SIGNATURE_HEADER
+        )
         private const val MINIMUM_LEAF_NOT_BEFORE_HEADER = PREFIX + "minimum-leaf-not-before"
         const val CAPABILITY = "response-signing-v1"
         const val SIGNATURE_VERSION = "1"
@@ -322,9 +350,9 @@ internal class ResponseSigningVerifier(
 
         fun transcript(request: Request, status: Int, headers: Headers, body: ByteArray): ByteArray {
             val minimum = minimumNotBefore(headers)
-            val issued = seconds(single(headers, PREFIX + "issued-at"))
-            val expires = seconds(single(headers, PREFIX + "expires-at"))
-            val leaf = base64(single(headers, PREFIX + "signing-certificate"), MAX_CERTIFICATE_BYTES)
+            val issued = seconds(single(headers, ISSUED_AT_HEADER))
+            val expires = seconds(single(headers, EXPIRES_AT_HEADER))
+            val leaf = base64(single(headers, SIGNING_CERTIFICATE_HEADER), MAX_CERTIFICATE_BYTES)
             val intermediates = chain(headers)
             return requestTranscript(request).apply {
                 writeShort(status).writeLong(issued).writeLong(expires).writeLong(body.size.toLong())
@@ -373,7 +401,7 @@ internal class ResponseSigningVerifier(
                     request.method == "POST" && url.isHttps && url.username.isEmpty() && url.password.isEmpty() &&
                         url.fragment == null
                 )
-                signingCheck(single(request.headers, PREFIX + "signature-version") == SIGNATURE_VERSION)
+                signingCheck(single(request.headers, SIGNATURE_VERSION_HEADER) == SIGNATURE_VERSION)
                 signingCheck(nonce.matches(Regex("[0-9a-f]{32}")))
                 val capabilities = single(request.headers, "x-dd-feature-flags-capabilities")
                 signingCheck(CAPABILITY in capabilities.split(',').map { it.trim() })
@@ -443,7 +471,7 @@ internal class ResponseSigningVerifier(
 
         /** Intermediates in header order: 1 to 3 strict base64 DER entries joined by commas without spaces. */
         private fun chain(headers: Headers): List<ByteArray> {
-            val value = single(headers, PREFIX + "signing-chain")
+            val value = single(headers, SIGNING_CHAIN_HEADER)
             val maxEntry = ((MAX_CERTIFICATE_BYTES + 2) / 3) * 4
             signingCheck(value.length <= MAX_INTERMEDIATES * (maxEntry + 1))
             val entries = value.split(',')

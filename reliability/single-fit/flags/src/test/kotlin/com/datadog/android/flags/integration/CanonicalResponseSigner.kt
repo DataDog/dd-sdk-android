@@ -35,12 +35,11 @@ internal object CanonicalResponseSigner {
     private fun credential(name: String) = JsonParser.parseString(
         checkNotNull(javaClass.getResource("/response-signing-chain/$name.json")).readText()
     ).asJsonObject
-    private val defaultLeaf = bytes(credential(DEFAULT_CREDENTIAL)["certificate_der_base64"].asString)
 
-    // Test leaves live 72 hours; derive the clock from the fixture so refreshed credentials keep working.
-    val now = (
-        CertificateFactory.getInstance("X.509").generateCertificate(defaultLeaf.inputStream()) as X509Certificate
-        ).notBefore.time / 1000 + 60
+    // The shared chain manifest fixes the clock at which every chain credential is valid.
+    val now = JsonParser.parseString(
+        checkNotNull(javaClass.getResource("/response-signing-chain/manifest.json")).readText()
+    ).asJsonObject["now"].asLong
     val root = checkNotNull(javaClass.getResource("/response-signing-chain/root-a.pem")).readText()
         .lines().filter { it.isNotBlank() && !it.startsWith("-----") }.joinToString("")
 

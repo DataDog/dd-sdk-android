@@ -105,7 +105,11 @@ internal class ResponseSigningVerifierTest {
                     // When
                     val result = verify(testedVerifier, vector)
                     // Then
-                    assertThat(result != null).isEqualTo(vector["expected_accept"].asBoolean)
+                    assertThat(result.proof != null).isEqualTo(vector["expected_accept"].asBoolean)
+                    if (!vector["expected_accept"].asBoolean) {
+                        // Every rejected vector names the shared cross-SDK reason code.
+                        assertThat(result.failure?.code).isEqualTo(vector["sdk_reason"].asString)
+                    }
                     if (vector["expected_accept"].asBoolean) {
                         val response = vector.getAsJsonObject("response")
                         val transcript = ResponseSigningVerifier.transcript(
@@ -162,9 +166,9 @@ internal class ResponseSigningVerifierTest {
             .build()
     }
 
-    private fun verify(verifier: ResponseSigningVerifier, vector: JsonObject): VerifiedResponse? {
+    private fun verify(verifier: ResponseSigningVerifier, vector: JsonObject): ResponseSigningVerifier.Verification {
         val response = vector.getAsJsonObject("response")
-        return verifier.verify(
+        return verifier.verification(
             request(vector),
             response["status"].asInt,
             headers(response.getAsJsonArray("headers")),
