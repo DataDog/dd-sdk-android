@@ -259,7 +259,7 @@ internal class OkHttpRequestResourceIdentifierTest {
     fun `M return {POST url -1 null} W uniqueId {exception thrown for content length, no content type}`() {
         // Given
         val request = Request.Builder()
-            .post(fakeRequestBody(contentLength = { throw IOException("") }, contentType = null))
+            .post(fakeRequestBody(contentLength = { throw IOException("") }))
             .url(fakeUrl)
             .build()
 
@@ -274,7 +274,7 @@ internal class OkHttpRequestResourceIdentifierTest {
     fun `M return {POST url -1 null} W uniqueId {unknown content length, no content type}`() {
         // Given
         val request = Request.Builder()
-            .post(fakeRequestBody(contentLength = { -1L }, contentType = null))
+            .post(fakeRequestBody(contentLength = { -1L }))
             .url(fakeUrl)
             .build()
 
@@ -304,7 +304,7 @@ internal class OkHttpRequestResourceIdentifierTest {
     fun `M return key with -1 W identifyRequest() {exception thrown for content length}`() {
         // Given
         val throwingRequest = Request.Builder()
-            .post(fakeRequestBody(contentLength = { throw IOException("") }, contentType = null))
+            .post(fakeRequestBody(contentLength = { throw IOException("") }))
             .url(fakeUrl)
             .build()
         val emptyRequest = Request.Builder()
@@ -328,7 +328,7 @@ internal class OkHttpRequestResourceIdentifierTest {
     fun `M return same key W uniqueId called repeatedly {exception thrown for content length}`() {
         // Given
         val request = Request.Builder()
-            .post(fakeRequestBody(contentLength = { throw IOException("") }, contentType = null))
+            .post(fakeRequestBody(contentLength = { throw IOException("") }))
             .url(fakeUrl)
             .build()
 
@@ -341,9 +341,9 @@ internal class OkHttpRequestResourceIdentifierTest {
         assertThat(startKey).isNotEqualTo("POST•$fakeUrl")
     }
 
-    private fun fakeRequestBody(contentLength: () -> Long, contentType: MediaType?) = object : RequestBody() {
+    private fun fakeRequestBody(contentLength: () -> Long) = object : RequestBody() {
         override fun contentLength(): Long = contentLength()
-        override fun contentType(): MediaType? = contentType
+        override fun contentType(): MediaType? = null
         override fun writeTo(sink: BufferedSink) {
             // no-op
         }
