@@ -48,7 +48,7 @@ import org.json.JSONObject
  * @param featureSdkCore the SDK core for logging and internal operations
  * @param evaluationsManager manages flag evaluations and network requests
  * @param flagsRepository local storage for precomputed flag values
- * @param flagsConfiguration configuration for the flags feature
+ * @param flagsConfiguration configuration for the flags feature, narrowed by this client's options
  * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
  * @param exposureProcessor responsible for writing exposure batches to be sent to flags backend.
  * @param evaluationsFeature the evaluations subfeature for accessing processor and context (optional).
@@ -56,6 +56,7 @@ import org.json.JSONObject
  * @param evaluationTelemetryOptOutParameterEnabled whether this client accepts the local telemetry policy
  * @param experimentationOptOut validates the requested context before assignment resolution
  * @param assignmentAuthorization prevents resolving retained assignments for another authorized subject
+ * @param trackExposures false to treat evaluations of this client as non-exposures, without recording them
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
@@ -70,7 +71,8 @@ internal class DatadogFlagsClient(
     internal val evaluationTelemetryOptOutParameterEnabled: Boolean,
     internal val experimentationOptOut: ExperimentationOptOut,
     private val assignmentAuthorization: AssignmentAuthorization =
-        AssignmentAuthorization(null, experimentationOptOut.stateLock)
+        AssignmentAuthorization(null, experimentationOptOut.stateLock),
+    private val trackExposures: Boolean = true
 ) : FlagsClient {
 
     private val replayTargetingKeyCache = EvaluationTargetingKeyCache()
@@ -297,7 +299,8 @@ internal class DatadogFlagsClient(
             resolution.telemetryTargetingKey
         )
         val details = createSuccessResolution(flag, resolution.value, resolution.observeFullEvaluationData)
-        val isExposure = flag.doLog && flag.variationKey.isNotBlank() && flag.allocationKey.isNotBlank()
+        val isExposure = trackExposures && flag.doLog &&
+            flag.variationKey.isNotBlank() && flag.allocationKey.isNotBlank()
         return if (isExposure && isCurrentResolutionContext(context)) {
             _FlagsInternalProxy.DeferredExposureResolution(details, context) {
                 val isCurrent = isCurrentResolutionContext(context)
@@ -825,9 +828,12 @@ internal class DatadogFlagsClient(
         )
     }
 
-    /** Records the exposure, and sends it unless exposure tracking is off. */
+    /**
+     * Records the exposure, and sends it unless exposure tracking is off.
+     * A client without exposure tracking neither records nor sends it.
+     */
     internal fun trackFlagExposure(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
-        if (!flag.doLog) return
+        if (!trackExposures || !flag.doLog) return
         val targetingContext = assignmentAuthorization.targetingContext(context)
         if (!isCurrentResolutionContext(targetingContext)) return
         exposureProcessor.processEvent(flagKey, targetingContext, flag)
