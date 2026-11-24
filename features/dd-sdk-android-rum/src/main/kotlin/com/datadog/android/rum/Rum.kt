@@ -84,11 +84,19 @@ object Rum {
 
         sdkCore.registerFeature(rumFeature)
 
-        sdkCore.getFeature(rumFeature.name)?.dataStore?.let {
-            RumAnonymousIdentifierManager(it, sdkCore).manageAnonymousId(
-                effectiveConfiguration.featureConfiguration.trackAnonymousUser
+        val rumFeatureScope = sdkCore.getFeature(rumFeature.name)
+        if (rumFeatureScope == null) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { RUM_FEATURE_NOT_REGISTERED }
             )
+            return
         }
+
+        RumAnonymousIdentifierManager(rumFeatureScope.dataStore, sdkCore).manageAnonymousId(
+            effectiveConfiguration.featureConfiguration.trackAnonymousUser
+        )
 
         val rumMonitor = createMonitor(sdkCore, rumFeature)
 
@@ -217,6 +225,10 @@ object Rum {
 
     internal const val RUM_FEATURE_ALREADY_ENABLED =
         "RUM Feature is already enabled in this SDK core, ignoring the call to enable it."
+
+    internal const val RUM_FEATURE_NOT_REGISTERED =
+        "RUM feature could not be registered: the SDK instance is not initialized. " +
+            "No RUM data will be sent."
 
     private fun Configuration.isTimeseriesConfigured(): Boolean {
         return timeseriesConfiguration?.collectTypes?.isNotEmpty() == true
