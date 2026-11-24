@@ -47,6 +47,10 @@ internal class StubFeatureScope(
         }
     }
 
+    fun rawEventsWritten(): List<RawBatchEvent> {
+        return synchronized(eventsWritten) { eventsWritten.toList() }.map { (event, _) -> event }
+    }
+
     fun eventsReceived(): List<Any> {
         return eventsReceived
     }

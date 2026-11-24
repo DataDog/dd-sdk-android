@@ -21,6 +21,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
@@ -102,6 +103,16 @@ class StubSDKCore(
      */
     fun eventsWritten(featureName: String): List<StubEvent> {
         return featureScopes[featureName]?.eventsWritten().orEmpty()
+    }
+
+    /**
+     * Lists the events written by a given feature as they were handed to the writer, so that binary
+     * payloads are not altered by a conversion to [String].
+     * @param featureName the name of the feature
+     * @return a list of [RawBatchEvent]
+     */
+    fun rawEventsWritten(featureName: String): List<RawBatchEvent> {
+        return featureScopes[featureName]?.rawEventsWritten().orEmpty()
     }
 
     /**
