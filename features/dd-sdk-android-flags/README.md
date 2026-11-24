@@ -599,7 +599,7 @@ The weekly `Feature flags precomputed fixtures` workflow opens a draft update PR
 It runs only in `DataDog/dd-sdk-android`, not in forks.
 Scheduled and manual updates on `develop` share one concurrency group.
 It requests a short-lived write token only when the pin changed. The token is restricted to the default branch and this workflow.
-If the PR creation fails, the workflow deletes the new update branch.
+If PR creation fails, the workflow retains the signed update branch for inspection and recovery.
 A PR that changes only the pin runs the `test:single-fit-flags` GitLab job, which runs this suite.
 It waits when an update PR is already open. Normal SDK CI must pass before merge.
 Merge the upstream fixture contract before merging its consumer PRs.

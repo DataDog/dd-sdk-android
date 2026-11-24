@@ -91,10 +91,3 @@ jobs:
           UPDATE_BRANCH: ${{ steps.prepare.outputs.branch }}
         run: |
           gh pr create --draft --base develop --head "$UPDATE_BRANCH" --title 'FFL-3568: Update feature flags precomputed fixtures' --body-file "$RUNNER_TEMP/feature-flags-precomputed-pr.md"
-      # Remove the new branch, so that a failed run leaves no orphan update branch.
-      - name: Delete the update branch after a failed PR creation
-        if: failure() && steps.commit.outcome == 'success' && steps.pr.outcome == 'failure'
-        env:
-          GH_TOKEN: ${{ steps.token.outputs.token }}
-          UPDATE_BRANCH: ${{ steps.prepare.outputs.branch }}
-        run: gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$UPDATE_BRANCH"
