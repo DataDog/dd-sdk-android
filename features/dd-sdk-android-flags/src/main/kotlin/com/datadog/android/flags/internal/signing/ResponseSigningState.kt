@@ -38,7 +38,7 @@ internal class ResponseSigningState(
     private val logger: InternalLogger,
     private val context: ResponseSigningContext = ResponseSigningContext(),
     minimumNotBefore: MinimumNotBeforeStore = InMemoryMinimumNotBeforeStore(),
-    private val telemetry: ResponseSigningTelemetry = ResponseSigningTelemetry(logger, mutableSetOf(), "", ""),
+    private val telemetry: ResponseSigningTelemetry = ResponseSigningTelemetry(logger, "", ""),
     private val nowSeconds: () -> Long
 ) {
     val lock = context.lock
@@ -95,12 +95,17 @@ internal class ResponseSigningState(
         true
     }
 
-    /** [allowExpired] keeps an expired proof admissible; the identity, context, scope and lower time bound still apply. */
-    fun permits(context: EvaluationContext, proof: VerifiedResponse, allowExpired: Boolean = false): Boolean =
+    /**
+     * [allowStale] keeps a proof admissible outside its time window (expired, or the clock moved back); the identity,
+     * context and scope still apply. Otherwise the clock may be at most [CLOCK_STEP_ALLOWANCE_SECONDS] before
+     * admission.
+     */
+    fun permits(context: EvaluationContext, proof: VerifiedResponse, allowStale: Boolean = false): Boolean =
         synchronized(lock) {
             val now = now()
+            val inWindow = now + CLOCK_STEP_ALLOWANCE_SECONDS >= proof.verifiedAt && now < proof.expiresAt
             identity.active && identity === this.context.snapshot() && context == requestedContext &&
-                proof.scope == expectedScope && now >= proof.verifiedAt && (allowExpired || now < proof.expiresAt)
+                proof.scope == expectedScope && (allowStale || inWindow)
         }
 
     /** The signed request, or the reason that the SDK could not prepare one; exactly one is set. */
@@ -159,7 +164,10 @@ internal class ResponseSigningState(
             onlyOnce = true
         )
     }
-    private companion object {
-        const val NONCE_BYTES = 16
+    companion object {
+        private const val NONCE_BYTES = 16
+
+        /** A backward clock step up to this size keeps a proof valid; the same as the issued-at allowance. */
+        const val CLOCK_STEP_ALLOWANCE_SECONDS = 30L
     }
 }

@@ -126,9 +126,8 @@ or prior successful fetch. An SDK version stops verifying responses after its bu
 - `OBSERVE` reports bounded telemetry on whether each response is verified, with the reason code, and accepts otherwise-valid
   responses when optional verification fails. Authentication, transport, redirect, and
   JSON errors remain failures. Signed and unsigned requests are never retried as a downgrade.
-- `REQUIRED` accepts only valid proofs. A missing or invalid proof yields evaluation defaults.
-  Verified assignments are held only in memory. Restart, a changed request scope, or a clock
-  earlier than admission causes defaults.
+- `REQUIRED` accepts only valid proofs. A response with a missing or invalid proof is never applied. Before the first verified response, and after a context change, evaluations return defaults. If earlier verified flags remain eligible for the current context and request scope, a failed refresh keeps them as `Stale`; with `expireVerifiedFlags(true)`, they stop at their proof expiry.
+  Verified assignments are held only in memory. Restart or a changed request scope causes defaults.
   Stopping the Flags feature immediately invalidates prior proofs and prevents in-flight
   responses from restoring them.
 - RUM is not part of the signing scope. A RUM start, a RUM stop or a change of the RUM
@@ -140,11 +139,13 @@ When verification fails, the SDK keeps the reason. In `REQUIRED` mode, the fetch
 error. The SDK logs `Flag response signing failed (<code>): <what failed>. <fix hint>.` once per code,
 as an error in `REQUIRED` mode and as a warning in `OBSERVE` mode.
 
-Telemetry uses one bounded event, `flags.response_signing`, on the core telemetry channel. It has
-the fields `mode` (`observe` or `required`), `result` (`verified` or `unverified`), `reason` (a code
+Telemetry uses one bounded event on the core telemetry channel. Its message is
+`flags.response_signing <mode> <result> [<reason>]`, so each outcome has its own telemetry identity. It
+has the fields `mode` (`observe` or `required`), `result` (`verified` or `unverified`), `reason` (a code
 below, only when unverified), `sdk_version` and `site`. `OBSERVE` reports every result, `REQUIRED`
-reports failures only, and `OFF` reports nothing. Each distinct `(mode, result, reason)` is sent once
-per Flags feature. The event never carries flag keys or values, headers, tokens, nonces, certificate
+reports failures only, and `OFF` reports nothing. The events need RUM: the RUM telemetry handler
+samples them and deduplicates them by identity for each RUM session. Without RUM, no signing
+telemetry is sent. The event never carries flag keys or values, headers, tokens, nonces, certificate
 bytes, serials, URLs or the targeting context.
 
 | Code | Meaning |
@@ -171,7 +172,12 @@ When the proof of the last verified response expires in `REQUIRED` mode:
   `FlagsClientState.Error`, and evaluations return defaults. This applies from `Ready` and from
   `Stale`. This gives the strict guarantee.
 - The SDK detects expiry with a timer at `expires-at` and with a check on each flag read, so
-  the state and its event change at the first of the two.
+  the state and its event change at the first of the two. Expiry also applies while a refresh is
+  `Reconciling`; the refresh stays pending, and its verified response restores `Ready`.
+- The device clock may step back at most 30 s before the time of admission (the same allowance as
+  for `issued-at`). A larger step is handled as at expiry: `Stale` with the verified flags, or `Error`
+  with `expired-proof` when `expireVerifiedFlags(true)`. When the clock returns into the proof window,
+  the state returns to what it was before the step.
 - A new verified response returns the client to `FlagsClientState.Ready` in both settings.
   The customer decides when to refetch.
 - `expireVerifiedFlags` has no effect in `OBSERVE` or `OFF` mode.

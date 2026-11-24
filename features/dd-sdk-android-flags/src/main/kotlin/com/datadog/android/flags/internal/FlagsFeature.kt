@@ -80,9 +80,6 @@ internal class FlagsFeature(
     @Volatile
     internal var minimumNotBefore: MinimumNotBeforeStore = InMemoryMinimumNotBeforeStore()
 
-    /** Keys of the `flags.response_signing` events already sent by this feature's clients. */
-    internal val signingTelemetrySent: MutableSet<String> = mutableSetOf()
-
     internal val signingContext = if (flagsConfiguration.responseSigning.mode == ResponseSigningMode.OFF) {
         null
     } else {

@@ -20,6 +20,7 @@ import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsResponseSigningException
+import com.datadog.android.flags.ResponseSigningFailureReason
 import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.diagnostics.UUIDv7Generator
@@ -38,7 +39,6 @@ import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.internal.selection.logIgnoredFlagSelection
 import com.datadog.android.flags.internal.signing.ResponseSigningState
-import com.datadog.android.flags.internal.signing.VerifiedFlagsExpiredException
 import com.datadog.android.flags.internal.signing.VerifiedResponse
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
@@ -146,6 +146,10 @@ internal class EvaluationsManager(
     private var acceptedTimeoutFallback: AcceptedTimeoutFallback? = null
     private var proofExpiryToken: Any? = null
     private var proofExpiresAt: Long = Long.MAX_VALUE
+    private var proofVerifiedAt: Long = Long.MIN_VALUE
+
+    // The state before a backward clock step changed it, and the state that step set; null without a step.
+    private var clockStepRestore: Pair<FlagsClientState, FlagsClientState>? = null
     private var cancelProofExpiry: (() -> Unit)? = null
 
     /**
@@ -429,10 +433,13 @@ internal class EvaluationsManager(
                                 installed = true
                             } else {
                                 flagsRepository.restoreVerifiedFlags()?.let { effects.enqueue { it.complete {} } }
+                                // Recheck eligibility now: the proof may have expired while the refresh was pending.
+                                val eligibleContext = flagsRepository.takeIf { it.hasConfiguration() }
+                                    ?.getEvaluationContext()
                                 applyRequestFailure(
                                     request,
                                     outcome,
-                                    cachedContext.get(),
+                                    eligibleContext,
                                     authorizationRejected,
                                     throwable
                                 )
@@ -473,6 +480,8 @@ internal class EvaluationsManager(
         val previous = synchronized(initializationTerminalLock) {
             proofExpiryToken = token
             proofExpiresAt = proof.expiresAt
+            proofVerifiedAt = proof.verifiedAt
+            clockStepRestore = null
             cancelProofExpiry.also { cancelProofExpiry = null }
         }
         previous?.invoke()
@@ -485,33 +494,90 @@ internal class EvaluationsManager(
         if (superseded) cancel()
     }
 
-    /** Read-time expiry check; the timer at expires-at does the same when no read happens. */
+    /**
+     * Read-time proof check; the timer at expires-at does the expiry part when no read happens. A clock that moved
+     * back more than [ResponseSigningState.CLOCK_STEP_ALLOWANCE_SECONDS] before admission behaves as at expiry, and
+     * the state recovers when the clock returns into the proof window.
+     */
     fun checkProofExpiry() {
         val signing = signing ?: return
-        val token = synchronized(initializationTerminalLock) {
-            proofExpiryToken?.takeIf { signing.now() >= proofExpiresAt }
+        val now = signing.now()
+        val check = synchronized(initializationTerminalLock) {
+            proofExpiryToken?.let { token ->
+                when {
+                    now >= proofExpiresAt -> ProofCheck(token, ProofTime.EXPIRED)
+                    now + ResponseSigningState.CLOCK_STEP_ALLOWANCE_SECONDS < proofVerifiedAt ->
+                        ProofCheck(token, ProofTime.CLOCK_BEHIND)
+                    clockStepRestore != null -> ProofCheck(token, ProofTime.VALID)
+                    else -> null
+                }
+            }
         } ?: return
-        onProofExpired(signing, token)
+        when (check.time) {
+            ProofTime.EXPIRED -> onProofExpired(signing, check.token)
+            ProofTime.CLOCK_BEHIND -> onClockBehind(signing, check.token)
+            ProofTime.VALID -> onClockRestored(check.token)
+        }
     }
 
-    // Ready goes Stale by default; with expireVerifiedFlags, Ready and Stale go to Error.
+    private enum class ProofTime { EXPIRED, CLOCK_BEHIND, VALID }
+
+    private class ProofCheck(val token: Any, val time: ProofTime)
+
+    // Ready and Reconciling go Stale by default; with expireVerifiedFlags, Ready, Reconciling and Stale go to Error.
+    // A pending refresh stays pending: its verified response still restores Ready.
+    private fun expiryAppliesLocked(expireFlags: Boolean): Boolean =
+        currentState == FlagsClientState.Ready || currentState == FlagsClientState.Reconciling ||
+            (expireFlags && currentState == FlagsClientState.Stale)
+
+    private fun expiredState(expireFlags: Boolean): FlagsClientState = if (expireFlags) {
+        FlagsClientState.Error(FlagsResponseSigningException(ResponseSigningFailureReason.EXPIRED_PROOF))
+    } else {
+        FlagsClientState.Stale
+    }
+
+    private fun onClockBehind(signing: ResponseSigningState, token: Any) {
+        val expireFlags = signing.configuration.expireVerifiedFlags
+        synchronized(initializationTerminalLock) {
+            if (proofExpiryToken !== token || clockStepRestore != null || !expiryAppliesLocked(expireFlags)) return
+            val stepState = expiredState(expireFlags)
+            clockStepRestore = currentState to stepState
+            enqueueState(stepState)
+        }
+        effects.drain()
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            { VERIFIED_FLAGS_CLOCK_BEHIND_MESSAGE },
+            onlyOnce = true
+        )
+    }
+
+    private fun onClockRestored(token: Any) {
+        synchronized(initializationTerminalLock) {
+            val (previous, stepState) = clockStepRestore ?: return
+            if (proofExpiryToken !== token) return
+            clockStepRestore = null
+            // Another transition since the clock step owns the state now.
+            if (currentState === stepState) enqueueState(previous)
+        }
+        effects.drain()
+    }
+
     private fun onProofExpired(signing: ResponseSigningState, token: Any) {
         val expireFlags = signing.configuration.expireVerifiedFlags
         val cancelTimer = synchronized(initializationTerminalLock) {
-            val applies = currentState == FlagsClientState.Ready ||
-                (expireFlags && currentState == FlagsClientState.Stale)
-            if (proofExpiryToken !== token || !applies) return
+            val stepState = clockStepRestore?.second
+            if (proofExpiryToken !== token || (!expiryAppliesLocked(expireFlags) && currentState !== stepState)) {
+                return
+            }
             proofExpiryToken = null
             proofExpiresAt = Long.MAX_VALUE
+            clockStepRestore = null
             val cancel = cancelProofExpiry
             cancelProofExpiry = null
-            enqueueState(
-                if (expireFlags) {
-                    FlagsClientState.Error(VerifiedFlagsExpiredException(VERIFIED_FLAGS_EXPIRED_MESSAGE))
-                } else {
-                    FlagsClientState.Stale
-                }
-            )
+            // A clock step already published the same expired state.
+            if (currentState !== stepState) enqueueState(expiredState(expireFlags))
             cancel
         }
         cancelTimer?.invoke()
@@ -807,6 +873,9 @@ internal class EvaluationsManager(
         internal const val VERIFIED_FLAGS_STALE_MESSAGE =
             "The proof of the last verified flag assignments expired. The client keeps serving them as stale" +
                 " until a new verified response arrives."
+        internal const val VERIFIED_FLAGS_CLOCK_BEHIND_MESSAGE =
+            "The device clock moved back before the last verified flag assignments. They are handled as expired" +
+                " until the clock returns into their proof window."
         internal const val VERIFIED_FLAGS_EXPIRED_MESSAGE =
             "The proof of the last verified flag assignments expired. Evaluations return defaults" +
                 " until a new verified response arrives."

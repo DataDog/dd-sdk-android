@@ -526,7 +526,6 @@ interface FlagsClient {
                     minimumNotBefore = flagsFeature.minimumNotBefore,
                     telemetry = ResponseSigningTelemetry(
                         featureSdkCore.internalLogger,
-                        flagsFeature.signingTelemetrySent,
                         signingDatadogContext?.site?.let { site ->
                             ResponseSigningTelemetry.siteName(site.intakeEndpoint)
                         }.orEmpty(),

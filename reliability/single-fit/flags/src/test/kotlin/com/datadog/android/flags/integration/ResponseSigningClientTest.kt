@@ -63,6 +63,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 
@@ -822,7 +823,7 @@ internal class ResponseSigningClientTest {
     }
 
     private fun signingEvents(): List<Map<String, Any?>> = stubCore.telemetryEventsWritten()
-        .filter { it.message == "flags.response_signing" }
+        .filter { it.message.startsWith("flags.response_signing ") }
         .map { it.additionalProperties }
 
     @Test
@@ -849,14 +850,93 @@ internal class ResponseSigningClientTest {
             testedClient.setEvaluationContext(EvaluationContext("subject-$it-unsigned"), null)
             queue.removeFirst().run()
         }
-        // Then
-        assertThat(signingEvents()).hasSize(2)
+        // Then: each outcome has its own message identity; the RUM handler deduplicates identical ones per session.
+        assertThat(stubCore.telemetryEventsWritten().map { it.message }.filter { it.startsWith("flags.") }.distinct())
+            .containsExactlyInAnyOrder(
+                "flags.response_signing observe verified",
+                "flags.response_signing observe unverified missing-proof"
+            )
         assertThat(signingEvents()).allSatisfy {
             assertThat(it.keys).isSubsetOf("mode", "result", "reason", "sdk_version", "site")
             assertThat(it["mode"]).isEqualTo("observe")
         }
-        assertThat(signingEvents().map { it["result"] to it["reason"] })
+        assertThat(signingEvents().map { it["result"] to it["reason"] }.distinct())
             .containsExactlyInAnyOrder("verified" to null, "unverified" to "missing-proof")
+    }
+
+    @ParameterizedTest(name = "expireVerifiedFlags={0}")
+    @ValueSource(booleans = [false, true])
+    fun `M apply proof expiry W refresh is reconciling {required}`(expireVerifiedFlags: Boolean) {
+        // Given
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = expireVerifiedFlags)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        // When
+        advanceClock(PROOF_WINDOW_SECONDS)
+        // Then
+        assertExpiredState(expireVerifiedFlags)
+        // When the pending refresh returns a verified response
+        signedAt = now
+        queue.removeFirst().run()
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+    }
+
+    @Test
+    fun `M keep the expiry error W refresh fails after expiry {required, expireVerifiedFlags}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = true)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        advanceClock(PROOF_WINDOW_SECONDS)
+        // When
+        responseKind = "unsigned"
+        queue.removeFirst().run()
+        // Then: the failed refresh rechecks eligibility, so it does not publish Stale.
+        assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+    }
+
+    @ParameterizedTest(name = "expireVerifiedFlags={0}")
+    @ValueSource(booleans = [false, true])
+    fun `M handle a backward clock step W resolveBooleanValue() {required}`(expireVerifiedFlags: Boolean) {
+        // Given
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = expireVerifiedFlags)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        val verifiedAt = now
+        // When the clock steps back 30 s
+        now = verifiedAt - CLOCK_STEP_ALLOWANCE_SECONDS
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        // When the clock steps back 31 s
+        now = verifiedAt - CLOCK_STEP_ALLOWANCE_SECONDS - 1
+        val value = testedClient.resolveBooleanValue("critical-demo", false)
+        // Then
+        assertThat(value).isEqualTo(!expireVerifiedFlags)
+        assertExpiredState(expireVerifiedFlags)
+        // When the clock returns into the proof window
+        now = verifiedAt + 1
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+    }
+
+    private fun assertExpiredState(expireVerifiedFlags: Boolean) {
+        val state = testedClient.state.getCurrentState()
+        if (expireVerifiedFlags) {
+            assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
+            val error = (state as FlagsClientState.Error).error
+            assertThat(error).isInstanceOf(FlagsResponseSigningException::class.java)
+            assertThat((error as FlagsResponseSigningException).reason.code).isEqualTo("expired-proof")
+        } else {
+            assertThat(state).isEqualTo(FlagsClientState.Stale)
+        }
     }
 
     @Test
@@ -1115,6 +1195,7 @@ internal class ResponseSigningClientTest {
         const val PREFIX = "x-datadog-feature-flags-"
         const val PROOF_WINDOW_SECONDS = 300L
         const val INITIALIZATION_TIMEOUT_SECONDS = 5L
+        const val CLOCK_STEP_ALLOWANCE_SECONDS = 30L
 
         @JvmStatic
         fun expiryCases(): List<Arguments> = listOf(true, false).flatMap { expire ->

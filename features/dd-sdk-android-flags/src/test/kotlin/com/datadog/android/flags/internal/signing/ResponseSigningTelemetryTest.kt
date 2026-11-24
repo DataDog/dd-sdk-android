@@ -22,16 +22,16 @@ import org.mockito.kotlin.verify
 
 internal class ResponseSigningTelemetryTest {
     private val mockLogger = mock<InternalLogger>()
-    private val testedTelemetry = ResponseSigningTelemetry(mockLogger, mutableSetOf(), SITE, SDK_VERSION)
+    private val testedTelemetry = ResponseSigningTelemetry(mockLogger, SITE, SDK_VERSION)
 
     @Test
-    fun `M send one event W report() {two identical failures}`() {
+    fun `M give the outcome its own identity W report() {required failure}`() {
         // When
-        repeat(2) { testedTelemetry.report(ResponseSigningMode.REQUIRED, ResponseSigningFailureReason.MISSING_PROOF) }
+        testedTelemetry.report(ResponseSigningMode.REQUIRED, ResponseSigningFailureReason.MISSING_PROOF)
 
         // Then
         assertThat(events()).containsExactly(
-            mapOf(
+            "flags.response_signing required unverified missing-proof" to mapOf(
                 "mode" to "required",
                 "result" to "unverified",
                 "reason" to "missing-proof",
@@ -42,24 +42,31 @@ internal class ResponseSigningTelemetryTest {
     }
 
     @Test
-    fun `M send two events W report() {two different reasons}`() {
+    fun `M send each report with the same identity W report() {two identical failures}`() {
         // When
+        repeat(2) { testedTelemetry.report(ResponseSigningMode.REQUIRED, ResponseSigningFailureReason.MISSING_PROOF) }
+
+        // Then: the SDK keeps no dedupe set; the RUM telemetry handler deduplicates by identity for each session.
+        assertThat(events().map { it.first }.distinct()).containsExactly(
+            "flags.response_signing required unverified missing-proof"
+        )
+        assertThat(events()).hasSize(2)
+    }
+
+    @Test
+    fun `M use distinct identities W report() {different outcomes}`() {
+        // When
+        testedTelemetry.report(ResponseSigningMode.OBSERVE, null)
         testedTelemetry.report(ResponseSigningMode.OBSERVE, ResponseSigningFailureReason.MISSING_PROOF)
         testedTelemetry.report(ResponseSigningMode.OBSERVE, ResponseSigningFailureReason.INVALID_SIGNATURE)
 
         // Then
-        assertThat(events().map { it["reason"] }).containsExactly("missing-proof", "invalid-signature")
-    }
-
-    @Test
-    fun `M send verified once without a reason W report() {observe}`() {
-        // When
-        repeat(2) { testedTelemetry.report(ResponseSigningMode.OBSERVE, null) }
-
-        // Then
-        assertThat(events()).containsExactly(
-            mapOf("mode" to "observe", "result" to "verified", "sdk_version" to SDK_VERSION, "site" to SITE)
+        assertThat(events().map { it.first }).containsExactly(
+            "flags.response_signing observe verified",
+            "flags.response_signing observe unverified missing-proof",
+            "flags.response_signing observe unverified invalid-signature"
         )
+        assertThat(events().first().second).doesNotContainKey("reason")
     }
 
     @Test
@@ -74,18 +81,13 @@ internal class ResponseSigningTelemetryTest {
     }
 
     @Test
-    fun `M share sent keys W report() {two clients of one feature}`() {
-        // Given
-        val sent = mutableSetOf<String>()
-        val first = ResponseSigningTelemetry(mockLogger, sent, SITE, SDK_VERSION)
-        val second = ResponseSigningTelemetry(mockLogger, sent, SITE, SDK_VERSION)
-
+    fun `M send no field outside the contract W report()`() {
         // When
-        first.report(ResponseSigningMode.REQUIRED, ResponseSigningFailureReason.EXPIRED_PROOF)
-        second.report(ResponseSigningMode.REQUIRED, ResponseSigningFailureReason.EXPIRED_PROOF)
+        testedTelemetry.report(ResponseSigningMode.OBSERVE, ResponseSigningFailureReason.EXPIRED_PROOF)
 
         // Then
-        assertThat(events()).hasSize(1)
+        assertThat(events().single().second.keys)
+            .containsExactlyInAnyOrder("mode", "result", "reason", "sdk_version", "site")
     }
 
     @Test
@@ -94,7 +96,7 @@ internal class ResponseSigningTelemetryTest {
         assertThat(ResponseSigningTelemetry.siteName("https://browser-intake-datadoghq.com")).isEqualTo("datadoghq.com")
     }
 
-    private fun events(): List<Map<String, Any?>> {
+    private fun events(): List<Pair<String, Map<String, Any?>>> {
         val messages = argumentCaptor<() -> String>()
         val properties = argumentCaptor<Map<String, Any?>>()
         verify(mockLogger, atLeast(0)).log(
@@ -105,8 +107,7 @@ internal class ResponseSigningTelemetryTest {
             eq(false),
             properties.capture()
         )
-        assertThat(messages.allValues.map { it() }).allMatch { it == ResponseSigningTelemetry.EVENT }
-        return properties.allValues
+        return messages.allValues.map { it() }.zip(properties.allValues)
     }
 
     private companion object {

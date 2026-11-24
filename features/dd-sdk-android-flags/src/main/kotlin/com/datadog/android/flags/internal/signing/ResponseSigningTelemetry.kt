@@ -16,16 +16,17 @@ import java.util.Locale
 
 /**
  * The bounded `flags.response_signing` event, shared with the iOS and browser SDKs. OBSERVE reports every result,
- * REQUIRED reports failures only, and OFF reports nothing. Each distinct (mode, result, reason) is sent once.
+ * REQUIRED reports failures only, and OFF reports nothing.
+ *
+ * The message carries mode, result and reason, so each outcome has its own telemetry identity. The core RUM telemetry
+ * handler deduplicates events by identity for each RUM session and samples them; without RUM, nothing is sent.
  *
  * @param logger the core logger; the event goes to its telemetry target
- * @param sent the keys already sent; shared by the clients of one Flags feature
  * @param site the configured Datadog site, for example `datad0g.com`
  * @param sdkVersion the SDK version string
  */
 internal class ResponseSigningTelemetry(
     private val logger: InternalLogger,
-    private val sent: MutableSet<String>,
     private val site: String,
     private val sdkVersion: String
 ) {
@@ -35,10 +36,8 @@ internal class ResponseSigningTelemetry(
             ResponseSigningMode.OBSERVE -> "observe"
             ResponseSigningMode.REQUIRED -> if (failure == null) null else "required"
         }
+        if (modeName == null) return
         val result = if (failure == null) VERIFIED else UNVERIFIED
-        val first = modeName != null &&
-            synchronized(sent) { sent.add("$modeName|$result|${failure?.code.orEmpty()}") }
-        if (!first) return
         val properties = mutableMapOf<String, Any?>(
             "mode" to modeName,
             "result" to result,
@@ -49,7 +48,7 @@ internal class ResponseSigningTelemetry(
         logger.log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.TELEMETRY,
-            { EVENT },
+            { listOfNotNull(EVENT, modeName, result, failure?.code).joinToString(" ") },
             additionalProperties = properties
         )
     }
