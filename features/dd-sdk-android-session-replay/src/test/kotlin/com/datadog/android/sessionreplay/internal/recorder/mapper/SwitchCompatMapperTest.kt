@@ -6,12 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.res.ColorStateList
+import android.content.res.Resources
+import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -21,6 +25,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.ArgumentMatchers
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -46,6 +51,13 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
     private val widthCaptor = argumentCaptor<Int>()
     private val heightCaptor = argumentCaptor<Int>()
     private val drawableCaptor = argumentCaptor<Drawable>()
+
+    @Mock
+    lateinit var mockResources: Resources
+
+    @Mock
+    lateinit var mockTintList: ColorStateList
+
     override fun setupTestedMapper(): SwitchCompatMapper {
         return SwitchCompatMapper(
             mockTextWireframeMapper,
@@ -119,6 +131,55 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
             )
             assertThat(drawableCaptor.allValues).containsOnly(mockThumbDrawable, mockTrackDrawable)
         }
+    }
+
+    @Test
+    fun `M copy with the state, bounds and tint of mapping time W map() + copy() { drawable changes afterwards }`() {
+        // Given
+        val fakeMappedState = fakeTrackState.copyOf()
+        val fakeMappedBounds = Rect(fakeTrackBounds)
+        whenever(mockSwitch.trackTintList).thenReturn(mockTintList)
+        val copierCaptor = argumentCaptor<DrawableCopier>()
+        testedSwitchCompatMapper.map(
+            mockSwitch,
+            fakeMappingContext.copy(
+                textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+                imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
+            ),
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+        verify(fakeMappingContext.imageWireframeHelper, times(2)).createImageWireframeByDrawable(
+            view = any(),
+            imagePrivacy = any(),
+            currentWireframeIndex = ArgumentMatchers.anyInt(),
+            x = ArgumentMatchers.anyLong(),
+            y = ArgumentMatchers.anyLong(),
+            width = ArgumentMatchers.anyInt(),
+            height = ArgumentMatchers.anyInt(),
+            usePIIPlaceholder = ArgumentMatchers.anyBoolean(),
+            drawable = drawableCaptor.capture(),
+            drawableCopier = copierCaptor.capture(),
+            asyncJobStatusCallback = any(),
+            clipping = anyOrNull(),
+            shapeStyle = anyOrNull(),
+            border = anyOrNull(),
+            prefix = anyOrNull(),
+            customResourceIdCacheKey = anyOrNull()
+        )
+        val trackCopier = copierCaptor.allValues[drawableCaptor.allValues.indexOf(mockTrackDrawable)]
+        fakeTrackState[0] = fakeTrackState[0] + 1
+        fakeTrackBounds.offset(1, 1)
+        whenever(mockSwitch.trackTintList).thenReturn(null)
+
+        // When
+        val copy = trackCopier.copy(mockTrackDrawable, mockResources)
+
+        // Then
+        assertThat(copy).isSameAs(mockCloneDrawable)
+        verify(mockCloneDrawable).setState(fakeMappedState)
+        verify(mockCloneDrawable).setBounds(fakeMappedBounds)
+        verify(mockCloneDrawable).setTintList(mockTintList)
     }
 
     @Test

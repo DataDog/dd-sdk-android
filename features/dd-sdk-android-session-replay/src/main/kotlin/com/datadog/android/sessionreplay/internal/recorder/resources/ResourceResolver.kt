@@ -12,9 +12,6 @@ import android.graphics.Bitmap
 import android.graphics.Path
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.graphics.drawable.DrawableContainer
-import android.graphics.drawable.DrawableWrapper
-import android.graphics.drawable.LayerDrawable
 import android.util.DisplayMetrics
 import android.view.View
 import androidx.annotation.MainThread
@@ -25,7 +22,6 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.PathUtils
-import com.datadog.android.sessionreplay.recorder.resources.DefaultDrawableCopier
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
@@ -101,7 +97,7 @@ internal class ResourceResolver(
             return
         }
         val request = pendingImageRequests.start(
-            key = resourceKey,
+            key = CaptureKey.OfBitmap(resourceKey),
             byteCount = copyByteCount,
             callback = resourceResolverCallback
         ) ?: return
@@ -226,24 +222,25 @@ internal class ResourceResolver(
             return
         }
 
-        // Built-in keys already identify the drawable instance, but a custom key can be shared by several, which are
-        // captured separately so that each keeps its own drawable.
-        val drawableKey = if (customResourceIdCacheKey != null) {
-            "$customResourceIdCacheKey-${System.identityHashCode(originalDrawable)}"
-        } else {
-            resourceKey
-        }
         // Queued work holds a drawable attached to a view weakly, so work for a drawable the application has since
-        // replaced is skipped, unless the copier itself holds the drawable or its view, and it reserves nothing. A
-        // detached drawable, such as one a custom mapper creates for the capture, or the child of one, has nothing else
-        // holding it, so it is held strongly and reserves the bitmaps it holds.
+        // replaced is skipped, unless the copier itself holds the drawable or its view. A detached drawable, such as one
+        // a custom mapper creates for the capture, or the child of one, has nothing else holding it, so it is held
+        // strongly, and the number of those held is limited.
         val isAttached = isAttachedToView(originalDrawable)
-        // Captures merge only when they make the same image the same way: from the same drawable, held the same way, at
-        // the same size and by the same copier.
-        val holdKey = if (isAttached) "weak" else "strong"
+        // The worker reads the drawable when it starts, so a capture joins queued work only until then, and only when
+        // the work holds and copies the same drawable the same way, at the same size.
         val request = pendingImageRequests.start(
-            key = "$drawableKey-${copierKey(drawableCopier)}-$holdKey-${drawableWidth}x$drawableHeight",
-            byteCount = if (isAttached) 0L else heldBitmapBytes(originalDrawable, depth = 0),
+            key = CaptureKey.OfDrawable(
+                drawable = originalDrawable,
+                copier = drawableCopier,
+                resources = resources,
+                displayMetrics = displayMetrics,
+                width = drawableWidth,
+                height = drawableHeight,
+                customResourceIdCacheKey = customResourceIdCacheKey,
+                holdsDrawableStrongly = !isAttached
+            ),
+            byteCount = 0L,
             callback = resourceResolverCallback
         ) ?: return
         val drawableReference = if (isAttached) {
@@ -255,6 +252,7 @@ internal class ResourceResolver(
 
         // do in the background
         executeImageTask(request) {
+            request.begin()
             val capturedDrawable = drawableReference?.get() ?: detachedDrawable
             if (capturedDrawable == null) {
                 request.onFailure()
@@ -270,13 +268,6 @@ internal class ResourceResolver(
                 return@executeImageTask
             }
 
-            val bitmapFromDrawable =
-                if (copiedDrawable is BitmapDrawable && shouldUseDrawableBitmap(copiedDrawable)) {
-                    copiedDrawable.bitmap // cannot be null - we already checked in shouldUseDrawableBitmap
-                } else {
-                    null
-                }
-
             @Suppress("ThreadSafety") // This task runs on the resource executor.
             createBitmapFromDrawable(
                 drawable = capturedDrawable,
@@ -284,7 +275,7 @@ internal class ResourceResolver(
                 drawableWidth = drawableWidth,
                 drawableHeight = drawableHeight,
                 displayMetrics = displayMetrics,
-                bitmapFromDrawable = bitmapFromDrawable,
+                bitmapFromDrawable = usableBitmapOf(copiedDrawable),
                 customResourceIdCacheKey = customResourceIdCacheKey,
                 resolveResourceCallback = object : ResolveResourceCallback {
                     override fun onResolved(resourceId: String, resourceData: ByteArray) {
@@ -648,11 +639,6 @@ internal class ResourceResolver(
         }
     }
 
-    // A copier can be configured, so only the same instance counts as the same copier, except the default one, which has
-    // no state of its own.
-    private fun copierKey(drawableCopier: DrawableCopier): String =
-        if (drawableCopier is DefaultDrawableCopier) "default" else System.identityHashCode(drawableCopier).toString()
-
     // A copier can be application code, whose exceptions are unknown, so one that throws fails the capture.
     @Suppress("TooGenericExceptionCaught")
     private fun copyDrawable(drawableCopier: DrawableCopier, drawable: Drawable, resources: Resources): Drawable? {
@@ -712,30 +698,9 @@ internal class ResourceResolver(
         }
     }
 
-    // The pixels of the bitmaps a detached drawable keeps alive while its capture waits: its own when it is a bitmap
-    // drawable, and those of the wrappers and layers in it and of the state a container has selected. The other states
-    // of a container cannot be read without creating them, which can race with a copy of the same drawable on the
-    // worker, and those a custom drawable holds cannot be read at all, so they are not counted.
-    private fun heldBitmapBytes(drawable: Drawable?, depth: Int): Long {
-        if (drawable == null || depth >= MAX_WRAPPER_DEPTH) return 0L
-        return when (drawable) {
-            is BitmapDrawable -> {
-                val bitmap = drawable.bitmap
-                if (bitmap != null && !bitmap.isRecycled) bitmap.allocationByteCount.toLong() else 0L
-            }
-            is DrawableContainer -> heldBitmapBytes(drawable.current, depth + 1)
-            is DrawableWrapper -> heldBitmapBytes(drawable.drawable, depth + 1)
-            is LayerDrawable -> {
-                var bytes = 0L
-                repeat(drawable.numberOfLayers) { index ->
-                    @Suppress("UnsafeThirdPartyFunctionCall") // The index is within the layers.
-                    bytes += heldBitmapBytes(drawable.getDrawable(index), depth + 1)
-                }
-                bytes
-            }
-            else -> 0L
-        }
-    }
+    // The bitmap of a bitmap drawable that has pixels to use.
+    private fun usableBitmapOf(drawable: Drawable): Bitmap? =
+        if (drawable is BitmapDrawable && shouldUseDrawableBitmap(drawable)) drawable.bitmap else null
 
     private fun shouldUseDrawableBitmap(drawable: BitmapDrawable): Boolean {
         return drawable.bitmap != null &&

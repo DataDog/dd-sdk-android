@@ -6,11 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
+import android.content.res.Resources
+import android.graphics.drawable.Drawable
+import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.PendingImageRequests.Companion.HEAP_FRACTION
+import com.datadog.android.sessionreplay.internal.recorder.resources.PendingImageRequests.Companion.MAX_HELD_DRAWABLES
 import com.datadog.android.sessionreplay.internal.recorder.resources.PendingImageRequests.Companion.MAX_PENDING_BYTES
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -27,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -52,6 +58,18 @@ internal class PendingImageRequestsTest {
     @Mock
     lateinit var mockOtherCallback: ResourceResolverCallback
 
+    @Mock
+    lateinit var mockDrawable: Drawable
+
+    @Mock
+    lateinit var mockDrawableCopier: DrawableCopier
+
+    @Mock
+    lateinit var mockResources: Resources
+
+    @Mock
+    lateinit var mockDisplayMetrics: DisplayMetrics
+
     @StringForgery
     lateinit var fakeKey: String
 
@@ -74,7 +92,7 @@ internal class PendingImageRequestsTest {
     @Test
     fun `M return a request W start() { nothing in flight }`() {
         // When
-        val request = testedRequests.start(fakeKey, fakeByteCount, mockCallback)
+        val request = testedRequests.start(bitmapKey(fakeKey), fakeByteCount, mockCallback)
 
         // Then
         assertThat(request).isNotNull
@@ -84,10 +102,10 @@ internal class PendingImageRequestsTest {
     @Test
     fun `M deliver the resource to every capture W start() + onSuccess() { same key in flight }`() {
         // Given
-        val request = startRequest(fakeKey, fakeByteCount, mockCallback)
+        val request = startRequest(bitmapKey(fakeKey), fakeByteCount, mockCallback)
 
         // When
-        val joinedRequest = testedRequests.start(fakeKey, fakeByteCount, mockOtherCallback)
+        val joinedRequest = testedRequests.start(bitmapKey(fakeKey), fakeByteCount, mockOtherCallback)
         request.onSuccess(fakeResourceId)
 
         // Then
@@ -99,10 +117,10 @@ internal class PendingImageRequestsTest {
     @Test
     fun `M fail every capture W start() + onFailure() { same key in flight }`() {
         // Given
-        val request = startRequest(fakeKey, fakeByteCount, mockCallback)
+        val request = startRequest(bitmapKey(fakeKey), fakeByteCount, mockCallback)
 
         // When
-        val joinedRequest = testedRequests.start(fakeKey, fakeByteCount, mockOtherCallback)
+        val joinedRequest = testedRequests.start(bitmapKey(fakeKey), fakeByteCount, mockOtherCallback)
         request.onFailure()
 
         // Then
@@ -116,10 +134,10 @@ internal class PendingImageRequestsTest {
         @StringForgery fakeOtherKey: String
     ) {
         // Given
-        startRequest(fakeKey, fakeByteCount, mockCallback)
+        startRequest(bitmapKey(fakeKey), fakeByteCount, mockCallback)
 
         // When
-        val otherRequest = testedRequests.start("$fakeKey-$fakeOtherKey", 0L, mockOtherCallback)
+        val otherRequest = testedRequests.start(bitmapKey("$fakeKey-$fakeOtherKey"), 0L, mockOtherCallback)
 
         // Then
         assertThat(otherRequest).isNotNull
@@ -131,10 +149,14 @@ internal class PendingImageRequestsTest {
         @LongForgery(min = 1, max = MAX_PENDING_BYTES) fakeOtherByteCount: Long
     ) {
         // Given
-        startRequest(fakeKey, MAX_PENDING_BYTES, mockCallback)
+        startRequest(bitmapKey(fakeKey), MAX_PENDING_BYTES, mockCallback)
 
         // When
-        val otherRequest = testedRequests.start("$fakeKey-$fakeOtherKey", fakeOtherByteCount, mockOtherCallback)
+        val otherRequest = testedRequests.start(
+            bitmapKey("$fakeKey-$fakeOtherKey"),
+            fakeOtherByteCount,
+            mockOtherCallback
+        )
 
         // Then
         assertThat(otherRequest).isNull()
@@ -147,7 +169,7 @@ internal class PendingImageRequestsTest {
         @LongForgery(min = MAX_PENDING_BYTES + 1, max = Long.MAX_VALUE / 2) fakeLargeByteCount: Long
     ) {
         // When
-        val request = testedRequests.start(fakeKey, fakeLargeByteCount, mockCallback)
+        val request = testedRequests.start(bitmapKey(fakeKey), fakeLargeByteCount, mockCallback)
 
         // Then
         assertThat(request).isNotNull
@@ -160,11 +182,15 @@ internal class PendingImageRequestsTest {
         @StringForgery fakeOtherKey: String
     ) {
         // Given
-        val request = startRequest(fakeKey, MAX_PENDING_BYTES, mockCallback)
+        val request = startRequest(bitmapKey(fakeKey), MAX_PENDING_BYTES, mockCallback)
 
         // When
         if (fakeSucceeded) request.onSuccess(fakeResourceId) else request.onFailure()
-        val otherRequest = testedRequests.start("$fakeKey-$fakeOtherKey", MAX_PENDING_BYTES, mockOtherCallback)
+        val otherRequest = testedRequests.start(
+            bitmapKey("$fakeKey-$fakeOtherKey"),
+            MAX_PENDING_BYTES,
+            mockOtherCallback
+        )
 
         // Then
         assertThat(otherRequest).isNotNull
@@ -174,7 +200,7 @@ internal class PendingImageRequestsTest {
     @Test
     fun `M complete the captures once W onSuccess() + onFailure()`() {
         // Given
-        val request = startRequest(fakeKey, fakeByteCount, mockCallback)
+        val request = startRequest(bitmapKey(fakeKey), fakeByteCount, mockCallback)
 
         // When
         request.onSuccess(fakeResourceId)
@@ -190,13 +216,13 @@ internal class PendingImageRequestsTest {
         @Mock mockThirdCallback: ResourceResolverCallback
     ) {
         // Given
-        val request = startRequest(fakeKey, fakeByteCount, mockCallback)
+        val request = startRequest(bitmapKey(fakeKey), fakeByteCount, mockCallback)
         request.onSuccess(fakeResourceId)
-        val newerRequest = startRequest(fakeKey, fakeByteCount, mockOtherCallback)
+        val newerRequest = startRequest(bitmapKey(fakeKey), fakeByteCount, mockOtherCallback)
 
         // When
         request.onFailure()
-        val joinedRequest = testedRequests.start(fakeKey, fakeByteCount, mockThirdCallback)
+        val joinedRequest = testedRequests.start(bitmapKey(fakeKey), fakeByteCount, mockThirdCallback)
         newerRequest.onSuccess(fakeResourceId)
 
         // Then
@@ -210,9 +236,9 @@ internal class PendingImageRequestsTest {
         // Given
         var restartedRequest: PendingImageRequests.Request? = null
         doAnswer {
-            restartedRequest = testedRequests.start(fakeKey, fakeByteCount, mockOtherCallback)
+            restartedRequest = testedRequests.start(bitmapKey(fakeKey), fakeByteCount, mockOtherCallback)
         }.whenever(mockCallback).onSuccess(fakeResourceId)
-        val request = startRequest(fakeKey, fakeByteCount, mockCallback)
+        val request = startRequest(bitmapKey(fakeKey), fakeByteCount, mockCallback)
 
         // When
         request.onSuccess(fakeResourceId)
@@ -230,10 +256,10 @@ internal class PendingImageRequestsTest {
         // Given
         whenever(mockBuildSdkVersionProvider.isAtLeastO).thenReturn(false)
         testedRequests = PendingImageRequests(mockInternalLogger, mockBuildSdkVersionProvider, fakeMaxHeapBytes)
-        startRequest(fakeKey, fakeMaxHeapBytes / HEAP_FRACTION, mockCallback)
+        startRequest(bitmapKey(fakeKey), fakeMaxHeapBytes / HEAP_FRACTION, mockCallback)
 
         // When
-        val otherRequest = testedRequests.start("$fakeKey-$fakeOtherKey", 1L, mockOtherCallback)
+        val otherRequest = testedRequests.start(bitmapKey("$fakeKey-$fakeOtherKey"), 1L, mockOtherCallback)
 
         // Then
         assertThat(otherRequest).isNull()
@@ -247,10 +273,10 @@ internal class PendingImageRequestsTest {
     ) {
         // Given
         testedRequests = PendingImageRequests(mockInternalLogger, mockBuildSdkVersionProvider, fakeMaxHeapBytes)
-        startRequest(fakeKey, MAX_PENDING_BYTES - 1, mockCallback)
+        startRequest(bitmapKey(fakeKey), MAX_PENDING_BYTES - 1, mockCallback)
 
         // When
-        val otherRequest = testedRequests.start("$fakeKey-$fakeOtherKey", 1L, mockOtherCallback)
+        val otherRequest = testedRequests.start(bitmapKey("$fakeKey-$fakeOtherKey"), 1L, mockOtherCallback)
 
         // Then
         assertThat(otherRequest).isNotNull
@@ -265,8 +291,8 @@ internal class PendingImageRequestsTest {
         val fakeError = IllegalStateException()
         doThrow(fakeError).whenever(mockCallback).onSuccess(fakeResourceId)
         doThrow(fakeError).whenever(mockCallback).onFailure()
-        val request = startRequest(fakeKey, fakeByteCount, mockCallback)
-        testedRequests.start(fakeKey, fakeByteCount, mockOtherCallback)
+        val request = startRequest(bitmapKey(fakeKey), fakeByteCount, mockCallback)
+        testedRequests.start(bitmapKey(fakeKey), fakeByteCount, mockOtherCallback)
 
         // When
         if (fakeSucceeded) request.onSuccess(fakeResourceId) else request.onFailure()
@@ -286,8 +312,141 @@ internal class PendingImageRequestsTest {
         )
     }
 
+    @Test
+    fun `M complete both captures W start() + onSuccess() { drawable, worker not started }`() {
+        // Given
+        val request = startRequest(drawableKey(), 0L, mockCallback)
+
+        // When
+        val joinedRequest = testedRequests.start(drawableKey(), 0L, mockOtherCallback)
+        request.begin()
+        request.onSuccess(fakeResourceId)
+
+        // Then
+        assertThat(joinedRequest).isNull()
+        verify(mockCallback).onSuccess(fakeResourceId)
+        verify(mockOtherCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M start new work W start() { drawable, worker started }`() {
+        // Given
+        val request = startRequest(drawableKey(), 0L, mockCallback)
+        request.begin()
+
+        // When
+        val otherRequest = testedRequests.start(drawableKey(), 0L, mockOtherCallback)
+
+        // Then
+        assertThat(otherRequest).isNotNull
+        verifyNoInteractions(mockCallback)
+        verifyNoInteractions(mockOtherCallback)
+    }
+
+    @Test
+    fun `M keep the newer request W onFailure() { started request finishes after a newer one was started }`(
+        @Mock mockThirdCallback: ResourceResolverCallback
+    ) {
+        // Given
+        val request = startRequest(drawableKey(), 0L, mockCallback)
+        request.begin()
+        val newerRequest = startRequest(drawableKey(), 0L, mockOtherCallback)
+
+        // When
+        request.onFailure()
+        val joinedRequest = testedRequests.start(drawableKey(), 0L, mockThirdCallback)
+        newerRequest.onSuccess(fakeResourceId)
+
+        // Then
+        assertThat(joinedRequest).isNull()
+        verify(mockCallback).onFailure()
+        verify(mockOtherCallback).onSuccess(fakeResourceId)
+        verify(mockThirdCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M refuse and fail the capture W start() { too many drawables held }`() {
+        // Given
+        repeat(MAX_HELD_DRAWABLES) {
+            startRequest(drawableKey(drawable = mock()), 0L, mockCallback)
+        }
+
+        // When
+        val otherRequest = testedRequests.start(drawableKey(drawable = mock()), 0L, mockOtherCallback)
+
+        // Then
+        assertThat(otherRequest).isNull()
+        verify(mockOtherCallback).onFailure()
+        verifyNoInteractions(mockCallback)
+    }
+
+    @Test
+    fun `M admit the capture W start() { too many drawables held, drawable not held }`() {
+        // Given
+        repeat(MAX_HELD_DRAWABLES) {
+            startRequest(drawableKey(drawable = mock()), 0L, mockCallback)
+        }
+
+        // When
+        val otherRequest = testedRequests.start(drawableKey(isHolding = false), 0L, mockOtherCallback)
+
+        // Then
+        assertThat(otherRequest).isNotNull
+        verifyNoInteractions(mockOtherCallback)
+    }
+
+    @Test
+    fun `M admit the capture W start() { held drawables reached the limit, one completes }`(
+        @BoolForgery fakeSucceeded: Boolean
+    ) {
+        // Given
+        val request = startRequest(drawableKey(drawable = mock()), 0L, mockCallback)
+        repeat(MAX_HELD_DRAWABLES - 1) {
+            startRequest(drawableKey(drawable = mock()), 0L, mockCallback)
+        }
+
+        // When
+        if (fakeSucceeded) request.onSuccess(fakeResourceId) else request.onFailure()
+        val otherRequest = testedRequests.start(drawableKey(drawable = mock()), 0L, mockOtherCallback)
+
+        // Then
+        assertThat(otherRequest).isNotNull
+        verifyNoInteractions(mockOtherCallback)
+    }
+
+    @Test
+    fun `M admit the capture W start() { reserves nothing, a larger capture than the budget pending }`(
+        @LongForgery(min = MAX_PENDING_BYTES + 1, max = Long.MAX_VALUE / 2) fakeLargeByteCount: Long
+    ) {
+        // Given
+        startRequest(bitmapKey(fakeKey), fakeLargeByteCount, mockCallback)
+
+        // When
+        val otherRequest = testedRequests.start(drawableKey(), 0L, mockOtherCallback)
+
+        // Then
+        assertThat(otherRequest).isNotNull
+        verifyNoInteractions(mockOtherCallback)
+    }
+
+    private fun drawableKey(
+        drawable: Drawable = mockDrawable,
+        isHolding: Boolean = true
+    ): CaptureKey = CaptureKey.OfDrawable(
+        drawable = drawable,
+        copier = mockDrawableCopier,
+        resources = mockResources,
+        displayMetrics = mockDisplayMetrics,
+        width = 0,
+        height = 0,
+        customResourceIdCacheKey = null,
+        holdsDrawableStrongly = isHolding
+    )
+
+    private fun bitmapKey(signature: String): CaptureKey = CaptureKey.OfBitmap(signature)
+
     private fun startRequest(
-        key: String,
+        key: CaptureKey,
         byteCount: Long,
         callback: ResourceResolverCallback
     ): PendingImageRequests.Request {

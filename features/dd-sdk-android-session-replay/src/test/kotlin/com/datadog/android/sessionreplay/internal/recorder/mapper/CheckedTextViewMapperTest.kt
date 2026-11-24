@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.res.ColorStateList
 import android.widget.CheckedTextView
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -45,5 +46,9 @@ internal class CheckedTextViewMapperTest : BaseCheckableTextViewMapperTest<Check
             whenever(it.checkMarkDrawable) doReturn mockButtonDrawable
             whenever(it.resources) doReturn mockResources
         }
+    }
+
+    override fun stubCheckableTint(view: CheckedTextView, tintList: ColorStateList?) {
+        whenever(view.checkMarkTintList) doReturn tintList
     }
 }

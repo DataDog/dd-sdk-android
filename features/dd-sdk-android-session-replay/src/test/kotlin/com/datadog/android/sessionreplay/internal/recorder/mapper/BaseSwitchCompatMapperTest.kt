@@ -94,6 +94,10 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
 
     lateinit var fakeThumbBounds: Rect
 
+    lateinit var fakeThumbState: IntArray
+
+    lateinit var fakeTrackState: IntArray
+
     lateinit var fakeTrackBounds: Rect
 
     var expectedThumbLeft: Long = 0
@@ -112,6 +116,8 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
     fun `set up`(forge: Forge) {
         fakeThumbBounds = Rect(forge.aSmallInt(), forge.aSmallInt(), forge.aSmallInt(), forge.aSmallInt())
         fakeTrackBounds = Rect(forge.aSmallInt(), forge.aSmallInt(), forge.aSmallInt(), forge.aSmallInt())
+        fakeThumbState = IntArray(forge.anInt(min = 1, max = 8)) { forge.anInt() }
+        fakeTrackState = IntArray(forge.anInt(min = 1, max = 8)) { forge.anInt() }
         fakeTextWireframes = forge.aList(size = 1) { getForgery() }
         normalizedThumbHeight = fakeThumbHeight.toLong()
             .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
@@ -134,6 +140,8 @@ internal abstract class BaseSwitchCompatMapperTest : LegacyBaseWireframeMapperTe
         whenever(mockTrackDrawable.constantState).thenReturn(mockConstantState)
         whenever(mockTrackDrawable.bounds).thenReturn(fakeTrackBounds)
         whenever(mockThumbDrawable.bounds).thenReturn(fakeThumbBounds)
+        whenever(mockTrackDrawable.state).thenReturn(fakeTrackState)
+        whenever(mockThumbDrawable.state).thenReturn(fakeThumbState)
         whenever(mockThumbDrawable.getPadding(any())).thenAnswer {
             val paddingRect = it.getArgument<Rect>(0)
             paddingRect.left = fakeThumbLeftPadding

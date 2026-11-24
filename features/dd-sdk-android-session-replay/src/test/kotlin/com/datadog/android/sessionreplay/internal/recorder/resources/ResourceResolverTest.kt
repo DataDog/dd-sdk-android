@@ -14,7 +14,6 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
-import android.graphics.drawable.ScaleDrawable
 import android.graphics.drawable.StateListDrawable
 import android.util.DisplayMetrics
 import android.view.View
@@ -1090,11 +1089,6 @@ internal class ResourceResolverTest {
         whenever(mockAlpha8Copy.config).thenReturn(Bitmap.Config.ALPHA_8)
     }
 
-    private fun stubBitmapDrawable(allocationByteCount: Int): BitmapDrawable {
-        val bitmap = mock<Bitmap> { on { this.allocationByteCount } doReturn allocationByteCount }
-        return mock { on { this.bitmap } doReturn bitmap }
-    }
-
     private fun useFullBudget() {
         whenever(mockBuildSdkVersionProvider.isAtLeastO).thenReturn(true)
         testedResourceResolver = createResourceResolver(
@@ -1105,10 +1099,21 @@ internal class ResourceResolverTest {
     // Like the copier a mapper creates for each snapshot, each call makes another instance of the same class.
     private fun copierOf(copy: Drawable) = DrawableCopier { _, _ -> copy }
 
-    private fun drawableRequestKey(width: Int = 0, height: Int = 0, isAttached: Boolean = false): String {
-        val holdKey = if (isAttached) "weak" else "strong"
-        return "$fakeResourceKey-${System.identityHashCode(mockDrawableCopier)}-$holdKey-${width}x$height"
-    }
+    private fun drawableRequestKey(
+        drawable: Drawable = mockDrawable,
+        width: Int = 0,
+        height: Int = 0,
+        isAttached: Boolean = false
+    ): CaptureKey = CaptureKey.OfDrawable(
+        drawable = drawable,
+        copier = mockDrawableCopier,
+        resources = mockResources,
+        displayMetrics = mockDisplayMetrics,
+        width = width,
+        height = height,
+        customResourceIdCacheKey = null,
+        holdsDrawableStrongly = !isAttached
+    )
 
     private fun resolveDrawable(
         callback: ResourceResolverCallback,
@@ -1530,139 +1535,72 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M reserve nothing W resolveResourceIdFromDrawable() { bitmap drawable attached to a view }`(
-        @Mock mockView: View,
-        @IntForgery(min = 1) fakeAllocationByteCount: Int
+    fun `M hold the drawable weakly W resolveResourceIdFromDrawable() { attached to a view }`(
+        @Mock mockView: View
     ) {
         // Given
-        whenever(mockBitmapDrawable.callback).thenReturn(mockView)
-        whenever(mockBitmap.allocationByteCount).thenReturn(fakeAllocationByteCount)
-        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
-
-        // When
-        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
-
-        // Then
-        verify(mockPendingImageRequests).start(drawableRequestKey(isAttached = true), 0L, mockSerializerCallback)
-    }
-
-    @Test
-    fun `M reserve nothing W resolveResourceIdFromDrawable() { wrapper attached to a view }`(
-        @Mock mockWrapper: ScaleDrawable,
-        @Mock mockView: View,
-        @IntForgery(min = 1) fakeAllocationByteCount: Int
-    ) {
-        // Given
-        whenever(mockWrapper.callback).thenReturn(mockView)
-        val stubWrappedDrawable = stubBitmapDrawable(fakeAllocationByteCount)
-        whenever(mockWrapper.drawable).thenReturn(stubWrappedDrawable)
-        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
-
-        // When
-        resolveDrawable(mockSerializerCallback, drawable = mockWrapper)
-
-        // Then
-        verify(mockPendingImageRequests).start(drawableRequestKey(isAttached = true), 0L, mockSerializerCallback)
-    }
-
-    @Test
-    fun `M reserve its bitmap W resolveResourceIdFromDrawable() { detached bitmap drawable }`(
-        @IntForgery(min = 1) fakeAllocationByteCount: Int
-    ) {
-        // Given
-        whenever(mockBitmap.allocationByteCount).thenReturn(fakeAllocationByteCount)
-        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
-
-        // When
-        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
-
-        // Then
-        verify(mockPendingImageRequests).start(
-            drawableRequestKey(),
-            fakeAllocationByteCount.toLong(),
-            mockSerializerCallback
-        )
-    }
-
-    @Test
-    fun `M reserve nothing W resolveResourceIdFromDrawable() { detached drawable without bitmaps }`() {
-        // Given
+        whenever(mockDrawable.callback).thenReturn(mockView)
         testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
 
         // When
         resolveDrawable(mockSerializerCallback)
 
         // Then
-        verify(mockPendingImageRequests).start(drawableRequestKey(), 0L, mockSerializerCallback)
+        verify(mockPendingImageRequests).start(drawableRequestKey(isAttached = true), 0L, mockSerializerCallback)
     }
 
     @Test
-    fun `M reserve the wrapped bitmap W resolveResourceIdFromDrawable() { detached wrapper }`(
-        @Mock mockWrapper: ScaleDrawable,
+    fun `M hold the drawable and reserve nothing W resolveResourceIdFromDrawable() { detached }`(
         @IntForgery(min = 1) fakeAllocationByteCount: Int
     ) {
         // Given
-        val stubWrappedDrawable = stubBitmapDrawable(fakeAllocationByteCount)
-        whenever(mockWrapper.drawable).thenReturn(stubWrappedDrawable)
+        whenever(mockBitmap.allocationByteCount).thenReturn(fakeAllocationByteCount)
         testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
 
         // When
-        resolveDrawable(mockSerializerCallback, drawable = mockWrapper)
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
 
         // Then
         verify(mockPendingImageRequests).start(
-            drawableRequestKey(),
-            fakeAllocationByteCount.toLong(),
+            drawableRequestKey(drawable = mockBitmapDrawable),
+            0L,
             mockSerializerCallback
         )
     }
 
     @Test
-    fun `M reserve every wrapped bitmap W resolveResourceIdFromDrawable() { detached layers }`(
-        @Mock mockLayers: LayerDrawable,
-        @Mock mockWrapper: ScaleDrawable,
-        @IntForgery(min = 1, max = 1_000_000) fakeAllocationByteCount: Int,
-        @IntForgery(min = 1, max = 1_000_000) fakeOtherAllocationByteCount: Int
+    fun `M capture again W resolveResourceIdFromDrawable() twice { drawable changes while the worker reads it }`(
+        @Mock mockOtherCallback: ResourceResolverCallback
     ) {
         // Given
-        whenever(mockLayers.numberOfLayers).thenReturn(2)
-        val stubWrappedDrawable = stubBitmapDrawable(fakeAllocationByteCount)
-        whenever(mockLayers.getDrawable(0)).thenReturn(stubWrappedDrawable)
-        whenever(mockLayers.getDrawable(1)).thenReturn(mockWrapper)
-        val stubOtherLayerDrawable = stubBitmapDrawable(fakeOtherAllocationByteCount)
-        whenever(mockWrapper.drawable).thenReturn(stubOtherLayerDrawable)
-        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+        val tasks = captureTasks()
+        resolveDrawable(mockSerializerCallback)
+        whenever(mockDrawableCopier.copy(mockDrawable, mockResources)).thenAnswer {
+            resolveDrawable(mockOtherCallback)
+            mockDrawable
+        }
 
         // When
-        resolveDrawable(mockSerializerCallback, drawable = mockLayers)
+        tasks.single().run()
 
         // Then
-        verify(mockPendingImageRequests).start(
-            drawableRequestKey(),
-            fakeAllocationByteCount.toLong() + fakeOtherAllocationByteCount,
-            mockSerializerCallback
-        )
+        assertThat(tasks).hasSize(2)
     }
 
     @Test
-    fun `M reserve the selected bitmap W resolveResourceIdFromDrawable() { detached container }`(
-        @Mock mockContainer: StateListDrawable,
-        @IntForgery(min = 1) fakeAllocationByteCount: Int
-    ) {
+    fun `M fail the capture W resolveResourceIdFromDrawable() { too many detached drawables held }`() {
         // Given
-        val stubSelectedDrawable = stubBitmapDrawable(fakeAllocationByteCount)
-        whenever(mockContainer.current).thenReturn(stubSelectedDrawable)
-        testedResourceResolver = createResourceResolver(pendingImageRequests = mockPendingImageRequests)
+        val tasks = captureTasks()
+        repeat(PendingImageRequests.MAX_HELD_DRAWABLES) {
+            resolveDrawable(mock<ResourceResolverCallback>(), drawable = mock<Drawable>())
+        }
 
         // When
-        resolveDrawable(mockSerializerCallback, drawable = mockContainer)
+        resolveDrawable(mockSerializerCallback, drawable = mock<Drawable>())
 
         // Then
-        verify(mockPendingImageRequests).start(
-            drawableRequestKey(),
-            fakeAllocationByteCount.toLong(),
-            mockSerializerCallback
-        )
+        assertThat(tasks).hasSize(PendingImageRequests.MAX_HELD_DRAWABLES)
+        verify(mockSerializerCallback).onFailure()
     }
 
     // region bitmap capture
