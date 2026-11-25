@@ -40,13 +40,17 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
  * container's capture would resolve to a placeholder that hides children which are captured on
  * their own. It would also lose children drawn outside the container's bounds and composition
  * hosts nested inside it, which are decomposed rather than drawn.
+ *
+ * Without [canMaskText] a capture is a placeholder from the start, so the view is never drawn.
  */
 internal class CapturedPixelFallbackMapper(
     private val fallbackMapper: CapturedViewMapper<View>,
     private val internalLogger: InternalLogger,
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     viewRasterizer: ViewRasterizer = DefaultViewRasterizer(internalLogger),
-    private val pixelCapture: ViewPixelCapture = ViewPixelCapture(internalLogger, viewBoundsResolver, viewRasterizer),
+    canMaskText: Boolean = false,
+    private val pixelCapture: ViewPixelCapture =
+        ViewPixelCapture(internalLogger, viewBoundsResolver, viewRasterizer, canMaskText),
     private val capturesContainers: Boolean = false
 ) : CapturedViewMapper<View> {
 

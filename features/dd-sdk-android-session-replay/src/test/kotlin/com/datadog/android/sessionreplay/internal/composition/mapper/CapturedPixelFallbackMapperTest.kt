@@ -77,13 +77,15 @@ internal class CapturedPixelFallbackMapperTest {
         fallbackMapper = mockFallbackMapper,
         internalLogger = mockInternalLogger,
         viewBoundsResolver = mockViewBoundsResolver,
-        viewRasterizer = fakeViewRasterizer
+        viewRasterizer = fakeViewRasterizer,
+        canMaskText = true
     )
     private val testedContainerMapper = CapturedPixelFallbackMapper(
         fallbackMapper = mockFallbackMapper,
         internalLogger = mockInternalLogger,
         viewBoundsResolver = mockViewBoundsResolver,
         viewRasterizer = fakeViewRasterizer,
+        canMaskText = true,
         capturesContainers = true
     )
 
@@ -252,7 +254,8 @@ internal class CapturedPixelFallbackMapperTest {
                 )
             ),
             internalLogger = mockInternalLogger,
-            viewRasterizer = mockRasterizer
+            viewRasterizer = mockRasterizer,
+            canMaskText = true
         )
     }
 
@@ -527,7 +530,8 @@ internal class CapturedPixelFallbackMapperTest {
             fallbackMapper = mockFallbackMapper,
             internalLogger = mockInternalLogger,
             viewBoundsResolver = mockViewBoundsResolver,
-            viewRasterizer = ViewRasterizer { null }
+            viewRasterizer = ViewRasterizer { null },
+            canMaskText = true
         )
         val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
 
@@ -538,6 +542,83 @@ internal class CapturedPixelFallbackMapperTest {
         assertThat(captured.map(mappingContext)).isSameAs(CapturedViewMapperResult.None)
         verify(mockFallbackMapper).capture(mockView, mappingContext)
         verify(mockFallbackMapper, never()).map(any(), any())
+    }
+
+    @Test
+    fun `M emit a placeholder without drawing W map { text cannot be masked }`() {
+        // Given
+        val mockView = eligibleView()
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        val mockRasterizer: ViewRasterizer = mock()
+        val registered = mutableListOf<PendingPixelCapture>()
+        val mappingContext = mappingContext(ImagePrivacy.MASK_NONE, PendingPixelCaptureSink(registered::add))
+        val testedMapperWithoutTextMasking = CapturedPixelFallbackMapper(
+            fallbackMapper = mockFallbackMapper,
+            internalLogger = mockInternalLogger,
+            viewBoundsResolver = mockViewBoundsResolver,
+            viewRasterizer = mockRasterizer
+        )
+
+        // When
+        val result = testedMapperWithoutTextMasking.map(mockView, mappingContext)
+            as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.isTerminal).isTrue()
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+        verifyNoInteractions(mockRasterizer)
+        assertThat(registered).isEmpty()
+    }
+
+    @Test
+    fun `M emit a placeholder without drawing W capture { text cannot be masked }`() {
+        // Given
+        val mockView = eligibleView()
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        whenever(mockFallbackMapper.capture(any(), any()))
+            .thenReturn(CapturedViewData.Mapped(CapturedViewMapperResult.None))
+        val mockRasterizer: ViewRasterizer = mock()
+        val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
+        val testedMapperWithoutTextMasking = CapturedPixelFallbackMapper(
+            fallbackMapper = mockFallbackMapper,
+            internalLogger = mockInternalLogger,
+            viewBoundsResolver = mockViewBoundsResolver,
+            viewRasterizer = mockRasterizer
+        )
+
+        // When
+        val captured = testedMapperWithoutTextMasking.capture(mockView, mappingContext)
+
+        // Then
+        assertThat(captured.isTerminal).isTrue()
+        val result = captured.map(mappingContext) as CapturedViewMapperResult.Wireframes
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+        verifyNoInteractions(mockRasterizer)
+    }
+
+    @Test
+    fun `M delegate to fallback without drawing W map { text cannot be masked, view too large }`() {
+        // Given: 1000x1000 screen, 8x cap = 8,000,000px - this view is 12,000,000px.
+        val mockView = eligibleView(width = 4000, height = 3000)
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, 1f))
+            .thenReturn(GlobalBounds(0, 0, 4000, 3000))
+        whenever(mockFallbackMapper.map(any(), any())).thenReturn(CapturedViewMapperResult.None)
+        val mockRasterizer: ViewRasterizer = mock()
+        val testedMapperWithoutTextMasking = CapturedPixelFallbackMapper(
+            fallbackMapper = mockFallbackMapper,
+            internalLogger = mockInternalLogger,
+            viewBoundsResolver = mockViewBoundsResolver,
+            viewRasterizer = mockRasterizer
+        )
+
+        // When
+        val result = testedMapperWithoutTextMasking.map(mockView, mappingContext(ImagePrivacy.MASK_NONE))
+
+        // Then
+        assertThat(result).isSameAs(CapturedViewMapperResult.None)
+        verifyNoInteractions(mockRasterizer)
     }
 
     @Test
@@ -642,7 +723,8 @@ internal class CapturedPixelFallbackMapperTest {
             fallbackMapper = mockFallbackMapper,
             internalLogger = mockInternalLogger,
             viewBoundsResolver = mockViewBoundsResolver,
-            viewRasterizer = ViewRasterizer { null }
+            viewRasterizer = ViewRasterizer { null },
+            canMaskText = true
         )
         val mappingContext = mappingContext(ImagePrivacy.MASK_NONE, scope = fakeScope)
 

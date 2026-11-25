@@ -66,7 +66,8 @@ internal class ViewPixelCaptureTest {
         whenever(mockRasterizer.rasterize(any())).thenReturn(mockBitmap)
 
         // When
-        val result = ViewPixelCapture(mock(), rasterizer = mockRasterizer).capture(stubView, fakeContext)
+        val result = ViewPixelCapture(mock(), rasterizer = mockRasterizer, canMaskText = true)
+            .capture(stubView, fakeContext)
             as CapturedViewMapperResult.Wireframes
 
         // Then
@@ -74,6 +75,19 @@ internal class ViewPixelCaptureTest {
         assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
         assertThat(fakePending.single().bitmap).isSameAs(mockBitmap)
         assertThat(fakePending.single().isTextFree).isFalse()
+    }
+
+    @Test
+    fun `M emit a terminal placeholder without drawing W capture() { text cannot be masked }`() {
+        // When
+        val result = ViewPixelCapture(mock(), rasterizer = mockRasterizer)
+            .capture(view(), fakeContext) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.isTerminal).isTrue()
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+        verifyNoInteractions(mockRasterizer)
+        assertThat(fakePending).isEmpty()
     }
 
     @Test

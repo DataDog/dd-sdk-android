@@ -29,12 +29,18 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import java.util.IdentityHashMap
 
-/** Shared privacy, allocation limits and resource registration for native pixel captures. */
+/**
+ * Shared privacy, allocation limits and resource registration for native pixel captures.
+ *
+ * A view's raster may contain readable text, so it only survives when [canMaskText]. Otherwise it
+ * always ends as a placeholder, and is not drawn at all rather than drawn on the UI thread to be discarded.
+ */
 @Suppress("ReturnCount") // Privacy and size guards must exit before allocating or reading pixels.
 internal class ViewPixelCapture(
     private val internalLogger: InternalLogger,
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
-    private val rasterizer: ViewRasterizer = DefaultViewRasterizer(internalLogger)
+    private val rasterizer: ViewRasterizer = DefaultViewRasterizer(internalLogger),
+    private val canMaskText: Boolean = false
 ) {
     /** Null lets the ordinary fallback retain semantic output and continue traversing children. */
     @UiThread
@@ -58,7 +64,7 @@ internal class ViewPixelCapture(
         if (label != null) return if (view is ViewGroup) null else placeholder(context, bounds, label)
         if (containsRestrictedContent(view, context, bounds)) return null
         val wireframe = captureBitmap(view, context, bounds, pixels, rasterize) ?: return null
-        return CapturedViewMapperResult.Wireframes(listOf(wireframe), isTerminal = true)
+        return CapturedViewMapperResult.Wireframes(wireframe, isTerminal = true)
     }
 
     @UiThread
@@ -68,8 +74,9 @@ internal class ViewPixelCapture(
         bounds: CapturedBounds,
         pixels: GlobalBounds,
         rasterize: () -> Bitmap?
-    ): CapturedWireframe.Pixel? {
+    ): CapturedWireframe? {
         if (!isCapturable(pixels, view)) return null
+        if (!canMaskText) return placeholderWireframe(context, bounds)
         val bitmap = rasterize() ?: return null
         val identity = context.identityFactory.imageWireframe(context.ownerIdentity)
         // Never text-free: the raster of an arbitrary view may contain readable text, so the snapshot
@@ -85,14 +92,18 @@ internal class ViewPixelCapture(
         bounds: CapturedBounds,
         label: String = "Image"
     ): CapturedViewMapperResult = CapturedViewMapperResult.Wireframes(
-        listOf(
-            CapturedWireframe.PrivacyPlaceholder(
-                context.identityFactory.placeholderWireframe(context.ownerIdentity),
-                bounds,
-                label = label
-            )
-        ),
+        placeholderWireframe(context, bounds, label),
         isTerminal = true
+    )
+
+    private fun placeholderWireframe(
+        context: CapturedMappingContext,
+        bounds: CapturedBounds,
+        label: String = "Image"
+    ) = CapturedWireframe.PrivacyPlaceholder(
+        context.identityFactory.placeholderWireframe(context.ownerIdentity),
+        bounds,
+        label = label
     )
 
     // Whole-view captures must respect stronger descendant overrides and hidden/hardware content.
