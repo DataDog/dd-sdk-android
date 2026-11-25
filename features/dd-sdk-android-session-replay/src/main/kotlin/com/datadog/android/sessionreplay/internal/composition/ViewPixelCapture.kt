@@ -72,7 +72,11 @@ internal class ViewPixelCapture(
         if (!isCapturable(pixels, view)) return null
         val bitmap = rasterize() ?: return null
         val identity = context.identityFactory.imageWireframe(context.ownerIdentity)
-        context.pendingPixelCaptureSink.register(PendingPixelCapture(identity, context.ownerIdentity, bitmap))
+        // Never text-free: the raster of an arbitrary view may contain readable text, so the snapshot
+        // processor has to treat it as sensitive rather than resolve it as is.
+        context.pendingPixelCaptureSink.register(
+            PendingPixelCapture(identity, context.ownerIdentity, bitmap, isTextFree = false)
+        )
         return CapturedWireframe.Pixel(identity, bounds, resource = PixelResource.Unresolved)
     }
 

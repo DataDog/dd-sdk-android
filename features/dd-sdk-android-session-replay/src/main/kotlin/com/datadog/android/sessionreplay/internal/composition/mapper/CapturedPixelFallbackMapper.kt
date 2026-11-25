@@ -51,13 +51,32 @@ internal class CapturedPixelFallbackMapper(
 ) : CapturedViewMapper<View> {
 
     @UiThread
+    override fun map(view: View, mappingContext: CapturedMappingContext): CapturedViewMapperResult =
+        pixelCaptureOrFallback(view, mappingContext, fallbackMapper.map(view, mappingContext))
+
+    @UiThread
+    override fun capture(view: View, mappingContext: CapturedMappingContext): CapturedViewData {
+        val fallback = fallbackMapper.capture(view, mappingContext)
+        // Solid backgrounds retain their copied opacity/coverage flags and deferred style mapping.
+        if (isDescribedWithoutPixels(view, mappingContext, fallback.isOcclusionBounded)) return fallback
+        return CapturedViewData.Mapped(pixelCaptureOrFallback(view, mappingContext, fallback.map(mappingContext)))
+    }
+
+    /**
+     * Pixel capture of [view], or [fallbackResult] (the fallback's output, already computed by the
+     * caller) when the view doesn't need or can't take one.
+     */
+    @UiThread
     @Suppress("ReturnCount")
-    override fun map(view: View, mappingContext: CapturedMappingContext): CapturedViewMapperResult {
+    private fun pixelCaptureOrFallback(
+        view: View,
+        mappingContext: CapturedMappingContext,
+        fallbackResult: CapturedViewMapperResult
+    ): CapturedViewMapperResult {
         // Keep plain containers semantic when their background is sufficient; replacing them
         // with a privacy placeholder would cover the independently captured child content.
         // ImageView and ImageButton also draw an image above that background, so they must
         // still reach pixel capture.
-        val fallbackResult = fallbackMapper.map(view, mappingContext)
         if (isDescribedWithoutPixels(view, mappingContext, fallbackResult is CapturedViewMapperResult.Wireframes)) {
             return fallbackResult
         }
@@ -85,14 +104,6 @@ internal class CapturedPixelFallbackMapper(
         }
 
         return pixelCapture.capture(view, mappingContext) ?: fallbackResult
-    }
-
-    @UiThread
-    override fun capture(view: View, mappingContext: CapturedMappingContext): CapturedViewData {
-        val fallback = fallbackMapper.capture(view, mappingContext)
-        // Solid backgrounds retain their copied opacity/coverage flags and deferred style mapping.
-        if (isDescribedWithoutPixels(view, mappingContext, fallback.isOcclusionBounded)) return fallback
-        return CapturedViewData.Mapped(map(view, mappingContext))
     }
 
     /**

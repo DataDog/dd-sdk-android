@@ -53,6 +53,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -492,6 +493,51 @@ internal class CapturedPixelFallbackMapperTest {
         assertThat(mapped).isSameAs(CapturedViewMapperResult.None)
         assertThat(captured).isSameAs(fakeFallbackData)
         verifyNoInteractions(mockRasterizer)
+    }
+
+    @Test
+    fun `M compute the fallback once W capture { view needs pixels }`() {
+        // Given
+        val mockView = eligibleView()
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        whenever(mockFallbackMapper.capture(any(), any()))
+            .thenReturn(CapturedViewData.Mapped(CapturedViewMapperResult.None))
+        val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
+
+        // When
+        val captured = testedMapper.capture(mockView, mappingContext)
+
+        // Then
+        val result = captured.map(mappingContext) as CapturedViewMapperResult.Wireframes
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+        verify(mockFallbackMapper).capture(mockView, mappingContext)
+        verify(mockFallbackMapper, never()).map(any(), any())
+    }
+
+    @Test
+    fun `M reuse the fallback result W capture { rasterization fails }`() {
+        // Given
+        val mockView = eligibleView()
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        val fakeFallbackData = CapturedViewData.Mapped(CapturedViewMapperResult.None)
+        whenever(mockFallbackMapper.capture(any(), any())).thenReturn(fakeFallbackData)
+        val testedMapperWithFailingRasterizer = CapturedPixelFallbackMapper(
+            fallbackMapper = mockFallbackMapper,
+            internalLogger = mockInternalLogger,
+            viewBoundsResolver = mockViewBoundsResolver,
+            viewRasterizer = ViewRasterizer { null }
+        )
+        val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
+
+        // When
+        val captured = testedMapperWithFailingRasterizer.capture(mockView, mappingContext)
+
+        // Then
+        assertThat(captured.map(mappingContext)).isSameAs(CapturedViewMapperResult.None)
+        verify(mockFallbackMapper).capture(mockView, mappingContext)
+        verify(mockFallbackMapper, never()).map(any(), any())
     }
 
     @Test
