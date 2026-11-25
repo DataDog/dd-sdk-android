@@ -697,6 +697,25 @@ internal class ResponseSigningClientTest {
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
     }
 
+    @Test
+    fun `M keep the newer unsigned flags W verified proof expired, then error {observe}`() {
+        // Given: verified flags, then a newer unsigned observation for the same context
+        create(ResponseSigningMode.OBSERVE)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        responseKind = "unsigned-false"
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        assertThat(testedClient.resolveBooleanValue("critical-demo", true)).isFalse()
+        // When the verified proof expires, and a refresh fails
+        advanceClock(PROOF_WINDOW_SECONDS)
+        responseKind = "403"
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then the latest fetched flags stay; the expired verified flags do not come back
+        assertThat(testedClient.resolveBooleanValue("critical-demo", true)).isFalse()
+    }
+
     @ParameterizedTest
     @EnumSource(ResponseSigningMode::class, names = ["OBSERVE", "REQUIRED"])
     fun `M preserve ordinary observe behavior W setEvaluationContext() {unsupported HTTP endpoint}`(

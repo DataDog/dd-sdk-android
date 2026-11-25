@@ -101,6 +101,8 @@ internal class PrecomputedAssignmentsDownloader(
             )
         }
         onPrepared()
+        // onPrepared() can wait for the persistence load; a newer context during that wait supersedes this request.
+        if (!state.isCurrent(generation)) return null
         val request = prepared ?: original
         val transport =
             (callFactory as? OkHttpClient)?.newBuilder()?.followRedirects(false)?.followSslRedirects(false)?.build()

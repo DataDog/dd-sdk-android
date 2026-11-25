@@ -8,8 +8,13 @@ package com.datadog.android.flags.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.flags.ExperimentalFlagsApi
+import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
+import com.datadog.android.flags.internal.signing.ResponseSigningConfiguration
+import com.datadog.android.flags.internal.signing.ResponseSigningContext
+import com.datadog.android.flags.internal.signing.ResponseSigningState
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.utils.verifyLog
@@ -24,6 +29,7 @@ import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -44,6 +50,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
@@ -654,6 +661,49 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         verify(fakeResponseBody).close()
+    }
+
+    // endregion
+
+    // region readSignedPrecomputedFlags()
+
+    @OptIn(ExperimentalFlagsApi::class)
+    @Test
+    fun `M not send the request W readSignedPrecomputedFlags() { newer context while preparing }`() {
+        // Given
+        val signingContext = ResponseSigningContext()
+        val signing = ResponseSigningState(
+            ResponseSigningConfiguration(ResponseSigningMode.OBSERVE),
+            mockInternalLogger,
+            context = signingContext,
+            elapsedRealtimeMillis = { 0L }
+        ) { 0L }
+        val request = Request.Builder().url("https://flags.example.test/precompute-assignments")
+            .header("content-type", "application/vnd.api+json")
+            .post("{}".toRequestBody())
+            .build()
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics, null))
+            .doReturn(request)
+        testedDownloader = PrecomputedAssignmentsDownloader(
+            callFactory = mockCallFactory,
+            internalLogger = mockInternalLogger,
+            requestFactory = mockRequestFactory,
+            signing = signing
+        )
+        val generation = signing.begin(fakeEvaluationContext)
+
+        // When a newer context starts while the request waits in onPrepared()
+        val result = testedDownloader.readSignedPrecomputedFlags(
+            fakeEvaluationContext,
+            fakeDatadogContext,
+            fakeDiagnostics,
+            null,
+            generation
+        ) { signing.begin(EvaluationContext("newer")) }
+
+        // Then
+        assertThat(result).isNull()
+        verifyNoInteractions(mockCallFactory)
     }
 
     // endregion
