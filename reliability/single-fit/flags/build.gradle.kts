@@ -89,7 +89,7 @@ datadogBuild {
 }
 
 // Shared feature flags conformance fixtures are git-ignored; fetch the pinned snapshot before unit test resources are processed.
-val pullFeatureFlagsFixtures by tasks.registering(Exec::class) {
+val pullFeatureFlagsFixturesTask = tasks.register<Exec>("pullFeatureFlagsFixtures") {
     group = "verification"
     description = "Fetches shared feature flags fixtures at the pinned commit."
     workingDir = rootDir
@@ -98,6 +98,6 @@ val pullFeatureFlagsFixtures by tasks.registering(Exec::class) {
     timeout.set(Duration.ofMinutes(10))
 }
 
-tasks.matching { it.name.startsWith("process") && it.name.endsWith("UnitTestJavaRes") }.configureEach {
-    dependsOn(pullFeatureFlagsFixtures)
+tasks.named { it.startsWith("process") && it.endsWith("UnitTestJavaRes") }.configureEach {
+    dependsOn(pullFeatureFlagsFixturesTask)
 }

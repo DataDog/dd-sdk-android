@@ -738,7 +738,7 @@ The Flags module uses the JSON contract from [ffe-system-test-data](https://gith
 This keeps response behavior consistent across mobile SDKs. The snapshot is test data only.
 It adds no runtime dependency and requires no Git submodule.
 
-`ci/feature-flags-precomputed-fixtures.json` lists the upstream sources. Each source has its own path, destination, format and pinned commit, so later fixture sets reuse the same pipeline. The `precomputed-assignments` source is read from the git-ignored `reliability/single-fit/flags/src/test/resources/precomputed` folder. `SOURCE.json` in each destination records the source commit and file digests.
+`ci/feature-flags-precomputed-fixtures.json` lists the upstream sources. Each source has its own path, destination, format and pinned commit, so later fixture sets reuse the same pipeline. The `precomputed-assignments` source is read from the git-ignored `reliability/single-fit/flags/src/test/resources/precomputed` folder. `SOURCE.json` in each destination records the source commit, the source path and file map, and the file digests. If the path or file map changes, the next run imports the source again.
 The runner discovers all nested JSON cases through the generated index.
 Adding a case requires an upstream fixture change and a pin update. It requires no runner or filename-list change.
 Missing or empty fixtures fail the suite. Shared `_include` and `_skip` fields describe API applicability.
@@ -762,7 +762,7 @@ Run from the repository root:
 
 ```sh
 ./gradlew :reliability:single-fit:flags:testReleaseUnitTest --tests '*CanonicalPrecomputedTest*'
-python3 ci/test_sync_feature_flags_precomputed_fixtures.py
+python3 ci/test-sync-feature-flags-precomputed-fixtures.py
 ```
 
 The `pullFeatureFlagsFixtures` task runs only before unit-test resources are processed. It fetches the pinned commit and verifies its digests. When the local snapshot already matches the pin, it only verifies, without networking.
@@ -784,7 +784,7 @@ The weekly `Feature flags precomputed fixtures` workflow opens a draft update PR
 It runs only in `DataDog/dd-sdk-android`, not in forks.
 Scheduled and manual updates on `develop` share one concurrency group.
 It requests a short-lived write token only when the pin changed. The token is restricted to the default branch and this workflow.
-If the PR creation fails, the workflow deletes the new update branch.
+If PR creation fails, the workflow retains the signed update branch for inspection and recovery.
 A PR that changes only the pin runs the `test:single-fit-flags` GitLab job, which runs this suite.
 It waits when an update PR is already open. Normal SDK CI must pass before merge.
 Merge the upstream fixture contract before merging its consumer PRs.

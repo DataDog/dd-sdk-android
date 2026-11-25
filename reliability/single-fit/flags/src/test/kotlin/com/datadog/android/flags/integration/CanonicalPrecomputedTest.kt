@@ -10,6 +10,9 @@ package com.datadog.android.flags.integration
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.core.stub.StubDataStoreHandler
+import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
@@ -47,8 +50,34 @@ import java.util.concurrent.ConcurrentLinkedQueue
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class CanonicalPrecomputedTest {
+    @ParameterizedTest(name = "{0}, signed={1}")
+    @MethodSource("invalidResponseFixtures")
+    fun `M reject the response W setEvaluationContext() { invalid canonical response }`(
+        path: String,
+        signed: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fixture = applicableFixture(path)
+        val core = fixtureCore(fixture, forge, StubDataStoreHandler(), signed)
+        val client = FlagsClient.Builder(sdkCore = core).build()
+
+        try {
+            // When
+            client.setEvaluationContext(evaluationContext(path, fixture))
+
+            // Then
+            assertThat(core.requestsSent()).hasSize(1)
+            assertThat(fixture["expectedResponseError"].asString).isEqualTo("INVALID_RESPONSE")
+            assertThat(client.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+            assertFixtureEvents(path, fixture, core)
+        } finally {
+            core.stopFeatures()
+        }
+    }
+
     @ParameterizedTest(name = "{0}, restored={1}, signed={2}")
-    @MethodSource("fixtures")
+    @MethodSource("evaluationFixtures")
     fun `M satisfy canonical contract W setEvaluationContext() and resolve()`(
         path: String,
         restored: Boolean,
@@ -56,16 +85,50 @@ internal class CanonicalPrecomputedTest {
         forge: Forge
     ) {
         // Given
+        val fixture = applicableFixture(path)
+        val store = StubDataStoreHandler()
+        var core = fixtureCore(fixture, forge, store, signed)
+        var client = FlagsClient.Builder(sdkCore = core).build()
+
+        try {
+            // When
+            client.setEvaluationContext(evaluationContext(path, fixture))
+            assertThat(core.requestsSent()).hasSize(1)
+            assertThat(client.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+            if (restored) {
+                core.stopFeatures()
+                core = createStubSdkCore(forge)
+                core.stubDataStore(Feature.FLAGS_FEATURE_NAME, store)
+                core.stubNetworkResponses { null }
+                Flags.enable(FlagsConfiguration.Builder().build(), core)
+                client = FlagsClient.Builder(sdkCore = core).build()
+                assertThat(core.requestsSent()).isEmpty()
+            }
+
+            // Then
+            assertEvaluations(path, fixture, client, restored)
+            assertFixtureEvents(path, fixture, core)
+        } finally {
+            core.stopFeatures()
+        }
+    }
+
+    private fun applicableFixture(path: String): JsonObject {
         val fixture = read(path).asJsonObject
         if (!applies(fixture)) excluded.add("$path (fixture)")
         assumeTrue(applies(fixture), "Canonical platform exclusion: $path")
-        val context = fixture.getAsJsonObject("context")
-        val targetingKey = context["targetingKey"]
-        require(targetingKey != null && targetingKey.isJsonPrimitive && targetingKey.asJsonPrimitive.isString) {
-            "$path: Android requires a string targetingKey; null-context fixtures must exclude android upstream"
-        }
-        var core = createStubSdkCore(forge, DatadogSite.STAGING)
-        val store = core.stubDataStore(Feature.FLAGS_FEATURE_NAME)
+        return fixture
+    }
+
+    // [signed] serves the fixture as a valid REQUIRED proof from the test CA on the staging site.
+    private fun fixtureCore(
+        fixture: JsonObject,
+        forge: Forge,
+        store: DataStoreHandler? = null,
+        signed: Boolean = false
+    ): StubSDKCore {
+        val core = createStubSdkCore(forge, DatadogSite.STAGING)
+        store?.let { core.stubDataStore(Feature.FLAGS_FEATURE_NAME, it) }
         val responseBody = fixture["response"].toString()
         if (signed) core.advanceTimeBy(CanonicalResponseSigner.now * 1000)
         core.stubNetworkResponses {
@@ -80,83 +143,69 @@ internal class CanonicalPrecomputedTest {
                 }.build(),
             core
         )
-        var client = FlagsClient.Builder(sdkCore = core).build()
-        val attributes = context.getAsJsonObject("attributes").entrySet().associate { it.key to it.value.asString }
+        return core
+    }
 
-        // When
-        try {
-            client.setEvaluationContext(EvaluationContext(targetingKey.asString, attributes))
-
-            // Then
-            assertThat(core.requestsSent()).hasSize(1)
-            if (fixture.has("expectedResponseError")) {
-                assertThat(fixture["expectedResponseError"].asString).isEqualTo("INVALID_RESPONSE")
-                assertThat(client.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
-            } else {
-                assertThat(client.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
-                if (restored) {
-                    core.stopFeatures()
-                    core = createStubSdkCore(forge)
-                    core.stubDataStore(Feature.FLAGS_FEATURE_NAME, store)
-                    core.stubNetworkResponses { null }
-                    Flags.enable(FlagsConfiguration.Builder().build(), core)
-                    client = FlagsClient.Builder(sdkCore = core).build()
-                    assertThat(core.requestsSent()).isEmpty()
-                }
-                val evaluations = fixture.getAsJsonArray("evaluations").map { it.asJsonObject }
-                evaluations.filterNot { applies(it) }.forEach {
-                    excluded.add("$path: evaluation ${it["flag"]}")
-                }
-                evaluations.filter { applies(it) }.forEach { evaluation ->
-                    val key = evaluation["flag"].asString
-                    executed.add("$path, restored=$restored: ${evaluation["flag"]}")
-                    val fallback = evaluation["defaultValue"]
-                    val result = when (evaluation["variationType"].asString) {
-                        "boolean" -> client.resolve(key, fallback.asBoolean)
-                        "string" -> client.resolve(key, fallback.asString)
-                        "integer" -> client.resolve(key, fallback.asInt)
-                        "float" -> client.resolve(key, fallback.asDouble)
-                        "object" -> client.resolve(key, Gson().fromJson(fallback, Map::class.java))
-                        else -> error("Unsupported canonical getter: $evaluation")
-                    }
-                    if (restored && result.errorCode == null) {
-                        assertThat(result.reason).isEqualTo(ResolutionReason.CACHED)
-                    }
-                    val actual = JsonObject().apply {
-                        add("value", Gson().toJsonTree(result.value))
-                        addProperty("reason", if (result.errorCode != null) "ERROR" else result.reason.toString())
-                        addProperty("errorCode", result.errorCode?.toString())
-                        addProperty("variantKey", result.variant)
-                    }
-                    evaluation.getAsJsonObject("expectedResult").entrySet().forEach { (field, expected) ->
-                        if (restored && field == "reason" && result.errorCode == null) return@forEach
-                        assertThat(CanonicalFixtureMatcher.jsonEquals(actual[field], expected))
-                            .describedAs("$path: $key: $field: expected $expected, actual ${actual[field]}")
-                            .isTrue()
-                    }
-                }
-            }
-            core.stopFeatures()
-            val expectations = fixture.getAsJsonObject("expectations")
-            assertEvents(
-                path,
-                core.eventsWritten(Feature.FLAGS_FEATURE_NAME).map {
-                    JsonParser.parseString(it.eventData)
-                },
-                expectations,
-                "exposures"
-            )
-            assertEvents(
-                path,
-                core.eventsWritten(Feature.FLAGS_EVALUATIONS_FEATURE_NAME).map {
-                    JsonParser.parseString(it.eventData)
-                },
-                expectations,
-                "evaluationEvents"
-            )
-        } finally {
-            core.stopFeatures()
+    private fun evaluationContext(path: String, fixture: JsonObject): EvaluationContext {
+        val context = fixture.getAsJsonObject("context")
+        val targetingKey = context["targetingKey"]
+        require(targetingKey != null && targetingKey.isJsonPrimitive && targetingKey.asJsonPrimitive.isString) {
+            "$path: Android requires a string targetingKey; null-context fixtures must exclude android upstream"
         }
+        val attributes = context.getAsJsonObject("attributes").entrySet().associate { it.key to it.value.asString }
+        return EvaluationContext(targetingKey.asString, attributes)
+    }
+
+    private fun assertEvaluations(path: String, fixture: JsonObject, client: FlagsClient, restored: Boolean) {
+        val evaluations = fixture.getAsJsonArray("evaluations").map { it.asJsonObject }
+        evaluations.filterNot { applies(it) }.forEach {
+            excluded.add("$path: evaluation ${it["flag"]}")
+        }
+        evaluations.filter { applies(it) }.forEach { evaluation ->
+            val key = evaluation["flag"].asString
+            executed.add("$path, restored=$restored: ${evaluation["flag"]}")
+            val fallback = evaluation["defaultValue"]
+            val result = when (evaluation["variationType"].asString) {
+                "boolean" -> client.resolve(key, fallback.asBoolean)
+                "string" -> client.resolve(key, fallback.asString)
+                "integer" -> client.resolve(key, fallback.asInt)
+                "float" -> client.resolve(key, fallback.asDouble)
+                "object" -> client.resolve(key, Gson().fromJson(fallback, Map::class.java))
+                else -> error("Unsupported canonical getter: $evaluation")
+            }
+            if (restored && result.errorCode == null) {
+                assertThat(result.reason).isEqualTo(ResolutionReason.CACHED)
+            }
+            val actual = JsonObject().apply {
+                add("value", Gson().toJsonTree(result.value))
+                addProperty("reason", result.reason?.name)
+                addProperty("errorCode", result.errorCode?.toString())
+                addProperty("variantKey", result.variant)
+            }
+            evaluation.getAsJsonObject("expectedResult").entrySet().forEach { (field, expected) ->
+                if (restored && field == "reason" && result.errorCode == null) return@forEach
+                assertThat(CanonicalFixtureMatcher.jsonEquals(actual[field], expected))
+                    .describedAs("$path: $key: $field: expected $expected, actual ${actual[field]}")
+                    .isTrue()
+            }
+        }
+    }
+
+    private fun assertFixtureEvents(path: String, fixture: JsonObject, core: StubSDKCore) {
+        core.stopFeatures()
+        val expectations = fixture.getAsJsonObject("expectations")
+        assertEvents(
+            path,
+            core.eventsWritten(Feature.FLAGS_FEATURE_NAME).map { JsonParser.parseString(it.eventData) },
+            expectations,
+            "exposures"
+        )
+        assertEvents(
+            path,
+            core.eventsWritten(Feature.FLAGS_EVALUATIONS_FEATURE_NAME).map { JsonParser.parseString(it.eventData) },
+            expectations,
+            "evaluationEvents"
+        )
     }
 
     private fun assertEvents(path: String, events: List<JsonElement>, expectations: JsonObject, field: String) {
@@ -200,23 +249,27 @@ internal class CanonicalPrecomputedTest {
             return !contains("_skip") && (!value.has("_include") || contains("_include"))
         }
 
-        @JvmStatic
-        fun fixtures(): List<Arguments> {
+        private fun paths(): List<String> {
             val paths = read("index.json").asJsonArray.map { it.asString }
             check(paths.isNotEmpty()) { "Empty canonical fixture corpus" }
             check(paths.distinct().size == paths.size) { "Duplicate fixture index entries" }
             check(paths.any { applies(read(it).asJsonObject) }) { "All canonical fixtures excluded" }
-            return paths.flatMap { path ->
-                val fixture = read(path).asJsonObject
-                val modes = if (applies(fixture) &&
-                    !fixture.has("expectedResponseError")
-                ) {
-                    listOf(false, true)
-                } else {
-                    listOf(false)
-                }
+            return paths
+        }
+
+        @JvmStatic
+        fun invalidResponseFixtures(): List<Arguments> =
+            paths().filter { read(it).asJsonObject.has("expectedResponseError") }
+                .flatMap { listOf(Arguments.of(it, false), Arguments.of(it, true)) }
+
+        // An excluded fixture runs once so that the report lists it; applicable ones also run from the cache.
+        @JvmStatic
+        fun evaluationFixtures(): List<Arguments> = paths()
+            .filterNot { read(it).asJsonObject.has("expectedResponseError") }
+            .flatMap { path ->
+                val modes = if (applies(read(path).asJsonObject)) listOf(false, true) else listOf(false)
+                // The signed run reads the same fixture through REQUIRED verification.
                 modes.map { Arguments.of(path, it, false) } + Arguments.of(path, false, true)
             }
-        }
     }
 }

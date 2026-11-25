@@ -7,15 +7,20 @@
 package com.datadog.android.flags.integration
 
 import com.datadog.android.flags.integration.tests.utils.CanonicalFixtureMatcher
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 
+@ExtendWith(ForgeExtension::class)
 internal class CanonicalFixtureMatcherTest {
     @ParameterizedTest
     @CsvSource(
@@ -64,14 +69,17 @@ internal class CanonicalFixtureMatcherTest {
         }.isInstanceOf(AssertionError::class.java)
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = ["1", "2.0", "9"])
-    fun `M return the count W count() {positive integer}`(fakeCount: String) {
+    @Test
+    fun `M return the count W count() {positive integer, with or without a fraction}`(
+        @IntForgery(min = 1, max = 1000) fakeCount: Int
+    ) {
         // When
-        val result = CanonicalFixtureMatcher.count(json("{\"_count\":$fakeCount}").asJsonObject)
+        val results = listOf("$fakeCount", "$fakeCount.0").map {
+            CanonicalFixtureMatcher.count(json("{\"_count\":$it}").asJsonObject)
+        }
 
         // Then
-        assertThat(result).isEqualTo(fakeCount.toBigDecimal().toInt())
+        assertThat(results).containsOnly(fakeCount)
     }
 
     @ParameterizedTest
@@ -92,6 +100,27 @@ internal class CanonicalFixtureMatcherTest {
         assertThatThrownBy { CanonicalFixtureMatcher.count(JsonObject()) }
             .isInstanceOf(AssertionError::class.java)
             .hasMessageContaining("Invalid _count")
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        delimiter = '|',
+        value = [
+            "9007199254740992.0|9007199254740993",
+            "0.0|1e-400",
+            "{\"a\":[9007199254740992.0]}|{\"a\":[9007199254740993]}",
+            "[0.0]|[1e-400]"
+        ]
+    )
+    fun `M not match rounded or underflowed values W jsonEquals()`(actual: String, expected: String) {
+        // Given
+        val actualValue = Gson().toJsonTree(Gson().fromJson(actual, Any::class.java))
+
+        // When
+        val result = CanonicalFixtureMatcher.jsonEquals(actualValue, json(expected))
+
+        // Then
+        assertThat(result).isFalse()
     }
 
     private fun json(text: String) = JsonParser.parseString(text)

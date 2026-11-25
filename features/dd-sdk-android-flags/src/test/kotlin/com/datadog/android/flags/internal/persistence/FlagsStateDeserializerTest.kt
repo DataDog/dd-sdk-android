@@ -498,6 +498,50 @@ internal class FlagsStateDeserializerTest {
         }
     }
 
+    @Test
+    fun `M keep the evaluation context W deserialize() { only unsupported variation types }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val flags = JSONObject().put("legacy", buildFlagJson().put("variationType", "unknownType"))
+
+        // When
+        val result = testedDeserializer.deserialize(buildStateJson(targetingKey, flags))
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.evaluationContext.targetingKey).isEqualTo(targetingKey)
+        assertThat(result.flags).isEmpty()
+    }
+
+    @Test
+    fun `M keep the evaluation context W deserialize() { unsupported and malformed flags }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val flags = JSONObject()
+            .put("legacy", buildFlagJson().put("variationType", "unknownType"))
+            .put("malformed", JSONObject().put("variationType", "string"))
+
+        // When
+        val result = testedDeserializer.deserialize(buildStateJson(targetingKey, flags))
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.evaluationContext.targetingKey).isEqualTo(targetingKey)
+        assertThat(result.flags).isEmpty()
+    }
+
+    @Test
+    fun `M return null W deserialize() { only malformed flags }`(forge: Forge) {
+        // Given
+        val flags = JSONObject().put("malformed", JSONObject().put("variationType", "string"))
+
+        // When
+        val result = testedDeserializer.deserialize(buildStateJson(forge.anAlphabeticalString(), flags))
+
+        // Then
+        assertThat(result).isNull()
+    }
+
     private fun buildFlagJson(): JSONObject = JSONObject().apply {
         put("variationType", "boolean")
         put("variationValue", "true")

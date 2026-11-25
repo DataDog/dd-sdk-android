@@ -2,7 +2,7 @@
 # Unless explicitly stated otherwise, all files in this repository are licensed under the
 # Apache License Version 2.0. This product includes software developed at Datadog
 # (https://www.datadoghq.com/). Copyright 2025-Present Datadog, Inc.
-"""Tests for sync-feature-flags-precomputed-fixtures.py. Run: python3 ci/test_sync_feature_flags_precomputed_fixtures.py"""
+"""Tests for sync-feature-flags-precomputed-fixtures.py. Run: python3 ci/test-sync-feature-flags-precomputed-fixtures.py"""
 import importlib.util
 import json
 import subprocess
@@ -64,6 +64,11 @@ class SnapshotTest(unittest.TestCase):
         self.assertEqual(sorted(sync.read_snapshot(self.tree)),
                          ['SOURCE.json', 'corpus.json', 'generate.sh', 'nested/case.json'])
         sync.verify(self.tree, self.tree_spec)
+
+    def test_tree_source_keeps_explicit_file_mapping(self):
+        spec = dict(self.tree_spec, files={'response-signing/v1/corpus.json': 'renamed.json'})
+        snapshot = sync.snapshot(Path(self.temporary.name) / 'upstream', 'HEAD', spec)
+        self.assertEqual(sorted(snapshot), ['SOURCE.json', 'generate.sh', 'nested/case.json', 'renamed.json'])
 
     def test_tree_source_rejects_symbolic_links(self):
         upstream = Path(self.temporary.name) / 'upstream'
@@ -158,6 +163,24 @@ class UpdateTest(unittest.TestCase):
                                json.dumps({'name': 'b', 'evaluations': [], 'response': {}}))
         self.assertEqual(self._update(changed), changed)
 
+    def test_update_keeps_the_pin_when_the_cached_snapshot_is_incomplete(self):
+        pinned = self._head()
+        self._update(pinned)
+        (self.consumer / 'fixtures' / 'cases' / 'a.json').unlink()
+        unrelated = self._commit('unrelated/notes.md', 'notes')
+        self.assertEqual(self._update(unrelated), pinned)
+        self.assertTrue((self.consumer / 'fixtures' / 'cases' / 'a.json').is_file())
+
+    def test_update_stops_when_the_old_pin_is_unreadable(self):
+        config = json.loads(self.config.read_text())
+        config['sources'][0]['commit'] = 'f' * 40
+        self.config.write_text(json.dumps(config))
+        unrelated = self._commit('unrelated/notes.md', 'notes')
+        result = self._run('--update', '--ref', unrelated, '--source', str(self.upstream))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('pinned', result.stderr)
+        self.assertEqual(json.loads(self.config.read_text())['sources'][0]['commit'], 'f' * 40)
+
     def test_update_moves_each_pin_independently(self):
         pinned = self._head()
         changed = self._commit('response-signing/v1/corpus.json', '{"cases": [1]}')
@@ -173,6 +196,18 @@ class UpdateTest(unittest.TestCase):
         result = self._run('--verify')
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('checksums', result.stderr)
+
+    def test_changed_source_specification_imports_again(self):
+        self._update(self._head())
+        config = json.loads(self.config.read_text())
+        config['sources'][1]['path'] = 'response-signing/v1/nested/'
+        self.config.write_text(json.dumps(config))
+        result = self._run('--verify')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('source specification', result.stderr)
+        self._run('--source', str(self.upstream)).check_returncode()
+        self.assertEqual(sorted(sync.read_snapshot(self.consumer / 'signing')), ['SOURCE.json', 'case.json'])
+        self.assertEqual(self._run('--verify').returncode, 0)
 
     def test_rejects_invalid_manifest(self):
         for sources in ([], [{'name': 'x', 'format': 'zip', 'path': 'x/', 'destination': 'x', 'commit': '0' * 40}],

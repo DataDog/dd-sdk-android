@@ -82,11 +82,13 @@ def snapshot(source, ref, spec=PRECOMPUTED):
             continue
         metadata, raw_path = entry.split(b'\t', 1)
         path = raw_path.decode()
+        # An explicit file mapping wins over the target that the source path gives.
         target = files.get(path)
-        if precomputed and path.startswith(prefix + 'cases/') and path.endswith('.json'):
-            target = path[len(prefix):]
-        if not precomputed and path.startswith(prefix):
-            target = path[len(prefix):]
+        if target is None:
+            if precomputed and path.startswith(prefix + 'cases/') and path.endswith('.json'):
+                target = path[len(prefix):]
+            elif not precomputed and path.startswith(prefix):
+                target = path[len(prefix):]
         if target is None:
             continue
         mode, kind, blob = metadata.decode().split()
@@ -98,7 +100,7 @@ def snapshot(source, ref, spec=PRECOMPUTED):
     if not result or not all(p in result for p in files.values()):
         raise ValueError('Missing or empty fixture source: ' + spec['name'])
     if not precomputed:
-        return _with_provenance(result, sha)
+        return _with_provenance(result, sha, spec)
     cases = sorted(p for p in result if p.startswith('cases/'))
     if not cases:
         raise ValueError('Missing or empty precomputed fixture corpus')
@@ -110,13 +112,19 @@ def snapshot(source, ref, spec=PRECOMPUTED):
             raise TypeError('Missing evaluations: ' + path)
         result['responses/' + path] = response_bytes(result[path])
     result['index.json'] = (json.dumps(cases, indent=2) + '\n').encode()
-    return _with_provenance(result, sha)
+    return _with_provenance(result, sha, spec)
 
 
-def _with_provenance(result, sha):
+def source_spec(spec):
+    """Returns the source fields that select and shape the imported files."""
+    return {'format': spec['format'], 'path': spec['path'], 'files': spec.get('files', {})}
+
+
+def _with_provenance(result, sha, spec):
     result['SOURCE.json'] = (json.dumps({
         'repository': REPOSITORY,
         'commit': sha,
+        'source': source_spec(spec),
         'files': {p: hashlib.sha256(v).hexdigest() for p, v in sorted(result.items())},
     }, indent=2) + '\n').encode()
     return result
@@ -139,6 +147,9 @@ def verify(destination, spec=PRECOMPUTED):
     metadata = json.loads(content.pop('SOURCE.json'))
     if metadata['repository'] != REPOSITORY or not re.fullmatch(r'[0-9a-f]{40}', metadata['commit']):
         raise ValueError('Invalid source provenance')
+    if metadata.get('source') != source_spec(spec):
+        raise ValueError(f"Snapshot was imported with a different {spec['name']} source specification; "
+                         'run without --verify')
     hashes = {p: hashlib.sha256(v).hexdigest() for p, v in sorted(content.items())}
     if hashes != metadata['files']:
         raise ValueError('Snapshot content differs from its recorded checksums')
@@ -267,8 +278,16 @@ def sync_source(root, spec, args):
     pin = spec['commit']
     destination = checked_destination(root, spec)
     before = read_snapshot(destination)
-    current = json.loads(before['SOURCE.json'])['commit'] if 'SOURCE.json' in before else None
+    current = None
+    if 'SOURCE.json' in before:
+        metadata = json.loads(before['SOURCE.json'])
+        # A snapshot from a different path or file map does not match the pin, so import it again.
+        if metadata.get('source') == source_spec(spec):
+            current = metadata['commit']
     if args.verify:
+        if 'SOURCE.json' in before and current is None:
+            raise ValueError(f"Fetched {spec['name']} snapshot was imported with a different source specification; "
+                             'run without --verify')
         if current != pin:
             raise ValueError(f"Fetched {spec['name']} snapshot ({current}) does not match the pin ({pin}); "
                              'run without --verify')
@@ -290,18 +309,26 @@ def sync_source(root, spec, args):
                 fetch(source, ref)
                 ref = 'FETCH_HEAD'
             after = snapshot(source, ref, spec)
-            pinned = before if current == pin else None
-            if args.update and pinned is None and json.loads(after['SOURCE.json'])['commit'] != pin:
-                # A fresh checkout has no local snapshot, so read the pinned one to compare.
-                try:
-                    if fetched:
-                        fetch(source, pin)
-                        pinned = snapshot(source, 'FETCH_HEAD', spec)
-                    else:
-                        pinned = snapshot(source, pin, spec)
-                except (Exception, SystemExit):  # pylint: disable=broad-except
-                    # Without a readable pinned snapshot, the new commit counts as a change.
-                    pinned = None
+            pinned = None
+            if args.update and json.loads(after['SOURCE.json'])['commit'] != pin:
+                # Compare with the cached snapshot only when it verifies; otherwise read the pin from Git.
+                if current == pin:
+                    try:
+                        verify(destination, spec)
+                        pinned = before
+                    except (ValueError, KeyError, TypeError):
+                        pinned = None
+                if pinned is None:
+                    try:
+                        if fetched:
+                            fetch(source, pin)
+                            pinned = snapshot(source, 'FETCH_HEAD', spec)
+                        else:
+                            pinned = snapshot(source, pin, spec)
+                    except (Exception, SystemExit) as error:  # pylint: disable=broad-except
+                        # Moving the pin needs proof that the imported files changed.
+                        raise ValueError(f"Cannot read the pinned {spec['name']} snapshot ({pin}); "
+                                         'the update stops and keeps the pin') from error
         # An upstream commit that changes no imported file keeps the pin.
         if pinned is not None and json.loads(after['SOURCE.json'])['commit'] != pin \
                 and {k: v for k, v in pinned.items() if k != 'SOURCE.json'} == \

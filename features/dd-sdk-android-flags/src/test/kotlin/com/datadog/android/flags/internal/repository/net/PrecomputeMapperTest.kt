@@ -73,9 +73,8 @@ internal class PrecomputeMapperTest {
         testedMapper = PrecomputeMapper(mockInternalLogger)
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = [true, false])
-    fun `M warn once and preserve valid flags W map() {unsupported variation type}`(fakeConsent: Boolean) {
+    @Test
+    fun `M warn once and preserve valid flags W map() {unsupported variation type}`(@BoolForgery fakeConsent: Boolean) {
         // Given
         val unknown = buildFlagJson("future-type", true)
         val valid = buildFlagJson(VariationType.BOOLEAN.value, true)
