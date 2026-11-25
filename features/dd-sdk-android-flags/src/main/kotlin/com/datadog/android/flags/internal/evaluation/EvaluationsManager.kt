@@ -679,6 +679,7 @@ internal class EvaluationsManager(
             proofExpiryToken = null
             proofExpiresAt = Long.MAX_VALUE
             clockStep = null
+            if (expireFlags) flagsRepository.retireExpiredVerifiedFlags()
             val cancel = cancelProofExpiry
             cancelProofExpiry = null
             // A clock step already published the same expired state.

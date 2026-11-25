@@ -402,6 +402,21 @@ internal class ResponseSigningClientTest {
         assertThat(store.operations).isZero()
     }
 
+    @Test
+    fun `M keep defaults W clock moves back after expiry {required, expireVerifiedFlags}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = true)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        advanceClock(PROOF_WINDOW_SECONDS)
+        assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+        // When the wall clock moves back into the proof window, without a new fetch
+        now -= PROOF_WINDOW_SECONDS / 2
+        // Then the expired proof stays expired
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+        assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+    }
+
     @ParameterizedTest(name = "expireVerifiedFlags={0}, from Stale={1}, by read={2}")
     @MethodSource("expiryCases")
     fun `M apply expiry W proof expires {required}`(expireVerifiedFlags: Boolean, fromStale: Boolean, byRead: Boolean) {
