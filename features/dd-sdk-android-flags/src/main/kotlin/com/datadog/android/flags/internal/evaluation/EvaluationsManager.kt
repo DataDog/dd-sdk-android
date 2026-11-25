@@ -74,9 +74,14 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
     private var cancelTimeout: (() -> Unit)? = null
     private var cancelTimeoutWhenArmed = false
 
+    // A newer request settled initialization while this one was still pending; its deadline no longer applies.
+    private var deadlineRetired = false
+
     fun armTimeoutCancellation(cancellation: () -> Unit) {
         val cancelNow = synchronized(lock) {
-            if (isPending) {
+            if (isPending && deadlineRetired) {
+                true
+            } else if (isPending) {
                 cancelTimeout = cancellation
                 false
             } else {
@@ -114,8 +119,16 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
         cancelTimeout.also { cancelTimeout = null }
     }
 
+    // The callback stays pending, so the request still completes it when it finishes.
+    fun retirePendingDeadline(): (() -> Unit)? = synchronized(lock) {
+        if (!isPending) return null
+        deadlineRetired = true
+        cancelTimeout.also { cancelTimeout = null }
+    }
+
     fun claimDeadline(): DeadlineClaim? = synchronized(lock) {
         when {
+            isPending && deadlineRetired -> null
             isPending -> {
                 isPending = false
                 cancelTimeout = null
@@ -186,6 +199,9 @@ internal class EvaluationsManager(
 
     // Set when a current request reaches a terminal result; a later superseded request then keeps no deadline.
     private var initializationSettled = false
+
+    // The signed request that owns the initialization deadline, until a current request settles initialization.
+    private var signedInitialization: InitializationCompletion? = null
     private var proofExpiryToken: Any? = null
     private var proofExpiresAt: Long = Long.MAX_VALUE
     private var proofVerifiedAt: Long = Long.MIN_VALUE
@@ -422,6 +438,16 @@ internal class EvaluationsManager(
         if (completion == null) {
             ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
             effects.drain()
+        } else {
+            val cancel = synchronized(initializationTerminalLock) {
+                if (initializationSettled) {
+                    completion.retirePendingDeadline()
+                } else {
+                    signedInitialization = completion
+                    null
+                }
+            }
+            cancel?.invoke()
         }
         completionAwareExecutor(onFetchFinished).executeSafe(FETCH_AND_STORE_OPERATION_NAME, internalLogger) {
             try {
@@ -829,7 +855,10 @@ internal class EvaluationsManager(
         initializationSettled = true
         val cancel = retainedDeadline?.retireDeadline()
         retainedDeadline = null
-        cancel?.let { effects.enqueue { effects.notifySafely { it() } } }
+        // The request that owns the deadline can still be pending, before it reaches completeSuperseded().
+        val cancelPending = signedInitialization?.retirePendingDeadline()
+        signedInitialization = null
+        listOfNotNull(cancel, cancelPending).forEach { effects.enqueue { effects.notifySafely { it() } } }
     }
 
     // Callers hold initializationTerminalLock and checked that the request is current.

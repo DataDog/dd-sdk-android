@@ -32,6 +32,7 @@ import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsResponseSigningException
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.ResponseSigningFailureReason
 import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.integration.FlagsClientTest.Companion.createStubSdkCore
 import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeConfigurator
@@ -98,6 +99,7 @@ internal class ResponseSigningClientTest {
     private var minimumNotBefore: Long? = null
     private var flagSelectionTags: List<String>? = null
     private var flagSelectionIgnored: String? = null
+    private var listSelectionIgnored = true
     private var responseKind = "valid"
     private var credentialName = CanonicalResponseSigner.DEFAULT_CREDENTIAL
     private var observeFullEvaluationData = false
@@ -177,6 +179,22 @@ internal class ResponseSigningClientTest {
         assertThat(userMessages).contains(
             "flagSelection was ignored by the server (tag_load_failed). Loaded the full flag configuration."
         )
+    }
+
+    @Test
+    fun `M reject the proof W setEvaluationContext() {selection sent, response list omits the ignored reason}`() {
+        // Given
+        flagSelectionTags = listOf("team:payments")
+        listSelectionIgnored = false
+        create(ResponseSigningMode.REQUIRED)
+        val failures = mutableListOf<Throwable>()
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), failureCallback(failures))
+        queue.removeFirst().run()
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+        assertThat((failures.single() as FlagsResponseSigningException).reason)
+            .isEqualTo(ResponseSigningFailureReason.INVALID_PROOF)
     }
 
     @ParameterizedTest
@@ -1133,6 +1151,25 @@ internal class ResponseSigningClientTest {
     }
 
     @Test
+    fun `M ignore the superseded deadline W replacement installs before the first fetch runs {required}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        val failures = mutableListOf<Throwable>()
+        testedClient.setEvaluationContext(EvaluationContext("subject-a"), failureCallback(failures))
+        testedClient.setEvaluationContext(EvaluationContext("subject-b"), null)
+        queue.removeLast().run()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        testedClient.setEvaluationContext(EvaluationContext("subject-c"), null)
+        // When the first request's deadline passes before its fetch runs
+        advanceClock(INITIALIZATION_TIMEOUT_SECONDS + 1)
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        assertThat(failures).isEmpty()
+        queue.removeFirst().run()
+        assertThat(failures.single()).isInstanceOf(FlagsContextSupersededException::class.java)
+    }
+
+    @Test
     fun `M use the current scope for fallback W refresh fails {OBSERVE, transport changed the token}`() {
         // Given
         create(ResponseSigningMode.OBSERVE)
@@ -1484,7 +1521,8 @@ internal class ResponseSigningClientTest {
             credentialName,
             issuedAt = signedAt ?: CanonicalResponseSigner.now,
             minimumNotBefore = minimumNotBefore,
-            flagSelectionIgnored = flagSelectionIgnored
+            flagSelectionIgnored = flagSelectionIgnored,
+            listSelectionIgnored = listSelectionIgnored
         ).headers
         val response = Response.Builder().request(request).protocol(Protocol.HTTP_1_1).message("test")
             .code(if (responseKind == "403") 403 else 200)

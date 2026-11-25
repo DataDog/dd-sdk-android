@@ -548,7 +548,10 @@ internal class ResponseSigningVerifier(
             }
         }
 
-        /** A non-null `flag_selection` in the JSON body, or a selection query parameter. */
+        /**
+         * A non-null `flag_selection` at the JSON root or in `data.attributes` (the SDK request envelope), or a
+         * selection query parameter.
+         */
         private fun hasFlagSelection(request: Request): Boolean {
             if (SELECTION_QUERY_PARAMETERS.any { request.url.queryParameterNames.contains(it) }) return true
             val body = Buffer()
@@ -558,8 +561,11 @@ internal class ResponseSigningVerifier(
                 signingFailure()
             }
             return try {
-                val json = JsonParser.parseString(body.signingBytes().toString(Charsets.UTF_8))
-                json.isJsonObject && json.asJsonObject.get("flag_selection")?.isJsonNull == false
+                val root = JsonParser.parseString(body.signingBytes().toString(Charsets.UTF_8))
+                    .takeIf { it.isJsonObject }?.asJsonObject
+                val attributes = root?.get("data")?.takeIf { it.isJsonObject }?.asJsonObject
+                    ?.get("attributes")?.takeIf { it.isJsonObject }?.asJsonObject
+                listOfNotNull(root, attributes).any { it.get("flag_selection")?.isJsonNull == false }
             } catch (_: JsonParseException) {
                 false
             }

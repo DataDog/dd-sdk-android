@@ -48,7 +48,8 @@ internal object CanonicalResponseSigner {
 
     /**
      * [minimumNotBefore] adds the draft revocation header, bound into the transcript. The signed response list is the
-     * default edge list; [flagSelectionIgnored] sets its `dd-flag-selection-ignored` value.
+     * default edge list; [flagSelectionIgnored] sets its `dd-flag-selection-ignored` value, and
+     * [listSelectionIgnored] false leaves that name out of the list.
      */
     fun response(
         request: Request,
@@ -56,7 +57,8 @@ internal object CanonicalResponseSigner {
         credentialName: String = DEFAULT_CREDENTIAL,
         issuedAt: Long = now,
         minimumNotBefore: Long? = null,
-        flagSelectionIgnored: String? = null
+        flagSelectionIgnored: String? = null,
+        listSelectionIgnored: Boolean = true
     ): Response = httpResponse(request, body = body).newBuilder()
         .headers(
             signedHeaders(
@@ -65,7 +67,8 @@ internal object CanonicalResponseSigner {
                 credentialName,
                 issuedAt,
                 minimumNotBefore,
-                flagSelectionIgnored
+                flagSelectionIgnored,
+                listSelectionIgnored
             )
         )
         .build()
@@ -84,7 +87,8 @@ internal object CanonicalResponseSigner {
         credentialName: String,
         issuedAt: Long,
         minimumNotBefore: Long?,
-        flagSelectionIgnored: String?
+        flagSelectionIgnored: String?,
+        listSelectionIgnored: Boolean
     ): Headers {
         val credential = credential(credentialName)
         val leaf = bytes(credential["certificate_der_base64"].asString)
@@ -120,9 +124,9 @@ internal object CanonicalResponseSigner {
         transcript.write(sha(body)); transcript.write(sha(leaf))
         transcript.writeByte(intermediates.size)
         intermediates.forEach { transcript.write(sha(bytes(it))) }
-        val responseHeaders = listOf(
+        val responseHeaders = listOfNotNull(
             CONTENT_TYPE_HEADER to CONTENT_TYPE,
-            SELECTION_IGNORED_HEADER to flagSelectionIgnored
+            (SELECTION_IGNORED_HEADER to flagSelectionIgnored).takeIf { listSelectionIgnored }
         )
         list(responseHeaders)
         minimumNotBefore?.let {
