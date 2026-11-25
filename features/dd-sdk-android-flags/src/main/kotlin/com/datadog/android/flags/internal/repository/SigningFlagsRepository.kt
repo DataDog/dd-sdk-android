@@ -93,7 +93,8 @@ internal class SigningFlagsRepository(
         proof: VerifiedResponse?,
         observeFullEvaluationData: Boolean
     ): FlagsInstallation? {
-        if (proof != null && signing.permits(context, proof)) {
+        // By default, a proof that expired between verification and installation still installs; the client is Stale.
+        if (proof != null && signing.permits(context, proof, allowExpired = keepExpired)) {
             verified.set(VerifiedFlags(context, flags, obfuscation, proof, observeFullEvaluationData))
         } else if (required) {
             return null

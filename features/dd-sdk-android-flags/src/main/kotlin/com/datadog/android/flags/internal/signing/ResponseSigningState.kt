@@ -75,13 +75,16 @@ internal class ResponseSigningState(
     }
 
     /**
-     * The clock for the expiry of [proof]: the verifier clock, or the signed issued-at plus the elapsed time since
-     * verification when that is later. A wall-clock step back during the process cannot extend the proof.
+     * The clock for the expiry of [proof]: the verifier clock, or the clock at verification plus the elapsed time
+     * since then when that is later. A wall-clock step back during the process cannot extend the proof, also when the
+     * response arrived late in its window.
      */
     fun expiryNow(proof: VerifiedResponse): Long {
         val elapsedSeconds = (elapsedRealtimeMillis() - proof.verifiedElapsedMs).coerceAtLeast(0) / MILLIS_PER_SECOND
-        return maxOf(verifier.effectiveNow(proof.anchorId, now()), proof.issuedAt + elapsedSeconds)
+        return maxOf(verifier.effectiveNow(proof.anchorId, now()), proof.verifiedEffectiveAt + elapsedSeconds)
     }
+
+    fun isExpired(proof: VerifiedResponse): Boolean = expiryNow(proof) >= proof.expiresAt
 
     fun currentScope(): String? = synchronized(lock) { if (identity === context.snapshot()) expectedScope else null }
 
@@ -123,12 +126,17 @@ internal class ResponseSigningState(
     /**
      * [allowStale] keeps a proof admissible outside its time window (expired, or the clock moved back); the identity,
      * context and scope still apply. Otherwise the device clock may be at most [CLOCK_STEP_ALLOWANCE_SECONDS] before
-     * admission, and [expiryNow] must be before expires-at.
+     * admission, and [expiryNow] must be before expires-at unless [allowExpired] is true.
      */
-    fun permits(context: EvaluationContext, proof: VerifiedResponse, allowStale: Boolean = false): Boolean =
+    fun permits(
+        context: EvaluationContext,
+        proof: VerifiedResponse,
+        allowStale: Boolean = false,
+        allowExpired: Boolean = false
+    ): Boolean =
         synchronized(lock) {
-            val inWindow =
-                now() + CLOCK_STEP_ALLOWANCE_SECONDS >= proof.verifiedAt && expiryNow(proof) < proof.expiresAt
+            val inWindow = now() + CLOCK_STEP_ALLOWANCE_SECONDS >= proof.verifiedAt &&
+                (allowExpired || expiryNow(proof) < proof.expiresAt)
             identity.active && identity === this.context.snapshot() && context == requestedContext &&
                 proof.scope == expectedScope && (allowStale || inWindow)
         }

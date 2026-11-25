@@ -757,6 +757,24 @@ internal class ResponseSigningChainTest {
         assertThat(older.failure).isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
     }
 
+    @Test
+    fun `M lock the shared preferences W raise() and raiseHighWaterMark() {two stores, one preferences}`() {
+        // Given: two SDK cores, each with its own store over the same preferences instance
+        val preferences = FakePreferences()
+        val first = SharedPreferencesMinimumNotBeforeStore(preferences.mock)
+        val second = SharedPreferencesMinimumNotBeforeStore(preferences.mock)
+        // When
+        first.raiseHighWaterMark("anchor", NOV_21_0200)
+        second.raiseHighWaterMark("anchor", NOV_21_0200 - 1)
+        first.raise("anchor", NOV_19)
+        second.raise("anchor", NOV_19 - 1)
+        // Then
+        assertThat(preferences.lockedWrites).containsExactly(true, true)
+        assertThat(first.highWaterMark("anchor")).isEqualTo(NOV_21_0200)
+        assertThat(second.highWaterMark("anchor")).isEqualTo(NOV_21_0200)
+        assertThat(second.get("anchor")).isEqualTo(NOV_19)
+    }
+
     // endregion
 
     // region Helpers
@@ -820,8 +838,12 @@ internal class ResponseSigningChainTest {
     /** SharedPreferences backed by a map, so a new store instance simulates a restart; [persist] false loses writes. */
     private class FakePreferences(persist: Boolean = true) {
         val values = mutableMapOf<String, Long>()
+
+        // For each write: whether the writing thread held the lock of this preferences instance.
+        val lockedWrites = mutableListOf<Boolean>()
         private val editor: SharedPreferences.Editor = mock {
             on { putLong(any(), any()) } doAnswer { invocation ->
+                lockedWrites += Thread.holdsLock(this@FakePreferences.mock)
                 if (persist) values[invocation.getArgument(0)] = invocation.getArgument(1)
                 invocation.mock as SharedPreferences.Editor
             }

@@ -95,6 +95,13 @@ internal class ResponseSigningClientTest {
     private val requests = mutableListOf<Request>()
     private val scheduledExecutors = mutableListOf<StubScheduledExecutorService>()
     private val userMessages = mutableListOf<String>()
+
+    // Every log of every target: message, properties and throwable messages.
+    private val loggedText = mutableListOf<String>()
+
+    // When set, the wall clock moves by this step before the second elapsed-time read; the first is at verification.
+    private var stepAfterVerification: Long? = null
+    private var elapsedReads = 0
     private var signedAt: Long? = null
     private var minimumNotBefore: Long? = null
     private var flagSelectionTags: List<String>? = null
@@ -179,6 +186,26 @@ internal class ResponseSigningClientTest {
         assertThat(userMessages).contains(
             "flagSelection was ignored by the server (tag_load_failed). Loaded the full flag configuration."
         )
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["OBSERVE", "REQUIRED"])
+    fun `M keep the raw signed ignored value out of every log W setEvaluationContext() {unknown reason}`(
+        mode: ResponseSigningMode
+    ) {
+        // Given a verified response whose signed DD-Flag-Selection-Ignored value is not a known reason
+        flagSelectionTags = listOf("team:payments")
+        flagSelectionIgnored = "raw-edge-value-1234"
+        create(mode)
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then the logs and telemetry carry only the sanitized reason
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        assertThat(userMessages).contains(
+            "flagSelection was ignored by the server (unknown). Loaded the full flag configuration."
+        )
+        assertThat(loggedText).isNotEmpty.noneMatch { it.contains("raw-edge-value-1234") }
     }
 
     @Test
@@ -1298,6 +1325,44 @@ internal class ResponseSigningClientTest {
     }
 
     @Test
+    fun `M go Stale at the original deadline W late response, then wall clock stepped back {required}`() {
+        // Given a response verified 290 s after its issued-at, with 10 s left
+        signedAt = now - PROOF_WINDOW_SECONDS + 10
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        // When the wall clock steps back 20 s, inside the step allowance, and 10 s of elapsed time pass
+        now -= 20
+        elapsedShift += 20
+        advanceClock(10)
+        // Then the step back does not extend the proof past its original deadline
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+    }
+
+    @Test
+    fun `M install as Stale and serve the flags W proof expires before installation {required, default}`() {
+        // Given a response with 1 s left, and a clock that passes expires-at after verification
+        signedAt = now - PROOF_WINDOW_SECONDS + 1
+        stepAfterVerification = 2
+        create(ResponseSigningMode.REQUIRED)
+        val states = mutableListOf<FlagsClientState>()
+        testedClient.state.addListener(object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                states += newState
+            }
+        })
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then the client never reports Ready for the expired proof, and keeps the verified flags
+        assertThat(stepAfterVerification).isNull()
+        assertThat(states).doesNotContain(FlagsClientState.Ready)
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+    }
+
+    @Test
     fun `M fail with expired-proof W leaf expired before the build floor {required, device clock in leaf validity}`() {
         // Given the device clock is inside the leaf validity, but the leaf expired before the release build floor
         create(ResponseSigningMode.REQUIRED, buildFloor = RELEASE_BUILD_FLOOR)
@@ -1504,6 +1569,10 @@ internal class ResponseSigningClientTest {
     }
 
     /** [mode] null builds a client that never calls `experimentalResponseSigning()`; [roots] null uses the pinned anchor. */
+    private fun logged(messageBuilder: () -> String, throwable: Throwable?, properties: Map<String, Any?>?): String =
+        listOfNotNull(messageBuilder(), properties?.toString(), throwable?.toString(), throwable?.cause?.toString())
+            .joinToString(" ")
+
     private fun advanceClock(seconds: Long) {
         now += seconds
         scheduledExecutors.toList().forEach { it.runDueTasks() }
@@ -1527,9 +1596,30 @@ internal class ResponseSigningClientTest {
                     additionalProperties: Map<String, Any?>?
                 ) {
                     if (target == InternalLogger.Target.USER) userMessages += messageBuilder()
+                    loggedText += logged(messageBuilder, throwable, additionalProperties)
                     stubCore.internalLogger.log(
                         level,
                         target,
+                        messageBuilder,
+                        throwable,
+                        onlyOnce,
+                        additionalProperties
+                    )
+                }
+
+                override fun log(
+                    level: InternalLogger.Level,
+                    targets: List<InternalLogger.Target>,
+                    messageBuilder: () -> String,
+                    throwable: Throwable?,
+                    onlyOnce: Boolean,
+                    additionalProperties: Map<String, Any?>?
+                ) {
+                    if (InternalLogger.Target.USER in targets) userMessages += messageBuilder()
+                    loggedText += logged(messageBuilder, throwable, additionalProperties)
+                    stubCore.internalLogger.log(
+                        level,
+                        targets,
                         messageBuilder,
                         throwable,
                         onlyOnce,
@@ -1555,7 +1645,15 @@ internal class ResponseSigningClientTest {
             }
             override val timeProvider = object : TimeProvider by stubCore.timeProvider {
                 override fun getDeviceTimestampMillis() = now * 1000
-                override fun getDeviceElapsedRealtimeMillis() = (now + elapsedShift) * 1000
+                override fun getDeviceElapsedRealtimeMillis(): Long {
+                    elapsedReads++
+                    stepAfterVerification?.takeIf { elapsedReads == 2 }?.let { step ->
+                        stepAfterVerification = null
+                        now += step
+                        elapsedShift -= step
+                    }
+                    return (now + elapsedShift) * 1000
+                }
             }
             override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
                 val executor = StubExecutorService(executorContext)

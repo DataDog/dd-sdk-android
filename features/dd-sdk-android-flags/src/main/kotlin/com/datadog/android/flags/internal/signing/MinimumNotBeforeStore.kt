@@ -45,6 +45,8 @@ internal class InMemoryMinimumNotBeforeStore : MinimumNotBeforeStore {
 /**
  * Survives restarts. The memory copy keeps each value for the process when a read or a write fails, so revocation and
  * the clock floor never weaken within the process. An older value restored from a backup is lower, so it is safe.
+ * Each SDK core has its own store over the same preferences instance, so every read, compare and write locks that
+ * instance: a lower value can never overwrite a higher one.
  */
 internal class SharedPreferencesMinimumNotBeforeStore(
     private val preferences: SharedPreferences
@@ -53,7 +55,7 @@ internal class SharedPreferencesMinimumNotBeforeStore(
 
     override fun get(anchorId: String): Long? = read(KEY_PREFIX + anchorId, memory.get(anchorId))
 
-    override fun raise(anchorId: String, value: Long) = synchronized(this) {
+    override fun raise(anchorId: String, value: Long) = synchronized(preferences) {
         if (value > (get(anchorId) ?: -1L)) {
             memory.raise(anchorId, value)
             write(KEY_PREFIX + anchorId, value)
@@ -63,7 +65,7 @@ internal class SharedPreferencesMinimumNotBeforeStore(
     override fun highWaterMark(anchorId: String): Long? =
         read(HIGH_WATER_MARK_PREFIX + anchorId, memory.highWaterMark(anchorId))
 
-    override fun raiseHighWaterMark(anchorId: String, value: Long) = synchronized(this) {
+    override fun raiseHighWaterMark(anchorId: String, value: Long) = synchronized(preferences) {
         if (value > (highWaterMark(anchorId) ?: -1L)) {
             memory.raiseHighWaterMark(anchorId, value)
             write(HIGH_WATER_MARK_PREFIX + anchorId, value)

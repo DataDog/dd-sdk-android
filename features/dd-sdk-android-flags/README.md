@@ -195,8 +195,11 @@ When the proof of the last verified response expires in `REQUIRED` mode:
   with `expired-proof` when `expireVerifiedFlags(true)`. When the clock returns into the proof window,
   the state returns to what it was before the step.
 - A wall-clock step during the process does not extend a proof. The expiry clock is the later of the
-  verifier clock (below) and the signed `issued-at` plus the elapsed time since verification
-  (`SystemClock.elapsedRealtime`).
+  verifier clock (below) and the verification time plus the elapsed time since verification
+  (`SystemClock.elapsedRealtime`). The verification time is the later of `issued-at` and the verifier
+  clock at verification, so a response that arrives late in its window keeps its original deadline.
+- By default, a verified response whose proof expires between verification and installation is installed,
+  and the client goes directly to `Stale`, never `Ready`. With `expireVerifiedFlags(true)`, it is not installed.
 - A new verified response returns the client to `FlagsClientState.Ready` in both settings.
   The customer decides when to refetch.
 - `expireVerifiedFlags` has no effect in `OBSERVE` or `OFF` mode.
@@ -217,6 +220,8 @@ Clock floor (the device owner can set the clock back):
 - The SDK stores the mark next to the minimum leaf not-before, in the same SharedPreferences. When a
   write is lost, the SDK keeps the value in memory for the process and accepts the response. A value
   that a backup restore brings back is lower, so it is safe.
+  Several SDK cores share the same SharedPreferences instance, and each update locks it, so a lower value
+  never overwrites a higher one.
 - The 30 s backward-step allowance (above) applies to the device clock. It never lowers `effectiveNow`.
 
 Minimum leaf not-before revocation (draft wire, pending the edge and the shared fixtures):

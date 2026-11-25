@@ -491,7 +491,15 @@ internal class EvaluationsManager(
                             }
                             if (installation != null) {
                                 proofTimer = response?.proof?.let { replaceProofExpiryLocked(signing, it) }
-                                completeInstallation(request, installation, outcome)
+                                // A proof that expired before installation is Stale at once, never Ready first.
+                                val expired = signing.configuration.mode == ResponseSigningMode.REQUIRED &&
+                                    response?.proof?.let { signing.isExpired(it) } == true
+                                completeInstallation(
+                                    request,
+                                    installation,
+                                    outcome,
+                                    if (expired) FlagsClientState.Stale else FlagsClientState.Ready
+                                )
                                 installed = true
                             } else {
                                 flagsRepository.restoreVerifiedFlags()?.let { effects.enqueue { it.complete {} } }
@@ -889,16 +897,17 @@ internal class EvaluationsManager(
     private fun completeInstallation(
         request: ExperimentationOptOut.Request,
         installation: FlagsInstallation,
-        result: InitializationResult?
+        result: InitializationResult?,
+        state: FlagsClientState = FlagsClientState.Ready
     ) {
         assignmentAuthorization.onAssignmentsAccepted(request.assignmentAuthorization)
         if (acceptedTimeoutFallback?.request === request) acceptedTimeoutFallback = null
         retireRetainedDeadlineLocked()
-        setStateLocked(FlagsClientState.Ready)
+        setStateLocked(state)
         effects.enqueue {
             installation.complete {
-                effects.notifySafely { flagStateManager.updateState(FlagsClientState.Ready) }
-                complete(result, FlagsClientState.Ready)
+                effects.notifySafely { flagStateManager.updateState(state) }
+                complete(result, state)
             }
         }
     }

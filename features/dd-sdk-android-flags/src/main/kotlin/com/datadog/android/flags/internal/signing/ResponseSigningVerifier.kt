@@ -26,8 +26,9 @@ import java.util.Locale
 
 /**
  * [responseHeaders] holds each name of the signed response list, in list order, with its value or null when absent.
- * [verifiedAt] is the device wall clock at verification, [issuedAt] and [expiresAt] the signed proof window, all in
- * unix seconds. [verifiedElapsedMs] is the boot-based elapsed time at verification, in milliseconds.
+ * [verifiedAt] is the device wall clock at verification, [issuedAt] and [expiresAt] the signed proof window, and
+ * [verifiedEffectiveAt] the later of issued-at and the verifier clock at verification, all in unix seconds.
+ * [verifiedElapsedMs] is the boot-based elapsed time at verification, in milliseconds.
  */
 internal data class VerifiedResponse(
     val scope: String,
@@ -36,6 +37,7 @@ internal data class VerifiedResponse(
     val expiresAt: Long,
     val responseHeaders: Map<String, String?>,
     val anchorId: String,
+    val verifiedEffectiveAt: Long,
     val verifiedElapsedMs: Long
 )
 
@@ -148,6 +150,7 @@ internal class ResponseSigningVerifier(
             expiresAt = expires,
             responseHeaders = responseHeaders,
             anchorId = chain.anchorId,
+            verifiedEffectiveAt = maxOf(chain.verifiedAt, issued),
             verifiedElapsedMs = elapsedMs
         )
     }
@@ -168,7 +171,13 @@ internal class ResponseSigningVerifier(
         signingFailure(ResponseSigningFailureReason.UNSUPPORTED_REQUEST, exception)
     }
 
-    private class VerifiedChain(val leaf: Certificate, val intermediates: List<Certificate>, val anchorId: String)
+    /** [verifiedAt] is the anchor clock ([effectiveNow]) that the chain was checked at. */
+    private class VerifiedChain(
+        val leaf: Certificate,
+        val intermediates: List<Certificate>,
+        val anchorId: String,
+        val verifiedAt: Long
+    )
 
     /** Any parse, profile, path or validity failure of the chain is [ResponseSigningFailureReason.INVALID_CERTIFICATE]. */
     private fun chainCheck(block: () -> VerifiedChain): VerifiedChain = try {
@@ -220,7 +229,7 @@ internal class ResponseSigningVerifier(
                 intermediates.all { it.covers(at, issued, expires) },
             ResponseSigningFailureReason.EXPIRED_PROOF
         )
-        return VerifiedChain(leaf, intermediates, anchorId)
+        return VerifiedChain(leaf, intermediates, anchorId, at)
     }
 
     // Draft leaf-only revocation: runs only after the signature, so only an authentic chain can raise or meet the
