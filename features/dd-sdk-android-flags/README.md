@@ -207,12 +207,13 @@ val strictConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
-Observe mode keeps one persisted entry per client, tagged with a hash of the request scope: the
+Observe mode keeps one persisted entry per client, under the key `flags-…signing-v1-observe-state-<client name>`.
+No client name can produce this key. The entry is tagged with a hash of the request scope: the
 emitted token, endpoint and query, environment, evaluation context, and semantic headers. The RUM
 application ID is not part of the scope. When a transport changes the request, the entry uses the
 scope of the request that the transport sent. A client built in another signing mode removes the
 entries that this mode left on disk.
-It reads that namespace only after forming the request, so the first opt-in is a cold start.
+The client reads the observe entry only after it forms the request, so the first opt-in is a cold start.
 Old client-name-only cache entries are not imported. A valid proof also creates a separate
 verified memory fallback, which unsigned observations cannot overwrite or extend.
 Persisted entries are never treated as verified.
@@ -754,7 +755,7 @@ Upstream CI requires a generated obfuscated companion for each applicable plain 
 
 Cases cover values, defaults, errors, reasons, variants, emission gates, duplicate evaluations, and numeric boundaries.
 Obfuscation cases cover fixed digests, salts, Unicode, whitespace, malformed metadata, and plaintext event identity.
-The suite uses the feature integration harness. Each fixture also runs through required signature verification. It feeds the fixture response, with its numeric tokens and `observeFullEvaluationData` value, through the real download, parse, and persistence path. Valid unsigned fixtures run after cache restoration without networking. The suite checks public getters, response rejection, and real exposure and evaluation records.
+The suite uses the feature integration harness. Each fixture also runs through required signature verification. The suite feeds the fixture response, with its numeric tokens and `observeFullEvaluationData` value, through the real download, parse, and persistence path. Valid unsigned fixtures run after cache restoration without networking. The suite checks public getters, response rejection, and real exposure and evaluation records.
 Matchers compare JSON types strictly: `true` does not match `1`. A `_count` that is not a positive integer fails the test.
 The suite prints a report with the fixture revision, the executed evaluations, and the exclusions.
 
