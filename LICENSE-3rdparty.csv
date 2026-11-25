@@ -53,6 +53,7 @@ import,androidx.versionedparcelable,Apache-2.0,Copyright 2018 The Android Open S
 import,androidx.viewpager,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.wear,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.work,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,app.cash.sqldelight,Apache-2.0,"Copyright 2016 Square, Inc"
 import,com.android.tools,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.apollographql.apollo,MIT,"Copyright (c) 2016-2024 Apollo Graph, Inc. (Formerly Meteor Development Group, Inc.)"
 import,com.benasher44,MIT,"Copyright (c) 2019 Ben Asher"
@@ -78,10 +79,10 @@ import,com.squareup.okhttp3,Apache-2.0,"Copyright 2019 Square, Inc"
 import,com.squareup.okio,Apache-2.0,"Copyright 2013 Square, Inc"
 import,com.squareup.picasso,Apache-2.0,"Copyright 2013 Square, Inc."
 import,com.squareup.retrofit2,Apache-2.0,"Copyright 2013 Square, Inc."
-import,com.squareup.sqldelight,Apache-2.0,"Copyright 2016 Square, Inc"
 import,com.fasterxml.jackson,Apache-2.0,"Copyright 2020 Datadog, Inc."
 import,com.datadoghq,Apache-2.0,"Copyright 2017 Datadog, Inc"
 import,dev.chrisbanes.snapper,Apache-2.0,"Copyright 2021 Chris Banes"
+import,dev.lysine.sql-psi,Apache-2.0,Copyright SQL-PSI contributors
 import,dev.openfeature,Apache-2.0,Copyright 2022 The OpenFeature Authors
 import,io.coil-kt,Apache-2.0,Copyright 2021 Coil Contributors
 import,io.coil-kt.coil3,Apache-2.0,Copyright 2021 Coil Contributors

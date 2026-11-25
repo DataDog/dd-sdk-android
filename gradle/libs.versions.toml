@@ -88,7 +88,10 @@ dependencyLicense = "0.8.1"
 kotlinXmlBuilder = "1.9.3"
 
 # Integrations
-sqlDelight = "1.5.5"
+# Compile the integration against the minimum supported SQLDelight version.
+sqlDelight = "2.0.2"
+# Keep the sample's driver and code-generation plugin on the same version.
+sqlDelightSample = "2.4.1"
 coil = "1.0.0"
 coilCompose = "2.1.0"
 coil3 = "3.0.4"
@@ -244,7 +247,8 @@ jsonSchemaValidator = { module = "com.github.erosb:everit-json-schema", version.
 kotlinXmlBuilder = { module = "org.redundent:kotlin-xml-builder", version.ref = "kotlinXmlBuilder" }
 
 # Integrations
-sqlDelight = { module = "com.squareup.sqldelight:android-driver", version.ref = "sqlDelight" }
+sqlDelight = { module = "app.cash.sqldelight:android-driver", version.ref = "sqlDelight" }
+sqlDelightSample = { module = "app.cash.sqldelight:android-driver", version.ref = "sqlDelightSample" }
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
 coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 coilComposeBase = { module = "io.coil-kt:coil-compose-base", version.ref = "coilCompose" }
@@ -407,7 +411,7 @@ dependencyLicenseGradlePlugin = { id = "com.datadoghq.dependency-license", versi
 androidLibraryPlugin = { id = "com.android.library", version.ref = "androidToolsPlugin" }
 kotlinSPGradlePlugin = { id = "com.google.devtools.ksp", version.ref = "kotlinSP" }
 dokkaGradlePlugin = { id = "org.jetbrains.dokka", version.ref = "dokka" }
-sqlDelightGradlePlugin = { id = "com.squareup.sqldelight", version.ref = "sqlDelight" }
+sqlDelightGradlePlugin = { id = "app.cash.sqldelight", version.ref = "sqlDelightSample" }
 binaryCompatibilityGradlePlugin = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibility" }
 kotlinxSerializationPlugin = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinBuildscript" }
 koverPlugin = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

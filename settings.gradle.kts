@@ -111,7 +111,6 @@ include(":instrumented:integration")
 
 // SAMPLE PROJECTS
 include(":sample:kotlin")
-include(":sample:kotlin:sqldelight")
 include(":sample:tv")
 include(":sample:wear")
 include(":sample:vendor-lib")

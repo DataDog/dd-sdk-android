@@ -20,9 +20,18 @@ plugins {
     // Build
     id("com.android.application")
     alias(libs.plugins.composeCompilerPlugin)
+    alias(libs.plugins.sqlDelightGradlePlugin)
     id("com.google.devtools.ksp")
     id("datadogBuildConfig")
     alias(libs.plugins.datadogGradlePlugin)
+}
+
+sqldelight {
+    databases {
+        create("LogsDatabase") {
+            packageName.set("com.datadog.android.sample")
+        }
+    }
 }
 
 @Suppress("StringLiteralDuplication")
@@ -183,7 +192,6 @@ dependencies {
 
     // Sample modules
     implementation(project(":sample:vendor-lib"))
-    implementation(project(":sample:kotlin:sqldelight"))
 
     implementation(libs.kotlinRuntime)
 
@@ -222,7 +230,7 @@ dependencies {
     ksp(libs.glideKsp)
 
     // Local Storage
-    implementation(libs.sqlDelight)
+    implementation(libs.sqlDelightSample)
     implementation(libs.room)
     ksp(libs.roomCompiler)
 
