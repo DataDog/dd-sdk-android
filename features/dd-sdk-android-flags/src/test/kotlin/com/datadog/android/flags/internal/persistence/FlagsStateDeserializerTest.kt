@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.model.VariationType
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
@@ -499,7 +500,7 @@ internal class FlagsStateDeserializerTest {
     }
 
     @Test
-    fun `M keep the evaluation context W deserialize() { only unsupported variation types }`(forge: Forge) {
+    fun `M keep unsupported variation types W deserialize() { only unsupported variation types }`(forge: Forge) {
         // Given
         val targetingKey = forge.anAlphabeticalString()
         val flags = JSONObject().put("legacy", buildFlagJson().put("variationType", "unknownType"))
@@ -510,11 +511,12 @@ internal class FlagsStateDeserializerTest {
         // Then
         checkNotNull(result)
         assertThat(result.evaluationContext.targetingKey).isEqualTo(targetingKey)
-        assertThat(result.flags).isEmpty()
+        assertThat(result.flags.keys).containsExactly("legacy")
+        assertThat(result.flags.getValue("legacy").variationType).isEqualTo("unknownType")
     }
 
     @Test
-    fun `M keep the evaluation context W deserialize() { unsupported and malformed flags }`(forge: Forge) {
+    fun `M keep unsupported variation types W deserialize() { unsupported and malformed flags }`(forge: Forge) {
         // Given
         val targetingKey = forge.anAlphabeticalString()
         val flags = JSONObject()
@@ -527,7 +529,28 @@ internal class FlagsStateDeserializerTest {
         // Then
         checkNotNull(result)
         assertThat(result.evaluationContext.targetingKey).isEqualTo(targetingKey)
-        assertThat(result.flags).isEmpty()
+        assertThat(result.flags.keys).containsExactly("legacy")
+        assertThat(result.flags.getValue("legacy").variationType).isEqualTo("unknownType")
+    }
+
+    @Test
+    fun `M keep unsupported variation types W serialize() and deserialize() { round trip }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val fakeVariationType = forge.anAlphabeticalString(size = 12) + "-type"
+        val flags = JSONObject()
+            .put("legacy", buildFlagJson().put("variationType", fakeVariationType))
+            .put("healthy", buildFlagJson())
+        val loaded = checkNotNull(testedDeserializer.deserialize(buildStateJson(targetingKey, flags)))
+
+        // When
+        val restored = testedDeserializer.deserialize(FlagsStateSerializer(mockInternalLogger).serialize(loaded))
+
+        // Then
+        checkNotNull(restored)
+        assertThat(restored.flags.keys).containsExactlyInAnyOrder("legacy", "healthy")
+        assertThat(restored.flags.getValue("legacy").variationType).isEqualTo(fakeVariationType)
+        assertThat(restored.flags.getValue("healthy").variationType).isEqualTo(VariationType.BOOLEAN.value)
     }
 
     @Test
