@@ -284,7 +284,7 @@ class KotlinFileVisitor {
 
     private fun visitParameters(parameters: List<KtParameter>) {
         description.append("(")
-        description.append(parameters.joinToString(", ") { it.parameterType() })
+        description.append(parameters.joinToString(", ") { "${it.name.orEmpty()}: ${it.parameterType()}" })
         description.append(")")
     }
 

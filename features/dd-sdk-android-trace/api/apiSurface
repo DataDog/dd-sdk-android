@@ -1,15 +1,15 @@
 class com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
-  constructor(List<String>)
-  constructor(Map<String, Set<TracingHeaderType>>)
-  fun setTraceOrigin(String, Boolean = true)
+  constructor(tracedHosts: List<String>)
+  constructor(tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>)
+  fun setTraceOrigin(traceOrigin: String, replace: Boolean = true)
   fun getTraceOrigin(): String?
-  fun setSdkInstanceName(String)
-  fun setTracedRequestListener(NetworkTracedRequestListener)
-  fun setTraceSampleRate(Float)
-  fun setTraceSampler(com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>)
-  fun setTraceContextInjection(TraceContextInjection)
-  fun set404ResourcesRedacted(Boolean)
-  fun setTraceScope(ApmNetworkTracingScope)
+  fun setSdkInstanceName(sdkInstanceName: String)
+  fun setTracedRequestListener(tracedRequestListener: NetworkTracedRequestListener)
+  fun setTraceSampleRate(sampleRate: Float)
+  fun setTraceSampler(traceSampler: com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>)
+  fun setTraceContextInjection(traceContextInjection: TraceContextInjection)
+  fun set404ResourcesRedacted(redacted: Boolean)
+  fun setTraceScope(networkTracingScope: ApmNetworkTracingScope)
   fun setHeaderPropagationOnly()
   fun isHeaderPropagationOnly(): Boolean
   fun copy()
@@ -17,201 +17,201 @@ enum com.datadog.android.trace.ApmNetworkTracingScope
   - ALL
   - EXCLUDE_INTERNAL_REDIRECTS
 object com.datadog.android.trace.DatadogTracing
-  fun newTracerBuilder(com.datadog.android.api.SdkCore = Datadog.getInstance()): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+  fun newTracerBuilder(sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance()): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 open class com.datadog.android.trace.DeterministicTraceSampler : com.datadog.android.core.sampling.DeterministicSampler<com.datadog.android.trace.api.span.DatadogSpan>
-  constructor(() -> Float)
-  constructor(Float)
-  constructor(Double)
+  constructor(sampleRateProvider: () -> Float)
+  constructor(sampleRate: Float)
+  constructor(sampleRate: Double)
 annotation com.datadog.android.trace.ExperimentalTraceApi
 object com.datadog.android.trace.GlobalDatadogTracer
-  fun registerIfAbsent(com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
+  fun registerIfAbsent(tracer: com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
   fun get(): com.datadog.android.trace.api.tracer.DatadogTracer
   fun getOrNull(): com.datadog.android.trace.api.tracer.DatadogTracer?
   fun clear()
 interface com.datadog.android.trace.InternalCoreWriterProvider
   fun getCoreTracerWriter(): com.datadog.android.trace.api.span.DatadogSpanWriter
 interface com.datadog.android.trace.NetworkTracedRequestListener
-  fun onRequestIntercepted(com.datadog.android.api.instrumentation.network.HttpRequestInfo, com.datadog.android.trace.api.span.DatadogSpan, com.datadog.android.api.instrumentation.network.HttpResponseInfo?, Throwable?)
-fun <T: Any?> withinSpan(String, com.datadog.android.trace.api.span.DatadogSpan? = null, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.() -> T): T
+  fun onRequestIntercepted(request: com.datadog.android.api.instrumentation.network.HttpRequestInfo, span: com.datadog.android.trace.api.span.DatadogSpan, response: com.datadog.android.api.instrumentation.network.HttpResponseInfo?, throwable: Throwable?)
+fun <T: Any?> withinSpan(operationName: String, parentSpan: com.datadog.android.trace.api.span.DatadogSpan? = null, activate: Boolean = true, block: com.datadog.android.trace.api.span.DatadogSpan.() -> T): T
 object com.datadog.android.trace.Trace
-  fun enable(TraceConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun enable(traceConfiguration: TraceConfiguration, sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.trace.TraceConfiguration
   class Builder
-    fun useCustomEndpoint(String): Builder
-    fun setEventMapper(com.datadog.android.trace.event.SpanEventMapper): Builder
-    fun setNetworkInfoEnabled(Boolean): Builder
-    fun setStatsComputationEnabled(Boolean): Builder
-    fun useCustomStatsEndpoint(String): Builder
+    fun useCustomEndpoint(endpoint: String): Builder
+    fun setEventMapper(eventMapper: com.datadog.android.trace.event.SpanEventMapper): Builder
+    fun setNetworkInfoEnabled(enabled: Boolean): Builder
+    fun setStatsComputationEnabled(enabled: Boolean): Builder
+    fun useCustomStatsEndpoint(endpoint: String): Builder
     fun build(): TraceConfiguration
 enum com.datadog.android.trace.TraceContextInjection
   - ALL
   - SAMPLED
 interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.trace.model.SpanEvent>
-  override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
+  override fun map(event: com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
 class com.datadog.android.trace.internal.ApmNetworkInstrumentation
   val sdkCore: com.datadog.android.api.SdkCore?
   val sdkCoreReference: com.datadog.android.core.SdkReference
   val sampleRate: Float?
   val localHeaderTypes: Set<com.datadog.android.trace.TracingHeaderType>
-  fun onRequest(com.datadog.android.api.instrumentation.network.HttpRequestInfo): com.datadog.android.trace.internal.net.RequestTracingState?
-  fun onResponseSucceeded(com.datadog.android.trace.internal.net.RequestTracingState, com.datadog.android.api.instrumentation.network.HttpResponseInfo)
-  fun onResponseFailed(com.datadog.android.trace.internal.net.RequestTracingState, Throwable)
-  fun removeTracingHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder)
-  fun reportInstrumentationError(() -> String)
+  fun onRequest(request: com.datadog.android.api.instrumentation.network.HttpRequestInfo): com.datadog.android.trace.internal.net.RequestTracingState?
+  fun onResponseSucceeded(requestTracingState: com.datadog.android.trace.internal.net.RequestTracingState, response: com.datadog.android.api.instrumentation.network.HttpResponseInfo)
+  fun onResponseFailed(requestTracingState: com.datadog.android.trace.internal.net.RequestTracingState, throwable: Throwable)
+  fun removeTracingHeaders(requestBuilder: com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder)
+  fun reportInstrumentationError(messageBuilder: () -> String)
 sealed class com.datadog.android.trace.internal.ParentContextSource
   abstract val context: com.datadog.android.trace.api.span.DatadogSpanContext
   class FromHeaders : ParentContextSource
-    constructor(com.datadog.android.trace.api.span.DatadogSpanContext)
+    constructor(context: com.datadog.android.trace.api.span.DatadogSpanContext)
   class FromTag : ParentContextSource
-    constructor(com.datadog.android.trace.api.span.DatadogSpanContext)
+    constructor(context: com.datadog.android.trace.api.span.DatadogSpanContext)
 class com.datadog.android.trace.internal.DatadogPropagationHelper
-  fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext): Boolean
-  fun setTraceContext(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, String, String, Int)
-  fun extractParentContext(com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.api.instrumentation.network.HttpRequestInfo): ParentContextSource?
-  fun createExtractedContext(String, String, Int): com.datadog.android.trace.api.span.DatadogSpanContext
-  fun propagateSampledHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Set<com.datadog.android.trace.TracingHeaderType>)
-  fun propagateNotSampledHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Set<com.datadog.android.trace.TracingHeaderType>, com.datadog.android.trace.TraceContextInjection, String?)
-  fun removeAllTracingHeaders(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder)
-  fun extractSamplingDecision(com.datadog.android.api.instrumentation.network.HttpRequestInfo, Boolean = false): Boolean?
+  fun isExtractedContext(context: com.datadog.android.trace.api.span.DatadogSpanContext): Boolean
+  fun setTraceContext(requestInfoBuilder: com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, traceId: String, spanId: String, samplingPriority: Int)
+  fun extractParentContext(tracer: com.datadog.android.trace.api.tracer.DatadogTracer, request: com.datadog.android.api.instrumentation.network.HttpRequestInfo): ParentContextSource?
+  fun createExtractedContext(traceId: String, spanId: String, samplingPriority: Int): com.datadog.android.trace.api.span.DatadogSpanContext
+  fun propagateSampledHeaders(builder: com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, tracer: com.datadog.android.trace.api.tracer.DatadogTracer, span: com.datadog.android.trace.api.span.DatadogSpan, tracingHeaderTypes: Set<com.datadog.android.trace.TracingHeaderType>)
+  fun propagateNotSampledHeaders(builder: com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, tracer: com.datadog.android.trace.api.tracer.DatadogTracer, span: com.datadog.android.trace.api.span.DatadogSpan, tracingHeaderTypes: Set<com.datadog.android.trace.TracingHeaderType>, injectionType: com.datadog.android.trace.TraceContextInjection, traceOrigin: String?)
+  fun removeAllTracingHeaders(builder: com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder)
+  fun extractSamplingDecision(request: com.datadog.android.api.instrumentation.network.HttpRequestInfo, ignoreLocalDroppedParent: Boolean = false): Boolean?
   companion object 
 class com.datadog.android.trace.internal.DatadogSpanIdConverter
-  fun fromHex(String): Long
-  fun toHexStringPadded(Long): String
-fun com.datadog.android.trace.api.trace.DatadogTraceId.Companion.fromHex(String): com.datadog.android.trace.api.trace.DatadogTraceId
+  fun fromHex(spanId: String): Long
+  fun toHexStringPadded(spanId: Long): String
+fun com.datadog.android.trace.api.trace.DatadogTraceId.Companion.fromHex(traceId: String): com.datadog.android.trace.api.trace.DatadogTraceId
 class com.datadog.android.trace.internal.RumContextPropagator
-  constructor(() -> com.datadog.android.api.feature.FeatureSdkCore?)
+  constructor(sdkCoreProvider: () -> com.datadog.android.api.feature.FeatureSdkCore?)
   companion object 
-    fun com.datadog.android.trace.api.span.DatadogSpan.extractRumContext(RumContextPropagator, Boolean = false)
-fun applyRcSampleRate(com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>, Float): com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>
+    fun com.datadog.android.trace.api.span.DatadogSpan.extractRumContext(propagator: RumContextPropagator, block: Boolean = false)
+fun applyRcSampleRate(current: com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>, rcRate: Float): com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>
 fun com.datadog.android.core.internal.remote.model.RemoteConfiguration.Trace.toSdkInjection(): com.datadog.android.trace.TraceContextInjection?
 fun com.datadog.android.core.internal.remote.model.RemoteConfiguration.PropagatorType.toSdkHeaderType(): com.datadog.android.trace.TracingHeaderType
 fun com.datadog.android.core.internal.remote.model.RemoteConfiguration.Trace.buildRcHostResolver(): com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver?
 object com.datadog.android.trace.internal._TraceInternalProxy
   val spanIdConverter: DatadogSpanIdConverter
   var propagationHelper: DatadogPropagationHelper
-  fun setTracingSamplingPriorityIfNecessary(com.datadog.android.trace.api.span.DatadogSpanContext)
-  fun setTraceId128BitGenerationEnabled(com.datadog.android.trace.api.tracer.DatadogTracerBuilder): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-  fun setSdkV2Compatible(com.datadog.android.trace.api.tracer.DatadogTracerBuilder): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-  fun addThrowable(com.datadog.android.trace.api.span.DatadogSpan, Throwable, Byte)
-  fun activateSpan(com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Boolean): com.datadog.android.trace.api.scope.DatadogScope?
-  fun isDefaultTracer(com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
-  fun mergeBaggage(String?, String): String
-  fun createApmNetworkInstrumentation(String, com.datadog.android.trace.ApmNetworkInstrumentationConfiguration)
-fun com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>.effectiveSampleRate(com.datadog.android.trace.api.span.DatadogSpan): Float?
-fun com.datadog.android.trace.api.span.DatadogSpan.finishRumAware(Boolean, Boolean, Boolean)
+  fun setTracingSamplingPriorityIfNecessary(context: com.datadog.android.trace.api.span.DatadogSpanContext)
+  fun setTraceId128BitGenerationEnabled(builder: com.datadog.android.trace.api.tracer.DatadogTracerBuilder): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+  fun setSdkV2Compatible(builder: com.datadog.android.trace.api.tracer.DatadogTracerBuilder): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+  fun addThrowable(span: com.datadog.android.trace.api.span.DatadogSpan, throwable: Throwable, errorPriority: Byte)
+  fun activateSpan(tracer: com.datadog.android.trace.api.tracer.DatadogTracer, span: com.datadog.android.trace.api.span.DatadogSpan, asyncPropagating: Boolean): com.datadog.android.trace.api.scope.DatadogScope?
+  fun isDefaultTracer(tracer: com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
+  fun mergeBaggage(oldHeader: String?, newHeader: String): String
+  fun createApmNetworkInstrumentation(name: String, configuration: com.datadog.android.trace.ApmNetworkInstrumentationConfiguration)
+fun com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>.effectiveSampleRate(span: com.datadog.android.trace.api.span.DatadogSpan): Float?
+fun com.datadog.android.trace.api.span.DatadogSpan.finishRumAware(isSampled: Boolean, canSendSpan: Boolean, isDefaultTracer: Boolean)
 fun com.datadog.android.trace.api.span.DatadogSpanContext?.isDropped(): Boolean
 fun Int?.isDroppedPriority(): Boolean
 data class com.datadog.android.trace.internal.net.RequestTracingState
-  constructor(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, Boolean = false, com.datadog.android.trace.api.span.DatadogSpan? = null, Float? = null, Boolean)
+  constructor(requestInfoBuilder: com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, isSampled: Boolean = false, span: com.datadog.android.trace.api.span.DatadogSpan? = null, sampleRate: Float? = null, isDefaultTracer: Boolean)
   fun createRequestInfo(): com.datadog.android.api.instrumentation.network.HttpRequestInfo
-fun RequestTracingState?.toAttributesMap(String, String, String): Map<String, Any?>
+fun RequestTracingState?.toAttributesMap(traceIdKey: String, spanIdKey: String, rulePsrKey: String): Map<String, Any?>
 class com.datadog.android.trace.internal.net.SessionRebasedSampler : com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>, SpanAwareSampler
-  constructor(com.datadog.android.trace.DeterministicTraceSampler)
-  override fun sample(com.datadog.android.trace.api.span.DatadogSpan): Boolean
+  constructor(delegate: com.datadog.android.trace.DeterministicTraceSampler)
+  override fun sample(item: com.datadog.android.trace.api.span.DatadogSpan): Boolean
   override fun getSampleRate(): Float
-  override fun getSampleRate(com.datadog.android.trace.api.span.DatadogSpan): Float
+  override fun getSampleRate(span: com.datadog.android.trace.api.span.DatadogSpan): Float
 interface com.datadog.android.trace.internal.net.SpanAwareSampler
-  fun getSampleRate(com.datadog.android.trace.api.span.DatadogSpan): Float?
+  fun getSampleRate(span: com.datadog.android.trace.api.span.DatadogSpan): Float?
 data class com.datadog.android.trace.internal.net.TraceContext
-  constructor(String, String, Int)
-fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.(android.database.sqlite.SQLiteDatabase) -> T): T
+  constructor(traceId: String, spanId: String, samplingPriority: Int)
+fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(operationName: String, exclusive: Boolean = true, body: com.datadog.android.trace.api.span.DatadogSpan.(android.database.sqlite.SQLiteDatabase) -> T): T
 data class com.datadog.android.trace.model.SpanEvent
-  constructor(kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.Long, kotlin.Long, kotlin.Long = 0L, Metrics, Meta)
+  constructor(traceId: kotlin.String, spanId: kotlin.String, parentId: kotlin.String, resource: kotlin.String, name: kotlin.String, service: kotlin.String, duration: kotlin.Long, start: kotlin.Long, error: kotlin.Long = 0L, metrics: Metrics, meta: Meta)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
-    fun fromJson(kotlin.String): SpanEvent
-    fun fromJsonObject(com.google.gson.JsonObject): SpanEvent
+    fun fromJson(jsonString: kotlin.String): SpanEvent
+    fun fromJsonObject(jsonObject: com.google.gson.JsonObject): SpanEvent
   data class Metrics
-    constructor(kotlin.Long? = null, kotlin.collections.Map<kotlin.String, kotlin.Number> = mapOf())
+    constructor(topLevel: kotlin.Long? = null, additionalProperties: kotlin.collections.Map<kotlin.String, kotlin.Number> = mapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Metrics
-      fun fromJsonObject(com.google.gson.JsonObject): Metrics
+      fun fromJson(jsonString: kotlin.String): Metrics
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Metrics
   data class Meta
-    constructor(kotlin.String, Dd, Span, Tracer, Usr, Account? = null, Network? = null, Device, Os, kotlin.collections.Map<kotlin.String, kotlin.String> = mapOf())
+    constructor(version: kotlin.String, dd: Dd, span: Span, tracer: Tracer, usr: Usr, account: Account? = null, network: Network? = null, device: Device, os: Os, additionalProperties: kotlin.collections.Map<kotlin.String, kotlin.String> = mapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Meta
-      fun fromJsonObject(com.google.gson.JsonObject): Meta
+      fun fromJson(jsonString: kotlin.String): Meta
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Meta
   data class Dd
-    constructor(kotlin.String? = "android", Application? = null, Session? = null, View? = null)
+    constructor(source: kotlin.String? = "android", application: Application? = null, session: Session? = null, view: View? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Dd
-      fun fromJsonObject(com.google.gson.JsonObject): Dd
+      fun fromJson(jsonString: kotlin.String): Dd
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Dd
   class Span
     val kind: kotlin.String
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Span
-      fun fromJsonObject(com.google.gson.JsonObject): Span
+      fun fromJson(jsonString: kotlin.String): Span
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Span
   data class Tracer
-    constructor(kotlin.String)
+    constructor(version: kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Tracer
-      fun fromJsonObject(com.google.gson.JsonObject): Tracer
+      fun fromJson(jsonString: kotlin.String): Tracer
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Tracer
   data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    constructor(id: kotlin.String? = null, name: kotlin.String? = null, email: kotlin.String? = null, additionalProperties: kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Usr
-      fun fromJsonObject(com.google.gson.JsonObject): Usr
+      fun fromJson(jsonString: kotlin.String): Usr
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Usr
   data class Account
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    constructor(id: kotlin.String? = null, name: kotlin.String? = null, additionalProperties: kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Account
-      fun fromJsonObject(com.google.gson.JsonObject): Account
+      fun fromJson(jsonString: kotlin.String): Account
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Account
   data class Network
-    constructor(Client? = null)
+    constructor(client: Client? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Network
-      fun fromJsonObject(com.google.gson.JsonObject): Network
+      fun fromJson(jsonString: kotlin.String): Network
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Network
   data class Device
-    constructor(Type? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Boolean? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Boolean? = null)
+    constructor(type: Type? = null, name: kotlin.String? = null, model: kotlin.String? = null, brand: kotlin.String? = null, architecture: kotlin.String? = null, locale: kotlin.String? = null, locales: kotlin.collections.List<kotlin.String>? = null, timeZone: kotlin.String? = null, batteryLevel: kotlin.Number? = null, powerSavingMode: kotlin.Boolean? = null, brightnessLevel: kotlin.Number? = null, logicalCpuCount: kotlin.Number? = null, totalRam: kotlin.Number? = null, isLowRam: kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Device
-      fun fromJsonObject(com.google.gson.JsonObject): Device
+      fun fromJson(jsonString: kotlin.String): Device
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Device
   data class Os
-    constructor(kotlin.String, kotlin.String, kotlin.String? = null, kotlin.String)
+    constructor(name: kotlin.String, version: kotlin.String, build: kotlin.String? = null, versionMajor: kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Os
-      fun fromJsonObject(com.google.gson.JsonObject): Os
+      fun fromJson(jsonString: kotlin.String): Os
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Os
   data class Application
-    constructor(kotlin.String? = null)
+    constructor(id: kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Application
-      fun fromJsonObject(com.google.gson.JsonObject): Application
+      fun fromJson(jsonString: kotlin.String): Application
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Application
   data class Session
-    constructor(kotlin.String? = null)
+    constructor(id: kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Session
-      fun fromJsonObject(com.google.gson.JsonObject): Session
+      fun fromJson(jsonString: kotlin.String): Session
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Session
   data class View
-    constructor(kotlin.String? = null)
+    constructor(id: kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): View
-      fun fromJsonObject(com.google.gson.JsonObject): View
+      fun fromJson(jsonString: kotlin.String): View
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): View
   data class Client
-    constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    constructor(simCarrier: SimCarrier? = null, signalStrength: kotlin.String? = null, downlinkKbps: kotlin.String? = null, uplinkKbps: kotlin.String? = null, connectivity: kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Client
-      fun fromJsonObject(com.google.gson.JsonObject): Client
+      fun fromJson(jsonString: kotlin.String): Client
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Client
   data class SimCarrier
-    constructor(kotlin.String? = null, kotlin.String? = null)
+    constructor(id: kotlin.String? = null, name: kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): SimCarrier
-      fun fromJsonObject(com.google.gson.JsonObject): SimCarrier
+      fun fromJson(jsonString: kotlin.String): SimCarrier
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): SimCarrier
   enum Type
     - MOBILE
     - DESKTOP
@@ -222,4 +222,4 @@ data class com.datadog.android.trace.model.SpanEvent
     - OTHER
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Type
+      fun fromJson(jsonString: kotlin.String): Type

@@ -94,7 +94,8 @@ internal object ComposeReflection {
     val ImageField = BitmapPainterClass?.getDeclaredFieldSafe("image")
 
     val VectorComponent = getClassSafe("androidx.compose.ui.graphics.vector.VectorComponent")
-    val CacheDrawScopeField = VectorComponent?.getDeclaredFieldSafe("cacheDrawScope")
+    val CacheDrawScopeField = VectorComponent?.getDeclaredFieldSafe("cacheDrawScope", isCritical = false)
+        ?: VectorComponent?.getDeclaredFieldSafe("currentDrawCache")
 
     val DrawCacheClass = getClassSafe("androidx.compose.ui.graphics.vector.DrawCache")
     val CachedImageField = DrawCacheClass?.getDeclaredFieldSafe("mCachedImage")

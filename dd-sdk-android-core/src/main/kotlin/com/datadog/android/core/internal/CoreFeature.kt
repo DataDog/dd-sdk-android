@@ -159,6 +159,8 @@ internal class CoreFeature(
         DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
     internal var systemInfoProvider: SystemInfoProvider = NoOpSystemInfoProvider()
+
+    @Volatile
     internal var timeProvider: TimeProvider = DefaultTimeProvider()
     internal var trackingConsentProvider: ConsentProvider = NoOpConsentProvider()
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
@@ -171,6 +173,8 @@ internal class CoreFeature(
     private var needsClearTextHttp: Boolean = false
 
     internal lateinit var callFactory: OkHttpCallFactory
+
+    @Volatile
     internal var kronosClock: KronosClock? = null
 
     @Volatile
@@ -591,7 +595,7 @@ internal class CoreFeature(
                 open(BUILD_ID_FILE_NAME).bufferedReader().use {
                     it.readText().trim()
                 }
-            } catch (@Suppress("SwallowedException") e: FileNotFoundException) {
+            } catch (@Suppress("SwallowedException") _: FileNotFoundException) {
                 internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
@@ -745,11 +749,7 @@ internal class CoreFeature(
                 ?.firstOrNull { it.pid == currentProcessId }
                 ?.processName
         }
-        isMainProcess = if (processName == null) {
-            true
-        } else {
-            appContext.packageName == processName
-        }
+        isMainProcess = processName == null || appContext.packageName == processName
         if (!isMainProcess) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -769,7 +769,7 @@ internal class CoreFeature(
             uploadExecutorService.awaitTermination(1, TimeUnit.SECONDS)
             contextExecutorService.awaitTermination(1, TimeUnit.SECONDS)
             persistenceExecutorService.awaitTermination(1, TimeUnit.SECONDS)
-        } catch (e: InterruptedException) {
+        } catch (_: InterruptedException) {
             try {
                 // Restore the interrupted status
                 Thread.currentThread().interrupt()

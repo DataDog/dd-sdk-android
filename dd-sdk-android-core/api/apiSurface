@@ -1,20 +1,20 @@
 object com.datadog.android.Datadog
-  fun initialize(String?, android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
-  fun initialize(android.content.Context, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
-  fun getInstance(String? = null): com.datadog.android.api.SdkCore
-  fun isInitialized(String? = null): Boolean
-  fun stopInstance(String? = null)
-  fun setVerbosity(Int)
+  fun initialize(instanceName: String?, context: android.content.Context, configuration: com.datadog.android.core.configuration.Configuration, trackingConsent: com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
+  fun initialize(context: android.content.Context, configuration: com.datadog.android.core.configuration.Configuration, trackingConsent: com.datadog.android.privacy.TrackingConsent): com.datadog.android.api.SdkCore?
+  fun getInstance(instanceName: String? = null): com.datadog.android.api.SdkCore
+  fun isInitialized(instanceName: String? = null): Boolean
+  fun stopInstance(instanceName: String? = null)
+  fun setVerbosity(level: Int)
   fun getVerbosity(): Int
-  fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
-  fun setUserInfo(String, String? = null, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
-  fun addUserProperties(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
-  fun clearUserInfo(com.datadog.android.api.SdkCore = getInstance())
-  fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
-  fun setAccountInfo(String, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
-  fun addAccountExtraInfo(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
-  fun clearAccountInfo(com.datadog.android.api.SdkCore = getInstance())
-  fun _internalProxy(String? = null): _InternalProxy
+  fun setTrackingConsent(consent: com.datadog.android.privacy.TrackingConsent, sdkCore: com.datadog.android.api.SdkCore = getInstance())
+  fun setUserInfo(id: String, name: String? = null, email: String? = null, extraInfo: Map<String, Any?> = emptyMap(), sdkCore: com.datadog.android.api.SdkCore = getInstance())
+  fun addUserProperties(extraInfo: Map<String, Any?>, sdkCore: com.datadog.android.api.SdkCore = getInstance())
+  fun clearUserInfo(sdkCore: com.datadog.android.api.SdkCore = getInstance())
+  fun clearAllData(sdkCore: com.datadog.android.api.SdkCore = getInstance())
+  fun setAccountInfo(id: String, name: String? = null, extraInfo: Map<String, Any?> = emptyMap(), sdkCore: com.datadog.android.api.SdkCore = getInstance())
+  fun addAccountExtraInfo(extraInfo: Map<String, Any?>, sdkCore: com.datadog.android.api.SdkCore = getInstance())
+  fun clearAccountInfo(sdkCore: com.datadog.android.api.SdkCore = getInstance())
+  fun _internalProxy(instanceName: String? = null): _InternalProxy
 enum com.datadog.android.DatadogSite
   - US1
   - US3
@@ -29,15 +29,15 @@ enum com.datadog.android.DatadogSite
   val intakeEndpoint: String
 class com.datadog.android._InternalProxy
   class _TelemetryProxy
-    fun debug(String, Map<String, Any?>? = null)
-    fun error(String, Throwable? = null)
-    fun error(String, String?, String?)
+    fun debug(message: String, additionalProperties: Map<String, Any?>? = null)
+    fun error(message: String, throwable: Throwable? = null)
+    fun error(message: String, stack: String?, kind: String?)
   val _telemetry: _TelemetryProxy
-  fun setMetricTelemetrySampleRateBypass(Float)
-  fun setCustomAppVersion(String)
+  fun setMetricTelemetrySampleRateBypass(sampleRate: Float)
+  fun setCustomAppVersion(version: String)
   fun flushAndShutdownExecutors()
   companion object 
-    fun allowClearTextHttp(com.datadog.android.core.configuration.Configuration.Builder): com.datadog.android.core.configuration.Configuration.Builder
+    fun allowClearTextHttp(builder: com.datadog.android.core.configuration.Configuration.Builder): com.datadog.android.core.configuration.Configuration.Builder
 interface com.datadog.android.api.InternalLogger
   enum Level
     - VERBOSE
@@ -49,33 +49,33 @@ interface com.datadog.android.api.InternalLogger
     - USER
     - MAINTAINER
     - TELEMETRY
-  fun log(Level, Target, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
-  fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
-  fun logMetric(() -> String, Map<String, Any?>, Float, Float? = null)
-  fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float, String): com.datadog.android.core.metrics.PerformanceMetric?
-  fun logApiUsage(Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE, () -> com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage)
+  fun log(level: Level, target: Target, messageBuilder: () -> String, throwable: Throwable? = null, onlyOnce: Boolean = false, additionalProperties: Map<String, Any?>? = null)
+  fun log(level: Level, targets: List<Target>, messageBuilder: () -> String, throwable: Throwable? = null, onlyOnce: Boolean = false, additionalProperties: Map<String, Any?>? = null)
+  fun logMetric(messageBuilder: () -> String, additionalProperties: Map<String, Any?>, samplingRate: Float, creationSampleRate: Float? = null)
+  fun startPerformanceMeasure(callerClass: String, metric: com.datadog.android.core.metrics.TelemetryMetricType, samplingRate: Float, operationName: String): com.datadog.android.core.metrics.PerformanceMetric?
+  fun logApiUsage(samplingRate: Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE, apiUsageEventBuilder: () -> com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage)
   companion object 
     val UNBOUND: InternalLogger
-fun InternalLogger.logToUser(InternalLogger.Level, Boolean = false, () -> String)
+fun InternalLogger.logToUser(level: InternalLogger.Level, onlyOnce: Boolean = false, messageBuilder: () -> String)
 interface com.datadog.android.api.SdkCore
   val name: String
   val time: com.datadog.android.api.context.TimeInfo
   val service: String
   fun isCoreActive(): Boolean
-  fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  fun setUserInfo(String, String? = null, String? = null, Map<String, Any?> = emptyMap())
-  fun addUserProperties(Map<String, Any?>)
+  fun setTrackingConsent(consent: com.datadog.android.privacy.TrackingConsent)
+  fun setUserInfo(id: String, name: String? = null, email: String? = null, extraInfo: Map<String, Any?> = emptyMap())
+  fun addUserProperties(extraInfo: Map<String, Any?>)
   fun clearUserInfo()
   fun clearAllData()
-  fun setAccountInfo(String, String? = null, Map<String, Any?> = emptyMap())
-  fun addAccountExtraInfo(Map<String, Any?>)
+  fun setAccountInfo(id: String, name: String? = null, extraInfo: Map<String, Any?> = emptyMap())
+  fun addAccountExtraInfo(extraInfo: Map<String, Any?>)
   fun clearAccountInfo()
 data class com.datadog.android.api.context.AccountInfo
-  constructor(String, String? = null, Map<String, Any?> = emptyMap())
+  constructor(id: String, name: String? = null, extraInfo: Map<String, Any?> = emptyMap())
 data class com.datadog.android.api.context.DatadogContext
-  constructor(com.datadog.android.DatadogSite, String, String, String, String, Int, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, AccountInfo?, com.datadog.android.privacy.TrackingConsent, String?, String?, Map<String, Map<String, Any?>>)
+  constructor(site: com.datadog.android.DatadogSite, clientToken: String, service: String, env: String, version: String, versionCode: Int, variant: String, source: String, sdkVersion: String, time: TimeInfo, processInfo: ProcessInfo, networkInfo: NetworkInfo, deviceInfo: DeviceInfo, userInfo: UserInfo, accountInfo: AccountInfo?, trackingConsent: com.datadog.android.privacy.TrackingConsent, appBuildId: String?, remoteConfigurationId: String?, featuresContext: Map<String, Map<String, Any?>>)
 data class com.datadog.android.api.context.DeviceInfo
-  constructor(String, String, String, DeviceType, String, String, String, String, String, Int?, LocaleInfo, Int, Int?, Boolean?)
+  constructor(deviceName: String, deviceBrand: String, deviceModel: String, deviceType: DeviceType, deviceBuildId: String, osName: String, osMajorVersion: String, osVersion: String, architecture: String, numberOfDisplays: Int?, localeInfo: LocaleInfo, logicalCpuCount: Int, totalRam: Int?, isLowRam: Boolean?)
 enum com.datadog.android.api.context.DeviceType
   - MOBILE
   - TABLET
@@ -85,9 +85,9 @@ enum com.datadog.android.api.context.DeviceType
   - BOT
   - OTHER
 data class com.datadog.android.api.context.LocaleInfo
-  constructor(List<String>, String, String)
+  constructor(locales: List<String>, currentLocale: String, timeZone: String)
 data class com.datadog.android.api.context.NetworkInfo
-  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
+  constructor(connectivity: Connectivity = Connectivity.NETWORK_NOT_CONNECTED, carrierName: kotlin.String? = null, carrierId: kotlin.Long? = null, upKbps: kotlin.Long? = null, downKbps: kotlin.Long? = null, strength: kotlin.Long? = null, cellularTechnology: kotlin.String? = null)
   enum Connectivity
     - NETWORK_NOT_CONNECTED
     - NETWORK_ETHERNET
@@ -102,14 +102,14 @@ data class com.datadog.android.api.context.NetworkInfo
     - NETWORK_CELLULAR
     - NETWORK_OTHER
 data class com.datadog.android.api.context.ProcessInfo
-  constructor(Boolean)
+  constructor(isMainProcess: Boolean)
 data class com.datadog.android.api.context.TimeInfo
-  constructor(Long, Long, Long, Long)
+  constructor(deviceTimeNs: Long, serverTimeNs: Long, serverTimeOffsetNs: Long, serverTimeOffsetMs: Long)
 data class com.datadog.android.api.context.UserInfo
-  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
+  constructor(anonymousId: kotlin.String? = null, id: kotlin.String? = null, name: kotlin.String? = null, email: kotlin.String? = null, additionalProperties: Map<kotlin.String, kotlin.Any?> = emptyMap())
 interface com.datadog.android.api.feature.Feature
   val name: String
-  fun onInitialize(android.content.Context)
+  fun onInitialize(appContext: android.content.Context)
   fun onStop()
   companion object 
     const val LOGS_FEATURE_NAME: String
@@ -126,41 +126,41 @@ interface com.datadog.android.api.feature.Feature
     const val WEB_LOGS_FEATURE_NAME: String
     const val WEB_SESSION_REPLAY_FEATURE_NAME: String
 interface com.datadog.android.api.feature.FeatureContextUpdateReceiver
-  fun onContextUpdate(String, Map<String, Any?>)
+  fun onContextUpdate(featureName: String, context: Map<String, Any?>)
 interface com.datadog.android.api.feature.FeatureEventReceiver
-  fun onReceive(Any)
+  fun onReceive(event: Any)
 interface com.datadog.android.api.feature.FeatureScope
   val dataStore: com.datadog.android.api.storage.datastore.DataStoreHandler
-  fun withWriteContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext, EventWriteScope) -> Unit)
-  fun withContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
-  fun withWriteContextSync(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext, EventWriteScope) -> Unit): Boolean
-  fun sendEvent(Any)
+  fun withWriteContext(withFeatureContexts: Set<String> = emptySet(), callback: (com.datadog.android.api.context.DatadogContext, EventWriteScope) -> Unit)
+  fun withContext(withFeatureContexts: Set<String> = emptySet(), callback: (com.datadog.android.api.context.DatadogContext) -> Unit)
+  fun withWriteContextSync(withFeatureContexts: Set<String> = emptySet(), callback: (com.datadog.android.api.context.DatadogContext, EventWriteScope) -> Unit): Boolean
+  fun sendEvent(event: Any)
   fun <T: Feature> unwrap(): T
 typealias EventWriteScope = ((com.datadog.android.api.storage.EventBatchWriter) -> Unit) -> Unit
-fun <R> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class<*>, String, Float = 100f, () -> R): R
+fun <R> com.datadog.android.api.InternalLogger.measureMethodCallPerf(callerClass: Class<*>, operationName: String, samplingRate: Float = 100f, operation: () -> R): R
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
   val timeProvider: com.datadog.android.internal.time.TimeProvider
-  fun registerFeature(Feature)
-  fun getFeature(String): FeatureScope?
-  fun updateFeatureContext(String, Boolean = true, (MutableMap<String, Any?>) -> Unit)
-  fun getFeatureContext(String, Boolean = true): Map<String, Any?>
-  fun setEventReceiver(String, FeatureEventReceiver)
-  fun removeEventReceiver(String)
-  fun setContextUpdateReceiver(FeatureContextUpdateReceiver)
-  fun removeContextUpdateReceiver(FeatureContextUpdateReceiver)
-  fun createSingleThreadExecutorService(String): java.util.concurrent.ExecutorService
-  fun createScheduledExecutorService(String): java.util.concurrent.ScheduledExecutorService
-  fun createOkHttpCallFactory(okhttp3.OkHttpClient.Builder.() -> Unit = {}): okhttp3.Call.Factory
-  fun setAnonymousId(java.util.UUID?)
+  fun registerFeature(feature: Feature)
+  fun getFeature(featureName: String): FeatureScope?
+  fun updateFeatureContext(featureName: String, useContextThread: Boolean = true, updateCallback: (MutableMap<String, Any?>) -> Unit)
+  fun getFeatureContext(featureName: String, useContextThread: Boolean = true): Map<String, Any?>
+  fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver)
+  fun removeEventReceiver(featureName: String)
+  fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver)
+  fun removeContextUpdateReceiver(listener: FeatureContextUpdateReceiver)
+  fun createSingleThreadExecutorService(executorContext: String): java.util.concurrent.ExecutorService
+  fun createScheduledExecutorService(executorContext: String): java.util.concurrent.ScheduledExecutorService
+  fun createOkHttpCallFactory(block: okhttp3.OkHttpClient.Builder.() -> Unit = {}): okhttp3.Call.Factory
+  fun setAnonymousId(anonymousId: java.util.UUID?)
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
 interface com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
-  fun <T> tag(Class<T>): T?
-fun <T> HttpRequestInfo.tag(Class<T>): T?
+  fun <T> tag(type: Class<T>): T?
+fun <T> HttpRequestInfo.tag(type: Class<T>): T?
 class com.datadog.android.api.instrumentation.network.HttpBodySnapshot
-  constructor(ByteArray, String? = null, Boolean = false)
+  constructor(bytes: ByteArray, contentType: String? = null, isTruncated: Boolean = false)
   fun string(): String
   companion object 
     const val DEFAULT_MAX_BODY_BYTES: Long
@@ -172,12 +172,12 @@ interface com.datadog.android.api.instrumentation.network.HttpRequestInfo
   val method: String
   fun contentLength(): Long?
 interface com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
-  fun setUrl(String): HttpRequestInfoBuilder
-  fun addHeader(String, String): HttpRequestInfoBuilder
-  fun removeHeader(String): HttpRequestInfoBuilder
-  fun replaceHeader(String, String): HttpRequestInfoBuilder
-  fun <T> addTag(Class<T>, T?): HttpRequestInfoBuilder
-  fun setMethod(String, HttpRequestBody? = null): HttpRequestInfoBuilder
+  fun setUrl(url: String): HttpRequestInfoBuilder
+  fun addHeader(key: String, values: String): HttpRequestInfoBuilder
+  fun removeHeader(key: String): HttpRequestInfoBuilder
+  fun replaceHeader(key: String, value: String): HttpRequestInfoBuilder
+  fun <T> addTag(type: Class<T>, tag: T?): HttpRequestInfoBuilder
+  fun setMethod(method: String, body: HttpRequestBody? = null): HttpRequestInfoBuilder
   fun build(): HttpRequestInfo
 interface com.datadog.android.api.instrumentation.network.HttpResponseInfo
   val url: String
@@ -189,15 +189,15 @@ interface com.datadog.android.api.instrumentation.network.HttpResponseInfo
 interface com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
   fun newBuilder(): HttpRequestInfoBuilder
 interface com.datadog.android.api.instrumentation.network.PeekableBodyInfo
-  fun peekBody(Long): HttpBodySnapshot?
-fun HttpRequestInfo.peekBody(Long = HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES): HttpBodySnapshot?
-fun HttpResponseInfo.peekBody(Long = HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES): HttpBodySnapshot?
+  fun peekBody(maxBytes: Long): HttpBodySnapshot?
+fun HttpRequestInfo.peekBody(maxBytes: Long = HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES): HttpBodySnapshot?
+fun HttpResponseInfo.peekBody(maxBytes: Long = HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES): HttpBodySnapshot?
 data class com.datadog.android.api.net.Request
-  constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
+  constructor(id: String, description: String, url: String, headers: Map<String, String>, body: ByteArray, contentType: String? = null)
 data class com.datadog.android.api.net.RequestExecutionContext
-  constructor(Int = 0, Int? = null)
+  constructor(attemptNumber: Int = 0, previousResponseCode: Int? = null)
 interface com.datadog.android.api.net.RequestFactory
-  fun create(com.datadog.android.api.context.DatadogContext, RequestExecutionContext, List<com.datadog.android.api.storage.RawBatchEvent>, ByteArray?): Request?
+  fun create(context: com.datadog.android.api.context.DatadogContext, executionContext: RequestExecutionContext, batchData: List<com.datadog.android.api.storage.RawBatchEvent>, batchMetadata: ByteArray?): Request?
   companion object 
     const val CONTENT_TYPE_JSON: String
     const val CONTENT_TYPE_TEXT_UTF8: String
@@ -209,31 +209,31 @@ interface com.datadog.android.api.net.RequestFactory
     const val QUERY_PARAM_TAGS: String
     const val DD_IDEMPOTENCY_KEY: String
 interface com.datadog.android.api.storage.DataWriter<T>
-  fun write(EventBatchWriter, T, EventType): Boolean
+  fun write(writer: EventBatchWriter, element: T, eventType: EventType): Boolean
 interface com.datadog.android.api.storage.EventBatchWriter
-  fun write(RawBatchEvent, ByteArray?, EventType): Boolean
-fun EventBatchWriter.write(RawBatchEvent, ByteArray?, EventType, com.datadog.android.internal.telemetry.TelemetryContext): Boolean
+  fun write(event: RawBatchEvent, batchMetadata: ByteArray?, eventType: EventType): Boolean
+fun EventBatchWriter.write(event: RawBatchEvent, batchMetadata: ByteArray?, eventType: EventType, telemetryContext: com.datadog.android.internal.telemetry.TelemetryContext): Boolean
 enum com.datadog.android.api.storage.EventType
   - DEFAULT
   - CRASH
   - TELEMETRY
 data class com.datadog.android.api.storage.FeatureStorageConfiguration
-  constructor(Long, Int, Long, Long)
+  constructor(maxItemSize: Long, maxItemsPerBatch: Int, maxBatchSize: Long, oldBatchThreshold: Long)
   companion object 
     val DEFAULT: FeatureStorageConfiguration
 data class com.datadog.android.api.storage.RawBatchEvent
-  constructor(ByteArray, ByteArray = EMPTY_BYTE_ARRAY)
-  override fun equals(Any?): Boolean
+  constructor(data: ByteArray, metadata: ByteArray = EMPTY_BYTE_ARRAY)
+  override fun equals(other: Any?): Boolean
   override fun hashCode(): Int
 interface com.datadog.android.api.storage.datastore.DataStoreHandler
-  fun <T: Any> setValue(String, T, Int = 0, DataStoreWriteCallback? = null, com.datadog.android.core.persistence.Serializer<T>)
-  fun <T: Any> value(String, Int? = null, DataStoreReadCallback<T>, com.datadog.android.core.internal.persistence.Deserializer<String, T>)
-  fun removeValue(String, DataStoreWriteCallback? = null)
+  fun <T: Any> setValue(key: String, data: T, version: Int = 0, callback: DataStoreWriteCallback? = null, serializer: com.datadog.android.core.persistence.Serializer<T>)
+  fun <T: Any> value(key: String, version: Int? = null, callback: DataStoreReadCallback<T>, deserializer: com.datadog.android.core.internal.persistence.Deserializer<String, T>)
+  fun removeValue(key: String, callback: DataStoreWriteCallback? = null)
   fun clearAllData()
   companion object 
     const val CURRENT_DATASTORE_VERSION: Int
 interface com.datadog.android.api.storage.datastore.DataStoreReadCallback<T: Any>
-  fun onSuccess(com.datadog.android.core.persistence.datastore.DataStoreContent<T>?)
+  fun onSuccess(dataStoreContent: com.datadog.android.core.persistence.datastore.DataStoreContent<T>?)
   fun onFailure()
 interface com.datadog.android.api.storage.datastore.DataStoreWriteCallback
   fun onSuccess()
@@ -251,27 +251,27 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   val appUptimeNs: Long
   val remoteConfiguration: com.datadog.android.core.internal.remote.model.RemoteConfiguration?
   val remoteConfigurationSyncMetadata: com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata?
-  fun writeLastViewEvent(ByteArray)
+  fun writeLastViewEvent(data: ByteArray)
   fun deleteLastViewEvent()
-  fun writeLastFatalAnrSent(Long)
+  fun writeLastFatalAnrSent(anrTimestamp: Long)
   fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
   fun getAllFeatures(): List<com.datadog.android.api.feature.FeatureScope>
-  fun getDatadogContext(Set<String> = emptySet()): com.datadog.android.api.context.DatadogContext?
-  fun getDatadogContextFuture(Set<String> = emptySet()): java.util.concurrent.Future<com.datadog.android.api.context.DatadogContext?>?
+  fun getDatadogContext(withFeatureContexts: Set<String> = emptySet()): com.datadog.android.api.context.DatadogContext?
+  fun getDatadogContextFuture(withFeatureContexts: Set<String> = emptySet()): java.util.concurrent.Future<com.datadog.android.api.context.DatadogContext?>?
   fun flushContextThread()
   fun flushStoredData()
 class com.datadog.android.core.SdkReference
-  constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
+  constructor(sdkInstanceName: String? = null, onSdkInstanceCaptured: (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
 class com.datadog.android.core.UploadWorker : androidx.work.Worker
-  constructor(android.content.Context, androidx.work.WorkerParameters)
+  constructor(appContext: android.content.Context, workerParams: androidx.work.WorkerParameters)
   override fun doWork(): Result
   companion object 
 enum com.datadog.android.core.configuration.BackPressureMitigation
   - DROP_OLDEST
   - IGNORE_NEWEST
 data class com.datadog.android.core.configuration.BackPressureStrategy
-  constructor(Int, () -> Unit, (Any) -> Unit, BackPressureMitigation)
+  constructor(capacity: Int, onThresholdReached: () -> Unit, onItemDropped: (Any) -> Unit, backpressureMitigation: BackPressureMitigation)
 enum com.datadog.android.core.configuration.BatchProcessingLevel
   - LOW
   - MEDIUM
@@ -282,102 +282,102 @@ enum com.datadog.android.core.configuration.BatchSize
   - LARGE
 data class com.datadog.android.core.configuration.Configuration
   class Builder
-    constructor(String, String, String = NO_VARIANT, String? = null)
+    constructor(clientToken: String, env: String, variant: String = NO_VARIANT, service: String? = null)
     fun build(): Configuration
-    fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
-    fun setFirstPartyHosts(List<String>): Builder
-    fun setFirstPartyHostsWithHeaderType(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>): Builder
-    fun useSite(com.datadog.android.DatadogSite): Builder
-    fun setBatchSize(BatchSize): Builder
-    fun setUploadFrequency(UploadFrequency): Builder
-    fun setBatchProcessingLevel(BatchProcessingLevel): Builder
-    fun setAdditionalConfiguration(Map<String, Any>): Builder
-    fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
-    fun setEncryption(com.datadog.android.security.Encryption): Builder
-    fun setPersistenceStrategyFactory(com.datadog.android.core.persistence.PersistenceStrategy.Factory?): Builder
-    fun setCrashReportsEnabled(Boolean): Builder
-    fun setBackpressureStrategy(BackPressureStrategy): Builder
-    fun setUploadSchedulerStrategy(UploadSchedulerStrategy?): Builder
-    fun setVersion(String): Builder
-    fun setRemoteConfigurationId(String): Builder
+    fun setUseDeveloperModeWhenDebuggable(developerModeEnabled: Boolean): Builder
+    fun setFirstPartyHosts(hosts: List<String>): Builder
+    fun setFirstPartyHostsWithHeaderType(hostsWithHeaderType: Map<String, Set<com.datadog.android.trace.TracingHeaderType>>): Builder
+    fun useSite(site: com.datadog.android.DatadogSite): Builder
+    fun setBatchSize(batchSize: BatchSize): Builder
+    fun setUploadFrequency(uploadFrequency: UploadFrequency): Builder
+    fun setBatchProcessingLevel(batchProcessingLevel: BatchProcessingLevel): Builder
+    fun setAdditionalConfiguration(additionalConfig: Map<String, Any>): Builder
+    fun setProxy(proxy: java.net.Proxy, authenticator: okhttp3.Authenticator?): Builder
+    fun setEncryption(dataEncryption: com.datadog.android.security.Encryption): Builder
+    fun setPersistenceStrategyFactory(persistenceStrategyFactory: com.datadog.android.core.persistence.PersistenceStrategy.Factory?): Builder
+    fun setCrashReportsEnabled(crashReportsEnabled: Boolean): Builder
+    fun setBackpressureStrategy(backpressureStrategy: BackPressureStrategy): Builder
+    fun setUploadSchedulerStrategy(uploadSchedulerStrategy: UploadSchedulerStrategy?): Builder
+    fun setVersion(version: String): Builder
+    fun setRemoteConfigurationId(remoteConfigurationId: String): Builder
   companion object 
 class com.datadog.android.core.configuration.HostPatternSanitizer
-  constructor(com.datadog.android.api.InternalLogger)
-  fun validate(List<String>, String): List<String>
+  constructor(internalLogger: com.datadog.android.api.InternalLogger)
+  fun validate(patterns: List<String>, feature: String): List<String>
 class com.datadog.android.core.configuration.HostsSanitizer
-  constructor(com.datadog.android.api.InternalLogger = unboundInternalLogger)
-  fun sanitizeHosts(List<String>, String): List<String>
+  constructor(internalLogger: com.datadog.android.api.InternalLogger = unboundInternalLogger)
+  fun sanitizeHosts(hosts: List<String>, feature: String): List<String>
 enum com.datadog.android.core.configuration.UploadFrequency
   - FREQUENT
   - AVERAGE
   - RARE
 interface com.datadog.android.core.configuration.UploadSchedulerStrategy
-  fun getMsDelayUntilNextUpload(String, Int, Int?, Throwable?): Long
+  fun getMsDelayUntilNextUpload(featureName: String, uploadAttempts: Int, lastStatusCode: Int?, throwable: Throwable?): Long
 interface com.datadog.android.core.constraints.DataConstraints
-  fun <T> validateAttributes(Map<String, T>, String? = null, String? = null, Set<String> = emptySet()): MutableMap<String, T>
-  fun validateTags(List<String>): List<String>
-  fun validateTimings(Map<String, Long>): MutableMap<String, Long>
+  fun <T> validateAttributes(attributes: Map<String, T>, keyPrefix: String? = null, attributesGroupName: String? = null, reservedKeys: Set<String> = emptySet()): MutableMap<String, T>
+  fun validateTags(tags: List<String>): List<String>
+  fun validateTimings(timings: Map<String, Long>): MutableMap<String, Long>
 class com.datadog.android.core.constraints.DatadogDataConstraints : DataConstraints
-  constructor(com.datadog.android.api.InternalLogger)
-  override fun validateTags(List<String>): List<String>
-  override fun <T> validateAttributes(Map<String, T>, String?, String?, Set<String>): MutableMap<String, T>
-  override fun validateTimings(Map<String, Long>): MutableMap<String, Long>
+  constructor(internalLogger: com.datadog.android.api.InternalLogger)
+  override fun validateTags(tags: List<String>): List<String>
+  override fun <T> validateAttributes(attributes: Map<String, T>, keyPrefix: String?, attributesGroupName: String?, reservedKeys: Set<String>): MutableMap<String, T>
+  override fun validateTimings(timings: Map<String, Long>): MutableMap<String, Long>
 sealed class com.datadog.android.core.feature.event.JvmCrash
   abstract val throwable: Throwable
   abstract val message: String
   abstract val threads: List<ThreadDump>
   data class Rum : JvmCrash
-    constructor(Throwable, String, List<ThreadDump>)
+    constructor(throwable: Throwable, message: String, threads: List<ThreadDump>)
 data class com.datadog.android.core.feature.event.ThreadDump
-  constructor(String, String, String, Boolean)
+  constructor(name: String, state: String, stack: String, crashed: Boolean)
 class com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver : FirstPartyHostHeaderTypeResolver
-  constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
-  override fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean
-  override fun isFirstPartyUrl(String): Boolean
-  override fun headerTypesForUrl(String): Set<com.datadog.android.trace.TracingHeaderType>
-  override fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.trace.TracingHeaderType>
+  constructor(hosts: Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
+  override fun isFirstPartyUrl(url: okhttp3.HttpUrl): Boolean
+  override fun isFirstPartyUrl(url: String): Boolean
+  override fun headerTypesForUrl(url: String): Set<com.datadog.android.trace.TracingHeaderType>
+  override fun headerTypesForUrl(url: okhttp3.HttpUrl): Set<com.datadog.android.trace.TracingHeaderType>
   override fun getAllHeaderTypes(): Set<com.datadog.android.trace.TracingHeaderType>
   override fun isEmpty(): Boolean
 interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-  fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean
-  fun isFirstPartyUrl(String): Boolean
-  fun headerTypesForUrl(String): Set<com.datadog.android.trace.TracingHeaderType>
-  fun headerTypesForUrl(okhttp3.HttpUrl): Set<com.datadog.android.trace.TracingHeaderType>
+  fun isFirstPartyUrl(url: okhttp3.HttpUrl): Boolean
+  fun isFirstPartyUrl(url: String): Boolean
+  fun headerTypesForUrl(url: String): Set<com.datadog.android.trace.TracingHeaderType>
+  fun headerTypesForUrl(url: okhttp3.HttpUrl): Set<com.datadog.android.trace.TracingHeaderType>
   fun getAllHeaderTypes(): Set<com.datadog.android.trace.TracingHeaderType>
   fun isEmpty(): Boolean
 interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: Any>
-  fun deserialize(P): R?
-fun java.io.File.canReadSafe(com.datadog.android.api.InternalLogger): Boolean
-fun java.io.File.deleteSafe(com.datadog.android.api.InternalLogger): Boolean
-fun java.io.File.existsSafe(com.datadog.android.api.InternalLogger): Boolean
-fun java.io.File.listFilesSafe(com.datadog.android.api.InternalLogger, java.io.FilenameFilter): Array<java.io.File>?
-fun java.io.File.lengthSafe(com.datadog.android.api.InternalLogger): Long
-fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
-fun java.io.File.readBytesSafe(com.datadog.android.api.InternalLogger): ByteArray?
-fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): List<String>?
+  fun deserialize(model: P): R?
+fun java.io.File.canReadSafe(internalLogger: com.datadog.android.api.InternalLogger): Boolean
+fun java.io.File.deleteSafe(internalLogger: com.datadog.android.api.InternalLogger): Boolean
+fun java.io.File.existsSafe(internalLogger: com.datadog.android.api.InternalLogger): Boolean
+fun java.io.File.listFilesSafe(internalLogger: com.datadog.android.api.InternalLogger, filter: java.io.FilenameFilter): Array<java.io.File>?
+fun java.io.File.lengthSafe(internalLogger: com.datadog.android.api.InternalLogger): Long
+fun java.io.File.readTextSafe(charset: java.nio.charset.Charset = Charsets.UTF_8, internalLogger: com.datadog.android.api.InternalLogger): String?
+fun java.io.File.readBytesSafe(internalLogger: com.datadog.android.api.InternalLogger): ByteArray?
+fun java.io.File.readLinesSafe(charset: java.nio.charset.Charset = Charsets.UTF_8, internalLogger: com.datadog.android.api.InternalLogger): List<String>?
 data class com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
-  constructor(String, String?, Long?, Long, Long?, String)
+  constructor(configId: String, versionId: String?, lastModified: Long?, lastSynced: Long, firstApplied: Long?, syncId: String)
   fun toJson(): com.google.gson.JsonElement
   companion object 
-    fun fromJson(String): RemoteConfigSyncMetadata
-    fun fromJsonObject(com.google.gson.JsonObject): RemoteConfigSyncMetadata
+    fun fromJson(jsonString: String): RemoteConfigSyncMetadata
+    fun fromJsonObject(jsonObject: com.google.gson.JsonObject): RemoteConfigSyncMetadata
 interface com.datadog.android.core.internal.storage.TelemetryAwareEventBatchWriter : com.datadog.android.api.storage.EventBatchWriter
-  fun write(com.datadog.android.api.storage.RawBatchEvent, ByteArray?, com.datadog.android.api.storage.EventType, com.datadog.android.internal.telemetry.TelemetryContext): Boolean
-fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
-fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
-fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
-fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
-fun <T> java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, java.util.concurrent.Callable<T>): java.util.concurrent.Future<T>?
-fun <T> java.util.concurrent.Future<T>.getSafe(String, com.datadog.android.api.InternalLogger): T?
-fun <T> java.util.concurrent.Future<T>.getSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger): T?
+  fun write(event: com.datadog.android.api.storage.RawBatchEvent, batchMetadata: ByteArray?, eventType: com.datadog.android.api.storage.EventType, telemetryContext: com.datadog.android.internal.telemetry.TelemetryContext): Boolean
+fun Collection<ByteArray>.join(separator: ByteArray, prefix: ByteArray = ByteArray(0), suffix: ByteArray = ByteArray(0), internalLogger: com.datadog.android.api.InternalLogger): ByteArray
+fun java.util.concurrent.Executor.executeSafe(operationName: String, internalLogger: com.datadog.android.api.InternalLogger, runnable: Runnable)
+fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(operationName: String, delay: Long, unit: java.util.concurrent.TimeUnit, internalLogger: com.datadog.android.api.InternalLogger, runnable: Runnable): java.util.concurrent.ScheduledFuture<*>?
+fun java.util.concurrent.ExecutorService.submitSafe(operationName: String, internalLogger: com.datadog.android.api.InternalLogger, runnable: Runnable): java.util.concurrent.Future<*>?
+fun <T> java.util.concurrent.ExecutorService.submitSafe(operationName: String, internalLogger: com.datadog.android.api.InternalLogger, callable: java.util.concurrent.Callable<T>): java.util.concurrent.Future<T>?
+fun <T> java.util.concurrent.Future<T>.getSafe(operationName: String, internalLogger: com.datadog.android.api.InternalLogger): T?
+fun <T> java.util.concurrent.Future<T>.getSafe(operationName: String, timeout: Long, unit: java.util.concurrent.TimeUnit, internalLogger: com.datadog.android.api.InternalLogger): T?
 object com.datadog.android.core.internal.utils.DdTagsUtils
-  fun toDdTagsString(com.datadog.android.api.context.DatadogContext): String
-  fun toDdTagsString(Map<String, String>): String
-  fun toDdTagsMap(com.datadog.android.api.context.DatadogContext): Map<String, String>
-  fun toDdTagsMap(String?): Map<String, String>?
+  fun toDdTagsString(ddContext: com.datadog.android.api.context.DatadogContext): String
+  fun toDdTagsString(tags: Map<String, String>): String
+  fun toDdTagsMap(ddContext: com.datadog.android.api.context.DatadogContext): Map<String, String>
+  fun toDdTagsMap(tagsString: String?): Map<String, String>?
 object com.datadog.android.core.internal.utils.JsonSerializer
-  fun toJsonElement(Any?): com.google.gson.JsonElement
-  fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>
+  fun toJsonElement(item: Any?): com.google.gson.JsonElement
+  fun Map<String, Any?>.safeMapValuesToJson(internalLogger: com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>
 enum com.datadog.android.core.metrics.MethodCallSamplingRate
   - ALL
   - HIGH
@@ -386,60 +386,60 @@ enum com.datadog.android.core.metrics.MethodCallSamplingRate
   - REDUCED
   - RARE
 interface com.datadog.android.core.metrics.PerformanceMetric
-  fun stopAndSend(Boolean)
+  fun stopAndSend(isSuccessful: Boolean)
   companion object 
     const val METRIC_TYPE: String
 enum com.datadog.android.core.metrics.TelemetryMetricType
   - MethodCalled
 interface com.datadog.android.core.persistence.PersistenceStrategy
   interface Factory
-    fun create(String, Int, Long): PersistenceStrategy
+    fun create(identifier: String, maxItemsPerBatch: Int, maxBatchSize: Long): PersistenceStrategy
   data class Batch
-    constructor(String, ByteArray? = null, List<com.datadog.android.api.storage.RawBatchEvent> = mutableListOf())
+    constructor(batchId: String, metadata: ByteArray? = null, events: List<com.datadog.android.api.storage.RawBatchEvent> = mutableListOf())
   fun currentMetadata(): ByteArray?
-  fun write(com.datadog.android.api.storage.RawBatchEvent, ByteArray?, com.datadog.android.api.storage.EventType): Boolean
+  fun write(event: com.datadog.android.api.storage.RawBatchEvent, batchMetadata: ByteArray?, eventType: com.datadog.android.api.storage.EventType): Boolean
   fun lockAndReadNext(): Batch?
-  fun unlockAndKeep(String)
-  fun unlockAndDelete(String)
+  fun unlockAndKeep(batchId: String)
+  fun unlockAndDelete(batchId: String)
   fun dropAll()
-  fun migrateData(PersistenceStrategy)
+  fun migrateData(targetStrategy: PersistenceStrategy)
 interface com.datadog.android.core.persistence.Serializer<T: Any>
-  fun serialize(T): String?
+  fun serialize(model: T): String?
   companion object 
-fun <T: Any> Serializer<T>.serializeToByteArray(T, com.datadog.android.api.InternalLogger): ByteArray?
+fun <T: Any> Serializer<T>.serializeToByteArray(model: T, internalLogger: com.datadog.android.api.InternalLogger): ByteArray?
 data class com.datadog.android.core.persistence.datastore.DataStoreContent<T: Any>
-  constructor(Int, T?)
+  constructor(versionCode: Int, data: T?)
 open class com.datadog.android.core.sampling.DeterministicSampler<T: Any> : Sampler<T>
-  constructor((T) -> ULong, () -> Float)
-  constructor((T) -> ULong, Float)
-  constructor((T) -> ULong, Double)
-  override fun sample(T): Boolean
+  constructor(idConverter: (T) -> ULong, sampleRateProvider: () -> Float)
+  constructor(idConverter: (T) -> ULong, sampleRate: Float)
+  constructor(idConverter: (T) -> ULong, sampleRate: Double)
+  override fun sample(item: T): Boolean
   override fun getSampleRate(): Float
   companion object 
     const val SAMPLE_ALL_RATE: Float
     const val SAMPLER_HASHER: ULong
     const val MAX_ID: ULong
 open class com.datadog.android.core.sampling.RateBasedSampler<T: Any> : Sampler<T>
-  constructor(() -> Float)
-  constructor(Float)
-  constructor(Double)
-  override fun sample(T): Boolean
+  constructor(sampleRateProvider: () -> Float)
+  constructor(sampleRate: Float)
+  constructor(sampleRate: Double)
+  override fun sample(item: T): Boolean
   override fun getSampleRate(): Float
 interface com.datadog.android.core.sampling.Sampler<T: Any>
-  fun sample(T): Boolean
+  fun sample(item: T): Boolean
   fun getSampleRate(): Float?
 interface com.datadog.android.core.thread.FlushableExecutorService : java.util.concurrent.ExecutorService
-  fun drainTo(MutableCollection<Runnable>)
+  fun drainTo(destination: MutableCollection<Runnable>)
   interface Factory
-    fun create(com.datadog.android.api.InternalLogger, String, com.datadog.android.core.configuration.BackPressureStrategy, com.datadog.android.internal.time.TimeProvider): FlushableExecutorService
+    fun create(internalLogger: com.datadog.android.api.InternalLogger, executorContext: String, backPressureStrategy: com.datadog.android.core.configuration.BackPressureStrategy, timeProvider: com.datadog.android.internal.time.TimeProvider): FlushableExecutorService
 interface com.datadog.android.event.EventMapper<T: Any>
-  fun map(T): T?
+  fun map(event: T): T?
 class com.datadog.android.event.MapperSerializer<T: Any> : com.datadog.android.core.persistence.Serializer<T>
-  constructor(EventMapper<T>, com.datadog.android.core.persistence.Serializer<T>)
-  override fun serialize(T): String?
+  constructor(eventMapper: EventMapper<T>, serializer: com.datadog.android.core.persistence.Serializer<T>)
+  override fun serialize(model: T): String?
 class com.datadog.android.event.NoOpEventMapper<T: Any> : EventMapper<T>
-  override fun map(T): T
-  override fun equals(Any?): Boolean
+  override fun map(event: T): T
+  override fun equals(other: Any?): Boolean
   override fun hashCode(): Int
 annotation com.datadog.android.lint.InternalApi
 object com.datadog.android.log.LogAttributes
@@ -503,58 +503,58 @@ enum com.datadog.android.privacy.TrackingConsent
   - NOT_GRANTED
   - PENDING
 interface com.datadog.android.privacy.TrackingConsentProviderCallback
-  fun onConsentUpdated(TrackingConsent, TrackingConsent)
+  fun onConsentUpdated(previousConsent: TrackingConsent, newConsent: TrackingConsent)
 interface com.datadog.android.security.Encryption
-  fun encrypt(ByteArray): ByteArray
-  fun decrypt(ByteArray): ByteArray
+  fun encrypt(data: ByteArray): ByteArray
+  fun decrypt(data: ByteArray): ByteArray
 enum com.datadog.android.trace.TracingHeaderType
   - DATADOG
   - B3
   - B3MULTI
   - TRACECONTEXT
 data class com.datadog.android.core.internal.remote.model.RemoteConfiguration
-  constructor(Rum? = null, SessionReplay? = null, Profiling? = null, Trace? = null)
+  constructor(rum: Rum? = null, sessionReplay: SessionReplay? = null, profiling: Profiling? = null, trace: Trace? = null)
   val platform: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
-    fun fromJson(kotlin.String): RemoteConfiguration
-    fun fromJsonObject(com.google.gson.JsonObject): RemoteConfiguration
+    fun fromJson(jsonString: kotlin.String): RemoteConfiguration
+    fun fromJsonObject(jsonObject: com.google.gson.JsonObject): RemoteConfiguration
   data class Rum
-    constructor(kotlin.String, kotlin.Number? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, LongTask? = null, VitalsUpdateFrequency? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
+    constructor(applicationId: kotlin.String, telemetrySampleRate: kotlin.Number? = null, trackAnonymousUser: kotlin.Boolean? = null, trackUserInteractions: kotlin.Boolean? = null, trackBackgroundEvents: kotlin.Boolean? = null, trackFrustrations: kotlin.Boolean? = null, longTask: LongTask? = null, vitalsUpdateFrequency: VitalsUpdateFrequency? = null, trackSlowFrames: kotlin.Boolean? = null, crashReportsEnabled: kotlin.Boolean? = null, trackNonFatalAnrs: kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Rum
-      fun fromJsonObject(com.google.gson.JsonObject): Rum
+      fun fromJson(jsonString: kotlin.String): Rum
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Rum
   data class SessionReplay
-    constructor(kotlin.Number? = null, TextAndInputPrivacy? = null, TouchPrivacy? = null, ImagePrivacy? = null)
+    constructor(sampleRate: kotlin.Number? = null, textAndInputPrivacy: TextAndInputPrivacy? = null, touchPrivacy: TouchPrivacy? = null, imagePrivacy: ImagePrivacy? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): SessionReplay
-      fun fromJsonObject(com.google.gson.JsonObject): SessionReplay
+      fun fromJson(jsonString: kotlin.String): SessionReplay
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): SessionReplay
   data class Profiling
-    constructor(kotlin.Number? = null, kotlin.Number? = null, kotlin.Boolean? = null)
+    constructor(continuousSampleRate: kotlin.Number? = null, applicationLaunchSampleRate: kotlin.Number? = null, anrTriggerEnabled: kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Profiling
-      fun fromJsonObject(com.google.gson.JsonObject): Profiling
+      fun fromJson(jsonString: kotlin.String): Profiling
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Profiling
   data class Trace
-    constructor(kotlin.Number? = null, TraceContextInjection? = null, kotlin.collections.List<TracedHost>? = null)
+    constructor(sampleRate: kotlin.Number? = null, traceContextInjection: TraceContextInjection? = null, tracedHosts: kotlin.collections.List<TracedHost>? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Trace
-      fun fromJsonObject(com.google.gson.JsonObject): Trace
+      fun fromJson(jsonString: kotlin.String): Trace
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Trace
   data class LongTask
-    constructor(kotlin.Boolean? = null, kotlin.Number? = null)
+    constructor(enabled: kotlin.Boolean? = null, threshold: kotlin.Number? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): LongTask
-      fun fromJsonObject(com.google.gson.JsonObject): LongTask
+      fun fromJson(jsonString: kotlin.String): LongTask
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): LongTask
   data class TracedHost
-    constructor(kotlin.String, kotlin.collections.List<PropagatorType>)
+    constructor(host: kotlin.String, propagatorTypes: kotlin.collections.List<PropagatorType>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): TracedHost
-      fun fromJsonObject(com.google.gson.JsonObject): TracedHost
+      fun fromJson(jsonString: kotlin.String): TracedHost
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): TracedHost
   enum VitalsUpdateFrequency
     - FREQUENT
     - AVERAGE
@@ -562,33 +562,33 @@ data class com.datadog.android.core.internal.remote.model.RemoteConfiguration
     - NEVER
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): VitalsUpdateFrequency
+      fun fromJson(jsonString: kotlin.String): VitalsUpdateFrequency
   enum TextAndInputPrivacy
     - MASK_SENSITIVE_INPUTS
     - MASK_ALL_INPUTS
     - MASK_ALL
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): TextAndInputPrivacy
+      fun fromJson(jsonString: kotlin.String): TextAndInputPrivacy
   enum TouchPrivacy
     - SHOW
     - HIDE
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): TouchPrivacy
+      fun fromJson(jsonString: kotlin.String): TouchPrivacy
   enum ImagePrivacy
     - MASK_NONE
     - MASK_LARGE_ONLY
     - MASK_ALL
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): ImagePrivacy
+      fun fromJson(jsonString: kotlin.String): ImagePrivacy
   enum TraceContextInjection
     - ALL
     - SAMPLED
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): TraceContextInjection
+      fun fromJson(jsonString: kotlin.String): TraceContextInjection
   enum PropagatorType
     - DATADOG
     - B3
@@ -596,4 +596,4 @@ data class com.datadog.android.core.internal.remote.model.RemoteConfiguration
     - TRACECONTEXT
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): PropagatorType
+      fun fromJson(jsonString: kotlin.String): PropagatorType

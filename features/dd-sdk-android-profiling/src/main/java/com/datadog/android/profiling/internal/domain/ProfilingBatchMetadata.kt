@@ -10,9 +10,10 @@ import java.io.IOException
 import java.io.InputStream
 
 /**
- * View over a continuous profiling batch metadata blob, bundling the raw perfetto bytes
- * and the rum-mobile-events JSON attachment. Offsets and lengths point into [bytes], so
- * that large perfetto payloads are never copied.
+ * View over a continuous profiling batch metadata blob, bundling the perfetto trace bytes
+ * and the rum-mobile-events JSON attachment. The perfetto bytes are the gzip stream of the trace,
+ * or the raw trace when it could not be compressed; the writer decides, the blob does not record which.
+ * Offsets and lengths point into [bytes], so that large perfetto payloads are never copied.
  *
  * Binary layout: [4-byte magic "DDCP"][4-byte big-endian perfetto length][perfetto bytes][rum-mobile-events bytes]
  */
