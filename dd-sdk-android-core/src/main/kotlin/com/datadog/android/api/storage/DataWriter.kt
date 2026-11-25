@@ -14,7 +14,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  * given [EventBatchWriter].
  */
 @NoOpImplementation(publicNoOpImplementation = true)
-interface DataWriter<T> {
+interface DataWriter<in T> {
     /**
      * Writes the element with a given [EventBatchWriter].
      *

@@ -23,6 +23,7 @@ import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
+import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.evaluation.EvaluationCallbackDispatcher
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
@@ -101,8 +102,11 @@ interface FlagsClient {
      * In enabled experimentation opt-out modes, assignments are unavailable until they match this context,
      * including when the timestamp attribute is absent. Resolutions return defaults with PROVIDER_NOT_READY.
      * An invalid timestamp prevents the assignment request and fails with [FlagsInvalidContextException].
-     * In enabled modes, if a newer context replaces this request before its result is processed, the callback fails with
-     * [FlagsContextSupersededException], unless its initialization timeout already completed it.
+     * When experimentation opt-out or subject-authorization ordering is active, if a newer context replaces this
+     * request before its result is processed, the callback fails with [FlagsContextSupersededException], unless its
+     * initialization timeout already completed it.
+     * An exact subject-authorization rejection fails with [FlagsAssignmentAuthorizationException]. Eligible cached
+     * assignments can remain available in [FlagsClientState.Stale] while the callback reports the failed refresh.
      *
      * @param context The [EvaluationContext] containing targeting key and attributes.
      * @param callback Optional callback to notify when the operation completes or fails.
@@ -354,6 +358,7 @@ interface FlagsClient {
                 return NoOpFlagsClient(
                     name = name,
                     reason = "Flags feature not enabled",
+                    sdkCore = sdkCore,
                     logWithPolicy = logWithPolicy
                 )
             }
@@ -415,6 +420,7 @@ interface FlagsClient {
                 return NoOpFlagsClient(
                     name = name,
                     reason = "Flags feature not enabled",
+                    sdkCore = featureCore,
                     logWithPolicy = { message, level ->
                         logger.log(level, InternalLogger.Target.USER, { message })
                     }
@@ -447,6 +453,7 @@ interface FlagsClient {
             return NoOpFlagsClient(
                 name = name,
                 reason = "Client '$name' not found - get() called before build()",
+                sdkCore = sdkCore,
                 logWithPolicy = { message, level ->
                     flagsFeature.logErrorWithPolicy(message, level, shouldCrashInStrict = false)
                 }
@@ -470,6 +477,10 @@ interface FlagsClient {
             evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
             val experimentationOptOut = ExperimentationOptOut(experimentationOptOutMode)
+            val assignmentAuthorization = AssignmentAuthorization(
+                featureSdkCore.internalLogger,
+                experimentationOptOut.stateLock
+            )
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
@@ -533,7 +544,8 @@ interface FlagsClient {
                 experimentationOptOut = experimentationOptOut,
                 callbackExecutor = EvaluationCallbackDispatcher(featureSdkCore.internalLogger) {
                     featureSdkCore.createSingleThreadExecutorService(FLAGS_CALLBACK_EXECUTOR_NAME)
-                }
+                },
+                assignmentAuthorization = assignmentAuthorization
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
@@ -548,7 +560,8 @@ interface FlagsClient {
                 evaluationsFeature = evaluationsFeature,
                 flagStateManager = flagStateManager,
                 experimentationOptOut = experimentationOptOut,
-                evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled
+                evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled,
+                assignmentAuthorization = assignmentAuthorization
             )
         }
 

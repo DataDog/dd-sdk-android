@@ -54,7 +54,6 @@ dependencies {
     implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlinRuntime)
     implementation(libs.androidXCore)
-    implementation(libs.androidXCoreKtx)
     implementation(libs.gson)
     implementation(libs.okHttp)
 

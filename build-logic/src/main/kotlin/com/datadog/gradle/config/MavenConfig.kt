@@ -9,6 +9,7 @@ package com.datadog.gradle.config
 import com.android.build.api.dsl.LibraryExtension
 import com.datadog.gradle.utils.Version
 import org.gradle.api.Project
+import org.gradle.api.component.AdhocComponentWithVariants
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.authentication.aws.AwsImAuthentication
@@ -19,6 +20,9 @@ import org.gradle.plugins.signing.SigningExtension
 object MavenConfig {
     const val GROUP_ID = "com.datadoghq"
     const val PUBLICATION = "release"
+
+    const val DOGFOOD_STAGING_REPOSITORY = "dogfoodStaging"
+    const val DOGFOOD_STAGING_DIRECTORY = "dogfood-maven"
 
     private const val INTERNAL_REPOSITORY_UPLOAD_BASE = "s3://binaries-ddbuild-io-prod/dd-sdk-android"
 
@@ -90,6 +94,12 @@ internal fun Project.publishingConfig(
         return
     }
 
+    // The publication inherits these coordinates, and AGP uses them for fixture capabilities.
+    group = MavenConfig.GROUP_ID
+    version = AndroidConfig.VERSION.name
+
+    val publishesTestFixtures = androidExtension.testFixtures.enable
+
     androidExtension.publishing {
         singleVariant(MavenConfig.PUBLICATION) {
             withSourcesJar()
@@ -105,13 +115,22 @@ internal fun Project.publishingConfig(
             return@afterEvaluate
         }
 
+        val releaseComponent = components.getByName(MavenConfig.PUBLICATION)
+        if (publishesTestFixtures) {
+            val component = releaseComponent as AdhocComponentWithVariants
+            listOf("Api", "Runtime").forEach { usage ->
+                val fixtures = configurations.getByName("releaseTestFixturesVariantRelease${usage}Publication")
+                component.withVariantsFromConfiguration(fixtures) {
+                    mapToOptional()
+                }
+            }
+        }
+
         publishingExtension.apply {
             publications.create<MavenPublication>(MavenConfig.PUBLICATION) {
-                from(components.getByName("release"))
+                from(releaseComponent)
 
-                groupId = MavenConfig.GROUP_ID
                 artifactId = customArtifactId
-                version = AndroidConfig.VERSION.name
 
                 pom {
                     name.set(projectName)
@@ -143,6 +162,15 @@ internal fun Project.publishingConfig(
                         url.set("https://github.com/DataDog/dd-sdk-android/")
                         connection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
                         developerConnection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
+                    }
+                }
+            }
+
+            if (AndroidConfig.VERSION.type is Version.Type.Dogfood) {
+                repositories {
+                    maven {
+                        name = MavenConfig.DOGFOOD_STAGING_REPOSITORY
+                        url = uri(rootProject.layout.buildDirectory.dir(MavenConfig.DOGFOOD_STAGING_DIRECTORY))
                     }
                 }
             }

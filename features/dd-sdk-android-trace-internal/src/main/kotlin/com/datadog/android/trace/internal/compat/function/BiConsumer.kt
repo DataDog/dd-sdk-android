@@ -6,7 +6,7 @@
 
 package com.datadog.android.trace.internal.compat.function
 
-internal interface BiConsumer<T, U> {
+internal interface BiConsumer<in T, in U> {
 
     fun accept(t: T, u: U)
 }

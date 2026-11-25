@@ -15,13 +15,17 @@ import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
+import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.selection.FlagSelectionError
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
+import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -31,6 +35,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -169,6 +174,41 @@ internal class FlagsFeatureTest {
         // Then
         assertThat(testedFeature.processor).isInstanceOf(ExposureEventsProcessor::class.java)
         assertThat(testedFeature.dataWriter).isInstanceOf(ExposureEventRecordWriter::class.java)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M send exposures only when tracking them W onInitialize() + processEvent()`(
+        trackExposures: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        testedFeature = FlagsFeature(mockSdkCore, FlagsConfiguration.Builder().trackExposures(trackExposures).build())
+        val flag = PrecomputedFlag(
+            "boolean",
+            "true",
+            true,
+            forge.anAlphabeticalString(),
+            forge.anAlphabeticalString(),
+            JSONObject(),
+            "TARGETING_MATCH"
+        )
+        val context = EvaluationContext(forge.anAlphabeticalString())
+        val flagKey = forge.anAlphabeticalString()
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        val first = testedFeature.processor.processEvent(flagKey, context, flag)
+        val second = testedFeature.processor.processEvent(flagKey, context, flag)
+
+        // Then
+        assertThat(first).isFalse()
+        assertThat(second).isTrue()
+        if (trackExposures) {
+            verify(mockSdkCore).getFeature(FLAGS_FEATURE_NAME)
+        } else {
+            verify(mockSdkCore, never()).getFeature(FLAGS_FEATURE_NAME)
+        }
     }
 
     @Test

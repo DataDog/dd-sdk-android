@@ -41,7 +41,7 @@ import kotlin.concurrent.write
  * @param S the type of the state being held.
  * @param L the type of the listeners to notify.
  */
-interface DDCoreStateHolder<S : Any, L : Any> {
+interface DDCoreStateHolder<S : Any, in L : Any> {
 
     /**
      * The state most recently delivered to the listeners, which is the latest state requested

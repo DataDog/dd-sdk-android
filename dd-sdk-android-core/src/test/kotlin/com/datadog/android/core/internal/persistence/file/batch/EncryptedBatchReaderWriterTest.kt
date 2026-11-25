@@ -28,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -175,6 +176,36 @@ internal class EncryptedBatchReaderWriterTest {
 
         // Then
         assertThat(result).containsExactlyElementsOf(events)
+    }
+
+    @Test
+    fun `M drop event and log error W readData() { decrypt throws }`(
+        @Forgery events: List<RawBatchEvent>,
+        @Forgery failingEvent: RawBatchEvent,
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val fakeException = IllegalStateException(fakeMessage)
+        val failingData = ByteArray(failingEvent.data.size + 1) { 1 }
+        whenever(mockEncryption.decrypt(failingData)) doThrow fakeException
+        whenever(
+            mockBatchFileReaderWriter.readData(eq(mockFile), any())
+        ) doReturn events.map { RawBatchEvent(encrypt(it.data), encrypt(it.metadata)) } +
+            RawBatchEvent(failingData, failingEvent.metadata)
+
+        // When
+        val result = testedReaderWriter.readData(mockFile, fakeTelemetryContext)
+
+        // Then
+        assertThat(result).containsExactlyElementsOf(events)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            EncryptedBatchReaderWriter.DECRYPTION_FAILED_MESSAGE,
+            throwable = fakeException,
+            onlyOnce = true,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = failingData.size)
+        )
     }
 
     // endregion

@@ -84,6 +84,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -243,6 +244,9 @@ internal class ProfilingFeatureTest {
         whenever(mockSdkCore.createOkHttpCallFactory(any())) doReturn mockCallFactory
         whenever(mockProfiler.scheduledExecutorService) doReturn mockSchedulerExecutor
         whenever(mockProfiler.isOomTriggerRegistered) doReturn true
+        doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }.whenever(mockSchedulerExecutor).execute(any<Runnable>())
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn (mockService)
         whenever(mockContext.getSharedPreferences(any(), any())) doReturn mockSharedPreferences
         whenever(mockSharedPreferences.edit()) doReturn mockEditor
@@ -2742,6 +2746,7 @@ internal class ProfilingFeatureTest {
         val fakePendingProfile = fakePendingOomProfile.copy(startMs = fakeStartMs)
         stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakePendingProfile.toJson())
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeStartMs + fakeAgeMs
+        deferSchedulerExecutor()
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
 
         // When
@@ -2779,6 +2784,7 @@ internal class ProfilingFeatureTest {
         stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakePendingProfile.toJson())
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn
             fakeStartMs + PendingTriggerProfileStorage.PENDING_OOM_PROFILE_MAX_AGE_MS + fakeExtraAgeMs
+        deferSchedulerExecutor()
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
 
         // When
@@ -2841,6 +2847,7 @@ internal class ProfilingFeatureTest {
         val fakePendingProfile = fakePendingOomProfile.copy(startMs = fakeStartMs)
         stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakePendingProfile.toJson())
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeStartMs + fakeAgeMs
+        deferSchedulerExecutor()
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
 
         // When
@@ -2864,6 +2871,7 @@ internal class ProfilingFeatureTest {
     fun `M not upload anything W onInitialize() {no pending profile}`() {
         // Given
         stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, null)
+        deferSchedulerExecutor()
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
 
         // When
@@ -2963,9 +2971,13 @@ internal class ProfilingFeatureTest {
             .whenever(mockSchedulerExecutor).execute(any())
     }
 
+    private fun deferSchedulerExecutor() {
+        doNothing().whenever(mockSchedulerExecutor).execute(any())
+    }
+
     private fun runScheduledReplay() {
         val runnableCaptor = argumentCaptor<Runnable>()
-        verify(mockSchedulerExecutor).execute(runnableCaptor.capture())
+        verify(mockSchedulerExecutor, atLeastOnce()).execute(runnableCaptor.capture())
         runnableCaptor.allValues.forEach { it.run() }
     }
 

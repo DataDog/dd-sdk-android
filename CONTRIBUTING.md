@@ -92,6 +92,23 @@ You can build the SDK using the following Gradle command:
 ./gradlew assembleLibraries
 ```
 
+### Reviewing dependency requirements
+
+A module's `transitiveDependencies` report lists external artifacts on its
+release compile and runtime classpaths. Check other SDK modules' reports for
+their dependencies. Entries show the resolved version, classpath, and any
+declared `minCompileSdk`.
+
+When changing a dependency, compare the consumer's resolved compile and runtime
+classpaths and check the highest declared `minCompileSdk` across both. Use
+`runtimeOnly` for dependencies needed solely at runtime.
+
+Regenerate reports after dependency or generator changes:
+
+```shell
+./gradlew generateTransitiveDependenciesList
+```
+
 ### Running the tests
 
 The whole project is covered by a set of static analysis tools, linters and tests. To mimic the steps taken by our CI, you can run the `local_ci.sh` script:

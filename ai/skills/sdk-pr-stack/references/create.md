@@ -2,7 +2,7 @@
 
 Follow the shared rules in [../SKILL.md](../SKILL.md), then execute this workflow.
 
-All commit messages and PR titles produced by this skill MUST follow the sibling `sdk-commit` skill at [../../sdk-commit/SKILL.md](../../sdk-commit/SKILL.md). Before generating any commit message (in Steps 3.1, 3.4, and 4.2), invoke that skill via the `Skill` tool to load its current rules, then apply them to every subject/body you generate. Do this once at the start of a generation step and reuse the loaded rules for all commits in that step.
+Commit messages and PR titles produced by this skill follow the sibling `sdk-commit` skill at [../../sdk-commit/SKILL.md](../../sdk-commit/SKILL.md). Before generating any commit message (in Steps 3.1, 3.4, and 4.2), invoke that skill via the `Skill` tool to load its current rules, then apply them to every subject/body you generate. Do this once at the start of a generation step and reuse the loaded rules for all commits in that step.
 
 This skill turns the current feature branch into a series of stacked pull requests via the [Graphite CLI (`gt`)](https://graphite.com/docs/graphite-cli). It supports two modes:
 
@@ -11,12 +11,12 @@ This skill turns the current feature branch into a series of stacked pull reques
 
 **Key principle: one gt branch = one PR, but one PR can contain multiple commits.** Do not force a 1-commit-per-PR structure. Organise commits into PRs that make logical sense for a reviewer — target ~400 lines of changed code per PR, but never split artificially.
 
-## PR content rules — MANDATORY
+## PR content rules
 
 Each PR in the stack must contain only code that is logically related to the changes introduced on the branch. These rules apply when deciding how to split commits into PRs (Steps 2, 3.1, and 3.2) and must never be violated in the name of keeping PRs small:
 
 - **Tests travel with their production code.** If a PR contains new or modified production code, its tests must be in the same PR — not split into a separate PR. Conversely, if a PR contains new or modified tests, the production code those tests cover must be in the same PR.
-- **Detekt rule changes are bundled with the triggering production code.** Additions or modifications to detekt config files (e.g. `detekt_custom_unsafe_calls.yml`, `detekt_custom_safe_calls.yml`) must be in the same PR as the production code that requires the rule change — never in a standalone PR.
+- **Detekt rule changes are bundled with the triggering production code.** Additions or modifications to detekt config files (e.g. `detekt_custom_unsafe_calls.yml`, `detekt_custom_safe_calls_*.yml`) must be in the same PR as the production code that requires the rule change — never in a standalone PR.
 
 When the subagent in Step 3.1 proposes a split, validate the output against these rules before presenting it to the user. If any PR violates them, revise the split — either by merging the offending PRs or by moving the misplaced files — before showing it.
 
@@ -28,13 +28,11 @@ Conduct the entire session in the language the user used when invoking the skill
 
 Generated **commit messages and PR titles/descriptions** are always in English, regardless of session language.
 
-This skill file itself is authored in English — do not translate it.
-
 ---
 
-## Interactive questions — MANDATORY
+## Interactive questions
 
-Every clarifying question throughout every step MUST be asked via the `AskUserQuestion` tool. Never present choices as plain numbered text. Batch related questions when possible (up to 4 per call). The user can always pick "Other" to type a free-text response.
+Ask clarifying questions with `AskUserQuestion` rather than as numbered text, batching related questions (up to 4 per call). The user can always pick "Other" to type a free-text response.
 
 ---
 
@@ -56,7 +54,7 @@ If this fails, abort: "This directory is not a git repository."
 git rev-parse --abbrev-ref HEAD
 ```
 
-If the result is `main`, `master`, or `develop`, abort: "autostack is designed for feature branches. Please switch to a feature branch before running it."
+If the result is `main`, `master`, or `develop`, abort: "`/sdk-pr-stack create` works on feature branches. Please switch to a feature branch before running it."
 
 ### 0.3 Uncommitted changes
 
@@ -146,7 +144,7 @@ Save the resolved base branch name as `$BASE`. If Graphite was not yet initialis
 git log --merges $BASE..HEAD
 ```
 
-If the output is non-empty, abort: "This branch contains merge commits; autostack supports linear history only. Please rebase/linearise manually before retrying."
+If the output is non-empty, abort: "This branch contains merge commits; `/sdk-pr-stack create` supports linear history only. Please rebase/linearise manually before retrying."
 
 ### 0.7 Single-commit branch
 
@@ -242,7 +240,7 @@ Commits are grouped into PRs — do not create one PR per commit.
 
 Large diffs would otherwise pollute the main context and degrade later decisions. Always delegate, regardless of diff size — consistency matters more than a few saved tokens.
 
-**Before invoking the subagent, load the `sdk-commit` skill** (via the `Skill` tool) and read the full text of its SKILL.md. You MUST inline the commit skill rules verbatim into the subagent prompt (below the TASK section, in a `## sdk-commit convention` block) so the subagent formats every `title` and `pr_title` accordingly. Do not paraphrase — copy the rules as-is.
+**Before invoking the subagent, load the `sdk-commit` skill** (via the `Skill` tool) and read the full text of its SKILL.md. Inline its rules verbatim into the subagent prompt (below the TASK section, in a `## sdk-commit convention` block) so the subagent formats every `title` and `pr_title` accordingly.
 
 Gather inputs (excluding `$EXCLUDED` files if any):
 
@@ -336,17 +334,7 @@ Then use `AskUserQuestion`:
 
 ### 3.3 Compile-check configuration
 
-Detect build systems in the repo root (use `Glob`/`Read`):
-
-| Manifest file         | Default command          |
-|-----------------------|--------------------------|
-| `package.json`        | `npm run build`          |
-| `go.mod`              | `go build ./...`         |
-| `Cargo.toml`          | `cargo build`            |
-| `pom.xml`             | `mvn -q compile`         |
-| `build.gradle(.kts)`  | `./gradlew assembleLibrariesDebug`        |
-| `pyproject.toml`      | `python -m compileall .` |
-| (none, only `.py`)    | `python -m compileall .` |
+The default compile command is `./gradlew assembleLibrariesDebug`.
 
 Use `AskUserQuestion`:
 
@@ -469,7 +457,7 @@ Show the planned (prefix+slug) list. Use `AskUserQuestion`:
 
 ### 4.2 Reconstruct the stack with gt
 
-**Before this step**, load the `sdk-commit` skill via the `Skill` tool (if not already loaded) and read its full rules. Every commit message created in this step MUST be generated using those rules: extract the ticket ID from the current branch name, write an imperative header, and add a brief body when the change warrants it. Do NOT write bare titles or copy PR descriptions into commit bodies.
+**Before this step**, load the `sdk-commit` skill via the `Skill` tool (if not already loaded) and read its full rules. Generate every commit message in this step with those rules: extract the ticket ID from the current branch name, write an imperative header, and add a brief body when the change warrants it. Don't write bare titles or copy PR descriptions into commit bodies.
 
 ```
 git checkout "$BASE"
@@ -485,21 +473,17 @@ For each **PR** in the plan (oldest→newest):
    (This creates an empty branch stacked on the current branch.)
 
 2. For each commit belonging to this PR (in order):
-   a. Cherry-pick the commit onto the current branch WITHOUT committing:
+   a. Cherry-pick the commit onto the current branch without committing (this stages its changes):
       ```
       git cherry-pick --no-commit "$H"
       ```
-   b. Stage everything:
-      ```
-      git add -A
-      ```
-   c. Generate the commit message using the `sdk-commit` skill rules:
+   b. Generate the commit message using the `sdk-commit` skill rules:
       - Read `git diff --cached --stat` to understand what is staged.
       - Extract the ticket ID from `$SRC_BRANCH` (or `$STAGING` in auto-rebase mode) per the commit skill header rule.
       - The planned commit title is a starting point; rewrite it into a conforming imperative header with the ticket prefix.
-      - Add a brief body if the change is non-trivial; keep it to 1–3 lines describing *what* changed — do NOT paste the PR description here.
+      - Add a brief body if the change is non-trivial, describing *what* changed; don't paste the PR description here.
       - Show the drafted message to the user via `AskUserQuestion` (Approve / Edit).
-   d. Commit with the approved message:
+   c. Commit with the approved message:
       ```
       git commit -m "<approved commit message>"
       ```
@@ -606,13 +590,13 @@ Then use `AskUserQuestion`:
 
 ### 4.3 Generate PR descriptions (separate from commit messages)
 
-**PR descriptions are MANDATORY. They can never be omitted, skipped, or left empty — not even for small or "obvious" PRs.**
+Every PR gets a non-empty description, including small or "obvious" ones.
 
 PR descriptions are GitHub metadata — they must NOT be embedded in git commit messages. Generate one PR description per PR branch now, before submission, so they can be applied via `gh pr edit` after `gt submit`.
 
 Steps:
 
-1. Detect a PR template in the repo (look in order: `.github/PULL_REQUEST_TEMPLATE.md`, `.github/pull_request_template.md`, `docs/PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE.md`, any file under `.github/PULL_REQUEST_TEMPLATE/`).
+1. Read the project PR template, `.github/PULL_REQUEST_TEMPLATE.md` (see `AGENTS.md`).
 2. For each PR branch in the stack:
    - Collect its diff stat: `git diff <parent-branch>...<pr-branch> --stat`
    - Draft a PR description in English:

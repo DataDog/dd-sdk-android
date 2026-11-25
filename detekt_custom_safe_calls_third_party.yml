@@ -798,6 +798,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.profiling.internal.perfetto.ProfileType)"
       - "kotlin.collections.listOf(com.datadog.android.rum.internal.vitals.FPSVitalListener)"
       - "kotlin.collections.listOf(com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation)"
+      - "kotlin.collections.listOf(com.datadog.android.flags.openfeature.internal.exposure.ExposureAdmissionHook)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ActionEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ErrorEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.LongTaskEvent.Interface)"
@@ -891,6 +892,7 @@ datadog:
       - "kotlin.CharArray.constructor(kotlin.Int, kotlin.Function1)"
       - "kotlin.Double.coerceAtMost(kotlin.Double)"
       - "kotlin.Double.coerceIn(kotlin.Double, kotlin.Double)"
+      - "kotlin.Double.isFinite()"
       - "kotlin.Double.isNaN()"
       - "kotlin.Double.pow(kotlin.Int)"
       - "kotlin.Double.pow(kotlin.Double)"
@@ -1101,6 +1103,10 @@ datadog:
       - "com.lyft.kronos.KronosTime.constructor(kotlin.Long, kotlin.Long?)"
       - "com.lyft.kronos.KronosClock.shutdown()"
       # endregion
+      # region Material Components
+      - "com.google.android.material.floatingactionbutton.FloatingActionButton.getMeasuredContentRect(android.graphics.Rect)"
+      - "com.google.android.material.shape.CornerSize.getCornerSize(android.graphics.RectF)"
+      # endregion
       # region OkHttp
       - "okhttp3.Cache.constructor(java.io.File, kotlin.Long)"
       - "okhttp3.Call.Factory.newCall(okhttp3.Request)"
@@ -1204,10 +1210,13 @@ datadog:
       - "dev.openfeature.kotlin.sdk.Builder.putString(kotlin.String, kotlin.String)"
       - "dev.openfeature.kotlin.sdk.EvaluationContext.asMap()"
       - "dev.openfeature.kotlin.sdk.EvaluationContext.getTargetingKey()"
+      - "dev.openfeature.kotlin.sdk.EvaluationMetadata.getBoolean(kotlin.String)"
+      - "dev.openfeature.kotlin.sdk.EvaluationMetadata.getString(kotlin.String)"
       - "dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderError.constructor(dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError)"
       - "dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError.GeneralError.constructor(kotlin.String)"
       - "dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError.ProviderFatalError.constructor()"
       - "dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError.ProviderFatalError.constructor(kotlin.String)"
+      - "dev.openfeature.kotlin.sdk.ImmutableContext.constructor(kotlin.String, kotlin.collections.Map)"
       - "dev.openfeature.kotlin.sdk.ProviderEvaluation.constructor(kotlin.Any, kotlin.String?, kotlin.String?, dev.openfeature.kotlin.sdk.exceptions.ErrorCode?, kotlin.String?)"
       - "dev.openfeature.kotlin.sdk.ProviderEvaluation.constructor(kotlin.Any, kotlin.String?, kotlin.String?, dev.openfeature.kotlin.sdk.exceptions.ErrorCode?, kotlin.String?, dev.openfeature.kotlin.sdk.EvaluationMetadata)"
       - "dev.openfeature.kotlin.sdk.ProviderEvaluation.constructor(dev.openfeature.kotlin.sdk.Value, kotlin.String?, kotlin.String?, dev.openfeature.kotlin.sdk.exceptions.ErrorCode?, kotlin.String?, dev.openfeature.kotlin.sdk.EvaluationMetadata)"

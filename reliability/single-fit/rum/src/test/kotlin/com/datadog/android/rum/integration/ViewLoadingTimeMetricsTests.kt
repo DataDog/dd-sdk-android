@@ -235,7 +235,7 @@ class ViewLoadingTimeMetricsTests {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(8)
+            .hasSize(7)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -284,7 +284,7 @@ class ViewLoadingTimeMetricsTests {
                 hasNoOptionalFields()
             }
             .hasRumViewUpdateEvent(index = 3) {
-                // View updated with addTiming1 (diff part of DiffThenFullView at docVersion=4)
+                // View updated with addTiming1
                 application { hasId(fakeApplicationId) }
                 session {
                     hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
@@ -307,13 +307,7 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumEvent(index = 4) {
-                // Full view checkpoint at docVersion=4 (DiffThenFullView from addTiming1)
-                hasType("view")
-                hasViewUrl(viewKey)
-                hasViewIsActive(true)
-            }
-            .hasRumViewUpdateEvent(index = 5) {
+            .hasRumViewUpdateEvent(index = 4) {
                 // View updated with addTiming2
                 application { hasId(fakeApplicationId) }
                 session {
@@ -337,7 +331,7 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumViewUpdateEvent(index = 6) {
+            .hasRumViewUpdateEvent(index = 5) {
                 // View stopped (diff part of DiffThenFullView on close)
                 application { hasId(fakeApplicationId) }
                 session {
@@ -362,7 +356,7 @@ class ViewLoadingTimeMetricsTests {
                 }
                 hasNoOptionalFields()
             }
-            .hasRumEvent(index = 7) {
+            .hasRumEvent(index = 6) {
                 // Full view checkpoint (closing)
                 hasType("view")
                 hasViewUrl(viewKey)

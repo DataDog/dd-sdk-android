@@ -53,6 +53,8 @@ internal data class EvaluationAggregationStats(
             targetingRule = null, // Not applicable
             targetingKey = aggregationKey.targetingKey,
             context = eventContext,
+            features = aggregationKey.features.takeIf { it.isNotEmpty() }
+                ?.let { FlagEvaluation.Features(it.toMutableMap<String, Any?>()) },
             error = aggregationKey.errorCode?.let { FlagEvaluation.Error(message = it) },
             evaluationCount = count.toLong(),
             firstEvaluation = firstEvaluation,

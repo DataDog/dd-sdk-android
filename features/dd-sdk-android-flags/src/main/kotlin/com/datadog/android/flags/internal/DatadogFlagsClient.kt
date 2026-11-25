@@ -14,12 +14,16 @@ import com.datadog.android.flags.FlagsClientEventListener
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsSubscription
 import com.datadog.android.flags.StateObservable
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.internal.aggregation.EvaluationPrivacy
 import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
 import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKeyCache
+import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.SplitFeature
+import com.datadog.android.flags.internal.model.forDestination
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -37,9 +41,9 @@ import org.json.JSONObject
  * This implementation fetches precomputed flag values from the local repository and handles
  * type conversion with appropriate fallback to default values.
  *
- * Thread safety: Resolve methods capture assignments and the subject policy together.
- * When opt-out is disabled, reads do not acquire the policy lock. [setEvaluationContext] is thread-safe
- * but triggers asynchronous background operations for fetching updated flag evaluations.
+ * Thread safety: Resolve methods wait for persistence without the policy lock, then capture assignments and the
+ * subject policy together under that lock. [setEvaluationContext] is thread-safe but triggers asynchronous background
+ * operations for fetching updated flag evaluations.
  *
  * @param featureSdkCore the SDK core for logging and internal operations
  * @param evaluationsManager manages flag evaluations and network requests
@@ -51,10 +55,11 @@ import org.json.JSONObject
  * @param flagStateManager channel for managing state change listeners
  * @param evaluationTelemetryOptOutParameterEnabled whether this client accepts the local telemetry policy
  * @param experimentationOptOut validates the requested context before assignment resolution
+ * @param assignmentAuthorization prevents resolving retained assignments for another authorized subject
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
-    private val featureSdkCore: FeatureSdkCore,
+    internal val featureSdkCore: FeatureSdkCore,
     private val evaluationsManager: EvaluationsManager,
     private val flagsRepository: FlagsRepository,
     private val flagsConfiguration: FlagsConfiguration,
@@ -63,7 +68,9 @@ internal class DatadogFlagsClient(
     private val evaluationsFeature: EvaluationsFeature?,
     flagStateManager: FlagsStateManager,
     internal val evaluationTelemetryOptOutParameterEnabled: Boolean,
-    internal val experimentationOptOut: ExperimentationOptOut
+    internal val experimentationOptOut: ExperimentationOptOut,
+    private val assignmentAuthorization: AssignmentAuthorization =
+        AssignmentAuthorization(null, experimentationOptOut.stateLock)
 ) : FlagsClient {
 
     private val replayTargetingKeyCache = EvaluationTargetingKeyCache()
@@ -136,7 +143,8 @@ internal class DatadogFlagsClient(
             if (telemetryOptedOut != null) subjectOptOut[context.targetingKey] = telemetryOptedOut
             requestedSubject = context.targetingKey
             pendingSubjects[context.targetingKey] = (pendingSubjects[context.targetingKey] ?: 0) + 1
-            experimentationOptOut.prepare(context)
+            val authorization = assignmentAuthorization.prepare(snapshotContext)
+            experimentationOptOut.prepare(authorization.context, authorization)
         }
         evaluationsManager.updatePreparedEvaluations(request, callback) {
             synchronized(telemetryLock) {
@@ -255,20 +263,61 @@ internal class DatadogFlagsClient(
                 createSuccessResolution(resolution.flag, resolution.value, resolution.observeFullEvaluationData)
             }
 
-            is InternalResolution.Error -> {
-                trackErrorResolution(resolution)
-                createErrorResolution(
-                    flagKey = flagKey,
-                    defaultValue = resolution.defaultValue,
-                    errorCode = resolution.errorCode,
-                    errorMessage = resolution.errorMessage,
-                    observeFullEvaluationData = resolution.observeFullEvaluationData
-                )
-            }
+            is InternalResolution.Error -> errorResolution(resolution)
         }
     }
 
     // endregion
+
+    /**
+     * Resolves like [resolve], but leaves the exposure to the caller, which records it with
+     * [_FlagsInternalProxy.DeferredExposureResolution.recordExposure] once the evaluation has succeeded.
+     */
+    internal fun <T : Any> resolveDeferringExposure(
+        flagKey: String,
+        defaultValue: T
+    ): _FlagsInternalProxy.DeferredExposureResolution<T> {
+        val resolution = when (val result = readAndParseAssignment(flagKey, defaultValue)) {
+            is InternalResolution.Success -> result
+            is InternalResolution.Error -> return _FlagsInternalProxy.DeferredExposureResolution(
+                errorResolution(result),
+                null,
+                null
+            )
+        }
+        val flag = resolution.flag
+        val context = resolution.context
+        trackEvaluationTelemetry(
+            flagKey,
+            flag,
+            context,
+            resolution.telemetryOptedOut,
+            resolution.observeFullEvaluationData,
+            context.targetingKey,
+            resolution.telemetryTargetingKey
+        )
+        val details = createSuccessResolution(flag, resolution.value, resolution.observeFullEvaluationData)
+        val isExposure = flag.doLog && flag.variationKey.isNotBlank() && flag.allocationKey.isNotBlank()
+        return if (isExposure && isCurrentResolutionContext(context)) {
+            _FlagsInternalProxy.DeferredExposureResolution(details, context) {
+                val isCurrent = isCurrentResolutionContext(context)
+                if (isCurrent) exposureProcessor.processEvent(flagKey, context, flag) else null
+            }
+        } else {
+            _FlagsInternalProxy.DeferredExposureResolution(details, context, null)
+        }
+    }
+
+    private fun <T : Any> errorResolution(resolution: InternalResolution.Error<T>): ResolutionDetails<T> {
+        trackErrorResolution(resolution)
+        return createErrorResolution(
+            flagKey = resolution.flagKey,
+            defaultValue = resolution.defaultValue,
+            errorCode = resolution.errorCode,
+            errorMessage = resolution.errorMessage,
+            observeFullEvaluationData = resolution.observeFullEvaluationData
+        )
+    }
 
     // region Private Implementation
 
@@ -286,14 +335,6 @@ internal class DatadogFlagsClient(
     private fun <T : Any> resolveValue(flagKey: String, defaultValue: T): T =
         resolveTracked(readAndParseAssignment(flagKey, defaultValue))
 
-    private fun writeExposureEvent(name: String, data: UnparsedFlag, context: EvaluationContext) {
-        exposureProcessor.processEvent(
-            flagKey = name,
-            context = context,
-            data = data
-        )
-    }
-
     private fun writeEvaluationEvent(
         flagKey: String,
         context: EvaluationContext?,
@@ -303,7 +344,8 @@ internal class DatadogFlagsClient(
         errorMessage: String?,
         observeFullEvaluationData: Boolean,
         telemetryTargetingKey: String? = context?.targetingKey,
-        preparedTargetingKey: EvaluationTargetingKey? = null
+        preparedTargetingKey: EvaluationTargetingKey? = null,
+        flag: UnparsedFlag? = null
     ) {
         evaluationsFeature?.processEvaluation(
             flagKey = flagKey,
@@ -317,7 +359,9 @@ internal class DatadogFlagsClient(
             preparedTargetingKey = preparedTargetingKey ?: replayTargetingKeyCache.get(
                 telemetryTargetingKey,
                 observeFullEvaluationData
-            )
+            ),
+            features = (flag as? PrecomputedFlag)?.features?.forDestination(SplitFeature.DESTINATION_EVALUATION)
+                .orEmpty()
         )
     }
 
@@ -371,17 +415,17 @@ internal class DatadogFlagsClient(
         flagsRepository.waitForPersistenceLoad()
         // Keep the subject decision alive until it has been captured with the
         // assignments. Repository reads inside this lock must not wait for persistence.
-        return if (evaluationTelemetryOptOutParameterEnabled || experimentationOptOut.enabled) {
-            synchronized(telemetryLock) { readEvaluationSnapshot(flagKey) }
-        } else {
-            readEvaluationSnapshot(flagKey)
-        }
+        return synchronized(telemetryLock) { readEvaluationSnapshot(flagKey) }
     }
 
     private fun readEvaluationSnapshot(flagKey: String): EvaluationSnapshot {
         val snapshot = flagsRepository.getEvaluationSnapshot(flagKey)
-        val policy = experimentationOptOut.resolutionContext(snapshot?.context)
-        val context = if (experimentationOptOut.enabled) policy.context else snapshot?.context
+        val policy = resolutionContext(snapshot?.context)
+        val context = if (experimentationOptOut.enabled || policy.errorCode == ErrorCode.GENERAL) {
+            policy.context
+        } else {
+            snapshot?.context
+        }
         val observeFullEvaluationData = snapshot?.observeFullEvaluationData == true
         val telemetryTargetingKey = if (policy.errorCode != null) {
             requestedTargetingKeyCache.get(context?.targetingKey, observeFullEvaluationData)
@@ -406,6 +450,7 @@ internal class DatadogFlagsClient(
         val ready = snapshot.context != null
         val error = snapshot.errorCode ?: if (ready) ErrorCode.FLAG_NOT_FOUND else ErrorCode.PROVIDER_NOT_READY
         val message = when (error) {
+            ErrorCode.GENERAL -> AssignmentAuthorization.AUTHORIZATION_FAILED
             ErrorCode.INVALID_CONTEXT -> ExperimentationOptOut.INVALID_CONTEXT_MESSAGE
             ErrorCode.FLAG_NOT_FOUND -> "Flag not found"
             else -> if (experimentationOptOut.enabled) {
@@ -526,7 +571,7 @@ internal class DatadogFlagsClient(
      * Typed resolution layer that handles side effects for convenience methods.
      *
      * This helper method acts as a middle layer to the public API, handling:
-     * - Exposure event tracking on successful resolution (via [writeExposureEvent])
+     * - Exposure event tracking on successful resolution (via [trackFlagExposure])
      * - Type mismatch warning logs for developer feedback (via [InternalLogger])
      * - Returning the typed value on success or the default value on error
      *
@@ -582,13 +627,18 @@ internal class DatadogFlagsClient(
         precomputedFlag.extraLogging.keys().forEach { key ->
             val value = precomputedFlag.extraLogging.opt(key)
             when (value) {
-                is String, is Number, is Boolean -> metadata[key] = value
+                is String, is Number, is Boolean -> if (!key.startsWith(RESERVED_METADATA_PREFIX)) metadata[key] = value
             }
         }
         if (precomputedFlag.allocationKey.isNotBlank()) {
             metadata["allocationKey"] = precomputedFlag.allocationKey
         }
         metadata[OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY] = observeFullEvaluationData
+        precomputedFlag.features.forEach { feature ->
+            if (SplitFeature.DESTINATION_HOOK in feature.destinations) {
+                metadata[HOOK_FEATURE_METADATA_PREFIX + feature.key] = feature.value
+            }
+        }
         return metadata
     }
 
@@ -646,7 +696,26 @@ internal class DatadogFlagsClient(
         preparedTargetingKey: EvaluationTargetingKey? = null
     ) {
         trackFlagExposure(flagKey, flag, context)
+        trackEvaluationTelemetry(
+            flagKey,
+            flag,
+            context,
+            telemetryOptedOut,
+            observeFullEvaluationData,
+            telemetryTargetingKey,
+            preparedTargetingKey
+        )
+    }
 
+    private fun trackEvaluationTelemetry(
+        flagKey: String,
+        flag: UnparsedFlag,
+        context: EvaluationContext,
+        telemetryOptedOut: Boolean,
+        observeFullEvaluationData: Boolean,
+        telemetryTargetingKey: String?,
+        preparedTargetingKey: EvaluationTargetingKey?
+    ) {
         if (telemetryOptedOut) {
             return
         }
@@ -666,7 +735,8 @@ internal class DatadogFlagsClient(
                 errorMessage = null,
                 observeFullEvaluationData = observeFullEvaluationData,
                 telemetryTargetingKey = telemetryTargetingKey,
-                preparedTargetingKey = preparedTargetingKey
+                preparedTargetingKey = preparedTargetingKey,
+                flag = flag
             )
         }
     }
@@ -703,9 +773,10 @@ internal class DatadogFlagsClient(
      */
     internal fun getFlagAssignmentsSnapshot(context: EvaluationContext): Map<String, UnparsedFlag>? {
         flagsRepository.waitForPersistenceLoad()
+        val targetingContext = assignmentAuthorization.targetingContext(context)
         return synchronized(telemetryLock) {
             flagsRepository.getAssignmentsSnapshot()
-                ?.takeIf { it.context == context && experimentationOptOut.resolutionError(it.context) == null }
+                ?.takeIf { it.context == targetingContext && resolutionContext(it.context).errorCode == null }
                 ?.flags
         }
     }
@@ -721,7 +792,7 @@ internal class DatadogFlagsClient(
         flagsRepository.waitForPersistenceLoad()
         return synchronized(telemetryLock) {
             val snapshot = flagsRepository.getAssignmentsSnapshot()
-            if (snapshot != null && experimentationOptOut.resolutionError(snapshot.context) == null) {
+            if (snapshot != null && resolutionContext(snapshot.context).errorCode == null) {
                 snapshot.flags
             } else {
                 emptyMap()
@@ -740,24 +811,26 @@ internal class DatadogFlagsClient(
         context: EvaluationContext,
         telemetryTargetingKey: String? = context.targetingKey
     ) {
+        val targetingContext = assignmentAuthorization.targetingContext(context)
         val optedOut = synchronized(telemetryLock) {
-            if (experimentationOptOut.resolutionError(context) != null) return
-            isSubjectOptedOut(context.targetingKey)
+            if (resolutionContext(targetingContext).errorCode != null) return
+            isSubjectOptedOut(targetingContext.targetingKey)
         }
         trackResolution(
             flagKey,
             flag,
-            context,
+            targetingContext,
             optedOut,
             telemetryTargetingKey = telemetryTargetingKey
         )
     }
 
+    /** Records the exposure, and sends it unless exposure tracking is off. */
     internal fun trackFlagExposure(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
-        if (!isCurrentResolutionContext(context)) return
-        if (flagsConfiguration.trackExposures && flag.doLog) {
-            writeExposureEvent(flagKey, flag, context)
-        }
+        if (!flag.doLog) return
+        val targetingContext = assignmentAuthorization.targetingContext(context)
+        if (!isCurrentResolutionContext(targetingContext)) return
+        exposureProcessor.processEvent(flagKey, targetingContext, flag)
     }
 
     internal fun trackFlagEvaluationEvent(
@@ -768,10 +841,11 @@ internal class DatadogFlagsClient(
         observeFullEvaluationData: Boolean = (flag as? UnparsedFlagWithConsent)?.observeFullEvaluationData == true,
         telemetryTargetingKey: String? = context.targetingKey
     ) {
-        val policy = experimentationOptOut.resolutionContext(context)
-        val requestedError = flag == null && errorCode != null && policy.context == context
+        val targetingContext = assignmentAuthorization.targetingContext(context)
+        val policy = resolutionContext(targetingContext)
+        val requestedError = flag == null && errorCode != null && policy.context == targetingContext
         if (policy.errorCode != null && !requestedError) return
-        if (!flagsConfiguration.trackEvaluations || isEvaluationTelemetryOptedOut(context)) {
+        if (!flagsConfiguration.trackEvaluations || isEvaluationTelemetryOptedOut(targetingContext)) {
             return
         }
 
@@ -779,20 +853,22 @@ internal class DatadogFlagsClient(
         val sanitizedErrorCode = EvaluationPrivacy.errorCode(errorCode, null)
         writeEvaluationEvent(
             flagKey = flagKey,
-            context = context,
+            context = targetingContext,
             variantKey = flag?.variationKey.takeIf { sanitizedErrorCode == null },
             allocationKey = flag?.allocationKey.takeIf { sanitizedErrorCode == null },
             errorCode = sanitizedErrorCode,
             errorMessage = sanitizedErrorCode,
             observeFullEvaluationData = observeFullEvaluationData,
-            telemetryTargetingKey = telemetryTargetingKey
+            telemetryTargetingKey = telemetryTargetingKey,
+            flag = flag.takeIf { sanitizedErrorCode == null }
         )
     }
 
     internal fun trackFlagRumEvaluation(flagKey: String, variantKey: String, context: EvaluationContext) {
-        if (!isCurrentResolutionContext(context)) return
+        val targetingContext = assignmentAuthorization.targetingContext(context)
+        if (!isCurrentResolutionContext(targetingContext)) return
         if (flagsConfiguration.rumIntegrationEnabled && variantKey.isNotBlank() &&
-            !isEvaluationTelemetryOptedOut(context)
+            !isEvaluationTelemetryOptedOut(targetingContext)
         ) {
             logEvaluation(flagKey, variantKey)
         }
@@ -800,11 +876,26 @@ internal class DatadogFlagsClient(
 
     // endregion
 
-    private fun isCurrentResolutionContext(context: EvaluationContext): Boolean =
-        !experimentationOptOut.enabled ||
-            synchronized(telemetryLock) { experimentationOptOut.resolutionError(context) == null }
+    private fun isCurrentResolutionContext(targetingContext: EvaluationContext): Boolean =
+        synchronized(telemetryLock) { resolutionContext(targetingContext).errorCode == null }
+
+    private fun resolutionContext(installedContext: EvaluationContext?): ExperimentationOptOut.ResolutionContext {
+        val optOut = experimentationOptOut.resolutionContext(installedContext)
+        val authorization = assignmentAuthorization.resolutionContext(installedContext)
+        return when {
+            optOut.errorCode == ErrorCode.INVALID_CONTEXT -> optOut
+            authorization.errorCode != null -> ExperimentationOptOut.ResolutionContext(
+                authorization.context ?: EvaluationContext.EMPTY,
+                authorization.errorCode
+            )
+
+            else -> optOut
+        }
+    }
 
     private companion object {
         const val OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY = "__dd_observe_full_evaluation_data"
+        const val RESERVED_METADATA_PREFIX = "__dd_"
+        const val HOOK_FEATURE_METADATA_PREFIX = "__dd_feature."
     }
 }
