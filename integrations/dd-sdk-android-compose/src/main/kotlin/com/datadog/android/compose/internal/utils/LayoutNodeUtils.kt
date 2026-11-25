@@ -159,7 +159,7 @@ internal class LayoutNodeUtils {
 
     internal class MethodResolver {
         // RUM-15813: Kotlin internal accessors in androidx.compose.ui are JVM-mangled with
-        // a module suffix (plain / "$ui" / "$ui_release"). The mangling is stable per class,
+        // a module suffix (e.g. "$ui" or "$androidx_compose_ui_ui"). The mangling is stable per class,
         // but NOT necessarily the same across classes in the reflection chain: e.g. on Compose
         // UI 1.10 LayoutNode.getLayoutDelegate$ui is mangled while LayoutNodeLayoutDelegate
         // exposes getOuterCoordinator without a suffix. We therefore cache the resolved suffix
@@ -205,7 +205,8 @@ internal class LayoutNodeUtils {
         // Empty suffix covers public accessors; "$ui" and "$ui_release" cover Kotlin-internal
         // accessors in the androidx.compose.ui module (the exact suffix depends on build
         // configuration). Ordered by likelihood — public first, release build second.
-        private val SUPPORTED_MANGLING_SUFFIXES = listOf("", "\$ui_release", "\$ui")
+        // Compose 1.13 uses the full module suffix "$androidx_compose_ui_ui".
+        private val SUPPORTED_MANGLING_SUFFIXES = listOf("", "\$ui_release", "\$ui", "\$androidx_compose_ui_ui")
 
         private fun MutableMap<Class<*>, MutableMap<String, Method?>>.resolveMethod(
             klass: Class<*>,
