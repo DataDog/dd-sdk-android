@@ -134,14 +134,14 @@ internal open class SwitchCompatMapper(
         }
     }
 
-    // The copier runs later, on another thread, so it keeps the state, bounds and tint of the drawable as they are now
-    // instead of the view.
+    // The copier runs later, on another thread, so it keeps the bounds and tint of the drawable as they are now instead
+    // of the view. It takes the state from the drawable it is given when it runs, since the copy is cached under a key
+    // generated from that state.
     private fun createDrawableCopier(drawable: Drawable, tintList: ColorStateList?): DrawableCopier {
-        val drawableState = drawable.state.copyOf()
         val drawableBounds = Rect(drawable.bounds)
         return DrawableCopier { originalDrawable, resources ->
             originalDrawable.constantState?.newDrawable(resources)?.apply {
-                setState(drawableState)
+                setState(originalDrawable.state)
                 bounds = drawableBounds
                 tintList?.let { tint -> setTintList(tint) }
             }

@@ -134,9 +134,11 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
     }
 
     @Test
-    fun `M copy with the state, bounds and tint of mapping time W map() + copy() { drawable changes afterwards }`() {
+    fun `M copy with the given drawable's state and the mapped bounds and tint W map() + copy() { drawable changes }`(
+        forge: Forge
+    ) {
         // Given
-        val fakeMappedState = fakeTrackState.copyOf()
+        val fakeCopiedState = IntArray(forge.anInt(min = 1, max = 8)) { forge.anInt() }
         val fakeMappedBounds = Rect(fakeTrackBounds)
         whenever(mockSwitch.trackTintList).thenReturn(mockTintList)
         val copierCaptor = argumentCaptor<DrawableCopier>()
@@ -168,7 +170,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
             customResourceIdCacheKey = anyOrNull()
         )
         val trackCopier = copierCaptor.allValues[drawableCaptor.allValues.indexOf(mockTrackDrawable)]
-        fakeTrackState[0] = fakeTrackState[0] + 1
+        whenever(mockTrackDrawable.state).thenReturn(fakeCopiedState)
         fakeTrackBounds.offset(1, 1)
         whenever(mockSwitch.trackTintList).thenReturn(null)
 
@@ -177,7 +179,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
 
         // Then
         assertThat(copy).isSameAs(mockCloneDrawable)
-        verify(mockCloneDrawable).setState(fakeMappedState)
+        verify(mockCloneDrawable).setState(fakeCopiedState)
         verify(mockCloneDrawable).setBounds(fakeMappedBounds)
         verify(mockCloneDrawable).setTintList(mockTintList)
     }
