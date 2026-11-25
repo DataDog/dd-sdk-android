@@ -7,6 +7,7 @@
 package com.datadog.android.flags
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureScope
@@ -73,6 +74,9 @@ internal class FlagsClientTrackingTest {
     lateinit var mockRumScope: FeatureScope
 
     @Mock
+    lateinit var mockEvaluationsScope: FeatureScope
+
+    @Mock
     lateinit var mockExposureWriter: RecordWriter
 
     @Mock
@@ -98,6 +102,8 @@ internal class FlagsClientTrackingTest {
         whenever(mockFlagsScope.dataStore).thenReturn(mockDataStore)
         whenever(mockCore.getFeature(FLAGS_FEATURE_NAME)).thenReturn(mockFlagsScope)
         whenever(mockCore.getFeature(RUM_FEATURE_NAME)).thenReturn(mockRumScope)
+        whenever(mockCore.getFeature(FLAGS_EVALUATIONS_FEATURE_NAME)).thenReturn(mockEvaluationsScope)
+        whenever(mockEvaluationsScope.unwrap<EvaluationsFeature>()).thenReturn(mockEvaluationsFeature)
         doAnswer {
             readCallbacks.add(it.getArgument(2))
             null
@@ -242,6 +248,66 @@ internal class FlagsClientTrackingTest {
     }
 
     @Test
+    fun `M track evaluations only W Builder#build() + resolveBooleanValue() {trackExposures false}`() {
+        // Given
+        val testedClient = buildClient(FlagsClient.Builder("peek", mockCore).trackExposures(false))
+
+        // When
+        val result = testedClient.resolveBooleanValue(fakeFlagKey, false)
+
+        // Then
+        assertThat(result).isTrue()
+        verifyExposuresWritten(0)
+        verifyEvaluationsTracked(1)
+        verifyRumEvaluationsLogged(1)
+    }
+
+    @Test
+    fun `M track exposures only W Builder#build() + resolveBooleanValue() {trackEvaluations false}`() {
+        // Given
+        val testedClient = buildClient(FlagsClient.Builder("peek", mockCore).trackEvaluations(false))
+
+        // When
+        val result = testedClient.resolveBooleanValue(fakeFlagKey, false)
+
+        // Then
+        assertThat(result).isTrue()
+        verifyExposuresWritten(1)
+        verifyEvaluationsTracked(0)
+        verifyRumEvaluationsLogged(0)
+    }
+
+    @Test
+    fun `M track the failed evaluation W resolveBooleanValue() {default client options, missing flag}`(
+        @StringForgery fakeMissingFlagKey: String
+    ) {
+        // Given
+        val testedClient = newClient("default")
+
+        // When
+        val result = testedClient.resolveBooleanValue(MISSING_FLAG_PREFIX + fakeMissingFlagKey, false)
+
+        // Then
+        assertThat(result).isFalse()
+        verifyEvaluationsTracked(1, MISSING_FLAG_PREFIX + fakeMissingFlagKey)
+    }
+
+    @Test
+    fun `M not track the failed evaluation W resolveBooleanValue() {trackEvaluations false, missing flag}`(
+        @StringForgery fakeMissingFlagKey: String
+    ) {
+        // Given
+        val testedClient = newClient("peek", trackEvaluations = false)
+
+        // When
+        val result = testedClient.resolveBooleanValue(MISSING_FLAG_PREFIX + fakeMissingFlagKey, false)
+
+        // Then
+        assertThat(result).isFalse()
+        verifyEvaluationsTracked(0, MISSING_FLAG_PREFIX + fakeMissingFlagKey)
+    }
+
+    @Test
     fun `M not enable tracking W resolveBooleanValue() {client options on, feature configuration off}`() {
         // Given
         val configuration = FlagsConfiguration.Builder()
@@ -265,6 +331,51 @@ internal class FlagsClientTrackingTest {
         verifyRumEvaluationsLogged(0)
     }
 
+    @Test
+    fun `M not track exposures W resolveBooleanValue() {feature trackExposures off}`() {
+        // Given
+        val configuration = FlagsConfiguration.Builder().trackExposures(false).build()
+        val testedClient = newClient("default", featureConfiguration = configuration)
+
+        // When
+        testedClient.resolveBooleanValue(fakeFlagKey, false)
+
+        // Then
+        verifyExposuresWritten(0)
+        verifyEvaluationsTracked(1)
+        verifyRumEvaluationsLogged(1)
+    }
+
+    @Test
+    fun `M not track evaluation telemetry W resolveBooleanValue() {feature trackEvaluations off}`() {
+        // Given
+        val configuration = FlagsConfiguration.Builder().trackEvaluations(false).build()
+        val testedClient = newClient("default", featureConfiguration = configuration)
+
+        // When
+        testedClient.resolveBooleanValue(fakeFlagKey, false)
+
+        // Then
+        verifyExposuresWritten(1)
+        verifyEvaluationsTracked(0)
+        verifyRumEvaluationsLogged(1)
+    }
+
+    @Test
+    fun `M not log RUM evaluations W resolveBooleanValue() {feature rumIntegrationEnabled off}`() {
+        // Given
+        val configuration = FlagsConfiguration.Builder().rumIntegrationEnabled(false).build()
+        val testedClient = newClient("default", featureConfiguration = configuration)
+
+        // When
+        testedClient.resolveBooleanValue(fakeFlagKey, false)
+
+        // Then
+        verifyExposuresWritten(1)
+        verifyEvaluationsTracked(1)
+        verifyRumEvaluationsLogged(0)
+    }
+
     // region Helpers
 
     private val fakeFlag: PrecomputedFlag
@@ -278,8 +389,31 @@ internal class FlagsClientTrackingTest {
         trackExposures: Boolean = true,
         trackEvaluations: Boolean = true
     ): DatadogFlagsClient {
+        val client = FlagsClient.createInternal(
+            configuration = featureConfiguration,
+            featureSdkCore = mockCore,
+            flagsFeature = sharedFlagsFeature(featureConfiguration),
+            evaluationsFeature = mockEvaluationsFeature,
+            name = name,
+            evaluationTelemetryOptOutParameterEnabled = false,
+            trackExposures = trackExposures,
+            trackEvaluations = trackEvaluations
+        ) as DatadogFlagsClient
+        deliverFlagsState()
+        return client
+    }
+
+    private fun buildClient(builder: FlagsClient.Builder): DatadogFlagsClient {
+        val flagsFeature = sharedFlagsFeature(DEFAULT_CONFIGURATION)
+        whenever(mockFlagsScope.unwrap<FlagsFeature>()).thenReturn(flagsFeature)
+        val client = builder.build() as DatadogFlagsClient
+        deliverFlagsState()
+        return client
+    }
+
+    private fun sharedFlagsFeature(featureConfiguration: FlagsConfiguration): FlagsFeature {
         // Clients of one SDK instance share the feature, so they share its exposure processor.
-        val flagsFeature = sharedProcessors.getOrPut(featureConfiguration) {
+        return sharedProcessors.getOrPut(featureConfiguration) {
             FlagsFeature(mockCore, featureConfiguration).apply {
                 processor = ExposureEventsProcessor(
                     writer = mockExposureWriter,
@@ -288,16 +422,9 @@ internal class FlagsClientTrackingTest {
                 )
             }
         }
-        val client = FlagsClient.createInternal(
-            configuration = featureConfiguration,
-            featureSdkCore = mockCore,
-            flagsFeature = flagsFeature,
-            evaluationsFeature = mockEvaluationsFeature,
-            name = name,
-            evaluationTelemetryOptOutParameterEnabled = false,
-            trackExposures = trackExposures,
-            trackEvaluations = trackEvaluations
-        ) as DatadogFlagsClient
+    }
+
+    private fun deliverFlagsState() {
         readCallbacks.last().onSuccess(
             DataStoreContent(
                 1,
@@ -308,16 +435,15 @@ internal class FlagsClientTrackingTest {
                 )
             )
         )
-        return client
     }
 
     private fun verifyExposuresWritten(count: Int) {
         verify(mockExposureWriter, times(count)).write(any())
     }
 
-    private fun verifyEvaluationsTracked(count: Int) {
+    private fun verifyEvaluationsTracked(count: Int, flagKey: String = fakeFlagKey) {
         verify(mockEvaluationsFeature, times(count)).processEvaluation(
-            eq(fakeFlagKey),
+            eq(flagKey),
             any(),
             anyOrNull(),
             anyOrNull(),
@@ -347,5 +473,6 @@ internal class FlagsClientTrackingTest {
 
     private companion object {
         val DEFAULT_CONFIGURATION = FlagsConfiguration.Builder().build()
+        const val MISSING_FLAG_PREFIX = "missing-"
     }
 }
