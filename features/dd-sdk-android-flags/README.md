@@ -194,9 +194,30 @@ When the proof of the last verified response expires in `REQUIRED` mode:
   for `issued-at`). A larger step is handled as at expiry: `Stale` with the verified flags, or `Error`
   with `expired-proof` when `expireVerifiedFlags(true)`. When the clock returns into the proof window,
   the state returns to what it was before the step.
+- A wall-clock step during the process does not extend a proof. The expiry clock is the later of the
+  verifier clock (below) and the signed `issued-at` plus the elapsed time since verification
+  (`SystemClock.elapsedRealtime`).
 - A new verified response returns the client to `FlagsClientState.Ready` in both settings.
   The customer decides when to refetch.
 - `expireVerifiedFlags` has no effect in `OBSERVE` or `OFF` mode.
+
+Clock floor (the device owner can set the clock back):
+
+- Every time check of the proof and the chain uses `effectiveNow`, the highest of the device clock,
+  the release build floor, and the issued-at high-water mark of the trust anchor. The checks are
+  `issued-at <= effectiveNow + 30`, `expires-at > effectiveNow`, and each certificate is valid at
+  `effectiveNow`. The reason codes do not change: an expiry gives `expired-proof`.
+- The build floor is a unix time compiled into each release (`ResponseSigningVerifier.BUILD_FLOOR`).
+  Each release sets it to the release date or shortly before it. A device clock set before the floor
+  cannot make valid a leaf that expired before the release.
+- The high-water mark is the highest `issued-at` of a fully verified response, per trust anchor, and it
+  never goes down. One response raises it to at most the device clock plus 30 s, so a leaked key cannot
+  move it far into the future. A device clock set back below the mark cannot make an older proof or
+  leaf valid again. A device clock that is behind real time, but above the mark, behaves as before.
+- The SDK stores the mark next to the minimum leaf not-before, in the same SharedPreferences. When a
+  write is lost, the SDK keeps the value in memory for the process and accepts the response. A value
+  that a backup restore brings back is lower, so it is safe.
+- The 30 s backward-step allowance (above) applies to the device clock. It never lowers `effectiveNow`.
 
 Minimum leaf not-before revocation (draft wire, pending the edge and the shared fixtures):
 
@@ -208,7 +229,8 @@ Minimum leaf not-before revocation (draft wire, pending the edge and the shared 
   leaf in the same response, with the reason `minimum-not-before-ignored`, because a response
   must never revoke its own leaf.
 - The SDK stores the highest value per trust anchor (the key is SHA-256 of the root DER) in
-  SharedPreferences. This is the only data that `REQUIRED` mode persists. It holds no flag data.
+  SharedPreferences, next to the issued-at high-water mark. These are the only data that `REQUIRED`
+  mode persists. They hold no flag data.
 - On each verification, the SDK rejects a leaf whose `notBefore` is lower than the stored value,
   with the reason `revoked-certificate`. `REQUIRED` fails closed, and `OBSERVE` accepts the
   response as unverified. Both modes store new values.

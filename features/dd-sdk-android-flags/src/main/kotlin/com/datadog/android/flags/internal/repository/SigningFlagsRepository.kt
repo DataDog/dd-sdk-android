@@ -61,7 +61,7 @@ internal class SigningFlagsRepository(
 
     // By default, required mode keeps serving the last verified flags after proof expiry; the client reports Stale.
     private fun current(): VerifiedFlags? {
-        retireVerifiedFlags(signing.now())
+        verified.get()?.let { retireVerifiedFlags(signing.expiryNow(it.proof)) }
         return verified.get()?.takeIf { signing.permits(it.context, it.proof, allowStale = keepExpired) }
     }
 

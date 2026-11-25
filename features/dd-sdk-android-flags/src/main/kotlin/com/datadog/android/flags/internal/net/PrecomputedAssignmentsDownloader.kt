@@ -124,7 +124,7 @@ internal class PrecomputedAssignmentsDownloader(
                     // A transport that rewrote the request cannot match the signed request.
                     !ResponseSigningVerifier.matchesRequest(prepared, response.request) ->
                         ResponseSigningVerifier.Verification(null, ResponseSigningFailureReason.UNSUPPORTED_REQUEST)
-                    else -> state.verifier.verification(prepared, response.code, response.headers, bytes, state.now())
+                    else -> state.verification(prepared, response.code, response.headers, bytes)
                 }
                 val proof = verification.proof
                 if (prepared != null) state.report(verification.failure)

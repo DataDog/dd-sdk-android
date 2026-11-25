@@ -241,6 +241,7 @@ To inspect the events the SDK emits from the sample app, use the `android-sdk-ev
 - Don't edit `CHANGELOG.md` in feature PRs. It is updated only in release preparation PRs.
 - When preparing a release changelog: tags reflect customer impact, not change size. Internal-only changes are `[MAINTENANCE]`, not `[IMPROVEMENT]`. Follow the existing entry format: `* [TAG] Description. See [#N](link)`.
 - When reviewing a release preparation PR (version bump and `CHANGELOG.md` update for a new release), review only the changes the PR itself makes. The release includes changes from PRs that were already reviewed and merged, so don't flag breaking changes or binary incompatibilities that come from them (e.g. a public API diff against the previous release): those were approved in their own PRs.
+- In each release preparation PR, update the response-signing build floor: set `ResponseSigningVerifier.BUILD_FLOOR` (`features/dd-sdk-android-flags`) to the release date or shortly before it, never later than the release build time.
 
 ## Handoff to human review
 

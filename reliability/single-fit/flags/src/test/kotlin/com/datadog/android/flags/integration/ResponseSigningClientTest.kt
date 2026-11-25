@@ -87,7 +87,7 @@ internal class ResponseSigningClientTest {
     private val queue = ArrayDeque<Runnable>()
     private var now = CanonicalResponseSigner.now
 
-    // Scheduled timers run on elapsed time; a wall-clock step changes only now.
+    // Scheduled timers and the elapsed realtime clock run on elapsed time; a wall-clock step changes only now.
     private var elapsedShift = 0L
     private var coreContextReads = 0
     private var buildContextReads = 0
@@ -1266,21 +1266,69 @@ internal class ResponseSigningClientTest {
     }
 
     @Test
-    fun `M wait for the proof deadline W expiry timer fires early {required, clock stepped back}`() {
+    fun `M go Stale at the elapsed deadline W wall clock stepped back {required}`() {
         // Given
         create(ResponseSigningMode.REQUIRED)
         testedClient.setEvaluationContext(EvaluationContext("subject"), null)
         queue.removeFirst().run()
-        // When the wall clock steps back 20 s, and the timer's elapsed delay passes
+        // When the wall clock steps back 20 s, inside the step allowance
         now -= 20
         elapsedShift += 20
-        advanceClock(PROOF_WINDOW_SECONDS)
+        advanceClock(PROOF_WINDOW_SECONDS - 1)
         // Then
         assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
-        // When the wall clock reaches expires-at
-        advanceClock(20)
-        // Then
+        // When the elapsed time reaches the proof window, before the wall clock reaches expires-at
+        advanceClock(1)
+        // Then the step back does not extend the proof
         assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+    }
+
+    @Test
+    fun `M keep defaults at the elapsed deadline W wall clock stepped back {required, expireVerifiedFlags, read}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = true)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // When the wall clock steps back 20 s and the elapsed time reaches the window, before any timer runs
+        now -= 20
+        elapsedShift += 20 + PROOF_WINDOW_SECONDS
+        // Then a read does not serve the verified flags
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+        assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+    }
+
+    @Test
+    fun `M fail with expired-proof W leaf expired before the build floor {required, device clock in leaf validity}`() {
+        // Given the device clock is inside the leaf validity, but the leaf expired before the release build floor
+        create(ResponseSigningMode.REQUIRED, buildFloor = RELEASE_BUILD_FLOOR)
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        val state = testedClient.state.getCurrentState()
+        assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(((state as FlagsClientState.Error).error as FlagsResponseSigningException).reason)
+            .isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+    }
+
+    @Test
+    fun `M reject an older proof W clock set back below the last issued-at {required}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        // When the clock moves back 1 h and a refresh returns a proof that is valid at that clock
+        now -= HOUR_SECONDS
+        signedAt = now
+        testedClient.setEvaluationContext(EvaluationContext("other"), null)
+        queue.removeFirst().run()
+        // Then
+        val state = testedClient.state.getCurrentState()
+        assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(((state as FlagsClientState.Error).error as FlagsResponseSigningException).reason)
+            .isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
     }
 
     @Test
@@ -1465,7 +1513,8 @@ internal class ResponseSigningClientTest {
         mode: ResponseSigningMode?,
         roots: List<String>? = listOf(CanonicalResponseSigner.root),
         expireVerifiedFlags: Boolean = false,
-        name: String? = null
+        name: String? = null,
+        buildFloor: Long = 0L
     ) {
         val core = object : InternalSdkCore by stubCore {
             override val internalLogger: InternalLogger = object : InternalLogger by stubCore.internalLogger {
@@ -1506,6 +1555,7 @@ internal class ResponseSigningClientTest {
             }
             override val timeProvider = object : TimeProvider by stubCore.timeProvider {
                 override fun getDeviceTimestampMillis() = now * 1000
+                override fun getDeviceElapsedRealtimeMillis() = (now + elapsedShift) * 1000
             }
             override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
                 val executor = StubExecutorService(executorContext)
@@ -1533,7 +1583,7 @@ internal class ResponseSigningClientTest {
         when {
             mode == null -> Unit
             roots == null -> builder.experimentalResponseSigning(mode).expireVerifiedFlags(expireVerifiedFlags)
-            else -> builder.responseSigningWithTestRoots(mode, roots, expireVerifiedFlags)
+            else -> builder.responseSigningWithTestRoots(mode, roots, expireVerifiedFlags, buildFloor)
         }
         Flags.enable(builder.build(), core)
         val readsBeforeBuild = coreContextReads
@@ -1624,6 +1674,10 @@ internal class ResponseSigningClientTest {
     companion object {
         const val PREFIX = "x-datadog-feature-flags-"
         const val PROOF_WINDOW_SECONDS = 300L
+        const val HOUR_SECONDS = 3600L
+
+        // The SDK release floor (ResponseSigningVerifier.BUILD_FLOOR, internal); the shared fixture leaves expire before it.
+        const val RELEASE_BUILD_FLOOR = 1795564800L
         const val INITIALIZATION_TIMEOUT_SECONDS = 5L
         const val CLOCK_STEP_ALLOWANCE_SECONDS = 30L
 

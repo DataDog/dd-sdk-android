@@ -206,6 +206,9 @@ internal class EvaluationsManager(
     private var proofExpiresAt: Long = Long.MAX_VALUE
     private var proofVerifiedAt: Long = Long.MIN_VALUE
 
+    // The installed proof; its expiry uses ResponseSigningState.expiryNow, which a wall-clock step back cannot lower.
+    private var expiringProof: VerifiedResponse? = null
+
     // The state before a backward clock step changed it; null without a step.
     private var clockStep: ClockStep? = null
     private var cancelProofExpiry: (() -> Unit)? = null
@@ -546,6 +549,7 @@ internal class EvaluationsManager(
         proofExpiryToken = token
         proofExpiresAt = proof.expiresAt
         proofVerifiedAt = proof.verifiedAt
+        expiringProof = proof
         clockStep = null
         val previous = cancelProofExpiry
         cancelProofExpiry = null
@@ -560,7 +564,7 @@ internal class EvaluationsManager(
     private fun scheduleProofTimer(signing: ResponseSigningState, token: Any) {
         val delayMs = synchronized(initializationTerminalLock) {
             if (proofExpiryToken !== token) return
-            (proofExpiresAt - signing.now()).coerceAtLeast(0) * MILLIS_PER_SECOND
+            (proofExpiresAt - expiryNowLocked(signing)).coerceAtLeast(0) * MILLIS_PER_SECOND
         }
         val cancel = initializationTimeoutScheduler.schedule(delayMs) { onProofTimer(signing, token) }
         val superseded = synchronized(initializationTerminalLock) {
@@ -570,10 +574,11 @@ internal class EvaluationsManager(
         if (superseded) cancel()
     }
 
-    // The timer runs on elapsed time. After a backward wall-clock step it fires before expires-at, so it waits again.
+    // The timer runs on elapsed time, and expiryNow also counts elapsed time, so a backward wall-clock step does not
+    // delay expiry. A forward step can make expiry earlier than the timer; the read-time check then applies it.
     private fun onProofTimer(signing: ResponseSigningState, token: Any) {
         val early = synchronized(initializationTerminalLock) {
-            proofExpiryToken === token && signing.now() < proofExpiresAt
+            proofExpiryToken === token && expiryNowLocked(signing) < proofExpiresAt
         }
         if (early) scheduleProofTimer(signing, token) else onProofExpired(signing, token)
     }
@@ -589,7 +594,7 @@ internal class EvaluationsManager(
         val check = synchronized(initializationTerminalLock) {
             proofExpiryToken?.let { token ->
                 when {
-                    now >= proofExpiresAt -> ProofCheck(token, ProofTime.EXPIRED)
+                    expiryNowLocked(signing) >= proofExpiresAt -> ProofCheck(token, ProofTime.EXPIRED)
                     now + ResponseSigningState.CLOCK_STEP_ALLOWANCE_SECONDS < proofVerifiedAt ->
                         ProofCheck(token, ProofTime.CLOCK_BEHIND)
                     clockStep != null -> ProofCheck(token, ProofTime.VALID)
@@ -603,6 +608,9 @@ internal class EvaluationsManager(
             ProofTime.VALID -> onClockRestored(check.token)
         }
     }
+
+    private fun expiryNowLocked(signing: ResponseSigningState): Long =
+        expiringProof?.let { signing.expiryNow(it) } ?: signing.now()
 
     private enum class ProofTime { EXPIRED, CLOCK_BEHIND, VALID }
 
@@ -676,6 +684,7 @@ internal class EvaluationsManager(
             if (!expiryAppliesLocked(expireFlags) && !stepCurrent) return
             proofExpiryToken = null
             proofExpiresAt = Long.MAX_VALUE
+            expiringProof = null
             clockStep = null
             val cancel = cancelProofExpiry
             cancelProofExpiry = null

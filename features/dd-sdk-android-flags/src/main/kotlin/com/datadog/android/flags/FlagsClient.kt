@@ -531,7 +531,8 @@ interface FlagsClient {
                             ResponseSigningTelemetry.siteName(site.intakeEndpoint)
                         }.orEmpty(),
                         signingDatadogContext?.sdkVersion.orEmpty()
-                    )
+                    ),
+                    elapsedRealtimeMillis = { featureSdkCore.timeProvider.getDeviceElapsedRealtimeMillis() }
                 ) {
                     featureSdkCore.timeProvider.getDeviceTimestampMillis() / SIGNING_MILLIS_PER_SECOND
                 }

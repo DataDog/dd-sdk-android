@@ -24,12 +24,19 @@ import java.security.ProviderException
 import java.security.PublicKey
 import java.util.Locale
 
-/** [responseHeaders] holds each name of the signed response list, in list order, with its value or null when absent. */
+/**
+ * [responseHeaders] holds each name of the signed response list, in list order, with its value or null when absent.
+ * [verifiedAt] is the device wall clock at verification, [issuedAt] and [expiresAt] the signed proof window, all in
+ * unix seconds. [verifiedElapsedMs] is the boot-based elapsed time at verification, in milliseconds.
+ */
 internal data class VerifiedResponse(
     val scope: String,
     val verifiedAt: Long,
+    val issuedAt: Long,
     val expiresAt: Long,
-    val responseHeaders: Map<String, String?>
+    val responseHeaders: Map<String, String?>,
+    val anchorId: String,
+    val verifiedElapsedMs: Long
 )
 
 /**
@@ -37,16 +44,29 @@ internal data class VerifiedResponse(
  * The verifier keeps no leaf or intermediate identity between responses, so every valid chain under an anchor passes.
  *
  * @param anchors pinned roots as padded base64 DER; production uses only [ResponseSigningTrustRoots.STAGING_ROOT]
- * @param minimumNotBefore draft revocation floor per anchor, raised only by fully verified responses
+ * @param minimumNotBefore draft revocation floor and issued-at high-water mark per anchor, raised only by fully
+ * verified responses
+ * @param buildFloor unix seconds below which the verifier never moves its clock; production passes [BUILD_FLOOR], and
+ * 0 turns it off for fixtures that run at older times
  * @param report receives [REVOKED_CERTIFICATE] and [MINIMUM_NOT_BEFORE_IGNORED]
  */
 @Suppress("MagicNumber") // Time windows, DER OIDs and integer widths are frozen protocol constants.
 internal class ResponseSigningVerifier(
     anchors: List<String>,
     private val minimumNotBefore: MinimumNotBeforeStore = InMemoryMinimumNotBeforeStore(),
+    private val buildFloor: Long = 0L,
     private val report: (String) -> Unit = {}
 ) {
     private val anchors = anchors.toList()
+
+    // An anchor that is not valid base64 never verifies a chain, so it has no clock.
+    private val anchorIds = this.anchors.mapNotNull { root ->
+        try {
+            base64(root, 4096).signingBytes().sha256().hex()
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+    }
 
     /** The proof, or the reason that verification failed; exactly one is set. */
     class Verification(val proof: VerifiedResponse?, val failure: ResponseSigningFailureReason?)
@@ -54,9 +74,17 @@ internal class ResponseSigningVerifier(
     fun verify(request: Request, status: Int, headers: Headers, body: ByteArray, now: Long): VerifiedResponse? =
         verification(request, status, headers, body, now).proof
 
-    fun verification(request: Request, status: Int, headers: Headers, body: ByteArray, now: Long): Verification =
+    /** [elapsedMs] is the boot-based elapsed time that the proof records for its expiry; see [VerifiedResponse]. */
+    fun verification(
+        request: Request,
+        status: Int,
+        headers: Headers,
+        body: ByteArray,
+        now: Long,
+        elapsedMs: Long = 0L
+    ): Verification =
         try {
-            Verification(verifyProof(request, status, headers, body, now), null)
+            Verification(verifyProof(request, status, headers, body, now, elapsedMs), null)
         } catch (exception: SigningCheckException) {
             Verification(null, exception.reason)
         } catch (_: NoSuchAlgorithmException) {
@@ -76,7 +104,8 @@ internal class ResponseSigningVerifier(
         status: Int,
         headers: Headers,
         body: ByteArray,
-        now: Long
+        now: Long,
+        elapsedMs: Long
     ): VerifiedResponse {
         signingCheck(anchors.isNotEmpty(), ResponseSigningFailureReason.MISSING_ANCHOR)
         // Any absent proof header, including the chain header, is a missing proof.
@@ -92,8 +121,13 @@ internal class ResponseSigningVerifier(
         val expires = seconds(single(headers, EXPIRES_AT_HEADER))
         val announcedMinimum = minimumNotBefore(headers)
         val responseHeaders = signedResponseHeaders(request, headers)
+        // The anchor is known only after the chain, which checks the window again at that anchor's clock. Here the
+        // clock is only bounded: at least the build floor, at most the highest high-water mark of any anchor.
+        val lowestNow = maxOf(now, buildFloor)
+        val highestNow = anchorIds.map { effectiveNow(it, now) }.maxOrNull() ?: lowestNow
         signingCheck(
-            now >= 0 && expires > issued && expires - issued <= 300 && issued <= now + 30 && expires > now,
+            now >= 0 && expires > issued && expires - issued <= 300 && issued <= highestNow + 30 &&
+                expires > lowestNow,
             ResponseSigningFailureReason.EXPIRED_PROOF
         )
         val chain = chainCheck { verifiedChain(leafBytes, chainBytes, now, issued, expires) }
@@ -105,8 +139,27 @@ internal class ResponseSigningVerifier(
             ResponseSigningFailureReason.INVALID_SIGNATURE
         )
         applyMinimumLeafNotBefore(chain.anchorId, chain.leaf.notBefore, announcedMinimum)
-        return VerifiedResponse(scope(request), now, expires, responseHeaders)
+        // The raw device clock caps the mark, so one response moves it at most 30 s past the device clock.
+        minimumNotBefore.raiseHighWaterMark(chain.anchorId, minOf(issued, now + 30))
+        return VerifiedResponse(
+            scope = scope(request),
+            verifiedAt = now,
+            issuedAt = issued,
+            expiresAt = expires,
+            responseHeaders = responseHeaders,
+            anchorId = chain.anchorId,
+            verifiedElapsedMs = elapsedMs
+        )
     }
+
+    /**
+     * The clock that every time check uses: the device clock, raised to [buildFloor] and to the highest issued-at of a
+     * verified response under [anchorId]. A device clock set back cannot make an expired leaf or an old proof valid.
+     */
+    fun effectiveNow(anchorId: String, now: Long): Long =
+        maxOf(maxOf(now, buildFloor), minimumNotBefore.highWaterMark(anchorId) ?: 0L)
+
+    private fun inWindow(at: Long, issued: Long, expires: Long): Boolean = issued <= at + 30 && expires > at
 
     // The response headers are already valid here, so a transcript failure comes from the request shape.
     private fun requestCheck(block: () -> ByteArray): ByteArray = try {
@@ -147,10 +200,11 @@ internal class ResponseSigningVerifier(
         val anchor = anchors.asSequence().mapNotNull { root ->
             try {
                 val rootBytes = base64(root, 4096)
+                val rootId = rootBytes.signingBytes().sha256().hex()
                 certificate(rootBytes).takeIf { parent ->
-                    parent.covers(now, issued, expires) && parent.admitsChain(intermediates.size) &&
-                        last.issuedBy(parent)
-                }?.let { rootBytes.signingBytes().sha256().hex() }
+                    parent.covers(effectiveNow(rootId, now), issued, expires) &&
+                        parent.admitsChain(intermediates.size) && last.issuedBy(parent)
+                }?.let { rootId }
             } catch (_: GeneralSecurityException) {
                 null
             } catch (_: IllegalArgumentException) {
@@ -159,11 +213,14 @@ internal class ResponseSigningVerifier(
         }.firstOrNull()
         signingCheck(anchor != null && leaf.issuedBy(intermediates[0]))
         signingCheck(intermediates.zipWithNext().all { (child, parent) -> child.issuedBy(parent) })
+        val anchorId = anchor ?: signingFailure()
+        val at = effectiveNow(anchorId, now)
         signingCheck(
-            leaf.covers(now, issued, expires) && intermediates.all { it.covers(now, issued, expires) },
+            inWindow(at, issued, expires) && leaf.covers(at, issued, expires) &&
+                intermediates.all { it.covers(at, issued, expires) },
             ResponseSigningFailureReason.EXPIRED_PROOF
         )
-        return VerifiedChain(leaf, intermediates, anchor ?: signingFailure())
+        return VerifiedChain(leaf, intermediates, anchorId)
     }
 
     // Draft leaf-only revocation: runs only after the signature, so only an authentic chain can raise or meet the
@@ -309,6 +366,12 @@ internal class ResponseSigningVerifier(
     @Suppress("TooManyFunctions") // Protocol encoding and cache identity helpers stay together.
     companion object {
         const val PREFIX = "x-datadog-feature-flags-"
+
+        /**
+         * Release build floor (unix seconds, 2026-11-25T00:00:00Z). Each release sets it to its date or shortly before,
+         * never later than the release build. A leaf that expired before the release never verifies again.
+         */
+        const val BUILD_FLOOR = 1795564800L
         private const val NONCE_HEADER = PREFIX + "request-nonce"
         private const val SIGNATURE_VERSION_HEADER = PREFIX + "signature-version"
         private const val SIGNING_CERTIFICATE_HEADER = PREFIX + "signing-certificate"

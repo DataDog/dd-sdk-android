@@ -619,6 +619,146 @@ internal class ResponseSigningChainTest {
 
     // endregion
 
+    // region Clock floor
+
+    @Test
+    fun `M reject a leaf that expired before the floor W verification() {device clock before build floor}`() {
+        // Given
+        val generations = Generations.mint()
+        val request = request()
+        val headers = generations.newLeaf.sign(request, BODY, NOV_21_0200)
+        // When
+        val result = ResponseSigningVerifier(listOf(generations.root), buildFloor = MINTED_NOT_AFTER + DAY)
+            .verification(request, 200, headers, BODY, NOV_21_0200)
+        // Then
+        assertThat(result.failure).isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
+        assertThat(ResponseSigningVerifier(listOf(generations.root)).verify(request, 200, headers, BODY, NOV_21_0200))
+            .isNotNull()
+    }
+
+    @Test
+    fun `M keep the build floor at or before the release W BUILD_FLOOR`() {
+        assertThat(ResponseSigningVerifier.BUILD_FLOOR).isLessThanOrEqualTo(System.currentTimeMillis() / 1000)
+        assertThat(ResponseSigningConfiguration().buildFloor).isEqualTo(ResponseSigningVerifier.BUILD_FLOOR)
+    }
+
+    @Test
+    fun `M reject an older proof W verification() {clock set back below the high-water mark}`() {
+        // Given
+        val generations = Generations.mint()
+        val store = InMemoryMinimumNotBeforeStore()
+        val verifier = ResponseSigningVerifier(listOf(generations.root), store)
+        val request = request()
+        val older = generations.newLeaf.sign(request, BODY, NOV_21_0200 - HOUR)
+        assertThat(
+            ResponseSigningVerifier(listOf(generations.root)).verify(
+                request,
+                200,
+                older,
+                BODY,
+                NOV_21_0200 - HOUR
+            )
+        )
+            .isNotNull()
+        verifier.verify(request, 200, generations.newLeaf.sign(request, BODY, NOV_21_0200), BODY, NOV_21_0200)
+        // When
+        val result = verifier.verification(request, 200, older, BODY, NOV_21_0200 - HOUR)
+        // Then
+        assertThat(store.highWaterMark(generations.anchorId)).isEqualTo(NOV_21_0200)
+        assertThat(result.failure).isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
+    }
+
+    @Test
+    fun `M cap the high-water mark at the device clock plus 30 s W verify() {issued-at ahead}`() {
+        // Given
+        val generations = Generations.mint()
+        val store = InMemoryMinimumNotBeforeStore()
+        val verifier = ResponseSigningVerifier(listOf(generations.root), store)
+        val request = request()
+        // When
+        val first = verifier.verify(
+            request,
+            200,
+            generations.newLeaf.sign(request, BODY, NOV_21_0200 + 30),
+            BODY,
+            NOV_21_0200
+        )
+        // The mark lets a later issued-at pass, but the device clock still caps the mark.
+        val repeated = verifier.verify(
+            request,
+            200,
+            generations.newLeaf.sign(request, BODY, NOV_21_0200 + 60),
+            BODY,
+            NOV_21_0200
+        )
+        // Then
+        assertThat(first).isNotNull()
+        assertThat(repeated).isNotNull()
+        assertThat(store.highWaterMark(generations.anchorId)).isEqualTo(NOV_21_0200 + 30)
+    }
+
+    @Test
+    fun `M never lower the high-water mark W raiseHighWaterMark()`() {
+        // Given
+        val store = SharedPreferencesMinimumNotBeforeStore(FakePreferences().mock)
+        store.raiseHighWaterMark("anchor", NOV_21_0200)
+        // When
+        store.raiseHighWaterMark("anchor", NOV_21_0200 - 1)
+        store.raiseHighWaterMark("anchor", -1)
+        // Then
+        assertThat(store.highWaterMark("anchor")).isEqualTo(NOV_21_0200)
+        assertThat(store.get("anchor")).isNull()
+    }
+
+    @Test
+    fun `M keep the high-water mark W restart {shared preferences store}`() {
+        // Given
+        val generations = Generations.mint()
+        val preferences = FakePreferences()
+        val request = request()
+        ResponseSigningVerifier(listOf(generations.root), SharedPreferencesMinimumNotBeforeStore(preferences.mock))
+            .verify(request, 200, generations.newLeaf.sign(request, BODY, NOV_21_0200), BODY, NOV_21_0200)
+        // When
+        val store = SharedPreferencesMinimumNotBeforeStore(preferences.mock)
+        val result = ResponseSigningVerifier(listOf(generations.root), store).verification(
+            request,
+            200,
+            generations.newLeaf.sign(request, BODY, NOV_21_0200 - HOUR),
+            BODY,
+            NOV_21_0200 - HOUR
+        )
+        // Then
+        assertThat(store.highWaterMark(generations.anchorId)).isEqualTo(NOV_21_0200)
+        assertThat(result.failure).isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
+    }
+
+    @Test
+    fun `M accept the response and use the memory mark W verify() {preferences write lost}`() {
+        // Given
+        val generations = Generations.mint()
+        val preferences = FakePreferences(persist = false)
+        val store = SharedPreferencesMinimumNotBeforeStore(preferences.mock)
+        val verifier = ResponseSigningVerifier(listOf(generations.root), store)
+        val request = request()
+        // When
+        val accepted =
+            verifier.verify(request, 200, generations.newLeaf.sign(request, BODY, NOV_21_0200), BODY, NOV_21_0200)
+        val older = verifier.verification(
+            request,
+            200,
+            generations.newLeaf.sign(request, BODY, NOV_21_0200 - HOUR),
+            BODY,
+            NOV_21_0200 - HOUR
+        )
+        // Then
+        assertThat(accepted).isNotNull()
+        assertThat(preferences.values).isEmpty()
+        assertThat(store.highWaterMark(generations.anchorId)).isEqualTo(NOV_21_0200)
+        assertThat(older.failure).isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
+    }
+
+    // endregion
+
     // region Helpers
 
     /** One root; an old intermediate generation from Jan 1 and a staging-like one from Nov 19-20 with two leaves. */
@@ -677,12 +817,12 @@ internal class ResponseSigningChainTest {
         }
     }
 
-    /** SharedPreferences backed by a map, so a new store instance simulates a restart. */
-    private class FakePreferences {
+    /** SharedPreferences backed by a map, so a new store instance simulates a restart; [persist] false loses writes. */
+    private class FakePreferences(persist: Boolean = true) {
         val values = mutableMapOf<String, Long>()
         private val editor: SharedPreferences.Editor = mock {
             on { putLong(any(), any()) } doAnswer { invocation ->
-                values[invocation.getArgument(0)] = invocation.getArgument(1)
+                if (persist) values[invocation.getArgument(0)] = invocation.getArgument(1)
                 invocation.mock as SharedPreferences.Editor
             }
         }
@@ -851,6 +991,9 @@ internal class ResponseSigningChainTest {
 
         // 2026-06-01T00:00:00Z, inside the minted 2026-01-01..2027-01-01 validity.
         private const val MINTED_NOW = 1780272000L
+        private const val MINTED_NOT_AFTER = 1798761600L
+        private const val HOUR = 3600L
+        private const val DAY = 86400L
 
         private const val BASIC_CONSTRAINTS = "551d13"
         private const val KEY_USAGE = "551d0f"

@@ -13,6 +13,7 @@ import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.ResponseSigningFailureReason
 import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.model.EvaluationContext
+import okhttp3.Headers
 import okhttp3.Request
 import java.io.IOException
 import java.security.ProviderException
@@ -22,11 +23,13 @@ import java.security.SecureRandom
  * @param mode the customer opt-in; OFF sends today's requests unchanged
  * @param testTrustedRoots test-only anchors; empty in production, which pins [ResponseSigningTrustRoots.STAGING_ROOT]
  * @param expireVerifiedFlags REQUIRED only: true stops serving verified flags at proof expiry instead of going stale
+ * @param buildFloor the verifier clock floor in unix seconds; tests that replay older fixtures set 0
  */
 internal data class ResponseSigningConfiguration(
     val mode: ResponseSigningMode = ResponseSigningMode.OFF,
     val testTrustedRoots: List<String> = emptyList(),
-    val expireVerifiedFlags: Boolean = false
+    val expireVerifiedFlags: Boolean = false,
+    val buildFloor: Long = ResponseSigningVerifier.BUILD_FLOOR
 ) {
     val anchors: List<String> get() = testTrustedRoots.ifEmpty { listOf(ResponseSigningTrustRoots.STAGING_ROOT) }
 }
@@ -39,6 +42,7 @@ internal class ResponseSigningState(
     private val context: ResponseSigningContext = ResponseSigningContext(),
     minimumNotBefore: MinimumNotBeforeStore = InMemoryMinimumNotBeforeStore(),
     private val telemetry: ResponseSigningTelemetry = ResponseSigningTelemetry(logger, "", ""),
+    private val elapsedRealtimeMillis: () -> Long,
     private val nowSeconds: () -> Long
 ) {
     val lock = context.lock
@@ -46,17 +50,38 @@ internal class ResponseSigningState(
     private var generation = 0L
     private var requestedContext: EvaluationContext? = null
     private var expectedScope: String? = null
-    val verifier = ResponseSigningVerifier(configuration.anchors, minimumNotBefore) { reason ->
-        // Draft revocation details stay in debug output; telemetry carries only the shared event.
-        logger.log(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.MAINTAINER,
-            { "Flag response signing v1: $reason" },
-            onlyOnce = true
-        )
-    }
+    val verifier =
+        ResponseSigningVerifier(configuration.anchors, minimumNotBefore, configuration.buildFloor) { reason ->
+            // Draft revocation details stay in debug output; telemetry carries only the shared event.
+            logger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.MAINTAINER,
+                { "Flag response signing v1: $reason" },
+                onlyOnce = true
+            )
+        }
 
     fun now(): Long = nowSeconds()
+
+    /** Verifies at the current device clock and records the elapsed time that [expiryNow] measures from. */
+    fun verification(
+        request: Request,
+        status: Int,
+        headers: Headers,
+        body: ByteArray
+    ): ResponseSigningVerifier.Verification {
+        val elapsedMs = elapsedRealtimeMillis()
+        return verifier.verification(request, status, headers, body, now(), elapsedMs)
+    }
+
+    /**
+     * The clock for the expiry of [proof]: the verifier clock, or the signed issued-at plus the elapsed time since
+     * verification when that is later. A wall-clock step back during the process cannot extend the proof.
+     */
+    fun expiryNow(proof: VerifiedResponse): Long {
+        val elapsedSeconds = (elapsedRealtimeMillis() - proof.verifiedElapsedMs).coerceAtLeast(0) / MILLIS_PER_SECOND
+        return maxOf(verifier.effectiveNow(proof.anchorId, now()), proof.issuedAt + elapsedSeconds)
+    }
 
     fun currentScope(): String? = synchronized(lock) { if (identity === context.snapshot()) expectedScope else null }
 
@@ -97,13 +122,13 @@ internal class ResponseSigningState(
 
     /**
      * [allowStale] keeps a proof admissible outside its time window (expired, or the clock moved back); the identity,
-     * context and scope still apply. Otherwise the clock may be at most [CLOCK_STEP_ALLOWANCE_SECONDS] before
-     * admission.
+     * context and scope still apply. Otherwise the device clock may be at most [CLOCK_STEP_ALLOWANCE_SECONDS] before
+     * admission, and [expiryNow] must be before expires-at.
      */
     fun permits(context: EvaluationContext, proof: VerifiedResponse, allowStale: Boolean = false): Boolean =
         synchronized(lock) {
-            val now = now()
-            val inWindow = now + CLOCK_STEP_ALLOWANCE_SECONDS >= proof.verifiedAt && now < proof.expiresAt
+            val inWindow =
+                now() + CLOCK_STEP_ALLOWANCE_SECONDS >= proof.verifiedAt && expiryNow(proof) < proof.expiresAt
             identity.active && identity === this.context.snapshot() && context == requestedContext &&
                 proof.scope == expectedScope && (allowStale || inWindow)
         }
@@ -174,6 +199,7 @@ internal class ResponseSigningState(
     }
     companion object {
         private const val NONCE_BYTES = 16
+        private const val MILLIS_PER_SECOND = 1000L
 
         /** A backward clock step up to this size keeps a proof valid; the same as the issued-at allowance. */
         const val CLOCK_STEP_ALLOWANCE_SECONDS = 30L
