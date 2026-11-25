@@ -61,15 +61,15 @@ internal class SigningFlagsRepository(
 
     // By default, required mode keeps serving the last verified flags after proof expiry; the client reports Stale.
     private fun current(): VerifiedFlags? {
-        retireExpiredVerifiedFlags()
+        retireVerifiedFlags(signing.now())
         return verified.get()?.takeIf { signing.permits(it.context, it.proof, allowStale = keepExpired) }
     }
 
-    // With expireVerifiedFlags, expiry is final: only a new verified response serves flags again.
-    override fun retireExpiredVerifiedFlags() {
+    // With expireVerifiedFlags, a retired snapshot stays retired: only a new verified response serves flags again.
+    override fun retireVerifiedFlags(expiresAt: Long) {
         if (!required || keepExpired) return
         val state = verified.get() ?: return
-        if (signing.now() >= state.proof.expiresAt) {
+        if (state.proof.expiresAt <= expiresAt) {
             @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts a nullable snapshot.
             verified.compareAndSet(state, null)
         }

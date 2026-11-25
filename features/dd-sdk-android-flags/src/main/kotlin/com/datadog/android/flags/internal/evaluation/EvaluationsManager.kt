@@ -676,10 +676,11 @@ internal class EvaluationsManager(
             if (proofExpiryToken !== token || (!expiryAppliesLocked(expireFlags) && !stepCurrent)) {
                 return
             }
+            // The caller saw this proof expire; the clock is not read again, so a rollback cannot skip it.
+            if (expireFlags) flagsRepository.retireVerifiedFlags(proofExpiresAt)
             proofExpiryToken = null
             proofExpiresAt = Long.MAX_VALUE
             clockStep = null
-            if (expireFlags) flagsRepository.retireExpiredVerifiedFlags()
             val cancel = cancelProofExpiry
             cancelProofExpiry = null
             // A clock step already published the same expired state.

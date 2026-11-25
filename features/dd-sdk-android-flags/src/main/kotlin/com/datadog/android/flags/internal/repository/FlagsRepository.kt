@@ -33,8 +33,11 @@ internal interface FlagsRepository {
 
     fun restoreVerifiedFlags(): FlagsInstallation? = null
 
-    /** Drops verified flags whose proof expired, when they must stop at expiry; a later clock step cannot revive them. */
-    fun retireExpiredVerifiedFlags() = Unit
+    /**
+     * Drops verified flags whose proof expires at or before [expiresAt], when they must stop at expiry, so a later
+     * clock step cannot revive them.
+     */
+    fun retireVerifiedFlags(expiresAt: Long) = Unit
 
     /** Waits for initial persistence loading, up to the repository's timeout. Call without holding locks. */
     fun waitForPersistenceLoad()
