@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.model.VariationType
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
@@ -496,6 +497,72 @@ internal class FlagsStateDeserializerTest {
         variants.forEachIndexed { index, variant ->
             assertThat(restored.flags.getValue("flag-$index").variationValue).isEqualTo(variant)
         }
+    }
+
+    @Test
+    fun `M keep unsupported variation types W deserialize() { only unsupported variation types }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val flags = JSONObject().put("legacy", buildFlagJson().put("variationType", "unknownType"))
+
+        // When
+        val result = testedDeserializer.deserialize(buildStateJson(targetingKey, flags))
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.evaluationContext.targetingKey).isEqualTo(targetingKey)
+        assertThat(result.flags.keys).containsExactly("legacy")
+        assertThat(result.flags.getValue("legacy").variationType).isEqualTo("unknownType")
+    }
+
+    @Test
+    fun `M keep unsupported variation types W deserialize() { unsupported and malformed flags }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val flags = JSONObject()
+            .put("legacy", buildFlagJson().put("variationType", "unknownType"))
+            .put("malformed", JSONObject().put("variationType", "string"))
+
+        // When
+        val result = testedDeserializer.deserialize(buildStateJson(targetingKey, flags))
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.evaluationContext.targetingKey).isEqualTo(targetingKey)
+        assertThat(result.flags.keys).containsExactly("legacy")
+        assertThat(result.flags.getValue("legacy").variationType).isEqualTo("unknownType")
+    }
+
+    @Test
+    fun `M keep unsupported variation types W serialize() and deserialize() { round trip }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val fakeVariationType = forge.anAlphabeticalString(size = 12) + "-type"
+        val flags = JSONObject()
+            .put("legacy", buildFlagJson().put("variationType", fakeVariationType))
+            .put("healthy", buildFlagJson())
+        val loaded = checkNotNull(testedDeserializer.deserialize(buildStateJson(targetingKey, flags)))
+
+        // When
+        val restored = testedDeserializer.deserialize(FlagsStateSerializer(mockInternalLogger).serialize(loaded))
+
+        // Then
+        checkNotNull(restored)
+        assertThat(restored.flags.keys).containsExactlyInAnyOrder("legacy", "healthy")
+        assertThat(restored.flags.getValue("legacy").variationType).isEqualTo(fakeVariationType)
+        assertThat(restored.flags.getValue("healthy").variationType).isEqualTo(VariationType.BOOLEAN.value)
+    }
+
+    @Test
+    fun `M return null W deserialize() { only malformed flags }`(forge: Forge) {
+        // Given
+        val flags = JSONObject().put("malformed", JSONObject().put("variationType", "string"))
+
+        // When
+        val result = testedDeserializer.deserialize(buildStateJson(forge.anAlphabeticalString(), flags))
+
+        // Then
+        assertThat(result).isNull()
     }
 
     private fun buildFlagJson(): JSONObject = JSONObject().apply {

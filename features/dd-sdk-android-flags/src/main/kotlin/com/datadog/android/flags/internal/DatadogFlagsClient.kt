@@ -538,6 +538,11 @@ internal class DatadogFlagsClient(
                 errorMessage = exception.message ?: "Type mismatch"
             }
 
+            is UnsupportedVariationTypeException -> {
+                errorCode = ErrorCode.PARSE_ERROR
+                errorMessage = exception.message ?: "Unsupported variation type"
+            }
+
             else -> {
                 errorCode = ErrorCode.PARSE_ERROR
                 val typeName = FlagValueConverter.getTypeName(defaultValue::class)
@@ -778,6 +783,7 @@ internal class DatadogFlagsClient(
             flagsRepository.getAssignmentsSnapshot()
                 ?.takeIf { it.context == targetingContext && resolutionContext(it.context).errorCode == null }
                 ?.flags
+                ?.let { FlagValueConverter.exportable(it) }
         }
     }
 
@@ -793,7 +799,7 @@ internal class DatadogFlagsClient(
         return synchronized(telemetryLock) {
             val snapshot = flagsRepository.getAssignmentsSnapshot()
             if (snapshot != null && resolutionContext(snapshot.context).errorCode == null) {
-                snapshot.flags
+                FlagValueConverter.exportable(snapshot.flags)
             } else {
                 emptyMap()
             }

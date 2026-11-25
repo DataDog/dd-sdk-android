@@ -12,7 +12,11 @@ internal enum class VariationType(val value: String) {
     INTEGER("integer"),
     NUMBER("number"),
     FLOAT("float"),
-    OBJECT("object")
+    OBJECT("object");
+
+    companion object {
+        fun isSupported(variationType: String): Boolean = entries.any { it.value == variationType }
+    }
 }
 
 internal enum class FlagReason(val value: String) {

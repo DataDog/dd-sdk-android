@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.flags.internal.model.VariationType
+import com.datadog.android.flags.model.UnparsedFlag
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.Locale
@@ -18,6 +19,8 @@ import kotlin.reflect.KClass
  * @param message Description of the type mismatch
  */
 internal class TypeMismatchException(message: String) : Exception(message)
+
+internal class UnsupportedVariationTypeException(message: String) : Exception(message)
 
 /**
  * Handles type conversion for feature flag values.
@@ -47,6 +50,7 @@ internal object FlagValueConverter {
      * @param variationType The type specified in the flag metadata
      * @param targetType The target type class to convert to
      * @return Result containing the converted value on success,
+     *         or a Failure with UnsupportedVariationTypeException if this SDK doesn't support [variationType],
      *         or a Failure with TypeMismatchException if types are incompatible
      *         or a numeric value can't be read as Int without loss,
      *         or a whole value isn't exactly a Double, or a nonzero value rounds to a zero Double,
@@ -54,12 +58,14 @@ internal object FlagValueConverter {
      */
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> convert(variationValue: String, variationType: String, targetType: KClass<T>): Result<T> {
-        if (!isTypeCompatible(variationType, targetType)) {
-            val expectedType = getTypeName(targetType)
-            return Result.failure(
-                TypeMismatchException("Flag has type '$variationType' but $expectedType was requested")
-            )
+        val typeError = when {
+            !VariationType.isSupported(variationType) ->
+                UnsupportedVariationTypeException("Unsupported variation type '$variationType'")
+            !isTypeCompatible(variationType, targetType) ->
+                TypeMismatchException("Flag has type '$variationType' but ${getTypeName(targetType)} was requested")
+            else -> null
         }
+        if (typeError != null) return Result.failure(typeError)
 
         return runCatching {
             @Suppress("UNCHECKED_CAST")
@@ -89,6 +95,23 @@ internal object FlagValueConverter {
 
             result ?: throw IllegalArgumentException("Failed to parse value '$variationValue'")
         }
+    }
+
+    /**
+     * Returns [flags] without the assignments that native getters reject: an unsupported variation type, or a
+     * numeric value that neither an Int nor a Double getter can read, such as `1e400`, `1e-400`, or a whole value
+     * that Double can't hold exactly. Bridges and other exports read numbers from the raw literal, so they must not
+     * receive such a value.
+     */
+    fun <T : UnparsedFlag> exportable(flags: Map<String, T>): Map<String, T> {
+        val exportable = flags.filterValues { flag ->
+            VariationType.isSupported(flag.variationType) && (
+                !isNumeric(flag.variationType) ||
+                    convert(flag.variationValue, flag.variationType, Int::class).isSuccess ||
+                    convert(flag.variationValue, flag.variationType, Double::class).isSuccess
+                )
+        }
+        return if (exportable.size == flags.size) flags else exportable
     }
 
     /**

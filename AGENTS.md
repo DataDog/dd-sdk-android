@@ -36,6 +36,7 @@ This manual gate supplements the existing module validation tasks.
 - `integrations/*` — integrations with third-party libraries (OkHttp, Cronet, Compose, Coil, Glide, Apollo, …).
 - `reliability/` — integration tests; `reliability/single-fit/*` holds per-feature E2E tests.
 - `instrumented/integration` — legacy integration test suite.
+- `ci/` — CI configuration and scripts: GitLab pipelines, helper scripts, and the shared feature flags fixture pin (`feature-flags-precomputed-fixtures.json`) with its importer and tests.
 - `tools/*` — custom detekt and lint rules, `noopfactory` code generator, shared unit test utilities (`tools/unit`).
 - `sample/*` — sample apps (`sample/kotlin` is the main one).
 
@@ -209,7 +210,7 @@ Unit test conventions (class boilerplate, naming, test rules, Elmyr Forge config
 
 `instrumented/integration`, `reliability/core-it` and `reliability/with-backend` contain instrumented tests that run on a connected device or emulator.
 
-`reliability/single-fit/*` contains E2E tests that run on the JVM without a device, e.g. `./gradlew :reliability:single-fit:rum:testReleaseUnitTest` (this is what CI runs). Tests that wire several real components together belong there, not in a feature module's unit or instrumented tests. `single-fit` tests use stubs (e.g. `stub-core`) rather than mocks. The Flags module also has a privacy suite that runs on a connected device or emulator: `./gradlew :reliability:single-fit:flags:connectedReleaseAndroidTest`. Its README documents the exact-AAR option.
+`reliability/single-fit/*` contains E2E tests that run on the JVM without a device, e.g. `./gradlew :reliability:single-fit:rum:testReleaseUnitTest` (this is what CI runs). Tests that wire several real components together belong there, not in a feature module's unit or instrumented tests. `single-fit` tests use stubs (e.g. `stub-core`) rather than mocks. The Flags module also has a privacy suite that runs on a connected device or emulator: `./gradlew :reliability:single-fit:flags:connectedReleaseAndroidTest`. Its README documents the exact-AAR option. Its shared conformance fixtures are git-ignored: Gradle runs `ci/sync-feature-flags-precomputed-fixtures.py` to fetch the commit pinned in `ci/feature-flags-precomputed-fixtures.json` before unit tests.
 
 ```bash
 ./gradlew instrumentTestAll                                        # all integration tests

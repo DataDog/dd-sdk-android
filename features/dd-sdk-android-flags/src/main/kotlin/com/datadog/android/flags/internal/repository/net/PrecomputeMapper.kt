@@ -14,6 +14,7 @@ import com.datadog.android.flags.internal.model.AssignmentsResponse
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.SplitFeature
+import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.serialization.FlagsJson
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -56,11 +57,12 @@ internal class PrecomputeMapper(
             val observeFullEvaluationData = FlagsJson.readConsent(metadata)
             val flags = attributes.flags.additionalProperties
             if (obfuscation != null) FlagsJson.validateKeys(flags.keys.iterator())
-            val assignments = flags.mapValues {
-                FlagsJson.readAssignment(FlagsJson.objectValue(it.value)).copy(
+            val assignments = flags.mapValues { (_, value) ->
+                FlagsJson.readAssignment(FlagsJson.objectValue(value)).copy(
                     observeFullEvaluationData = observeFullEvaluationData
                 )
             }
+            if (assignments.values.any { !VariationType.isSupported(it.variationType) }) warnUnsupportedType()
             warnUnknownDestinations(assignments.values)
             PrecomputedAssignments(assignments, obfuscation, observeFullEvaluationData)
         } else {
@@ -83,6 +85,17 @@ internal class PrecomputeMapper(
     } catch (e: JsonParseException) {
         logParseFailure(e, redactErrors)
         null
+    }
+
+    private fun warnUnsupportedType() {
+        internalLogger.log(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.USER,
+            messageBuilder = {
+                "A flag in the precomputed response has an unsupported variationType and resolves with PARSE_ERROR."
+            },
+            onlyOnce = true
+        )
     }
 
     private fun logParseFailure(exception: JsonParseException, redactErrors: Boolean) {

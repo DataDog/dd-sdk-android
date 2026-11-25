@@ -5,6 +5,7 @@
  */
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.time.Duration
 
 plugins {
     // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
@@ -82,4 +83,18 @@ datadogBuild {
     applyAndroidLibraryConfig()
     applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
     applyJunitConfig()
+}
+
+// Shared feature flags conformance fixtures are git-ignored; fetch the pinned snapshot before unit test resources are processed.
+val pullFeatureFlagsFixturesTask = tasks.register<Exec>("pullFeatureFlagsFixtures") {
+    group = "verification"
+    description = "Fetches shared feature flags fixtures at the pinned commit."
+    workingDir = rootDir
+    commandLine("python3", "ci/sync-feature-flags-precomputed-fixtures.py")
+    // The script also bounds each fetch attempt; this bounds the whole task, including retries.
+    timeout.set(Duration.ofMinutes(10))
+}
+
+tasks.named { it.startsWith("process") && it.endsWith("UnitTestJavaRes") }.configureEach {
+    dependsOn(pullFeatureFlagsFixturesTask)
 }

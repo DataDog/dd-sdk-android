@@ -22,8 +22,12 @@ internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
             VariationType.BOOLEAN -> forge.aBool().toString()
             VariationType.STRING -> forge.anAlphabeticalString()
             VariationType.INTEGER -> forge.anInt().toString()
-            VariationType.NUMBER -> forge.aDouble().toString()
-            VariationType.FLOAT -> forge.aFloat().toString()
+            // Getters reject whole values that Double can't hold exactly, so stay within the exact range.
+            VariationType.NUMBER -> forge.aDouble(min = -NUMERIC_LIMIT, max = NUMERIC_LIMIT).toString()
+            VariationType.FLOAT -> forge.aFloat(
+                min = -NUMERIC_LIMIT.toFloat(),
+                max = NUMERIC_LIMIT.toFloat()
+            ).toString()
             VariationType.OBJECT -> JSONObject().put(
                 "key",
                 forge.anAlphabeticalString()
@@ -49,5 +53,9 @@ internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
             reason = reason,
             serialId = forge.aNullable { aLong(min = 0L) }
         )
+    }
+
+    private companion object {
+        const val NUMERIC_LIMIT = 1_000_000.0
     }
 }

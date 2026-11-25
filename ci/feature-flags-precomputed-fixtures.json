@@ -1,0 +1,17 @@
+{
+  "sources": [
+    {
+      "name": "precomputed-assignments",
+      "format": "precomputed-assignments",
+      "path": "precomputed-assignments/",
+      "destination": "reliability/single-fit/flags/src/test/resources/precomputed",
+      "commit": "f8765f73e41eff57429dbb60289147e7d9c52b2b",
+      "files": {
+        "schemas/precomputed-assignment.schema.json": "schema.json",
+        "precomputed-assignments/README.md": "README.md",
+        "LICENSE": "LICENSE",
+        "NOTICE": "NOTICE"
+      }
+    }
+  ]
+}

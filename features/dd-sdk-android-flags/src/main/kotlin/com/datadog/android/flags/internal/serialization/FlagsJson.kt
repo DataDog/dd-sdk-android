@@ -25,7 +25,7 @@ internal object FlagsJson {
     }
 
     @Throws(JsonParseException::class)
-    @Suppress("ThrowsCount") // Report each invalid assignment field before generated readers can coerce it.
+    @Suppress("ThrowsCount") // Report each invalid assignment field.
     fun readAssignment(json: JsonObject): PrecomputedFlag {
         // Preserve JSONObject's string conversion, including JSON variants and explicit null.
         STRING_FIELDS.forEach { field ->
@@ -44,6 +44,8 @@ internal object FlagsJson {
         val features = SplitFeaturesJson.normalize(json.get(FEATURES))
         if (features == null) json.remove(FEATURES) else json.add(FEATURES, features)
 
+        if (!json.has("extraLogging")) json.add("extraLogging", JsonObject())
+        // An unsupported variationType stays in the flag, so that the flag resolves with PARSE_ERROR.
         val assignment = Assignment.fromJsonObject(json)
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Normalize JSONObject failures for the response mapper.

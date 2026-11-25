@@ -546,3 +546,61 @@ For more information on Feature Flags in Datadog, see the [official Feature Flag
 
 [1]: https://docs.datadoghq.com/real_user_monitoring/application_monitoring/android/setup
 [2]: https://docs.datadoghq.com/getting_started/feature_flags/
+
+## Shared precomputed response tests
+
+The Flags module uses the JSON contract from [ffe-system-test-data](https://github.com/DataDog/ffe-system-test-data/tree/main/precomputed-assignments).
+This keeps response behavior consistent across mobile SDKs. The snapshot is test data only.
+It adds no runtime dependency and requires no Git submodule.
+
+`ci/feature-flags-precomputed-fixtures.json` lists the upstream sources. Each source has its own path, destination, format and pinned commit, so later fixture sets reuse the same pipeline. The `precomputed-assignments` source is read from the git-ignored `reliability/single-fit/flags/src/test/resources/precomputed` folder. `SOURCE.json` in each destination records the source commit, the source path and file map, and the file digests. If the path or file map changes, the next run imports the source again.
+The runner discovers all nested JSON cases through the generated index.
+Adding a case requires an upstream fixture change and a pin update. It requires no runner or filename-list change.
+Missing or empty fixtures fail the suite. Shared `_include` and `_skip` fields describe API applicability.
+Do not add local exclusions to hide failures.
+
+Numeric behavior follows the [shared numeric contract](https://github.com/DataDog/ffe-system-test-data/blob/main/precomputed-assignments/README.md#mobile-conformance-and-numeric-types).
+The SDK keeps each numeric token as written in the response, also in the cache. An Int read of a fractional token, such as `4503599627370497.5` or `1.00000000000000001`, returns the default with `TYPE_MISMATCH`.
+Assignment snapshots for cross-platform bridges omit a numeric assignment that no Int or Double read accepts, such as `1e400`, `1e-400`, or `100000000000000000001`.
+Plaintext flag keys match exactly, without Unicode normalization. Exposure and evaluation events use the key that the caller passed.
+The native context API requires a string targeting key. Fixtures with `targetingKey: null` must declare this platform in `_skip` upstream; the runner reports an actionable fixture error if an applicable case violates that requirement.
+
+Upstream CI requires a generated obfuscated companion for each applicable plain fixture. It rejects missing, stale, or orphaned companions. Edit the plain case upstream and regenerate; do not maintain two sets of expectations. Dedicated malformed-encoding cases and fixed digest vectors remain separate.
+
+Cases cover values, defaults, errors, reasons, variants, emission gates, duplicate evaluations, and numeric boundaries.
+Obfuscation cases cover fixed digests, salts, Unicode, whitespace, malformed metadata, and plaintext event identity.
+The suite uses the feature integration harness. It feeds the fixture response, with its numeric tokens and `observeFullEvaluationData` value, through the real download, parse, and persistence path. Each valid fixture also runs after cache restoration without networking. It checks public getters, response rejection, and real exposure and evaluation records.
+Matchers compare JSON types strictly: `true` does not match `1`. A `_count` that is not a positive integer fails the test.
+The suite prints a report with the fixture revision, the executed evaluations, and the exclusions.
+
+Run from the repository root:
+
+```sh
+./gradlew :reliability:single-fit:flags:testReleaseUnitTest --tests '*CanonicalPrecomputedTest*'
+python3 ci/test-sync-feature-flags-precomputed-fixtures.py
+```
+
+The `pullFeatureFlagsFixtures` task runs only before unit-test resources are processed. It fetches the pinned commit and verifies its digests. When the local snapshot already matches the pin, it only verifies, without networking.
+Each fetch attempt has a timeout, and a failed attempt is retried. The task has a 10-minute timeout.
+The snapshot check ignores `.DS_Store` files. Any other file that is not in the snapshot fails the check.
+
+Move the pin to a reviewed upstream commit:
+
+```sh
+python3 ci/sync-feature-flags-precomputed-fixtures.py --update --ref <full-upstream-sha>
+```
+
+The importer copies committed bytes, regenerates the index, and removes deleted cases.
+It preserves Unity asset GUIDs where applicable. Do not edit fetched JSON or its checksums.
+Use `--update --source <local-checkout> --ref <commit>` to test an upstream fixture branch before publication.
+`--verify` checks that the local snapshot matches the pin without networking.
+
+The weekly `Feature flags precomputed fixtures` workflow opens a draft update PR that moves the pin when fixture content changes.
+It runs only in `DataDog/dd-sdk-android`, not in forks.
+Scheduled and manual updates on `develop` share one concurrency group.
+It requests a short-lived write token only when the pin changed. The token is restricted to the default branch and this workflow.
+If PR creation fails, the workflow retains the signed update branch for inspection and recovery.
+A PR that changes only the pin runs the `test:single-fit-flags` GitLab job, which runs this suite.
+It waits when an update PR is already open. Normal SDK CI must pass before merge.
+Merge the upstream fixture contract before merging its consumer PRs.
+The update workflow never merges or publishes an SDK release.
