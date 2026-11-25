@@ -230,7 +230,8 @@ writes them to the git-ignored `src/test/resources/response-signing-v1/` and `sr
 folders before unit tests and instrumented test assets are built. `SOURCE.json` in each folder records the commit and
 file checksums.
 The JVM and Android instrumented verifier tests discover every manifest-listed suite and check its checksum and counts.
-They assert acceptance decisions and exact transcripts for all response vectors in the manifest.
+They assert the acceptance decision and, for a rejected vector, the reason code for every response vector in the manifest.
+They assert the exact transcript for each vector that is expected to pass.
 A case `anchor_der_base64` replaces the file anchor for that case.
 Clients do not run the `signing_cases`, because they hold no signing keys.
 `rejection_reason` is a rule code; the tests do not compare native error messages.
@@ -405,9 +406,9 @@ before its result is processed fails with `FlagsContextSupersededException`, unl
 Treat this exception as cancellation. OpenFeature maps it to coroutine cancellation instead of a provider error.
 This applies whether the superseded fetch succeeds or fails. A result processed before replacement keeps its original outcome.
 In `DISABLED`, previous assignments remain available and superseded requests retain their ordinary completion behavior.
-With response signing enabled, a superseded request whose callback has not already completed fails with
-`FlagsContextSupersededException` in every opt-out mode, and the initialization timeout still applies
-to the newer request. `OBSERVE` keeps the previous assignments readable while a refresh is in flight.
+With response signing enabled, a request that fails admission because a newer request started fails with
+`FlagsContextSupersededException` in every opt-out mode, unless its callback has already completed.
+The initialization timeout still applies to the newer request. `OBSERVE` keeps the previous assignments readable while a refresh is in flight.
 
 | Mode | Behavior when the subject timestamp is present |
 | --- | --- |
