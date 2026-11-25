@@ -147,8 +147,12 @@ internal class CanonicalPrecomputedTest {
                 "object" -> client.resolve(key, Gson().fromJson(fallback, Map::class.java))
                 else -> error("Unsupported canonical getter: $evaluation")
             }
+            // A restored snapshot reports a successful result with restoredReason, or CACHED when the field is absent.
+            val restoredReason = evaluation["restoredReason"]?.asString ?: ResolutionReason.CACHED.name
             if (restored && result.errorCode == null) {
-                assertThat(result.reason).isEqualTo(ResolutionReason.CACHED)
+                assertThat(result.reason?.name)
+                    .describedAs("$path: $key: restoredReason")
+                    .isEqualTo(restoredReason)
             }
             val actual = JsonObject().apply {
                 add("value", Gson().toJsonTree(result.value))
