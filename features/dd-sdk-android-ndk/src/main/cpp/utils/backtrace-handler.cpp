@@ -129,58 +129,43 @@ bool copyString(const std::string &str, char *ptr, size_t max_size) {
     return copy_size == str_size;
 }
 
-namespace {
-    // Always inlined into both entry points, so that the frames at the top of the trace (the ones
-    // skipped by start_index) are the same as before.
-    __attribute__((always_inline)) inline bool generate(char *backtrace_ptr,
-                                                        size_t start_index,
-                                                        size_t max_size,
-                                                        const void *user_context) {
-        // define the buffer which will hold pointers to stack memory addresses
-        uintptr_t buffer[max_stack_frames];
-        // we will now unwind the stack and capture all the memory addresses up to max_stack_frames in
-        // the buffer
-        BacktraceState state = {};
-        size_t number_of_captured_frames = capture_backtrace(buffer, max_stack_frames, state);
-        if (user_context != nullptr) {
-            // For a crash, recover the frames the unwinder could not reach (code without unwind
-            // tables), after the ones it found.
-            number_of_captured_frames = fp_unwinder_append_frames(buffer,
-                                                                  number_of_captured_frames,
-                                                                  max_stack_frames,
-                                                                  state.filled,
-                                                                  state.last_frame_pointer,
-                                                                  user_context);
-        }
-        std::string backtrace;
-        backtrace.reserve(max_size);
-        std::string line;
-        line.reserve(max_characters_per_stack_frame);
-        bool complete = true;
-        for (size_t idx = start_index; idx < number_of_captured_frames; ++idx) {
-            // we will iterate through all the stack addresses and translate each address in
-            // readable information
-            line.clear();
-            get_info_from_address(idx - start_index, buffer[idx], line);
-            if (backtrace.length() + line.length() >= max_size) {
-                // No room left for this whole line (and the end of string \0 character): stop here
-                // rather than cutting the line, so every frame in the report is complete.
-                complete = false;
-                break;
-            }
-            backtrace.append(line);
-        }
-        return copyString(backtrace, backtrace_ptr, max_size) && complete;
-    }
-}
-
-bool generate_backtrace(char *backtrace_ptr, size_t start_index, size_t max_size) {
-    return generate(backtrace_ptr, start_index, max_size, nullptr);
-}
-
 bool generate_crash_backtrace(char *backtrace_ptr,
                               size_t start_index,
                               size_t max_size,
                               const void *user_context) {
-    return generate(backtrace_ptr, start_index, max_size, user_context);
+    // define the buffer which will hold pointers to stack memory addresses
+    uintptr_t buffer[max_stack_frames];
+    // we will now unwind the stack and capture all the memory addresses up to max_stack_frames in
+    // the buffer
+    BacktraceState state = {};
+    size_t number_of_captured_frames = capture_backtrace(buffer, max_stack_frames, state);
+    if (user_context != nullptr) {
+        // For a crash, recover the frames the unwinder could not reach (code without unwind
+        // tables), after the ones it found.
+        number_of_captured_frames = fp_unwinder_append_frames(buffer,
+                                                              number_of_captured_frames,
+                                                              max_stack_frames,
+                                                              state.filled,
+                                                              state.last_frame_pointer,
+                                                              user_context);
+    }
+    std::string backtrace;
+    backtrace.reserve(max_size);
+    std::string line;
+    line.reserve(max_characters_per_stack_frame);
+    bool complete = true;
+    for (size_t idx = start_index; idx < number_of_captured_frames; ++idx) {
+        // we will iterate through all the stack addresses and translate each address in
+        // readable information
+        line.clear();
+        get_info_from_address(idx - start_index, buffer[idx], line);
+        if (backtrace.length() + line.length() >= max_size) {
+            // No room left for this whole line (and the end of string \0 character): stop here
+            // rather than cutting the line, so every frame in the report is complete.
+            complete = false;
+            break;
+        }
+        backtrace.append(line);
+    }
+    return copyString(backtrace, backtrace_ptr, max_size) && complete;
 }

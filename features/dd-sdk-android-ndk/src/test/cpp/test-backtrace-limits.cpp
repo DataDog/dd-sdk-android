@@ -38,7 +38,7 @@ TEST test_generate_backtrace_keeps_only_whole_lines_when_the_size_is_exceeded(vo
             sizes[1] = first_line_end + (second_line_end - first_line_end) / 2;
         }
         // Both captures run from this same call site, so they see the same stack.
-        results[i] = generate_backtrace(captures[i], 0, sizes[i]);
+        results[i] = generate_crash_backtrace(captures[i], 0, sizes[i], nullptr);
     }
 
     ASSERT(results[0]);
@@ -51,7 +51,7 @@ TEST test_generate_backtrace_keeps_only_whole_lines_when_the_size_is_exceeded(vo
 
 TEST test_generate_backtrace_keeps_nothing_when_no_whole_line_fits(void) {
     char backtrace[3] = {'x', 'x', 'x'};
-    const bool was_complete = generate_backtrace(backtrace, 0, sizeof(backtrace));
+    const bool was_complete = generate_crash_backtrace(backtrace, 0, sizeof(backtrace), nullptr);
     ASSERT_FALSE(was_complete);
     ASSERT_EQ('\0', backtrace[0]);
     PASS();

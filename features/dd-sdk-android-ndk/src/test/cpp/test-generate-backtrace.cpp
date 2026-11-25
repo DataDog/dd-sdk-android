@@ -11,7 +11,7 @@ extern bool copyString(const std::string &str, char *ptr, size_t max_size);
 
 TEST test_generate_backtrace(void) {
     char backtrace[max_stack_size];
-    const bool was_successful = generate_backtrace(backtrace, 0, max_stack_size);
+    const bool was_successful = generate_crash_backtrace(backtrace, 0, max_stack_size, nullptr);
     std::list<std::string> backtrace_lines = testutils::split_backtrace_into_lines(
             backtrace);
     unsigned int lines_count = backtrace_lines.size();
@@ -28,8 +28,12 @@ TEST test_generate_backtrace_starts_from_the_given_frame_index(void) {
     const size_t fake_start_frame_index = 2;
     static char all_frames[max_stack_size];
     static char backtrace[max_stack_size];
-    const bool all_were_complete = generate_backtrace(all_frames, 0, max_stack_size);
-    const bool was_successful = generate_backtrace(backtrace, fake_start_frame_index, max_stack_size);
+    const bool all_were_complete =
+            generate_crash_backtrace(all_frames, 0, max_stack_size, nullptr);
+    const bool was_successful = generate_crash_backtrace(backtrace,
+                                                         fake_start_frame_index,
+                                                         max_stack_size,
+                                                         nullptr);
     std::list<std::string> all_lines = testutils::split_backtrace_into_lines(all_frames);
     std::list<std::string> backtrace_lines = testutils::split_backtrace_into_lines(backtrace);
             ASSERT(all_were_complete);
@@ -41,7 +45,7 @@ TEST test_generate_backtrace_starts_from_the_given_frame_index(void) {
 TEST test_generate_backtrace_will_return_false_if_size_is_exceeded(void) {
     const size_t backtrace_size = 1;
     char backtrace[backtrace_size];
-    const bool was_successful = generate_backtrace(backtrace, 0, backtrace_size);
+    const bool was_successful = generate_crash_backtrace(backtrace, 0, backtrace_size, nullptr);
             ASSERT_FALSE(was_successful);
             PASS();
 }
@@ -49,7 +53,7 @@ TEST test_generate_backtrace_will_return_false_if_size_is_exceeded(void) {
 TEST test_generate_backtrace_will_not_cut_a_line_if_size_is_exceeded(void) {
     const size_t backtrace_size = 3;
     char backtrace[backtrace_size];
-    const bool was_successful = generate_backtrace(backtrace, 0, backtrace_size);
+    const bool was_successful = generate_crash_backtrace(backtrace, 0, backtrace_size, nullptr);
             ASSERT_FALSE(was_successful);
             ASSERT(backtrace[0] == '\0');
             PASS();
