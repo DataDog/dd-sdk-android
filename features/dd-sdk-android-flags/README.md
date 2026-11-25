@@ -230,8 +230,8 @@ writes them to the git-ignored `src/test/resources/response-signing-v1/` and `sr
 folders before unit tests and instrumented test assets are built. `SOURCE.json` in each folder records the commit and
 file checksums.
 The JVM and Android instrumented verifier tests discover every manifest-listed suite and check its checksum and counts.
-They assert the acceptance decision and, for a rejected vector, the reason code for every response vector in the manifest.
-They assert the exact transcript for each vector that is expected to pass.
+They assert the acceptance decision for every response vector in the manifest, and the exact transcript for each
+vector that is expected to pass. The JVM test also checks the reason code of each rejected vector.
 A case `anchor_der_base64` replaces the file anchor for that case.
 Clients do not run the `signing_cases`, because they hold no signing keys.
 `rejection_reason` is a rule code; the tests do not compare native error messages.
