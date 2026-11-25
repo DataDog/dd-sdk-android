@@ -11,10 +11,8 @@ import android.app.Application
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Handler
 import android.os.Process
-import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
@@ -35,7 +33,6 @@ import com.datadog.android.core.internal.data.upload.CurlInterceptor
 import com.datadog.android.core.internal.data.upload.GzipRequestInterceptor
 import com.datadog.android.core.internal.data.upload.RotatingDnsResolver
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
@@ -499,11 +496,8 @@ internal class CoreFeature(
 
     @WorkerThread
     private fun initializeClockSync(appContext: Context) {
-        val safeContext = if (buildSdkVersionProvider.isAtLeastN) {
-            getSafeContext(appContext)
-        } else {
-            appContext
-        }
+        val safeContext = getSafeContext(appContext)
+
         kronosClock = AndroidClockFactory.createKronosClock(
             safeContext,
             ntpHosts = listOf(
@@ -534,7 +528,6 @@ internal class CoreFeature(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     private fun getSafeContext(appContext: Context): Context {
         // When the host app uses the `directBootAware` flag on a  file encrypted device,
         // the app can wake up during the boot sequence before the device is unlocked
@@ -591,7 +584,7 @@ internal class CoreFeature(
                 open(BUILD_ID_FILE_NAME).bufferedReader().use {
                     it.readText().trim()
                 }
-            } catch (@Suppress("SwallowedException") e: FileNotFoundException) {
+            } catch (@Suppress("SwallowedException") _: FileNotFoundException) {
                 internalLogger.log(
                     InternalLogger.Level.INFO,
                     InternalLogger.Target.USER,
@@ -639,7 +632,7 @@ internal class CoreFeature(
         systemInfoProvider.register(appContext)
 
         // Network Info Provider
-        setupNetworkInfoProviders(appContext, broadcastReceiverHandler)
+        setupNetworkInfoProviders(appContext)
 
         // User Info Provider
         userInfoProvider = DatadogUserInfoProvider()
@@ -648,19 +641,12 @@ internal class CoreFeature(
         accountInfoProvider = DatadogAccountInfoProvider(internalLogger)
     }
 
-    private fun setupNetworkInfoProviders(appContext: Context, broadcastReceiverHandler: Handler) {
-        networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
-            CallbackNetworkInfoProvider(
-                internalLogger = internalLogger,
-                buildSdkVersionProvider = buildSdkVersionProvider
-            )
-        } else {
-            BroadcastReceiverNetworkInfoProvider(
-                internalLogger = internalLogger,
-                handler = broadcastReceiverHandler,
-                buildSdkVersionProvider = buildSdkVersionProvider
-            )
-        }
+    private fun setupNetworkInfoProviders(appContext: Context) {
+        networkInfoProvider = CallbackNetworkInfoProvider(
+            internalLogger = internalLogger,
+            buildSdkVersionProvider = buildSdkVersionProvider
+        )
+
         networkInfoProvider.register(appContext)
     }
 
@@ -745,11 +731,7 @@ internal class CoreFeature(
                 ?.firstOrNull { it.pid == currentProcessId }
                 ?.processName
         }
-        isMainProcess = if (processName == null) {
-            true
-        } else {
-            appContext.packageName == processName
-        }
+        isMainProcess = processName == null || appContext.packageName == processName
         if (!isMainProcess) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -769,7 +751,7 @@ internal class CoreFeature(
             uploadExecutorService.awaitTermination(1, TimeUnit.SECONDS)
             contextExecutorService.awaitTermination(1, TimeUnit.SECONDS)
             persistenceExecutorService.awaitTermination(1, TimeUnit.SECONDS)
-        } catch (e: InterruptedException) {
+        } catch (_: InterruptedException) {
             try {
                 // Restore the interrupted status
                 Thread.currentThread().interrupt()

@@ -179,9 +179,7 @@ internal class OkHttpRequestInfo(
  */
 private class TruncationLimitReached : RuntimeException() {
 
-    // The four-argument Throwable constructor can disable stack traces directly, but Android only
-    // exposes it from API 24. This exception is internal control flow, so avoid building a stack
-    // trace while remaining compatible with the SDK's API 23 minimum.
+    // This exception is internal control flow, so avoid building a stack trace.
     override fun fillInStackTrace(): Throwable = this
 }
 

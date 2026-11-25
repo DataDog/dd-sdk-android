@@ -6,7 +6,6 @@
 
 package com.datadog.android.internal.tests.elmyr
 
-import android.annotation.SuppressLint
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
@@ -52,10 +51,7 @@ fun Forge.anError(): Error {
  * @return a random [Exception] instance with a forged message.
  * Because Mockito will prevent throwing undeclared checked exceptions,
  * all the exceptions here must extend [RuntimeException].
- * [UncheckedIOException] is a wrapper around a checked [IOException], and is considered a new
- * API (only available in Android 24+); we ignore the warning since tests are run on the JVM.
  */
-@SuppressLint("NewApi")
 fun Forge.anException(): Exception {
     val errorMessage = anAlphabeticalString()
     return anElementFrom(

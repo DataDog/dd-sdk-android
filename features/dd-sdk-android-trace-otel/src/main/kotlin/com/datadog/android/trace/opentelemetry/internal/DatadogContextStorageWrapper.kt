@@ -6,14 +6,11 @@
 
 package com.datadog.android.trace.opentelemetry.internal
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import io.opentelemetry.context.ContextStorage
 import java.util.function.Function
 
-@RequiresApi(Build.VERSION_CODES.N)
 internal class DatadogContextStorageWrapper : Function<ContextStorage, DatadogContextStorage> {
     override fun apply(wrapped: ContextStorage): DatadogContextStorage {
-        return if (wrapped is DatadogContextStorage) wrapped else DatadogContextStorage(wrapped)
+        return wrapped as? DatadogContextStorage ?: DatadogContextStorage(wrapped)
     }
 }

@@ -27,7 +27,7 @@ BOOT_TIMEOUT_SECONDS = 120
 ANDROID_ARCH = "arm64-v8a"
 AVD_NAME_PREFIX = "android_emulator"
 ANDROID_API_COMPONENTS = {
-    23: ("23", "google_apis", "23.0.0"),
+    24: ("24", "google_apis", "24.0.0"),
     28: ("28", "google_apis", "28.0.0"),
     37: ("37.0", "google_apis_ps16k", "37.0.0"),
 }

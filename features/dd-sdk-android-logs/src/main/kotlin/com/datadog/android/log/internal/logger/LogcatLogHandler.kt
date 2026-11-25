@@ -6,7 +6,6 @@
 
 package com.datadog.android.log.internal.logger
 
-import android.os.Build
 import android.util.Log
 import com.datadog.android.log.Logger
 
@@ -67,19 +66,12 @@ internal class LogcatLogHandler(
     // region Internal
 
     private fun resolveTag(stackTraceElement: StackTraceElement?): String {
-        val tag = if (stackTraceElement == null) {
+        return if (stackTraceElement == null) {
             serviceName
         } else {
             stackTraceElement.className
                 .replace(ANONYMOUS_CLASS, "")
                 .substringAfterLast('.')
-        }
-        return if (tag.length >= MAX_TAG_LENGTH && Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            // substring can't throw IndexOutOfBounds, we checked the length
-            tag.substring(0, MAX_TAG_LENGTH)
-        } else {
-            tag
         }
     }
 
@@ -114,8 +106,6 @@ internal class LogcatLogHandler(
     // endregion
 
     companion object {
-
-        private const val MAX_TAG_LENGTH = 23
 
         private val ANONYMOUS_CLASS = Regex("(\\$\\d+)+$")
 

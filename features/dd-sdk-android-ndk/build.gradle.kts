@@ -85,7 +85,7 @@ dependencies {
     androidTestImplementation(libs.assertJ)
 
     if (project.hasProperty(com.datadog.gradle.Properties.USE_API21_JAVA_BACKPORT)) {
-        // this is needed to make AssertJ working on APIs <24
+        // AssertJ needs java.nio.file placeholders on API 24–25.
         androidTestImplementation(project(":tools:javabackport"))
     }
 }

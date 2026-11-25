@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * | Global lock + HashMap | +35.5%     | +37.0%     | -2.2%       |
  *
  * 64 stripes chosen: best performance at low thread counts (biased locking benefits),
- * negligible fixed memory overhead (~1.3 KB), API 23 compatible.
+ * negligible fixed memory overhead (~1.3 KB).
  */
 internal class RequestTracingStateRegistry(
     private val internalLogger: InternalLogger

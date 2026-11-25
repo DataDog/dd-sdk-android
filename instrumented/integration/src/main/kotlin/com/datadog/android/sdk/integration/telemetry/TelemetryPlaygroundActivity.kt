@@ -6,7 +6,6 @@
 
 package com.datadog.android.sdk.integration.telemetry
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -86,7 +85,6 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
         )
     }
 
-    @SuppressLint("NewApi")
     private fun Forge.anException(): Exception {
         val errorMessage = anAlphabeticalString()
         return anElementFrom(

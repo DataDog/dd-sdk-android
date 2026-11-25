@@ -9,8 +9,8 @@ package com.datadog.android.sessionreplay.recorder.mapper
 import android.text.InputType
 import android.widget.EditText
 import android.widget.TextView
+import com.datadog.android.internal.utils.obfuscate
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
@@ -75,7 +75,7 @@ class EditTextMapper(
 
     private fun resolveCapturedHint(hint: String, textAndInputPrivacy: TextAndInputPrivacy): String {
         return if (textAndInputPrivacy == TextAndInputPrivacy.MASK_ALL) {
-            StringObfuscator.getStringObfuscator().obfuscate(hint)
+            hint.obfuscate()
         } else {
             hint
         }

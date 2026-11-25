@@ -5,7 +5,6 @@
  */
 package com.datadog.android.rum.internal.metric.slowframes
 
-import android.os.Build
 import androidx.metrics.performance.FrameData
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
@@ -155,11 +154,7 @@ internal class DefaultSlowFramesListener(
             )
         }
 
-        return if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            @Suppress("UnsafeThirdPartyFunctionCall") // all args are safe
-            slowFramesRecords.computeIfAbsent(viewId) { createLambda.invoke() }
-        } else {
-            slowFramesRecords.getOrPut(viewId, createLambda)
-        }
+        @Suppress("UnsafeThirdPartyFunctionCall") // all args are safe
+        return slowFramesRecords.computeIfAbsent(viewId) { createLambda.invoke() }
     }
 }

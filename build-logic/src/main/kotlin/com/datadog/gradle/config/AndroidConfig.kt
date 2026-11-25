@@ -16,7 +16,7 @@ import org.gradle.api.Project
 object AndroidConfig {
 
     const val TARGET_SDK = 36
-    const val MIN_SDK = 23
+    const val MIN_SDK = 24
     const val MIN_SDK_FOR_AUTO = 29
     const val BUILD_TOOLS_VERSION = "36.0.0"
 

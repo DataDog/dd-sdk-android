@@ -175,7 +175,7 @@ Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementat
 
 ## Static Analysis and Compatibility
 
-- `MIN_SDK` is 23. Guard newer APIs with `BuildSdkVersionProvider` (it is annotated with `@ChecksSdkIntAtLeast`). Don't use `@SuppressLint("NewApi")`: it hides crashes on older API levels, while `BuildSdkVersionProvider` can be mocked in tests to cover both branches.
+- `MIN_SDK` is 24. Guard newer APIs with `BuildSdkVersionProvider` (it is annotated with `@ChecksSdkIntAtLeast`). Don't use `@SuppressLint("NewApi")`: it hides crashes on older API levels, while `BuildSdkVersionProvider` can be mocked in tests to cover both branches.
 - Android and third-party calls that can throw must be declared in `detekt_custom_unsafe_calls.yml` and handled. Only genuinely non-throwing calls go into the `detekt_custom_safe_calls_*.yml` files. Put each entry in the `# region` for its library or API group, ordered by fully qualified name: compare the dot-separated parts left to right, so a class comes before a longer class name that starts with it. Add a new entry at its sorted position, not next to a related call or at the end of the region. Some existing entries are out of order; don't reorder them in unrelated changes. The `UnsafeThirdPartyFunctionCall` rule skips the SDK's own `com.datadog.*` calls, so handle exceptions thrown by SDK code explicitly; listing them in these files has no effect.
 - Place `@Suppress(...)` on the narrowest scope: the call site, not the whole method or class.
 - Use `Locale.US` for case conversions and formatting. The default locale gives wrong results in some locales (e.g. Turkish dotless `i`).

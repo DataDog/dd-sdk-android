@@ -20,9 +20,6 @@ interface BuildSdkVersionProvider {
      */
     val version: Int
 
-    @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.N)
-    val isAtLeastN: Boolean
-
     @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
     val isAtLeastO: Boolean
 
@@ -56,9 +53,6 @@ interface BuildSdkVersionProvider {
 
             @ChecksSdkIntAtLeast
             override val version: Int = Build.VERSION.SDK_INT
-
-            @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.N)
-            override val isAtLeastN: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
 
             @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
             override val isAtLeastO: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O

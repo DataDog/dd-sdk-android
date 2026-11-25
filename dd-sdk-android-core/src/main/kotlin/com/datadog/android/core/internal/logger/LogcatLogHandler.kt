@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.logger
 
-import android.os.Build
 import android.util.Log
 
 internal class LogcatLogHandler(
@@ -21,7 +20,6 @@ internal class LogcatLogHandler(
     fun log(level: Int, message: String, throwable: Throwable?) {
         if (!predicate.invoke(level)) return
 
-        val tag = resolveTag()
         Log.println(level, tag, message)
         if (throwable != null) {
             Log.println(
@@ -30,21 +28,5 @@ internal class LogcatLogHandler(
                 Log.getStackTraceString(throwable)
             )
         }
-    }
-
-    private fun resolveTag(): String {
-        return if (tag.length >= MAX_TAG_LENGTH &&
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.N
-        ) {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            // substring can't throw IndexOutOfBounds, we checked the length
-            tag.substring(0, MAX_TAG_LENGTH)
-        } else {
-            tag
-        }
-    }
-
-    companion object {
-        private const val MAX_TAG_LENGTH = 23
     }
 }

@@ -16,7 +16,6 @@ import android.os.Build
 import android.telephony.TelephonyManager
 import android.view.Display
 import com.datadog.android.api.context.DeviceType
-import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.getSystemServiceAs
 import java.util.Locale
 import java.util.TimeZone
@@ -26,8 +25,7 @@ internal class DefaultAndroidInfoProvider(
     rawDeviceBrand: String,
     rawDeviceModel: String,
     rawDeviceId: String,
-    rawOsVersion: String,
-    buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+    rawOsVersion: String
 ) : AndroidInfoProvider {
 
     constructor(appContext: Context) : this(
@@ -59,18 +57,11 @@ internal class DefaultAndroidInfoProvider(
         val resources = appContext.resources
         val languageList = mutableListOf<String>()
 
-        if (buildSdkVersionProvider.isAtLeastN) {
-            val locales = resources.configuration.locales
-            val localesSize = locales.size()
+        val locales = resources.configuration.locales
+        val localesSize = locales.size()
 
-            for (localeIndex in 0 until localesSize) {
-                locales[localeIndex]?.toLanguageTag()?.let {
-                    languageList.add(it)
-                }
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            resources.configuration.locale?.toLanguageTag()?.let {
+        for (localeIndex in 0 until localesSize) {
+            locales[localeIndex]?.toLanguageTag()?.let {
                 languageList.add(it)
             }
         }
@@ -80,12 +71,7 @@ internal class DefaultAndroidInfoProvider(
 
     override val currentLocale: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val resources = appContext.resources
-        val currentLocale = if (buildSdkVersionProvider.isAtLeastN) {
-            resources.configuration.locales[0]?.toLanguageTag()
-        } else {
-            @Suppress("DEPRECATION")
-            resources.configuration.locale?.toLanguageTag()
-        }
+        val currentLocale = resources.configuration.locales[0]?.toLanguageTag()
 
         // null shouldn't happen, but if it does this ensures that we return a valid languageTag
         currentLocale ?: Locale.getDefault().toLanguageTag()
@@ -175,11 +161,8 @@ internal class DefaultAndroidInfoProvider(
 
         private fun isTv(appContext: Context): Boolean {
             val uiModeManager = appContext.getSystemServiceAs<UiModeManager>(Context.UI_MODE_SERVICE)
-            if (uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION) {
-                return true
-            }
-
-            return hasTvFeature(appContext.packageManager)
+            return uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION ||
+                hasTvFeature(appContext.packageManager)
         }
 
         private fun hasTvFeature(

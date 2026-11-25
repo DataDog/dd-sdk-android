@@ -76,7 +76,6 @@ dependencies {
 unMock {
     keep("android.widget.ImageView\$ScaleType")
     keep("android.graphics.Rect")
-    keep("android.graphics.drawable.GradientDrawable")
 }
 
 createRumEventsFormatCloneTask("cloneSessionReplayRootSchemas") {

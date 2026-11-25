@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace.opentelemetry
 
-import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
@@ -51,7 +50,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
@@ -69,13 +67,18 @@ import java.util.Locale
 internal class OtelTracerBuilderProviderTest {
 
     lateinit var testedOtelTracerProviderBuilder: OtelTracerProvider.Builder
+
+    @StringForgery
     lateinit var fakeServiceName: String
 
     @Mock
     lateinit var mockTracingFeatureScope: FeatureScope
 
     @Mock
-    lateinit var mockTracingFeature: StubTracingFeature
+    private lateinit var mockTracingFeature: TraceWriterFeature
+
+    @Mock
+    lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
@@ -93,13 +96,10 @@ internal class OtelTracerBuilderProviderTest {
     lateinit var mockTraceWriter: DatadogSpanWriter
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeServiceName = forge.anAlphabeticalString()
-        whenever(
-            mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-        ) doReturn mockTracingFeatureScope
+    fun `set up`() {
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mockTracingFeatureScope
         whenever(mockTracingFeatureScope.unwrap<Feature>()) doReturn mockTracingFeature
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.service) doReturn fakeServiceName
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockTracingFeature.getCoreTracerWriter()) doReturn mockTraceWriter
@@ -109,26 +109,7 @@ internal class OtelTracerBuilderProviderTest {
     // region feature checks
 
     @Test
-    fun `M build tracers which generate Spans with 64 bits long ids W build`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) spanName: String
-    ) {
-        // Given
-        val tracerProvider = testedOtelTracerProviderBuilder
-            .build()
-
-        // When
-        val span = tracerProvider
-            .tracerBuilder(fakeInstrumentationName)
-            .build()
-            .spanBuilder(spanName)
-            .startSpan()
-
-        // Then
-        assertThat(span.spanContext.spanIdBytes.size).isEqualTo(8)
-    }
-
-    @Test
-    fun `M build tracers which generate Spans with 128 bits long trace ids W build`(
+    fun `M generate 64-bit span IDs and 128-bit trace IDs W startSpan()`(
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) spanName: String
     ) {
         // Given
@@ -140,11 +121,13 @@ internal class OtelTracerBuilderProviderTest {
             .build()
             .spanBuilder(spanName)
             .startSpan()
-        val traceId = span.spanContext.traceId
+
+        span.end()
 
         // Then
-        assertThat(traceId).hasSize(32)
-        assertThat(span.spanContext.traceIdBytes.size).isEqualTo(16)
+        assertThat(span.spanContext.spanIdBytes).hasSize(8)
+        assertThat(span.spanContext.traceId).hasSize(32)
+        assertThat(span.spanContext.traceIdBytes).hasSize(16)
     }
 
     // endregion
@@ -152,59 +135,53 @@ internal class OtelTracerBuilderProviderTest {
     // region Tracer creation
 
     @Test
-    fun `M create a single tracer for same instrumentation name W get`(forge: Forge) {
+    fun `M return the cached tracer W get() {same instrumentation name}`() {
         // Given
         val tracerProvider = testedOtelTracerProviderBuilder.build()
         val tracer = tracerProvider.get(fakeInstrumentationName)
 
+        // When
+        val cachedTracer = tracerProvider.get(fakeInstrumentationName)
+
         // Then
-        val times = forge.aTinyInt()
-        repeat(times) {
-            val newTracer = tracerProvider.get(fakeInstrumentationName)
-            assertThat(newTracer).isSameAs(tracer)
-        }
+        assertThat(cachedTracer).isSameAs(tracer)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.USER,
-            OtelTracerProvider.TRACER_ALREADY_EXISTS_WARNING_MESSAGE.format(Locale.US, fakeInstrumentationName),
-            mode = times(times)
+            OtelTracerProvider.TRACER_ALREADY_EXISTS_WARNING_MESSAGE.format(Locale.US, fakeInstrumentationName)
         )
     }
 
     @Test
-    fun `M create different tracers for different instrumentation name W get`(forge: Forge) {
+    fun `M create different tracers W get() {different instrumentation names}`() {
         // Given
         val tracerProvider = testedOtelTracerProviderBuilder.build()
         val tracer = tracerProvider.get(fakeInstrumentationName)
 
+        // When
+        val otherTracer = tracerProvider.get("$fakeInstrumentationName.other")
+
         // Then
-        val times = forge.aTinyInt()
-        repeat(times) {
-            val newTracer = tracerProvider.get(forge.anAlphabeticalString())
-            assertThat(newTracer).isNotSameAs(tracer)
-        }
+        assertThat(otherTracer).isNotSameAs(tracer)
     }
 
     @Test
-    fun `M create a single tracer for same instrumentation name W get { same instrumentationVersion }`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) instrumentationVersion: String,
-        forge: Forge
+    fun `M return the cached tracer W get() {same instrumentation name and version}`(
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) instrumentationVersion: String
     ) {
         // Given
         val tracerProvider = testedOtelTracerProviderBuilder.build()
         val tracer = tracerProvider.get(fakeInstrumentationName, instrumentationVersion)
 
+        // When
+        val cachedTracer = tracerProvider.get(fakeInstrumentationName, instrumentationVersion)
+
         // Then
-        val times = forge.aTinyInt()
-        repeat(times) {
-            val newTracer = tracerProvider.get(fakeInstrumentationName, instrumentationVersion)
-            assertThat(newTracer).isSameAs(tracer)
-        }
+        assertThat(cachedTracer).isSameAs(tracer)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.USER,
-            OtelTracerProvider.TRACER_ALREADY_EXISTS_WARNING_MESSAGE.format(Locale.US, fakeInstrumentationName),
-            mode = times(times)
+            OtelTracerProvider.TRACER_ALREADY_EXISTS_WARNING_MESSAGE.format(Locale.US, fakeInstrumentationName)
         )
     }
 
@@ -430,7 +407,6 @@ internal class OtelTracerBuilderProviderTest {
 
     // region bundle with RUM
 
-    @Suppress("UNCHECKED_CAST")
     @Test
     fun `M build a Span with lazy Datadog context W startSpan()`(
         @Forgery fakeInitialDatadogContext: DatadogContext
@@ -443,11 +419,8 @@ internal class OtelTracerBuilderProviderTest {
 
         val mockContextFuture = completedFutureMock(fakeInitialDatadogContext)
 
-        val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockSdkCore.getDatadogContextFuture(setOf(Feature.RUM_FEATURE_NAME)))
             .thenReturn(mockContextFuture)
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME))
-            .thenReturn(mockRumFeatureScope)
 
         // When
         val span = tracer
@@ -583,14 +556,14 @@ internal class OtelTracerBuilderProviderTest {
     // region Tracing context
 
     @Test
-    fun `M set OpenTelemetry as enabled in Context W build { TracingFeature enabled }`() {
-        // WHEN
+    fun `M set OpenTelemetry metadata W build() {tracing feature provides a writer}`() {
+        // When
         testedOtelTracerProviderBuilder.build()
 
-        // THEN
+        // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             val traceContext: MutableMap<String, Any?> = mutableMapOf()
-            verify(mockSdkCore, times(1))
+            verify(mockSdkCore)
                 .updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(false), capture())
             lastValue.invoke(traceContext)
             assertThat(traceContext[OtelTracerProvider.IS_OPENTELEMETRY_ENABLED_CONFIG_KEY]).isEqualTo(true)
@@ -600,25 +573,36 @@ internal class OtelTracerBuilderProviderTest {
     }
 
     @Test
-    fun `M not update the Context W build { TracingFeature not enabled }`() {
-        // WHEN
+    fun `M not update the context W build() {tracing feature not enabled}`() {
+        // Given
         whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
+
+        // When
         testedOtelTracerProviderBuilder.build()
 
-        // THEN
+        // Then
+        verify(mockSdkCore, never()).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any(), any())
+    }
+
+    @Test
+    fun `M not update the context W build() {tracing feature does not provide a writer}`(
+        @Mock mockFeature: Feature
+    ) {
+        // Given
+        whenever(mockTracingFeatureScope.unwrap<Feature>()) doReturn mockFeature
+
+        // When
+        testedOtelTracerProviderBuilder.build()
+
+        // Then
         verify(mockSdkCore, never()).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any(), any())
     }
 
     // endregion
 
-    class StubTracingFeature : Feature, InternalCoreWriterProvider {
-        override val name: String = ""
-        override fun onStop() = Unit
-        override fun onInitialize(appContext: Context) = Unit
-        override fun getCoreTracerWriter(): DatadogSpanWriter = mock()
-    }
+    private interface TraceWriterFeature : Feature, InternalCoreWriterProvider
 
-    companion object {
+    private companion object {
 
         private const val DATADOG_INITIAL_CONTEXT: String = "_dd.datadog_initial_context"
 
