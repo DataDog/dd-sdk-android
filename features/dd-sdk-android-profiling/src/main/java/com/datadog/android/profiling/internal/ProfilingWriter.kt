@@ -24,6 +24,7 @@ internal interface ProfilingWriter {
     fun writeTriggerProfile(
         perfettoResult: PerfettoResult,
         rumErrorId: String,
-        rumContext: ProfilingRumContext
+        rumContext: ProfilingRumContext,
+        onWritten: (Boolean) -> Unit = {}
     )
 }

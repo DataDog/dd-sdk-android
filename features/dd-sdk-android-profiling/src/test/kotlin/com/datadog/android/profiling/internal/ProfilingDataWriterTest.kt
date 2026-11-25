@@ -44,16 +44,17 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
-import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
-import org.mockito.kotlin.times
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
@@ -1096,6 +1097,9 @@ internal class ProfilingDataWriterTest {
     ) {
         // Given
         val profileFile = File(tmp, fakeFileName).apply { writeBytes(forge.aString().toByteArray()) }
+        val fakeIsWritten = forge.aBool()
+        whenever(mockEventBatchWriter.write(any(), anyOrNull(), any())) doReturn fakeIsWritten
+        val mockOnWritten = mock<(Boolean) -> Unit>()
 
         // When
         testedDataWriterTest.writeTriggerProfile(
@@ -1107,10 +1111,13 @@ internal class ProfilingDataWriterTest {
                 profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
             ),
             rumErrorId = rumErrorId,
-            rumContext = rumContext
+            rumContext = rumContext,
+            onWritten = mockOnWritten
         )
 
         // Then
+        verify(mockOnWritten)(fakeIsWritten)
+        verifyNoMoreInteractions(mockOnWritten)
         val argumentCaptor = argumentCaptor<RawBatchEvent>()
         verify(mockEventBatchWriter).write(
             event = argumentCaptor.capture(),
@@ -1173,6 +1180,7 @@ internal class ProfilingDataWriterTest {
     ) {
         // Given
         val profileFile = File(tmp, fakeFileName).apply { writeBytes(ByteArray(0)) }
+        val mockOnWritten = mock<(Boolean) -> Unit>()
 
         // When
         testedDataWriterTest.writeTriggerProfile(
@@ -1182,10 +1190,13 @@ internal class ProfilingDataWriterTest {
                 profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
             ),
             rumErrorId = rumErrorId,
-            rumContext = rumContext
+            rumContext = rumContext,
+            onWritten = mockOnWritten
         )
 
         // Then
+        verify(mockOnWritten)(false)
+        verifyNoMoreInteractions(mockOnWritten)
         verifyNoInteractions(mockEventBatchWriter)
         assertThat(profileFile.exists()).isFalse()
     }

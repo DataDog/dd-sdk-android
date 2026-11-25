@@ -17,13 +17,16 @@ import android.os.Handler
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -39,6 +42,7 @@ import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITOR
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.PendingOomErrorStore
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
@@ -1244,6 +1248,22 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `M shut down OOM error executor W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val mockOomErrorExecutorService: ScheduledThreadPoolExecutor = mock()
+        testedFeature.oomErrorExecutorService = mockOomErrorExecutorService
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockOomErrorExecutorService).shutdownNow()
+        assertThat(testedFeature.oomErrorExecutorService)
+            .isInstanceOf(NoOpScheduledExecutorService::class.java)
+    }
+
+    @Test
     fun `M reset scheduler executor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -2050,6 +2070,36 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `M forward OOM profile messages to the store without a context-thread hop W onReceive()`(
+        @StringForgery fakeErrorId: String,
+        forge: Forge
+    ) {
+        val fakeIsWritten = forge.aBool()
+        // Given
+        val mockRumScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
+        val mockPendingOomErrorStore = mock<PendingOomErrorStore>()
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            pendingOomErrorStoreFactory = { mockPendingOomErrorStore }
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onReceive(ProfilerEvent.OomProfileWriteResult(fakeErrorId, fakeIsWritten))
+        testedFeature.onReceive(ProfilerEvent.OomProfilingReady)
+
+        // Then
+        verify(mockPendingOomErrorStore).onOomProfileWriteResult(fakeErrorId, fakeIsWritten)
+        verify(mockPendingOomErrorStore).onProfilingReady()
+        // The store is lock-protected and doesn't need the context: no hop through the RUM thread.
+        verify(mockRumScope, never()).withContext(any(), any())
+    }
+
+    @Test
     fun `M destroy startup detector directly W onStop() {on main thread}`() {
         // Given
         val mockHandler: Handler = mock()
@@ -2069,7 +2119,7 @@ internal class RumFeatureTest {
 
         // Then
         verify(mockDetector).destroy()
-        verifyNoInteractions(mockHandler)
+        verifyNoMoreInteractions(mockHandler)
     }
 
     @Test

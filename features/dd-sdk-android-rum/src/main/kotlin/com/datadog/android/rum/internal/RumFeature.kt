@@ -40,6 +40,7 @@ import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingThreadDump
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -61,6 +62,7 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.PendingOomErrorStore
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
@@ -161,10 +163,19 @@ internal class RumFeature(
         DatadogLateCrashReporter(it)
     },
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
-    private val handler: Handler = Handler(Looper.getMainLooper())
+    private val handler: Handler = Handler(Looper.getMainLooper()),
+    internal val pendingOomErrorStoreFactory: (() -> PendingOomErrorStore)? = null
 ) : StorageBackedFeature, FeatureEventReceiver, HeatmapIdentifierRegistryProvider {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
+
+    // Created in onInitialize, shut down in onStop; NoOp before and after, like the vital executor.
+    internal var oomErrorExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
+    internal val pendingOomErrorStore = if (pendingOomErrorStoreFactory != null) {
+        pendingOomErrorStoreFactory()
+    } else {
+        defaultPendingOomErrorStore()
+    }
     internal val initialized = AtomicBoolean(false)
 
     internal var sampleRate: Float = 0f
@@ -286,6 +297,8 @@ internal class RumFeature(
 
         // The scheduler executor backs both the CPU/memory vital monitors and timeseries sampling.
         if (vitalsUpdatesRequired || configuration.timeseriesConfiguration != null) initializeSchedulerExecutorService()
+
+        oomErrorExecutorService = sdkCore.createScheduledExecutorService("rum-oom-error")
 
         if (vitalsUpdatesRequired) {
             // CPU/memory monitors schedule on the scheduler executor, so they are only set up when vitals
@@ -457,6 +470,8 @@ internal class RumFeature(
         anrDetectorExecutorService?.shutdownNow()
         anrDetectorRunnable?.stop()
         schedulerExecutorService = NoOpScheduledExecutorService()
+        oomErrorExecutorService.shutdownNow()
+        oomErrorExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
 
         cleanupInfoProviders()
@@ -523,6 +538,13 @@ internal class RumFeature(
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             is ProfilingAnrDetectedEvent -> handleProfilingAnrDetectedEvent(event)
+
+            is ProfilerEvent.OomProfileWriteResult -> pendingOomErrorStore.onOomProfileWriteResult(
+                event.rumErrorId,
+                event.isWritten
+            )
+
+            is ProfilerEvent.OomProfilingReady -> pendingOomErrorStore.onProfilingReady()
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -705,6 +727,12 @@ internal class RumFeature(
         viewTrackingStrategy.register(sdkCore, appContext)
         longTaskTrackingStrategy.register(sdkCore, appContext)
     }
+
+    private fun defaultPendingOomErrorStore() = PendingOomErrorStore(
+        sdkCore,
+        { oomErrorExecutorService },
+        { sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.dataStore }
+    ) { dataWriter }
 
     private fun unregisterTrackingStrategies(appContext: Context?) {
         actionTrackingStrategy.unregister(appContext)
