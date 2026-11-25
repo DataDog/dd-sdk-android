@@ -181,27 +181,13 @@ internal class PendingOomErrorStore(
         )
     }
 
-    /** Same attribute sanitization and safe mapping as the RUM event serializer. */
-    internal class ErrorEventSerializer(
-        private val internalLogger: InternalLogger,
-        private val delegate: Serializer<Any> = RumEventSerializer(internalLogger)
-    ) : Serializer<ErrorEvent> {
+    /**
+     * Same attribute sanitization as the RUM event serializer.
+     */
+    internal class ErrorEventSerializer(internalLogger: InternalLogger) : Serializer<ErrorEvent> {
+        private val delegate = RumEventSerializer(internalLogger)
 
-        override fun serialize(model: ErrorEvent): String? {
-            return try {
-                delegate.serialize(model)
-            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-                // Throwable: customer attribute toString() runs here, and an OOM can happen under memory pressure.
-                // The data store reports a null value as a failed write: the error is written right away.
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                    { LOG_SERIALIZATION_FAILED },
-                    e
-                )
-                null
-            }
-        }
+        override fun serialize(model: ErrorEvent): String = delegate.serialize(model)
     }
 
     internal class ErrorEventDeserializer : Deserializer<String, ErrorEvent> {
@@ -233,8 +219,6 @@ internal class PendingOomErrorStore(
         internal val TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1)
         internal const val OPERATION_TIMEOUT = "pending_oom_error_timeout"
         internal const val LOG_HELD = "Fatal OOM error held until the outcome of its OOM profile is known."
-        internal const val LOG_SERIALIZATION_FAILED =
-            "Fatal OOM error could not be serialized: it is written right away."
         internal const val LOG_TIMED_OUT =
             "Held OOM error written without profiling status: no OOM profile outcome in time."
     }

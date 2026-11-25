@@ -169,8 +169,6 @@ internal class RumFeature(
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
 
-    // Created in onInitialize, shut down in onStop; NoOp before and after, like the vital executor.
-    internal var oomErrorExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
     internal val pendingOomErrorStore = if (pendingOomErrorStoreFactory != null) {
         pendingOomErrorStoreFactory()
     } else {
@@ -295,10 +293,10 @@ internal class RumFeature(
         val frequency = configuration.vitalsMonitorUpdateFrequency
         val vitalsUpdatesRequired = frequency != VitalsUpdateFrequency.NEVER
 
-        // The scheduler executor backs both the CPU/memory vital monitors and timeseries sampling.
-        if (vitalsUpdatesRequired || configuration.timeseriesConfiguration != null) initializeSchedulerExecutorService()
-
-        oomErrorExecutorService = sdkCore.createScheduledExecutorService("rum-oom-error")
+        // The scheduler executor backs the CPU/memory vital monitors, timeseries sampling and the held OOM
+        // error timeout. It is always created: a loaded held error is removed from disk, so without its
+        // timeout it would be lost if profiling never answers. Its thread only starts with the first task.
+        initializeSchedulerExecutorService()
 
         if (vitalsUpdatesRequired) {
             // CPU/memory monitors schedule on the scheduler executor, so they are only set up when vitals
@@ -470,8 +468,6 @@ internal class RumFeature(
         anrDetectorExecutorService?.shutdownNow()
         anrDetectorRunnable?.stop()
         schedulerExecutorService = NoOpScheduledExecutorService()
-        oomErrorExecutorService.shutdownNow()
-        oomErrorExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
 
         cleanupInfoProviders()
@@ -730,7 +726,7 @@ internal class RumFeature(
 
     private fun defaultPendingOomErrorStore() = PendingOomErrorStore(
         sdkCore,
-        { oomErrorExecutorService },
+        { schedulerExecutorService },
         { sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.dataStore }
     ) { dataWriter }
 
