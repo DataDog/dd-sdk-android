@@ -86,6 +86,33 @@ internal class ResponseSigningChainTest {
         }
     }
 
+    // Each manifest root variant that names a credential, such as root-eku-* and root-pathlen-0, with its expectation.
+    @TestFactory
+    fun `M match expected results W verify() {manifest root variants of a shared credential}`(): List<DynamicTest> =
+        resource("manifest.json").getAsJsonObject("files").entrySet()
+            .filter { (_, entry) -> entry.asJsonObject.has("credential") }
+            .map { (file, entry) ->
+                val credentialName = entry.asJsonObject["credential"].asString.removeSuffix(".json")
+                val expected = entry.asJsonObject["expected"].asString == "accept"
+                DynamicTest.dynamicTest("$credentialName with [$file] -> ${if (expected) "accept" else "reject"}") {
+                    // Given
+                    val now = chainNow()
+                    val request = request()
+                    val headers = credential(credentialName).sign(request, BODY, now)
+                    // When
+                    val result = ResponseSigningVerifier(listOf(root(file.removeSuffix(".pem"))))
+                        .verification(request, 200, headers, BODY, now)
+                    // Then
+                    assertThat(result.proof != null).isEqualTo(expected)
+                    if (!expected) {
+                        assertThat(
+                            result.failure
+                        ).isEqualTo(ResponseSigningFailureReason.INVALID_CERTIFICATE)
+                    }
+                }
+            }
+            .also { assertThat(it).isNotEmpty }
+
     @Test
     fun `M accept rotated leaves and intermediates W verify() {one verifier, one root}`() {
         // Given

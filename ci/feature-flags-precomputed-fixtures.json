@@ -18,14 +18,14 @@
       "format": "tree",
       "path": "response-signing/v1/",
       "destination": "features/dd-sdk-android-flags/src/test/resources/response-signing-v1",
-      "commit": "92f8cf8bc2e2ac67d1732c76f4f9266864796d99"
+      "commit": "f9eabd7ff0581c405a79aadcfcd3b476d37bf0c7"
     },
     {
       "name": "response-signing-chain",
       "format": "tree",
       "path": "response-signing/chain/",
       "destination": "features/dd-sdk-android-flags/src/test/resources/response-signing-chain",
-      "commit": "92f8cf8bc2e2ac67d1732c76f4f9266864796d99"
+      "commit": "f9eabd7ff0581c405a79aadcfcd3b476d37bf0c7"
     }
   ]
 }
