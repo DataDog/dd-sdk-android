@@ -1,19 +1,19 @@
 class com.datadog.android.trace.opentelemetry.DatadogOpenTelemetry : io.opentelemetry.api.OpenTelemetry
-  constructor(String)
+  constructor(serviceName: String)
   override fun getTracerProvider(): io.opentelemetry.api.trace.TracerProvider
   override fun getPropagators(): io.opentelemetry.context.propagation.ContextPropagators
 class com.datadog.android.trace.opentelemetry.OtelTracerProvider : io.opentelemetry.api.trace.TracerProvider
-  override fun get(String): io.opentelemetry.api.trace.Tracer
-  override fun get(String, String): io.opentelemetry.api.trace.Tracer
-  override fun tracerBuilder(String): io.opentelemetry.api.trace.TracerBuilder
+  override fun get(instrumentationName: String): io.opentelemetry.api.trace.Tracer
+  override fun get(instrumentationName: String, instrumentationVersion: String): io.opentelemetry.api.trace.Tracer
+  override fun tracerBuilder(instrumentationScopeName: String): io.opentelemetry.api.trace.TracerBuilder
   class Builder
-    constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+    constructor(sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun build(): io.opentelemetry.api.trace.TracerProvider
-    fun setTracingHeaderTypes(Set<com.datadog.android.trace.TracingHeaderType>): Builder
-    fun setService(String): Builder
-    fun setPartialFlushThreshold(Int): Builder
-    fun addTag(String, String): Builder
-    fun setSampleRate(Double): Builder
-    fun setTraceRateLimit(Int): Builder
-    fun setBundleWithRumEnabled(Boolean): Builder
+    fun setTracingHeaderTypes(headerTypes: Set<com.datadog.android.trace.TracingHeaderType>): Builder
+    fun setService(service: String): Builder
+    fun setPartialFlushThreshold(threshold: Int): Builder
+    fun addTag(key: String, value: String): Builder
+    fun setSampleRate(sampleRate: Double): Builder
+    fun setTraceRateLimit(traceRateLimit: Int): Builder
+    fun setBundleWithRumEnabled(enabled: Boolean): Builder
   override fun toString(): String

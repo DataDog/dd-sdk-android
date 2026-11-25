@@ -1,5 +1,5 @@
 object com.datadog.android.webview.WebViewTracking
-  fun enable(android.webkit.WebView, List<String>, Float = 100f, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun enable(webView: android.webkit.WebView, allowedHosts: List<String>, logsSampleRate: Float = 100f, sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance())
   class _InternalWebViewProxy
-    constructor(com.datadog.android.api.SdkCore, String? = null)
-    fun consumeWebviewEvent(String)
+    constructor(sdkCore: com.datadog.android.api.SdkCore, webViewId: String? = null)
+    fun consumeWebviewEvent(event: String)

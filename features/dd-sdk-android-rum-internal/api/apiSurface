@@ -1,32 +1,32 @@
 data class com.datadog.android.rum.internal.domain.Time
-  constructor(Long, Long)
+  constructor(timestamp: Long, nanoTime: Long)
   companion object 
-    fun now(com.datadog.android.internal.time.TimeProvider): Time
-    fun fromTimestampMillis(Long, com.datadog.android.internal.time.TimeProvider): Time
-    fun fromNanoTime(Long, com.datadog.android.internal.time.TimeProvider): Time
+    fun now(timeProvider: com.datadog.android.internal.time.TimeProvider): Time
+    fun fromTimestampMillis(timestamp: Long, timeProvider: com.datadog.android.internal.time.TimeProvider): Time
+    fun fromNanoTime(nanoTime: Long, timeProvider: com.datadog.android.internal.time.TimeProvider): Time
 object com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener
   val isInstalled: Boolean
   val attachedListenerCount: Int
-  fun install(android.app.Application)
-  fun attach(RumAppStartupDetector.Listener)
-  fun detach(RumAppStartupDetector.Listener)
-  override fun onAppStartupDetected(RumStartupScenario)
-  override fun onTTIDComputed(RumStartupScenario, Long, Boolean)
+  fun install(application: android.app.Application)
+  fun attach(listener: RumAppStartupDetector.Listener)
+  fun detach(listener: RumAppStartupDetector.Listener)
+  override fun onAppStartupDetected(scenario: RumStartupScenario)
+  override fun onTTIDComputed(scenario: RumStartupScenario, durationNs: Long, wasForwarded: Boolean)
 interface com.datadog.android.rum.internal.startup.RumAppStartupDetector
   interface Listener
-    fun onAppStartupDetected(RumStartupScenario)
-    fun onTTIDComputed(RumStartupScenario, Long, Boolean)
+    fun onAppStartupDetected(scenario: RumStartupScenario)
+    fun onTTIDComputed(scenario: RumStartupScenario, durationNs: Long, wasForwarded: Boolean)
   fun destroy()
 class com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl : RumAppStartupDetector, android.app.Application.ActivityLifecycleCallbacks
-  constructor(android.app.Application, com.datadog.android.internal.system.BuildSdkVersionProvider, () -> com.datadog.android.rum.internal.domain.Time, () -> com.datadog.android.rum.internal.domain.Time, RumAppStartupDetector.Listener, (android.app.Activity) -> Boolean, RumFirstDrawTimeReporter)
-  override fun onActivityPreCreated(android.app.Activity, android.os.Bundle?)
-  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
-  override fun onActivityDestroyed(android.app.Activity)
-  override fun onActivityPaused(android.app.Activity)
-  override fun onActivityResumed(android.app.Activity)
-  override fun onActivitySaveInstanceState(android.app.Activity, android.os.Bundle)
-  override fun onActivityStarted(android.app.Activity)
-  override fun onActivityStopped(android.app.Activity)
+  constructor(application: android.app.Application, buildSdkVersionProvider: com.datadog.android.internal.system.BuildSdkVersionProvider, appStartupTime: () -> com.datadog.android.rum.internal.domain.Time, currentTime: () -> com.datadog.android.rum.internal.domain.Time, listener: RumAppStartupDetector.Listener, appStartupActivityPredicate: (android.app.Activity) -> Boolean, rumFirstDrawTimeReporter: RumFirstDrawTimeReporter)
+  override fun onActivityPreCreated(activity: android.app.Activity, savedInstanceState: android.os.Bundle?)
+  override fun onActivityCreated(activity: android.app.Activity, savedInstanceState: android.os.Bundle?)
+  override fun onActivityDestroyed(activity: android.app.Activity)
+  override fun onActivityPaused(activity: android.app.Activity)
+  override fun onActivityResumed(activity: android.app.Activity)
+  override fun onActivitySaveInstanceState(activity: android.app.Activity, outState: android.os.Bundle)
+  override fun onActivityStarted(activity: android.app.Activity)
+  override fun onActivityStopped(activity: android.app.Activity)
   override fun destroy()
   companion object 
     val MAX_TTID_DURATION_NS: Long
@@ -34,37 +34,37 @@ interface com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporter
   interface Handle
     fun unsubscribe()
   interface Callback
-    fun onFirstFrameDrawn(Long)
-  fun subscribeToFirstFrameDrawn(android.app.Activity, Callback): Handle
+    fun onFirstFrameDrawn(timestampNs: Long)
+  fun subscribeToFirstFrameDrawn(activity: android.app.Activity, callback: Callback): Handle
 class com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporterHandleImpl : RumFirstDrawTimeReporter.Handle, com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener, android.view.View.OnAttachStateChangeListener, android.view.ViewTreeObserver.OnDrawListener
-  constructor(RumFirstDrawTimeReporter.Callback, android.app.Activity, com.datadog.android.api.InternalLogger, () -> Long, com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry, android.os.Handler)
+  constructor(callback: RumFirstDrawTimeReporter.Callback, activity: android.app.Activity, internalLogger: com.datadog.android.api.InternalLogger, timeProviderNs: () -> Long, windowCallbacksRegistry: com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry, handler: android.os.Handler)
   override fun unsubscribe()
   override fun onContentChanged()
-  override fun onViewAttachedToWindow(android.view.View)
-  override fun onViewDetachedFromWindow(android.view.View)
+  override fun onViewAttachedToWindow(v: android.view.View)
+  override fun onViewDetachedFromWindow(v: android.view.View)
   override fun onDraw()
 class com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporterImpl : RumFirstDrawTimeReporter
-  constructor(com.datadog.android.api.InternalLogger, () -> Long, com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry, android.os.Handler)
-  override fun subscribeToFirstFrameDrawn(android.app.Activity, RumFirstDrawTimeReporter.Callback): RumFirstDrawTimeReporter.Handle
+  constructor(internalLogger: com.datadog.android.api.InternalLogger, timeProviderNs: () -> Long, windowCallbacksRegistry: com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry, handler: android.os.Handler)
+  override fun subscribeToFirstFrameDrawn(activity: android.app.Activity, callback: RumFirstDrawTimeReporter.Callback): RumFirstDrawTimeReporter.Handle
 sealed interface com.datadog.android.rum.internal.startup.RumStartupScenario
   val initialTime: com.datadog.android.rum.internal.domain.Time
   val hasSavedInstanceStateBundle: Boolean
   val activity: java.lang.ref.WeakReference<android.app.Activity>
   class Cold : RumStartupScenario
-    constructor(Boolean, java.lang.ref.WeakReference<android.app.Activity>, Long, com.datadog.android.rum.internal.domain.Time)
+    constructor(hasSavedInstanceStateBundle: Boolean, activity: java.lang.ref.WeakReference<android.app.Activity>, appStartActivityOnCreateGapNs: Long, initialTime: com.datadog.android.rum.internal.domain.Time)
   class WarmFirstActivity : RumStartupScenario
-    constructor(Boolean, java.lang.ref.WeakReference<android.app.Activity>, Long, com.datadog.android.rum.internal.domain.Time)
+    constructor(hasSavedInstanceStateBundle: Boolean, activity: java.lang.ref.WeakReference<android.app.Activity>, appStartActivityOnCreateGapNs: Long, initialTime: com.datadog.android.rum.internal.domain.Time)
   class WarmAfterActivityDestroyed : RumStartupScenario
-    constructor(Boolean, java.lang.ref.WeakReference<android.app.Activity>, com.datadog.android.rum.internal.domain.Time)
+    constructor(hasSavedInstanceStateBundle: Boolean, activity: java.lang.ref.WeakReference<android.app.Activity>, initialTime: com.datadog.android.rum.internal.domain.Time)
 val name: String
 val appStartActivityOnCreateGapNs: Long?
 data class com.datadog.android.rum.internal.startup.RumTTIDInfo
-  constructor(RumStartupScenario, Long, Boolean = false)
+  constructor(scenario: RumStartupScenario, durationNs: Long, wasForwarded: Boolean = false)
 interface com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
   fun onContentChanged()
 interface com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
-  fun addListener(android.app.Activity, RumWindowCallbackListener)
-  fun removeListener(android.app.Activity, RumWindowCallbackListener)
+  fun addListener(activity: android.app.Activity, listener: RumWindowCallbackListener)
+  fun removeListener(activity: android.app.Activity, listener: RumWindowCallbackListener)
 class com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl : RumWindowCallbacksRegistry
-  override fun addListener(android.app.Activity, RumWindowCallbackListener)
-  override fun removeListener(android.app.Activity, RumWindowCallbackListener)
+  override fun addListener(activity: android.app.Activity, listener: RumWindowCallbackListener)
+  override fun removeListener(activity: android.app.Activity, listener: RumWindowCallbackListener)
