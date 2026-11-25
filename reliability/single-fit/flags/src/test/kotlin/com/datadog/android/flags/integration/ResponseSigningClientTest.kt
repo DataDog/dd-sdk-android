@@ -38,14 +38,24 @@ import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeCo
 import com.datadog.android.flags.integration.tests.utils.responseSigningWithTestRoots
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
+import com.datadog.android.flags.openfeature.asOpenFeatureProvider
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.google.gson.JsonParser
+import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+import dev.openfeature.kotlin.sdk.OpenFeatureStatus
+import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.OkHttpClient
@@ -1026,6 +1036,83 @@ internal class ResponseSigningClientTest {
             assertThat(store.values).isNotEmpty()
         }
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["unsigned", "tampered"])
+    fun `M persist no flag data W setEvaluationContext() {required rejects the response}`(kind: String) {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        responseKind = kind
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(store.values).isEmpty()
+        assertThat(store.operations).isZero()
+        // When the app restarts and the next fetch fails
+        stubCore.stopFeatures()
+        responseKind = "403"
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+        assertThat(store.values).isEmpty()
+        assertThat(store.operations).isZero()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @ParameterizedTest
+    @ValueSource(strings = ["unsigned", "403"])
+    fun `M report each failure once W OpenFeatureAPI {required, initialize and context set fail}`(kind: String) =
+        runTest {
+            // Given
+            create(ResponseSigningMode.REQUIRED)
+            responseKind = kind
+            val dispatcher = UnconfinedTestDispatcher(testScheduler)
+            val errorStatuses = mutableListOf<OpenFeatureStatus.Error>()
+            val errorEvents = mutableListOf<OpenFeatureProviderEvents.ProviderError>()
+            backgroundScope.launch(dispatcher) {
+                OpenFeatureAPI.statusFlow.filterIsInstance<OpenFeatureStatus.Error>().collect { errorStatuses += it }
+            }
+            backgroundScope.launch(dispatcher) {
+                OpenFeatureAPI.observe<OpenFeatureProviderEvents.ProviderError>().collect { errorEvents += it }
+            }
+            try {
+                // When
+                val initialize = launch(dispatcher) {
+                    OpenFeatureAPI.setProviderAndWait(
+                        testedClient.asOpenFeatureProvider(),
+                        ImmutableContext("subject"),
+                        dispatcher
+                    )
+                }
+                queue.removeFirst().run()
+                initialize.join()
+                val initializeCounts = errorStatuses.size to errorEvents.size
+                val contextSet = launch(dispatcher) {
+                    OpenFeatureAPI.setEvaluationContextAndWait(ImmutableContext("other-subject"))
+                }
+                queue.removeFirst().run()
+                contextSet.join()
+                // Then
+                val signingFailure = kind == "unsigned"
+                val expectedEvents = if (signingFailure) 0 else 1
+                // A 403 keeps its provider event, so OpenFeature reports it as an event and as the thrown error.
+                assertThat(initializeCounts).isEqualTo(1 + expectedEvents to expectedEvents)
+                assertThat(errorStatuses.size to errorEvents.size)
+                    .isEqualTo(2 * (1 + expectedEvents) to 2 * expectedEvents)
+                assertThat(OpenFeatureAPI.getStatus()).isInstanceOf(OpenFeatureStatus.Error::class.java)
+                if (signingFailure) {
+                    assertThat(errorStatuses).allSatisfy {
+                        assertThat(it.error.message).startsWith("Flag response signing failed (missing-proof)")
+                    }
+                }
+            } finally {
+                OpenFeatureAPI.shutdown()
+            }
+        }
 
     private fun failureCallback(failures: MutableList<Throwable>) = object : EvaluationContextCallback {
         override fun onSuccess() = Unit

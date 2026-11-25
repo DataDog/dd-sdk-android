@@ -7,8 +7,10 @@
 package com.datadog.android.flags.openfeature
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInvalidContextException
+import com.datadog.android.flags.FlagsResponseSigningException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.FlagsClientState
@@ -103,6 +105,7 @@ class DatadogFlagsProvider private constructor(
 
     private val exposureDecisions = ExposureDecisions()
     private val nextDecisionId = AtomicInteger(0)
+    private val contextOperationsInFlight = AtomicInteger(0)
 
     override val metadata: ProviderMetadata = DatadogProviderMetadata(PROVIDER_NAME, exposureDecisions, internalLogger)
 
@@ -231,7 +234,8 @@ class DatadogFlagsProvider private constructor(
      * **Provider emits** (via this Flow):
      * - [FlagsClientState.Ready] → [OpenFeatureProviderEvents.ProviderReady]
      * - [FlagsClientState.Stale] → [OpenFeatureProviderEvents.ProviderStale]
-     * - [FlagsClientState.Error] → [OpenFeatureProviderEvents.ProviderError]
+     * - [FlagsClientState.Error] → [OpenFeatureProviderEvents.ProviderError], except for a response signing failure
+     *   while [initialize] or [onContextSet] runs: the error those methods throw already sets the Error status.
      *
      * **SDK emits** (not from provider):
      * - [PROVIDER_RECONCILING]: SDK emits while [onContextSet] is executing
@@ -255,15 +259,8 @@ class DatadogFlagsProvider private constructor(
                     FlagsClientState.Reconciling -> null // SDK emits PROVIDER_RECONCILING
                     FlagsClientState.Ready -> OpenFeatureProviderEvents.ProviderReady
                     FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale
-                    is FlagsClientState.Error -> newState.error.let { cause ->
-                        OpenFeatureProviderEvents.ProviderError(
-                            error = when (cause) {
-                                is FlagsInvalidContextException ->
-                                    OpenFeatureError.InvalidContextError(cause.message ?: "Invalid evaluation context")
-                                else -> OpenFeatureError.GeneralError(cause?.message ?: "Unable to fetch feature flags")
-                            }
-                        )
-                    }
+                    is FlagsClientState.Error ->
+                        if (isReportedByContextOperation(newState.error)) null else providerError(newState.error)
                 }
                 contextUpdateAdmission.publishStateIfAdmitted {
                     providerEvent?.let { trySend(it) }
@@ -320,12 +317,17 @@ class DatadogFlagsProvider private constructor(
         } else {
             null
         }
-        val outcome = flagsClient.setEvaluationContextSuspend(
-            datadogContext,
-            telemetryOptedOut,
-            isCurrentOperation = { contextUpdateAdmission.isCurrent(operation) },
-            admitUpdate = { registration -> contextUpdateAdmission.admit(operation, registration) }
-        )
+        contextOperationsInFlight.incrementAndGet()
+        val outcome = try {
+            flagsClient.setEvaluationContextSuspend(
+                datadogContext,
+                telemetryOptedOut,
+                isCurrentOperation = { contextUpdateAdmission.isCurrent(operation) },
+                admitUpdate = { registration -> contextUpdateAdmission.admit(operation, registration) }
+            )
+        } finally {
+            contextOperationsInFlight.decrementAndGet()
+        }
         if (outcome == ContextUpdateOutcome.STALE) {
             // OpenFeature Kotlin 0.6.2 unconditionally publishes Ready when initialize() or onContextSet()
             // returns. Cancellation is the only completion path that skips that overwrite, leaving the
@@ -335,6 +337,21 @@ class DatadogFlagsProvider private constructor(
             throw CancellationException("Context completed with stale assignments")
         }
     }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // OpenFeatureError constructors only store the message.
+    private fun providerError(cause: Throwable?) = OpenFeatureProviderEvents.ProviderError(
+        error = when (cause) {
+            is FlagsInvalidContextException ->
+                OpenFeatureError.InvalidContextError(cause.message ?: "Invalid evaluation context")
+            else -> OpenFeatureError.GeneralError(cause?.message ?: "Unable to fetch feature flags")
+        }
+    )
+
+    // OpenFeature sets the Error status from the error that initialize() or onContextSet() throws. A provider event
+    // for the same signing failure would make listeners see it twice. Other failures keep their event.
+    @OptIn(ExperimentalFlagsApi::class)
+    private fun isReportedByContextOperation(error: Throwable?): Boolean =
+        error is FlagsResponseSigningException && contextOperationsInFlight.get() > 0
 
     private fun targetingContext(context: OpenFeatureEvaluationContext?): DatadogEvaluationContext =
         context?.toDatadogEvaluationContext(experimentationOptOutEnabled) ?: DatadogEvaluationContext.EMPTY

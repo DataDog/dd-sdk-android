@@ -11,9 +11,11 @@ package com.datadog.android.flags.openfeature
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
+import com.datadog.android.flags.FlagsResponseSigningException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
@@ -1299,6 +1301,30 @@ internal class DatadogFlagsProviderTest {
         assertThat(providerError.error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
         assertThat(providerError.error).hasMessage(timeoutMessage)
         assertThat(events[1]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
+    }
+
+    @OptIn(ExperimentalFlagsApi::class)
+    @Test
+    fun `M emit ProviderError W observe() {signing failure outside a context operation}`() = runTest {
+        // Given
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+        val expiredMessage = "Flag response signing failed (expired-proof): the proof expired"
+        val stubSigningError = mock<FlagsResponseSigningException>()
+        whenever(stubSigningError.message).thenReturn(expiredMessage)
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        testScheduler.runCurrent()
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error(stubSigningError))
+        testScheduler.runCurrent()
+        job.cancel()
+
+        // Then - only initialize() and onContextSet() report a signing failure through their thrown error
+        val providerError = events.single() as OpenFeatureProviderEvents.ProviderError
+        assertThat(providerError.error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
+        assertThat(providerError.error).hasMessage(expiredMessage)
     }
 
     @Test
