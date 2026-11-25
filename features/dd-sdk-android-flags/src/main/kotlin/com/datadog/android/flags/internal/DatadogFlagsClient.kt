@@ -540,6 +540,11 @@ internal class DatadogFlagsClient(
                 errorMessage = exception.message ?: "Type mismatch"
             }
 
+            is UnsupportedVariationTypeException -> {
+                errorCode = ErrorCode.PARSE_ERROR
+                errorMessage = exception.message ?: "Unsupported variation type"
+            }
+
             else -> {
                 errorCode = ErrorCode.PARSE_ERROR
                 val typeName = FlagValueConverter.getTypeName(defaultValue::class)

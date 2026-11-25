@@ -77,15 +77,28 @@ internal class SdkFeature(
     private val benchmarkSdkUploads: BenchmarkSdkUploads = GlobalBenchmark.getBenchmarkSdkUploads()
 ) : FeatureScope {
 
+    @Volatile
     override var dataStore: DataStoreHandler = NoOpDataStoreHandler()
 
     internal val initialized = AtomicBoolean(false)
     internal val eventReceiver = AtomicReference<FeatureEventReceiver>(null)
+
+    @Volatile
     internal var storage: Storage = NoOpStorage()
+
+    @Volatile
     internal var uploader: DataUploader = NoOpDataUploader()
+
+    @Volatile
     internal var uploadScheduler: UploadScheduler = NoOpUploadScheduler()
+
+    @Volatile
     internal var fileOrchestrator: FileOrchestrator = NoOpFileOrchestrator()
+
+    @Volatile
     internal var metricsDispatcher: MetricsDispatcher = NoOpMetricsDispatcher()
+
+    @Volatile
     internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
     internal val featureContextLock: ReadWriteLock = ReentrantReadWriteLock()
     internal val featureContext: MutableMap<String, Any?> = mutableMapOf()
@@ -135,10 +148,6 @@ internal class SdkFeature(
         initialized.set(true)
 
         uploadScheduler.startScheduling()
-    }
-
-    fun isInitialized(): Boolean {
-        return initialized.get()
     }
 
     @AnyThread

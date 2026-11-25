@@ -1,117 +1,117 @@
 class com.datadog.android.log.Logger
-  fun v(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun d(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun i(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun w(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun e(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun wtf(String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
-  fun log(Int, String, String?, String?, String?, Map<String, Any?> = emptyMap())
+  fun v(message: String, throwable: Throwable? = null, attributes: Map<String, Any?> = emptyMap())
+  fun d(message: String, throwable: Throwable? = null, attributes: Map<String, Any?> = emptyMap())
+  fun i(message: String, throwable: Throwable? = null, attributes: Map<String, Any?> = emptyMap())
+  fun w(message: String, throwable: Throwable? = null, attributes: Map<String, Any?> = emptyMap())
+  fun e(message: String, throwable: Throwable? = null, attributes: Map<String, Any?> = emptyMap())
+  fun wtf(message: String, throwable: Throwable? = null, attributes: Map<String, Any?> = emptyMap())
+  fun log(priority: Int, message: String, throwable: Throwable? = null, attributes: Map<String, Any?> = emptyMap())
+  fun log(priority: Int, message: String, errorKind: String?, errorMessage: String?, errorStacktrace: String?, attributes: Map<String, Any?> = emptyMap())
   class Builder
-    constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+    constructor(sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun build(): Logger
-    fun setService(String): Builder
-    fun setRemoteLogThreshold(Int): Builder
-    fun setLogcatLogsEnabled(Boolean): Builder
-    fun setNetworkInfoEnabled(Boolean): Builder
-    fun setName(String): Builder
-    fun setBundleWithTraceEnabled(Boolean): Builder
-    fun setBundleWithRumEnabled(Boolean): Builder
-    fun setRemoteSampleRate(Float): Builder
-  fun addAttribute(String, Any?)
-  fun removeAttribute(String)
-  fun addTag(String, String)
-  fun addTag(String)
-  fun removeTag(String)
-  fun removeTagsWithKey(String)
+    fun setService(service: String): Builder
+    fun setRemoteLogThreshold(minLogThreshold: Int): Builder
+    fun setLogcatLogsEnabled(enabled: Boolean): Builder
+    fun setNetworkInfoEnabled(enabled: Boolean): Builder
+    fun setName(name: String): Builder
+    fun setBundleWithTraceEnabled(enabled: Boolean): Builder
+    fun setBundleWithRumEnabled(enabled: Boolean): Builder
+    fun setRemoteSampleRate(sampleRate: Float): Builder
+  fun addAttribute(key: String, value: Any?)
+  fun removeAttribute(key: String)
+  fun addTag(key: String, value: String)
+  fun addTag(tag: String)
+  fun removeTag(tag: String)
+  fun removeTagsWithKey(key: String)
 object com.datadog.android.log.Logs
-  fun enable(LogsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
-  fun isEnabled(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
-  fun addAttribute(String, Any?, com.datadog.android.api.SdkCore = Datadog.getInstance())
-  fun removeAttribute(String, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun enable(logsConfiguration: LogsConfiguration, sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun isEnabled(sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
+  fun addAttribute(key: String, value: Any?, sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun removeAttribute(key: String, sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.log.LogsConfiguration
   class Builder
-    fun useCustomEndpoint(String): Builder
-    fun setEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+    fun useCustomEndpoint(endpoint: String): Builder
+    fun setEventMapper(eventMapper: com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
     fun build(): LogsConfiguration
 data class com.datadog.android.log.model.LogEvent
-  constructor(LogEventDevice, Os, Status, kotlin.String, kotlin.String, kotlin.String, Logger, Dd, Usr? = null, Account? = null, Network? = null, Error? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+  constructor(device: LogEventDevice, os: Os, status: Status, service: kotlin.String, message: kotlin.String, date: kotlin.String, logger: Logger, dd: Dd, usr: Usr? = null, account: Account? = null, network: Network? = null, error: Error? = null, buildId: kotlin.String? = null, buildVersion: kotlin.String? = null, ddtags: kotlin.String, additionalProperties: kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
   fun toJson(): com.google.gson.JsonElement
   companion object 
-    fun fromJson(kotlin.String): LogEvent
-    fun fromJsonObject(com.google.gson.JsonObject): LogEvent
+    fun fromJson(jsonString: kotlin.String): LogEvent
+    fun fromJsonObject(jsonObject: com.google.gson.JsonObject): LogEvent
   data class LogEventDevice
-    constructor(Type? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Boolean? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Boolean? = null)
+    constructor(type: Type? = null, name: kotlin.String? = null, model: kotlin.String? = null, brand: kotlin.String? = null, architecture: kotlin.String? = null, locale: kotlin.String? = null, locales: kotlin.collections.List<kotlin.String>? = null, timeZone: kotlin.String? = null, batteryLevel: kotlin.Number? = null, powerSavingMode: kotlin.Boolean? = null, brightnessLevel: kotlin.Number? = null, logicalCpuCount: kotlin.Number? = null, totalRam: kotlin.Number? = null, isLowRam: kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): LogEventDevice
-      fun fromJsonObject(com.google.gson.JsonObject): LogEventDevice
+      fun fromJson(jsonString: kotlin.String): LogEventDevice
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): LogEventDevice
   data class Os
-    constructor(kotlin.String, kotlin.String, kotlin.String? = null, kotlin.String)
+    constructor(name: kotlin.String, version: kotlin.String, build: kotlin.String? = null, versionMajor: kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Os
-      fun fromJsonObject(com.google.gson.JsonObject): Os
+      fun fromJson(jsonString: kotlin.String): Os
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Os
   data class Logger
-    constructor(kotlin.String, kotlin.String? = null, kotlin.String)
+    constructor(name: kotlin.String, threadName: kotlin.String? = null, version: kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Logger
-      fun fromJsonObject(com.google.gson.JsonObject): Logger
+      fun fromJson(jsonString: kotlin.String): Logger
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Logger
   data class Dd
-    constructor(DdDevice)
+    constructor(device: DdDevice)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Dd
-      fun fromJsonObject(com.google.gson.JsonObject): Dd
+      fun fromJson(jsonString: kotlin.String): Dd
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Dd
   data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    constructor(anonymousId: kotlin.String? = null, id: kotlin.String? = null, name: kotlin.String? = null, email: kotlin.String? = null, additionalProperties: kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Usr
-      fun fromJsonObject(com.google.gson.JsonObject): Usr
+      fun fromJson(jsonString: kotlin.String): Usr
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Usr
   data class Account
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    constructor(id: kotlin.String? = null, name: kotlin.String? = null, additionalProperties: kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Account
-      fun fromJsonObject(com.google.gson.JsonObject): Account
+      fun fromJson(jsonString: kotlin.String): Account
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Account
   data class Network
-    constructor(Client)
+    constructor(client: Client)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Network
-      fun fromJsonObject(com.google.gson.JsonObject): Network
+      fun fromJson(jsonString: kotlin.String): Network
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Network
   data class Error
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.List<Thread>? = null)
+    constructor(kind: kotlin.String? = null, message: kotlin.String? = null, stack: kotlin.String? = null, sourceType: kotlin.String? = null, fingerprint: kotlin.String? = null, threads: kotlin.collections.List<Thread>? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Error
-      fun fromJsonObject(com.google.gson.JsonObject): Error
+      fun fromJson(jsonString: kotlin.String): Error
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Error
   data class DdDevice
-    constructor(kotlin.String)
+    constructor(architecture: kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): DdDevice
-      fun fromJsonObject(com.google.gson.JsonObject): DdDevice
+      fun fromJson(jsonString: kotlin.String): DdDevice
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): DdDevice
   data class Client
-    constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
+    constructor(simCarrier: SimCarrier? = null, signalStrength: kotlin.String? = null, downlinkKbps: kotlin.String? = null, uplinkKbps: kotlin.String? = null, connectivity: kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Client
-      fun fromJsonObject(com.google.gson.JsonObject): Client
+      fun fromJson(jsonString: kotlin.String): Client
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Client
   data class Thread
-    constructor(kotlin.String, kotlin.Boolean, kotlin.String, kotlin.String? = null)
+    constructor(name: kotlin.String, crashed: kotlin.Boolean, stack: kotlin.String, state: kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Thread
-      fun fromJsonObject(com.google.gson.JsonObject): Thread
+      fun fromJson(jsonString: kotlin.String): Thread
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Thread
   data class SimCarrier
-    constructor(kotlin.String? = null, kotlin.String? = null)
+    constructor(id: kotlin.String? = null, name: kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): SimCarrier
-      fun fromJsonObject(com.google.gson.JsonObject): SimCarrier
+      fun fromJson(jsonString: kotlin.String): SimCarrier
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): SimCarrier
   enum Status
     - CRITICAL
     - ERROR
@@ -122,7 +122,7 @@ data class com.datadog.android.log.model.LogEvent
     - EMERGENCY
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Status
+      fun fromJson(jsonString: kotlin.String): Status
   enum Type
     - MOBILE
     - DESKTOP
@@ -133,4 +133,4 @@ data class com.datadog.android.log.model.LogEvent
     - OTHER
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Type
+      fun fromJson(jsonString: kotlin.String): Type

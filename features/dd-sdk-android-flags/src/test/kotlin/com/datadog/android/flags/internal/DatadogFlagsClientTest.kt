@@ -1343,6 +1343,38 @@ internal class DatadogFlagsClientTest {
         verifyNoInteractions(mockProcessor)
     }
 
+    @Test
+    fun `M return default with PARSE_ERROR W resolve() { unsupported variation type }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeVariationType = forge.anAlphabeticalString(size = 12) + "-type"
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(variationType = fakeVariationType, doLog = true)
+        val fakeBoolean = forge.aBool()
+        val fakeString = forge.anAlphabeticalString()
+        val fakeInt = forge.anInt()
+        val fakeDouble = forge.aDouble()
+        whenever(mockFlagsRepository.getEvaluationSnapshot(fakeFlagKey)) doReturn
+            FlagEvaluationSnapshot(fakeFlag, fakeDefaultContext, false)
+
+        // When
+        val results = listOf(
+            fakeBoolean to testedClient.resolve(fakeFlagKey, fakeBoolean),
+            fakeString to testedClient.resolve(fakeFlagKey, fakeString),
+            fakeInt to testedClient.resolve(fakeFlagKey, fakeInt),
+            fakeDouble to testedClient.resolve(fakeFlagKey, fakeDouble)
+        )
+
+        // Then
+        results.forEach { (defaultValue, result) ->
+            assertThat(result.value).isEqualTo(defaultValue)
+            assertThat(result.errorCode).isEqualTo(ErrorCode.PARSE_ERROR)
+            assertThat(result.reason).isEqualTo(ResolutionReason.ERROR)
+            assertThat(result.errorMessage)
+                .isEqualTo("Flag '$fakeFlagKey': Unsupported variation type '$fakeVariationType'")
+        }
+        verifyNoInteractions(mockProcessor)
+    }
+
     @ParameterizedTest
     @ValueSource(strings = ["boolean", "string", "object"])
     fun `M return default with TYPE_MISMATCH W resolve() { non-numeric flag, Int default }`(
@@ -2528,12 +2560,13 @@ internal class DatadogFlagsClientTest {
     @ParameterizedTest
     @EnumSource(ExperimentationOptOutMode::class)
     fun `M validate one assignment snapshot W getFlagAssignmentsSnapshot() {context changes during read}`(
-        mode: ExperimentationOptOutMode
+        mode: ExperimentationOptOutMode,
+        forge: Forge
     ) {
         // Given
         val policy = ExperimentationOptOut(mode)
         policy.prepare(fakeDefaultContext)
-        val fakeFlags = mapOf(fakeJsonKey to mock<PrecomputedFlag>())
+        val fakeFlags = mapOf(fakeJsonKey to forge.getForgery<PrecomputedFlag>())
         whenever(mockFlagsRepository.getAssignmentsSnapshot()).thenAnswer {
             policy.prepare(EvaluationContext("new-subject"))
             FlagsAssignmentsSnapshot(fakeFlags, fakeDefaultContext)
@@ -2554,11 +2587,11 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M delegate to repository W getFlagAssignmentsSnapshot()`() {
+    fun `M delegate to repository W getFlagAssignmentsSnapshot()`(forge: Forge) {
         // Given
         val mockSnapshot = mapOf<String, PrecomputedFlag>(
-            "flag1" to mock(),
-            "flag2" to mock()
+            "flag1" to forge.getForgery(),
+            "flag2" to forge.getForgery()
         )
         whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
             FlagsAssignmentsSnapshot(mockSnapshot, fakeDefaultContext)
@@ -2570,6 +2603,26 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isSameAs(mockSnapshot)
         verify(mockFlagsRepository).getAssignmentsSnapshot()
         verify(mockFlagsRepository).waitForPersistenceLoad()
+    }
+
+    @Test
+    fun `M omit unsupported variation types W getFlagAssignmentsSnapshot()`(forge: Forge) {
+        // Given
+        val fakeFlag = forge.getForgery<PrecomputedFlag>()
+        val snapshot = mapOf(
+            "unsupported" to fakeFlag.copy(variationType = forge.anAlphabeticalString(size = 12) + "-type"),
+            "text" to fakeFlag.copy(variationType = VariationType.STRING.value)
+        )
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
+            FlagsAssignmentsSnapshot(snapshot, fakeDefaultContext)
+
+        // When
+        val result = testedClient.getFlagAssignmentsSnapshot()
+        val contextResult = testedClient.getFlagAssignmentsSnapshot(fakeDefaultContext)
+
+        // Then
+        assertThat(result).containsOnlyKeys("text")
+        assertThat(contextResult).isEqualTo(result)
     }
 
     @ParameterizedTest

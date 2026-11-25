@@ -1,57 +1,57 @@
 interface com.datadog.android.flags.EvaluationContextCallback
   fun onSuccess()
-  fun onFailure(Throwable)
+  fun onFailure(error: Throwable)
 annotation com.datadog.android.flags.ExperimentalFlagsApi
 enum com.datadog.android.flags.ExperimentationOptOutMode
   - DISABLED
   - IMMEDIATE
   - FUTURE_EXPERIMENTS_ONLY
 object com.datadog.android.flags.Flags
-  fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun enable(configuration: FlagsConfiguration = FlagsConfiguration.default, sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance())
 class com.datadog.android.flags.FlagsAssignmentAuthorizationException : RuntimeException
 interface com.datadog.android.flags.FlagsClient
-  fun onFirstFlags(FlagsClientEventListener): FlagsSubscription
-  fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback? = null)
-  fun resolveBooleanValue(String, Boolean): Boolean
-  fun resolveStringValue(String, String): String
-  fun resolveDoubleValue(String, Double): Double
-  fun resolveIntValue(String, Int): Int
-  fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
-  fun resolveStructureValue(String, Map<String, Any?>): Map<String, Any?>
-  fun <T: Any> resolve(String, T): com.datadog.android.flags.model.ResolutionDetails<T>
+  fun onFirstFlags(listener: FlagsClientEventListener): FlagsSubscription
+  fun setEvaluationContext(context: com.datadog.android.flags.model.EvaluationContext, callback: EvaluationContextCallback? = null)
+  fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean
+  fun resolveStringValue(flagKey: String, defaultValue: String): String
+  fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double
+  fun resolveIntValue(flagKey: String, defaultValue: Int): Int
+  fun resolveStructureValue(flagKey: String, defaultValue: org.json.JSONObject): org.json.JSONObject
+  fun resolveStructureValue(flagKey: String, defaultValue: Map<String, Any?>): Map<String, Any?>
+  fun <T: Any> resolve(flagKey: String, defaultValue: T): com.datadog.android.flags.model.ResolutionDetails<T>
   val state: StateObservable
   class Builder
-    fun experimentationOptOutMode(ExperimentationOptOutMode): Builder
-    constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
-    fun enableEvaluationTelemetryOptOutParameter(Boolean): Builder
+    fun experimentationOptOutMode(mode: ExperimentationOptOutMode): Builder
+    constructor(name: String = DEFAULT_CLIENT_NAME, sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance())
+    fun enableEvaluationTelemetryOptOutParameter(enabled: Boolean): Builder
     fun build(): FlagsClient
   companion object 
-    fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
+    fun get(name: String = DEFAULT_CLIENT_NAME, sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
 interface com.datadog.android.flags.FlagsClientEventListener
-  fun onEvent(com.datadog.android.flags.model.FlagsClientEvent)
-fun FlagsClient.setEvaluationTelemetryOptOut(Boolean)
+  fun onEvent(event: com.datadog.android.flags.model.FlagsClientEvent)
+fun FlagsClient.setEvaluationTelemetryOptOut(optOut: Boolean)
 data class com.datadog.android.flags.FlagsConfiguration
-  fun copy(Boolean = this.trackExposures, Boolean = this.trackEvaluations, String? = this.customExposureEndpoint, String? = this.customEvaluationEndpoint, String? = this.customFlagEndpoint, Long = this.evaluationFlushIntervalMs, Boolean = this.rumIntegrationEnabled, Boolean = this.gracefulModeEnabled): FlagsConfiguration
+  fun copy(trackExposures: Boolean = this.trackExposures, trackEvaluations: Boolean = this.trackEvaluations, customExposureEndpoint: String? = this.customExposureEndpoint, customEvaluationEndpoint: String? = this.customEvaluationEndpoint, customFlagEndpoint: String? = this.customFlagEndpoint, evaluationFlushIntervalMs: Long = this.evaluationFlushIntervalMs, rumIntegrationEnabled: Boolean = this.rumIntegrationEnabled, gracefulModeEnabled: Boolean = this.gracefulModeEnabled): FlagsConfiguration
   class Builder
-    fun experimentalResponseSigning(ResponseSigningMode): Builder
-    fun expireVerifiedFlags(Boolean): Builder
-    fun trackExposures(Boolean): Builder
-    fun trackEvaluations(Boolean): Builder
-    fun useCustomExposureEndpoint(String): Builder
-    fun useCustomEvaluationEndpoint(String): Builder
-    fun evaluationFlushInterval(Long): Builder
-    fun useCustomFlagEndpoint(String): Builder
-    fun initializationTimeout(Long): Builder
-    fun flagSelection(List<String>?, List<String>?): Builder
-    fun rumIntegrationEnabled(Boolean): Builder
-    fun gracefulModeEnabled(Boolean): Builder
+    fun experimentalResponseSigning(mode: ResponseSigningMode): Builder
+    fun expireVerifiedFlags(enabled: Boolean): Builder
+    fun trackExposures(enabled: Boolean): Builder
+    fun trackEvaluations(enabled: Boolean): Builder
+    fun useCustomExposureEndpoint(endpoint: String): Builder
+    fun useCustomEvaluationEndpoint(endpoint: String): Builder
+    fun evaluationFlushInterval(intervalMs: Long): Builder
+    fun useCustomFlagEndpoint(endpoint: String): Builder
+    fun initializationTimeout(timeoutMs: Long): Builder
+    fun flagSelection(tags: List<String>?, keyPatterns: List<String>?): Builder
+    fun rumIntegrationEnabled(enabled: Boolean): Builder
+    fun gracefulModeEnabled(enabled: Boolean): Builder
     fun build(): FlagsConfiguration
 class com.datadog.android.flags.FlagsContextSupersededException : IllegalStateException
 class com.datadog.android.flags.FlagsInitializationTimeoutException : RuntimeException
 class com.datadog.android.flags.FlagsInvalidContextException : IllegalArgumentException
 class com.datadog.android.flags.FlagsResponseSigningException : RuntimeException
 interface com.datadog.android.flags.FlagsStateListener
-  fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)
+  fun onStateChanged(newState: com.datadog.android.flags.model.FlagsClientState)
 interface com.datadog.android.flags.FlagsSubscription
   fun unsubscribe()
 enum com.datadog.android.flags.ResponseSigningFailureReason
@@ -72,26 +72,26 @@ enum com.datadog.android.flags.ResponseSigningMode
   - REQUIRED
 interface com.datadog.android.flags.StateObservable
   fun getCurrentState(): com.datadog.android.flags.model.FlagsClientState
-  fun addListener(FlagsStateListener)
-  fun removeListener(FlagsStateListener)
+  fun addListener(listener: FlagsStateListener)
+  fun removeListener(listener: FlagsStateListener)
 class com.datadog.android.flags._FlagsInternalProxy
-  constructor(FlagsClient)
+  constructor(client: FlagsClient)
   fun getInternalLogger(): com.datadog.android.api.InternalLogger
   fun isExperimentationOptOutEnabled(): Boolean
-  fun setEvaluationContextWithOutcome(com.datadog.android.flags.model.EvaluationContext, Boolean?, (com.datadog.android.flags.model.FlagsClientState, Throwable?) -> Unit)
-  fun isReportedByContextUpdate(Throwable): Boolean
+  fun setEvaluationContextWithOutcome(context: com.datadog.android.flags.model.EvaluationContext, telemetryOptedOut: Boolean?, completion: (com.datadog.android.flags.model.FlagsClientState, Throwable?) -> Unit)
+  fun isReportedByContextUpdate(error: Throwable): Boolean
   fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean
-  fun getFlagAssignmentsSnapshot(com.datadog.android.flags.model.EvaluationContext): Map<String, com.datadog.android.flags.model.UnparsedFlag>?
+  fun getFlagAssignmentsSnapshot(context: com.datadog.android.flags.model.EvaluationContext): Map<String, com.datadog.android.flags.model.UnparsedFlag>?
   fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.UnparsedFlag>
-  fun trackFlagSnapshotEvaluation(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext)
-  fun trackFlagSnapshotEvaluation(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext, String?)
-  fun trackFlagExposure(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext)
-  fun trackFlagEvaluationEvent(String, com.datadog.android.flags.model.UnparsedFlag?, com.datadog.android.flags.model.EvaluationContext, String?)
-  fun trackFlagEvaluationEvent(String, com.datadog.android.flags.model.UnparsedFlag?, com.datadog.android.flags.model.EvaluationContext, String?, Boolean, String?)
-  fun trackFlagRumEvaluation(String, String, com.datadog.android.flags.model.EvaluationContext)
-  fun <T: Any> resolveDeferringExposure(String, T): DeferredExposureResolution<T>
+  fun trackFlagSnapshotEvaluation(flagKey: String, flag: com.datadog.android.flags.model.UnparsedFlag, context: com.datadog.android.flags.model.EvaluationContext)
+  fun trackFlagSnapshotEvaluation(flagKey: String, flag: com.datadog.android.flags.model.UnparsedFlag, context: com.datadog.android.flags.model.EvaluationContext, telemetryTargetingKey: String?)
+  fun trackFlagExposure(flagKey: String, flag: com.datadog.android.flags.model.UnparsedFlag, context: com.datadog.android.flags.model.EvaluationContext)
+  fun trackFlagEvaluationEvent(flagKey: String, flag: com.datadog.android.flags.model.UnparsedFlag?, context: com.datadog.android.flags.model.EvaluationContext, errorCode: String?)
+  fun trackFlagEvaluationEvent(flagKey: String, flag: com.datadog.android.flags.model.UnparsedFlag?, context: com.datadog.android.flags.model.EvaluationContext, errorCode: String?, observeFullEvaluationData: Boolean, telemetryTargetingKey: String?)
+  fun trackFlagRumEvaluation(flagKey: String, variantKey: String, context: com.datadog.android.flags.model.EvaluationContext)
+  fun <T: Any> resolveDeferringExposure(flagKey: String, defaultValue: T): DeferredExposureResolution<T>
   class DeferredExposureResolution<T: Any>
-    constructor(com.datadog.android.flags.model.ResolutionDetails<T>, com.datadog.android.flags.model.EvaluationContext?, () -> Boolean??)
+    constructor(details: com.datadog.android.flags.model.ResolutionDetails<T>, context: com.datadog.android.flags.model.EvaluationContext?, recordExposure: () -> Boolean??)
 enum com.datadog.android.flags.model.ErrorCode
   - PROVIDER_NOT_READY
   - FLAG_NOT_FOUND
@@ -100,7 +100,7 @@ enum com.datadog.android.flags.model.ErrorCode
   - INVALID_CONTEXT
   - GENERAL
 data class com.datadog.android.flags.model.EvaluationContext
-  constructor(String, Map<String, String> = emptyMap())
+  constructor(targetingKey: String, attributes: Map<String, String> = emptyMap())
   companion object 
     val EMPTY: EvaluationContext
 class com.datadog.android.flags.model.FlagsClientEvent
@@ -114,9 +114,9 @@ sealed class com.datadog.android.flags.model.FlagsClientState
   object Reconciling : FlagsClientState
   object Stale : FlagsClientState
   data class Error : FlagsClientState
-    constructor(Throwable? = null)
+    constructor(error: Throwable? = null)
 data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
-  constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any> = emptyMap())
+  constructor(value: T, variant: String? = null, reason: ResolutionReason? = null, errorCode: ErrorCode? = null, errorMessage: String? = null, flagMetadata: Map<String, Any> = emptyMap())
 enum com.datadog.android.flags.model.ResolutionReason
   - STATIC
   - DEFAULT

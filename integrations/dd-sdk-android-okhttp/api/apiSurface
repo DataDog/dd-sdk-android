@@ -1,70 +1,70 @@
 class com.datadog.android.okhttp.DatadogEventListener : okhttp3.EventListener
-  override fun callStart(okhttp3.Call)
-  override fun dnsStart(okhttp3.Call, String)
-  override fun dnsEnd(okhttp3.Call, String, List<java.net.InetAddress>)
-  override fun connectStart(okhttp3.Call, java.net.InetSocketAddress, java.net.Proxy)
-  override fun connectEnd(okhttp3.Call, java.net.InetSocketAddress, java.net.Proxy, okhttp3.Protocol?)
-  override fun secureConnectStart(okhttp3.Call)
-  override fun secureConnectEnd(okhttp3.Call, okhttp3.Handshake?)
-  override fun responseHeadersStart(okhttp3.Call)
-  override fun responseHeadersEnd(okhttp3.Call, okhttp3.Response)
-  override fun responseBodyStart(okhttp3.Call)
-  override fun responseBodyEnd(okhttp3.Call, Long)
-  override fun callEnd(okhttp3.Call)
-  override fun callFailed(okhttp3.Call, java.io.IOException)
+  override fun callStart(call: okhttp3.Call)
+  override fun dnsStart(call: okhttp3.Call, domainName: String)
+  override fun dnsEnd(call: okhttp3.Call, domainName: String, inetAddressList: List<java.net.InetAddress>)
+  override fun connectStart(call: okhttp3.Call, inetSocketAddress: java.net.InetSocketAddress, proxy: java.net.Proxy)
+  override fun connectEnd(call: okhttp3.Call, inetSocketAddress: java.net.InetSocketAddress, proxy: java.net.Proxy, protocol: okhttp3.Protocol?)
+  override fun secureConnectStart(call: okhttp3.Call)
+  override fun secureConnectEnd(call: okhttp3.Call, handshake: okhttp3.Handshake?)
+  override fun responseHeadersStart(call: okhttp3.Call)
+  override fun responseHeadersEnd(call: okhttp3.Call, response: okhttp3.Response)
+  override fun responseBodyStart(call: okhttp3.Call)
+  override fun responseBodyEnd(call: okhttp3.Call, byteCount: Long)
+  override fun callEnd(call: okhttp3.Call)
+  override fun callFailed(call: okhttp3.Call, ioe: java.io.IOException)
   class Factory : okhttp3.EventListener.Factory
-    constructor(String? = null)
-    override fun create(okhttp3.Call): okhttp3.EventListener
+    constructor(sdkInstanceName: String? = null)
+    override fun create(call: okhttp3.Call): okhttp3.EventListener
 open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.okhttp.trace.TracingInterceptor
-  override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
-  override fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan?, okhttp3.Response?, Throwable?)
+  override fun intercept(chain: okhttp3.Interceptor.Chain): okhttp3.Response
+  override fun onRequestIntercepted(sdkCore: com.datadog.android.api.feature.FeatureSdkCore, request: okhttp3.Request, span: com.datadog.android.trace.api.span.DatadogSpan?, response: okhttp3.Response?, throwable: Throwable?)
   override fun canSendSpan(): Boolean
-  override fun onSdkInstanceReady(com.datadog.android.core.InternalSdkCore)
+  override fun onSdkInstanceReady(sdkCore: com.datadog.android.core.InternalSdkCore)
   class Builder : BaseBuilder<DatadogInterceptor, Builder>
-    constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
-    constructor(List<String>)
+    constructor(tracedHostsWithHeaderType: Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
+    constructor(tracedHosts: List<String>)
     override fun build(): DatadogInterceptor
-    fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider): Builder
-    fun trackResourceHeaders(com.datadog.android.rum.resource.ResourceHeadersExtractor = ResourceHeadersExtractor.Builder().build()): Builder
-fun okhttp3.OkHttpClient.Builder.configureDatadogInstrumentation(com.datadog.android.trace.ApmNetworkInstrumentationConfiguration?, com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration?)
+    fun setRumResourceAttributesProvider(rumResourceAttributesProvider: com.datadog.android.rum.RumResourceAttributesProvider): Builder
+    fun trackResourceHeaders(extractor: com.datadog.android.rum.resource.ResourceHeadersExtractor = ResourceHeadersExtractor.Builder().build()): Builder
+fun okhttp3.OkHttpClient.Builder.configureDatadogInstrumentation(apmInstrumentationConfiguration: com.datadog.android.trace.ApmNetworkInstrumentationConfiguration?, rumInstrumentationConfiguration: com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration?)
 class com.datadog.android.okhttp.OkHttpIntegrationPlugin
   fun build(): okhttp3.OkHttpClient
 DEPRECATED data class com.datadog.android.okhttp.TraceContext
-  constructor(String, String, Int)
+  constructor(traceId: String, spanId: String, samplingPriority: Int)
 DEPRECATED enum com.datadog.android.okhttp.TraceContextInjection
   - ALL
   - SAMPLED
 class com.datadog.android.okhttp.internal.OkHttpRequestInfoBuilder : com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
-  constructor(okhttp3.Request.Builder, com.datadog.android.api.InternalLogger)
-  override fun setUrl(String)
-  override fun addHeader(String, String)
-  override fun setMethod(String, com.datadog.android.api.instrumentation.network.HttpRequestBody?)
-  override fun removeHeader(String)
-  override fun <T> addTag(Class<T>, T?)
+  constructor(requestBuilder: okhttp3.Request.Builder, internalLogger: com.datadog.android.api.InternalLogger)
+  override fun setUrl(url: String)
+  override fun addHeader(key: String, values: String)
+  override fun setMethod(method: String, body: com.datadog.android.api.instrumentation.network.HttpRequestBody?)
+  override fun removeHeader(key: String)
+  override fun <T> addTag(type: Class<T>, tag: T?)
   override fun build(): com.datadog.android.api.instrumentation.network.HttpRequestInfo
 DEPRECATED open class com.datadog.android.okhttp.trace.DeterministicTraceSampler : com.datadog.android.core.sampling.DeterministicSampler<com.datadog.android.trace.api.span.DatadogSpan>
-  constructor(() -> Float)
-  constructor(Float)
-  constructor(Double)
-fun okhttp3.Request.Builder.parentSpan(com.datadog.android.trace.api.span.DatadogSpan): okhttp3.Request.Builder
+  constructor(sampleRateProvider: () -> Float)
+  constructor(sampleRate: Float)
+  constructor(sampleRate: Double)
+fun okhttp3.Request.Builder.parentSpan(span: com.datadog.android.trace.api.span.DatadogSpan): okhttp3.Request.Builder
 interface com.datadog.android.okhttp.trace.TracedRequestListener
-  fun onRequestIntercepted(okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan, okhttp3.Response?, Throwable?)
+  fun onRequestIntercepted(request: okhttp3.Request, span: com.datadog.android.trace.api.span.DatadogSpan, response: okhttp3.Response?, throwable: Throwable?)
 open class com.datadog.android.okhttp.trace.TracingInterceptor : okhttp3.Interceptor
-  override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
-  protected fun doIntercept(okhttp3.Interceptor.Chain, okhttp3.Request): okhttp3.Response
-  protected open fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan?, okhttp3.Response?, Throwable?)
+  override fun intercept(chain: okhttp3.Interceptor.Chain): okhttp3.Response
+  protected fun doIntercept(chain: okhttp3.Interceptor.Chain, request: okhttp3.Request): okhttp3.Response
+  protected open fun onRequestIntercepted(sdkCore: com.datadog.android.api.feature.FeatureSdkCore, request: okhttp3.Request, span: com.datadog.android.trace.api.span.DatadogSpan?, response: okhttp3.Response?, throwable: Throwable?)
   class Builder : BaseBuilder<TracingInterceptor, Builder>
-    constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
-    constructor(List<String>)
-    fun setTraceOrigin(String): Builder
+    constructor(tracedHostsWithHeaderType: Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
+    constructor(tracedHosts: List<String>)
+    fun setTraceOrigin(traceOrigin: String): Builder
     override fun build(): TracingInterceptor
   abstract class BaseBuilder<T: TracingInterceptor, R: BaseBuilder<T, R>>
-    constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
-    fun setSdkInstanceName(String): R
-    fun setTracedRequestListener(TracedRequestListener): R
-    fun setTraceSampleRate(Float): R
-    fun setTraceSampler(com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>): R
-    fun setTraceContextInjection(com.datadog.android.trace.TraceContextInjection): R
-    DEPRECATED fun setTraceContextInjection(com.datadog.android.okhttp.TraceContextInjection): R
-    fun set404ResourcesRedacted(Boolean): R
+    constructor(tracedHostsWithHeaderType: Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
+    fun setSdkInstanceName(sdkInstanceName: String): R
+    fun setTracedRequestListener(tracedRequestListener: TracedRequestListener): R
+    fun setTraceSampleRate(sampleRate: Float): R
+    fun setTraceSampler(traceSampler: com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>): R
+    fun setTraceContextInjection(traceContextInjection: com.datadog.android.trace.TraceContextInjection): R
+    DEPRECATED fun setTraceContextInjection(traceContextInjection: com.datadog.android.okhttp.TraceContextInjection): R
+    fun set404ResourcesRedacted(redacted: Boolean): R
     abstract fun build(): T

@@ -412,8 +412,8 @@ class LayoutNodeUtilsTest {
     @Test
     fun `M prefer plain name W findMethod() {plain and mangled variants coexist}`() {
         // Given
-        // SuffixFixture declares foo(), foo$ui_release() and foo$ui() — all three suffixes
-        // in SUPPORTED_MANGLING_SUFFIXES. Plain is first in the list, so it must win.
+        // SuffixFixture declares foo(), foo$ui_release() and foo$ui().
+        // Plain is first in SUPPORTED_MANGLING_SUFFIXES, so it must win.
         val methodResolver = LayoutNodeUtils.MethodResolver()
 
         // When
@@ -440,7 +440,7 @@ class LayoutNodeUtilsTest {
     @Test
     fun `M resolve ui suffix W findMethod() {only ui variant exists}`() {
         // Given
-        // SuffixFixture declares only bazz$ui() — the last fallback in SUPPORTED_MANGLING_SUFFIXES.
+        // SuffixFixture declares only bazz$ui().
         val methodResolver = LayoutNodeUtils.MethodResolver()
 
         // When
@@ -448,6 +448,19 @@ class LayoutNodeUtilsTest {
 
         // Then
         assertThat(result?.name).isEqualTo("bazz\$ui")
+    }
+
+    @Test
+    fun `M resolve Compose 1_13 suffix W findMethod()`() {
+        // Given
+        val testedMethodResolver = LayoutNodeUtils.MethodResolver()
+
+        // When
+        val result = testedMethodResolver.findMethod(SuffixFixture::class.java, "getLayoutDelegate")
+
+        // Then
+        assertThat(result?.name).isEqualTo("getLayoutDelegate\$androidx_compose_ui_ui")
+        assertThat(testedMethodResolver.state).isEqualTo(LayoutNodeUtils.MethodResolver.State.UNKNOWN)
     }
 
     @Test
@@ -614,5 +627,6 @@ class LayoutNodeUtilsTest {
         fun `bar$ui_release`() = Unit
         fun `bar$ui`() = Unit
         fun `bazz$ui`() = Unit
+        fun `getLayoutDelegate$androidx_compose_ui_ui`() = Unit
     }
 }

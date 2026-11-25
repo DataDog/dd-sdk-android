@@ -4,16 +4,28 @@ Read and follow all guidance in [CONTRIBUTING.md](CONTRIBUTING.md).
 Use the [documentation map](docs/README.md) to select current SDK guidance and
 Foundation validation commands. Follow the module rules and validation tasks below.
 
-Include necessary documentation with each implementation change. Review accuracy,
-reader purpose, navigation, and instruction scope. Record actual validation evidence
-in task output or reports. Include validation in PR descriptions only when relevant
-to review, following the [PR preparation skill](ai/skills/sdk-pr-prepare/SKILL.md).
-For staged documentation validation, use a provisioned FactoryKit environment:
+Assess documentation impact from changed behavior and reader needs. Include necessary
+documentation with each implementation change. Code-only or test-only fixes with no
+reader impact can require no documentation change. Record the reason and keep correct
+explanations unchanged. Revise a README or map only for a concrete reader need or
+navigation gap. Review accuracy, reader purpose, navigation, and instruction scope
+for affected documentation. Do not require diagrams, design documents, or a prose
+review exercise for an internal code or test fix. Literate conventions apply only
+after explicit adoption.
+
+Record actual validation evidence in task output or reports. Include validation in
+PR descriptions only when relevant to review, following the
+[PR preparation skill](ai/skills/sdk-pr-prepare/SKILL.md).
+Before a Foundation command, follow the [runtime selection route](docs/README.md#factorykit-runtime).
+Use the verified exact executable without shell activation. For staged documentation validation:
 
 ```sh
-python ci/scripts/foundation_check.py --snapshot index --against HEAD --format json
+"$factorykit_executable" --root . foundation gate \
+  --entry-point ci/scripts/foundation_check.py --snapshot index --against HEAD --format json
 ```
 
+Report an unavailable runtime as not-run evidence and follow the same installation
+route. Retain existing installation authority without another permission question.
 This manual gate supplements the existing module validation tasks.
 
 # Module Map
@@ -132,7 +144,7 @@ These are rules that reviewers repeatedly enforce. Follow them when writing code
 
 ## Public API
 
-Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementation` dependency of core and features; its cross-module types may be `public` (including data classes) without being customer API. Changes are allowed without customer-facing deprecation. Before changing signatures or removing members, check usages in SDK modules and cross-platform repositories (`dd-sdk-reactnative`, `dd-sdk-flutter`, `dd-sdk-unity`).
+Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementation` dependency of core and features; its cross-module types may be `public` (including data classes) without being customer API. Changes are allowed without customer-facing deprecation. Before changing signatures or removing members, check usages in SDK modules and cross-platform repositories (`dd-sdk-reactnative`, `dd-sdk-flutter`, `dd-sdk-unity`, `dd-sdk-maui`).
 
 - Keep everything `internal` unless it is meant for customers. Check the `api/apiSurface` diff for anything leaked by accident.
 - Don't expose `Impl` classes, internal types in public signatures, or internal classes in public KDoc. Cross-module internal access goes through `_RumInternalProxy`-style proxies or a cast inside the function body.
@@ -165,7 +177,7 @@ Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementat
 ## Static Analysis and Compatibility
 
 - `MIN_SDK` is 23. Guard newer APIs with `BuildSdkVersionProvider` (it is annotated with `@ChecksSdkIntAtLeast`). Don't use `@SuppressLint("NewApi")`: it hides crashes on older API levels, while `BuildSdkVersionProvider` can be mocked in tests to cover both branches.
-- Android and third-party calls that can throw must be declared in `detekt_custom_unsafe_calls.yml` and handled. Only genuinely non-throwing calls go into the `detekt_custom_safe_calls_*.yml` files. Keep these files sorted. The `UnsafeThirdPartyFunctionCall` rule skips the SDK's own `com.datadog.*` calls, so handle exceptions thrown by SDK code explicitly; listing them in these files has no effect.
+- Android and third-party calls that can throw must be declared in `detekt_custom_unsafe_calls.yml` and handled. Only genuinely non-throwing calls go into the `detekt_custom_safe_calls_*.yml` files. Put each entry in the `# region` for its library or API group, ordered by fully qualified name: compare the dot-separated parts left to right, so a class comes before a longer class name that starts with it. Add a new entry at its sorted position, not next to a related call or at the end of the region. Some existing entries are out of order; don't reorder them in unrelated changes. The `UnsafeThirdPartyFunctionCall` rule skips the SDK's own `com.datadog.*` calls, so handle exceptions thrown by SDK code explicitly; listing them in these files has no effect.
 - Place `@Suppress(...)` on the narrowest scope: the call site, not the whole method or class.
 - Use `Locale.US` for case conversions and formatting. The default locale gives wrong results in some locales (e.g. Turkish dotless `i`).
 - Dependencies go in `gradle/libs.versions.toml`. Prefer `implementation` over `api`. In a module's `dependencies { }` block, declare the main source set dependencies first (`api`, `implementation`, `compileOnly`, …), then test dependencies (`testImplementation`, …), then test fixtures dependencies (`testFixturesImplementation`, …). A new module must be registered in `settings.gradle.kts`. To make it publishable, apply the `maven-publish` and `signing` plugins and call `applyPublishingConfig(...)` in its `datadogBuild { }` block (see `integrations/dd-sdk-android-cronet/build.gradle.kts`). CI publishing (`publishToSonatype`) picks it up automatically. Internal-only modules skip Sonatype and are published to binaries.ddbuild.io instead: `tools/benchmark` passes `destination = PublishingDestination.INTERNAL` and is uploaded by the `publish:benchmark-internal` CI job, to `releases` or, for `-SNAPSHOT` versions, `snapshots`. A new internal module also needs its own CI publish job, since `publishToSonatype` doesn't upload it.

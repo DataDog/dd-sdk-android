@@ -9,16 +9,21 @@ package com.datadog.android.sessionreplay.internal.net
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.io.ByteArrayOutputStream
+import java.util.Random
 import java.util.zip.Inflater
 
 @Extensions(
@@ -61,5 +66,45 @@ internal class BytesCompressorTest {
         decompressor.end()
         val outputString = String(result, 0, resultLength)
         assertThat(fakeData).isEqualTo(outputString)
+    }
+
+    @Test
+    fun `M restore the original data W compressBytes() {incompressible data}`(
+        @LongForgery fakeSeed: Long,
+        @IntForgery(min = 0, max = 262_144) fakeSize: Int
+    ) {
+        // Given
+        val fakeData = ByteArray(fakeSize).also { Random(fakeSeed).nextBytes(it) }
+
+        // When
+        val compressed = testedBytesCompressor.compressBytes(fakeData)
+
+        // Then
+        assertThat(inflate(compressed)).isEqualTo(fakeData)
+    }
+
+    // region Internal
+
+    private fun inflate(compressed: ByteArray): ByteArray {
+        val inflater = Inflater()
+        try {
+            inflater.setInput(compressed)
+            val output = ByteArrayOutputStream()
+            val buffer = ByteArray(INFLATE_BUFFER_SIZE_IN_BYTES)
+            while (!inflater.finished()) {
+                val count = inflater.inflate(buffer)
+                check(count > 0 || inflater.finished()) { "The compressed stream is truncated or invalid" }
+                output.write(buffer, 0, count)
+            }
+            return output.toByteArray()
+        } finally {
+            inflater.end()
+        }
+    }
+
+    // endregion
+
+    companion object {
+        private const val INFLATE_BUFFER_SIZE_IN_BYTES = 8192
     }
 }

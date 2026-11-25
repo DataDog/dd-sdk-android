@@ -1,88 +1,88 @@
 class com.datadog.android.profiling.DdProfilingContentProvider : android.content.ContentProvider
-  constructor(com.datadog.android.internal.system.BuildSdkVersionProvider = DEFAULT)
+  constructor(buildSdkVersionProvider: com.datadog.android.internal.system.BuildSdkVersionProvider = DEFAULT)
   override fun onCreate(): Boolean
-  override fun query(android.net.Uri, Array<String>?, String?, Array<String>?, String?): android.database.Cursor?
-  override fun getType(android.net.Uri): String?
-  override fun insert(android.net.Uri, android.content.ContentValues?): android.net.Uri?
-  override fun delete(android.net.Uri, String?, Array<String>?): Int
-  override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
+  override fun query(uri: android.net.Uri, projection: Array<String>?, selection: String?, selectionArgs: Array<String>?, sortOrder: String?): android.database.Cursor?
+  override fun getType(uri: android.net.Uri): String?
+  override fun insert(uri: android.net.Uri, values: android.content.ContentValues?): android.net.Uri?
+  override fun delete(uri: android.net.Uri, selection: String?, selectionArgs: Array<String>?): Int
+  override fun update(uri: android.net.Uri, values: android.content.ContentValues?, selection: String?, selectionArgs: Array<String>?): Int
 annotation com.datadog.android.profiling.ExperimentalProfilingApi
 object com.datadog.android.profiling.Profiling
-  fun enable(ProfilingConfiguration = ProfilingConfiguration.DEFAULT, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun enable(configuration: ProfilingConfiguration = ProfilingConfiguration.DEFAULT, sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.profiling.ProfilingConfiguration
   class Builder
-    fun setApplicationLaunchSampleRate(Float): Builder
-    fun setContinuousSampleRate(Float): Builder
-    fun useCustomEndpoint(String): Builder
-    fun enableAnrTrigger(Boolean): Builder
+    fun setApplicationLaunchSampleRate(sampleRate: Float): Builder
+    fun setContinuousSampleRate(sampleRate: Float): Builder
+    fun useCustomEndpoint(endpoint: String): Builder
+    fun enableAnrTrigger(enabled: Boolean): Builder
     fun build(): ProfilingConfiguration
   companion object 
     val DEFAULT: ProfilingConfiguration
 data class com.datadog.android.profiling.model.ProfileEvent
-  constructor(Application, Session? = null, View? = null, LongTask? = null, Vital? = null, kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, Family, Family, kotlin.Long, kotlin.String, Dd? = null, Error? = null)
+  constructor(application: Application, session: Session? = null, view: View? = null, longTask: LongTask? = null, vital: Vital? = null, attachments: kotlin.collections.List<kotlin.String>, start: kotlin.String, end: kotlin.String, family: Family, runtime: Family, version: kotlin.Long, tagsProfiler: kotlin.String, dd: Dd? = null, error: Error? = null)
   fun toJson(): com.google.gson.JsonElement
   companion object 
-    fun fromJson(kotlin.String): ProfileEvent
-    fun fromJsonObject(com.google.gson.JsonObject): ProfileEvent
+    fun fromJson(jsonString: kotlin.String): ProfileEvent
+    fun fromJsonObject(jsonObject: com.google.gson.JsonObject): ProfileEvent
   data class Application
-    constructor(kotlin.String)
+    constructor(id: kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Application
-      fun fromJsonObject(com.google.gson.JsonObject): Application
+      fun fromJson(jsonString: kotlin.String): Application
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Application
   data class Session
-    constructor(kotlin.String)
+    constructor(id: kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Session
-      fun fromJsonObject(com.google.gson.JsonObject): Session
+      fun fromJson(jsonString: kotlin.String): Session
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Session
   data class View
-    constructor(kotlin.collections.List<kotlin.String>, kotlin.collections.List<kotlin.String>)
+    constructor(id: kotlin.collections.List<kotlin.String>, name: kotlin.collections.List<kotlin.String>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): View
-      fun fromJsonObject(com.google.gson.JsonObject): View
+      fun fromJson(jsonString: kotlin.String): View
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): View
   data class LongTask
-    constructor(kotlin.collections.List<kotlin.String>)
+    constructor(id: kotlin.collections.List<kotlin.String>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): LongTask
-      fun fromJsonObject(com.google.gson.JsonObject): LongTask
+      fun fromJson(jsonString: kotlin.String): LongTask
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): LongTask
   data class Vital
-    constructor(kotlin.collections.List<kotlin.String>, kotlin.collections.List<kotlin.String>)
+    constructor(id: kotlin.collections.List<kotlin.String>, label: kotlin.collections.List<kotlin.String>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Vital
-      fun fromJsonObject(com.google.gson.JsonObject): Vital
+      fun fromJson(jsonString: kotlin.String): Vital
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Vital
   data class Dd
-    constructor(kotlin.Long? = null)
+    constructor(bootNtp: kotlin.Long? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Dd
-      fun fromJsonObject(com.google.gson.JsonObject): Dd
+      fun fromJson(jsonString: kotlin.String): Dd
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Dd
   data class Error
-    constructor(kotlin.collections.List<kotlin.String>)
+    constructor(id: kotlin.collections.List<kotlin.String>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Error
-      fun fromJsonObject(com.google.gson.JsonObject): Error
+      fun fromJson(jsonString: kotlin.String): Error
+      fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Error
   enum Family
     - ANDROID
     - CHROME
     - IOS
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Family
+      fun fromJson(jsonString: kotlin.String): Family
 data class com.datadog.android.profiling.model.RumMetadataEvent
-  constructor(Type, kotlin.String, kotlin.String? = null, kotlin.Long, kotlin.Long? = null)
+  constructor(type: Type, id: kotlin.String, name: kotlin.String? = null, startNs: kotlin.Long, durationNs: kotlin.Long? = null)
   fun toJson(): com.google.gson.JsonElement
   companion object 
-    fun fromJson(kotlin.String): RumMetadataEvent
-    fun fromJsonObject(com.google.gson.JsonObject): RumMetadataEvent
+    fun fromJson(jsonString: kotlin.String): RumMetadataEvent
+    fun fromJsonObject(jsonObject: com.google.gson.JsonObject): RumMetadataEvent
   enum Type
     - VITAL
     - LONG_TASK
     - ERROR
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Type
+      fun fromJson(jsonString: kotlin.String): Type
