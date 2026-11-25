@@ -440,7 +440,6 @@ internal class ResponseSigningVerifier(
         private val NAME_LIST = Regex("[0-9a-z!#$%&'*+.^_`|~-]+(,[0-9a-z!#$%&'*+.^_`|~-]+)*")
         private const val MAX_LISTED_NAMES = 32
         private const val MAX_LISTED_NAME_BYTES = 64
-        private val SELECTION_QUERY_PARAMETERS = listOf("selected_flag_tags", "selected_flag_key_patterns")
 
         fun transcript(request: Request, status: Int, headers: Headers, body: ByteArray): ByteArray {
             val minimum = minimumNotBefore(headers)
@@ -624,11 +623,10 @@ internal class ResponseSigningVerifier(
         }
 
         /**
-         * A non-null `flag_selection` at the JSON root or in `data.attributes` (the SDK request envelope), or a
-         * selection query parameter.
+         * A non-null `data.attributes.flag_selection` in the JSON:API body, as the edge decides. A top-level
+         * `flag_selection` and the URL query are not a selection.
          */
         private fun hasFlagSelection(request: Request): Boolean {
-            if (SELECTION_QUERY_PARAMETERS.any { request.url.queryParameterNames.contains(it) }) return true
             val body = Buffer()
             try {
                 request.body?.writeTo(body)
@@ -640,7 +638,7 @@ internal class ResponseSigningVerifier(
                     .takeIf { it.isJsonObject }?.asJsonObject
                 val attributes = root?.get("data")?.takeIf { it.isJsonObject }?.asJsonObject
                     ?.get("attributes")?.takeIf { it.isJsonObject }?.asJsonObject
-                listOfNotNull(root, attributes).any { it.get("flag_selection")?.isJsonNull == false }
+                attributes?.get("flag_selection")?.isJsonNull == false
             } catch (_: JsonParseException) {
                 false
             }

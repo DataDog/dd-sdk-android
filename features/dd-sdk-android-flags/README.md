@@ -123,6 +123,8 @@ Signed header lists:
   header, gives the reason `unsupported-request`.
 - The response must carry `x-datadog-feature-flags-signed-response-headers`, in the same syntax.
   It must name `content-type`, and `dd-flag-selection-ignored` when the request has a flag selection.
+  A request has a selection when its JSON:API body has a non-null `data.attributes.flag_selection`, as the
+  edge decides. The edge names `dd-flag-selection-ignored` in every signed list.
   The transcript binds this list after the certificate hashes. An absent listed header is bound as absent.
 - A missing response list is `missing-proof`. Any other response list error is `invalid-proof`.
 - On a verified response, the SDK acts only on the verified values of the response list.
