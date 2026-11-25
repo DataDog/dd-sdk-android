@@ -430,7 +430,8 @@ internal class EvaluationsManager(
             callback,
             cachedContext,
             // A newer context keeps the initialization deadline; only a lifecycle change cancels its transition.
-            { signing.isIdentityCurrent() }
+            { signing.isIdentityCurrent() },
+            { registerSignedInitialization(it) }
         ) {
             ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
             effects.drain()
@@ -438,16 +439,6 @@ internal class EvaluationsManager(
         if (completion == null) {
             ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
             effects.drain()
-        } else {
-            val cancel = synchronized(initializationTerminalLock) {
-                if (initializationSettled) {
-                    completion.retirePendingDeadline()
-                } else {
-                    signedInitialization = completion
-                    null
-                }
-            }
-            cancel?.invoke()
         }
         completionAwareExecutor(onFetchFinished).executeSafe(FETCH_AND_STORE_OPERATION_NAME, internalLogger) {
             try {
@@ -850,6 +841,18 @@ internal class EvaluationsManager(
         enqueueCompletion(result, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
     }
 
+    // Runs before the timer is scheduled, so no settlement can happen between arming and registration.
+    private fun registerSignedInitialization(completion: InitializationCompletion) {
+        synchronized(initializationTerminalLock) {
+            if (initializationSettled) {
+                // No timer is armed yet; armTimeoutCancellation() cancels it as soon as it is.
+                completion.retirePendingDeadline()
+            } else {
+                signedInitialization = completion
+            }
+        }
+    }
+
     // Callers hold initializationTerminalLock.
     private fun retireRetainedDeadlineLocked() {
         initializationSettled = true
@@ -886,6 +889,7 @@ internal class EvaluationsManager(
         callback: EvaluationContextCallback?,
         cachedContext: AtomicReference<EvaluationContext?>,
         isCurrent: () -> Boolean = { true },
+        register: (InitializationCompletion) -> Unit = {},
         beforeScheduling: () -> Unit
     ): InitializationCompletion? {
         val timeoutMs = initializationTimeoutMs
@@ -893,6 +897,7 @@ internal class EvaluationsManager(
 
         beforeScheduling()
         return InitializationCompletion(callback).also { completion ->
+            register(completion)
             val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
                 val error = FlagsInitializationTimeoutException(timeoutMs)
                 synchronized(initializationTerminalLock) {
