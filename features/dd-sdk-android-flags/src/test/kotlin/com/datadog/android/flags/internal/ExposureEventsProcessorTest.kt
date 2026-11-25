@@ -6,14 +6,19 @@
 
 package com.datadog.android.flags.internal
 
+import com.datadog.android.flags.assertj.ExposureEventAssert.Companion.assertThatExposureEvent
 import com.datadog.android.flags.internal.model.ExposureEvent
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.SplitFeature
 import com.datadog.android.flags.internal.storage.RecordWriter
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.time.TimeProvider
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -30,6 +35,7 @@ import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.atMost
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
@@ -68,6 +74,136 @@ internal class ExposureEventsProcessorTest {
             allocationKey = fakeAllocationKey,
             variationKey = fakeVariationKey
         )
+    }
+
+    @Test
+    fun `M report a new exposure then a repeat W processEvent() twice`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+
+        // When
+        val first = testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+        val second = testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+
+        // Then
+        assertThat(first).isFalse()
+        assertThat(second).isTrue()
+        verify(mockRecordWriter).write(any())
+    }
+
+    @Test
+    fun `M report a new exposure W processEvent() {variant or serial id changes}`(
+        @StringForgery fakeOtherVariationKey: String,
+        @LongForgery(min = 0L, max = Long.MAX_VALUE - 1) fakeSerialId: Long
+    ) {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val fakeFlagWithSerial = fakeFlag.copy(serialId = fakeSerialId)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlagWithSerial)
+
+        // When
+        val variantChanged = testedProcessor.processEvent(
+            fakeFlagKey,
+            fakeContext,
+            fakeFlagWithSerial.copy(variationKey = fakeVariationKey + fakeOtherVariationKey)
+        )
+        val serialChanged = testedProcessor.processEvent(
+            fakeFlagKey,
+            fakeContext,
+            fakeFlagWithSerial.copy(
+                variationKey = fakeVariationKey + fakeOtherVariationKey,
+                serialId = fakeSerialId + 1
+            )
+        )
+
+        // Then
+        assertThat(variantChanged).isFalse()
+        assertThat(serialChanged).isFalse()
+        verify(mockRecordWriter, times(3)).write(any())
+    }
+
+    @Test
+    fun `M record without building events W processEvent() twice {writeEvents false}`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        testedProcessor = ExposureEventsProcessor(mockRecordWriter, mockTimeProvider, writeEvents = false)
+
+        // When
+        val first = testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+        val second = testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+
+        // Then
+        assertThat(first).isFalse()
+        assertThat(second).isTrue()
+        verifyNoInteractions(mockRecordWriter, mockTimeProvider)
+    }
+
+    @Test
+    fun `M write only EXPOSURE features W processEvent() {split features}`(
+        @StringForgery fakeHookValue: String,
+        @DoubleForgery fakeExposureValue: Double,
+        @BoolForgery fakeSharedValue: Boolean,
+        @StringForgery fakeEvaluationValue: String
+    ) {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flag = fakeFlag.copy(
+            features = listOf(
+                SplitFeature("hook", fakeHookValue, listOf("HOOK")),
+                SplitFeature("exposure", fakeExposureValue, listOf("EXPOSURE", "FUTURE")),
+                SplitFeature("both", fakeSharedValue, listOf("HOOK", "EXPOSURE")),
+                SplitFeature("evaluation", fakeEvaluationValue, listOf("EVALUATION"))
+            )
+        )
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flag)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter).write(eventCaptor.capture())
+        assertThatExposureEvent(eventCaptor.firstValue)
+            .hasFeatures(mapOf("exposure" to fakeExposureValue, "both" to fakeSharedValue))
+    }
+
+    @Test
+    fun `M write no features W processEvent() {no EXPOSURE features}`(@StringForgery fakeHookValue: String) {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flag = fakeFlag.copy(features = listOf(SplitFeature("hook", fakeHookValue, listOf("HOOK"))))
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flag)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter).write(eventCaptor.capture())
+        assertThatExposureEvent(eventCaptor.firstValue).hasNoFeatures()
+    }
+
+    @Test
+    fun `M report a repeat W processEvent() {only features change}`(
+        @StringForgery fakeFirstValue: String,
+        @StringForgery fakeSecondValue: String
+    ) {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        testedProcessor.processEvent(
+            fakeFlagKey,
+            fakeContext,
+            fakeFlag.copy(features = listOf(SplitFeature("exposure", fakeFirstValue, listOf("EXPOSURE"))))
+        )
+
+        // When
+        val isRecorded = testedProcessor.processEvent(
+            fakeFlagKey,
+            fakeContext,
+            fakeFlag.copy(features = listOf(SplitFeature("exposure", fakeSecondValue, listOf("EXPOSURE"))))
+        )
+
+        // Then
+        assertThat(isRecorded).isTrue()
+        verify(mockRecordWriter).write(any())
     }
 
     // region processEvent

@@ -11,4 +11,12 @@ class com.datadog.android.flags.openfeature.DatadogFlagsProvider : dev.openfeatu
   override fun shutdown()
   override fun observe(): kotlinx.coroutines.flow.Flow<dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents>
   companion object 
+interface com.datadog.android.flags.openfeature.ExposureCallback
+  fun onEvaluation(ExposureEvaluation)
+class com.datadog.android.flags.openfeature.ExposureEvaluation
+  val isCacheHit: Boolean
+  fun shouldSend(): Boolean
+class com.datadog.android.flags.openfeature.ExposureHook : dev.openfeature.kotlin.sdk.Hook<Any>
+  constructor(ExposureCallback)
+  override fun finallyAfter(dev.openfeature.kotlin.sdk.HookContext<Any>, dev.openfeature.kotlin.sdk.FlagEvaluationDetails<Any>, Map<String, Any>)
 fun com.datadog.android.flags.FlagsClient.asOpenFeatureProvider(): dev.openfeature.kotlin.sdk.FeatureProvider

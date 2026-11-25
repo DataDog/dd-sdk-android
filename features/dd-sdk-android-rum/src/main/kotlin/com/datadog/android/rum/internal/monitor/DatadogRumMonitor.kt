@@ -149,6 +149,7 @@ internal class DatadogRumMonitor(
         timeseriesCollector = timeseriesCollector
     )
 
+    @Volatile
     internal var debugListener: RumDebugListener? = null
 
     private val internalProxy = _RumInternalProxy(this)
@@ -940,7 +941,7 @@ internal class DatadogRumMonitor(
              *
              * Must be called from [RumFeature.onStop] **before** [GlobalRumMonitor.unregister], so that
              * the active session can stop sampling and flush buffered timeseries data while the monitor is
-             * still reachable. The shared RUM vitals executor is owned and shut down separately by
+             * still reachable. The shared RUM scheduler executor is owned and shut down separately by
              * [RumFeature.onStop].
              *
              * Must be called **before** [RumFeature.dataWriter] is replaced with a

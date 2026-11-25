@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.repository.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
@@ -30,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 
@@ -70,6 +72,82 @@ internal class PrecomputeMapperTest {
     fun `set up`() {
         testedMapper = PrecomputeMapper(mockInternalLogger)
     }
+
+    @Test
+    fun `M warn once per response and unknown destination W map() twice {split features}`(
+        @StringForgery fakeTextValue: String,
+        @IntForgery fakeNumberValue: Int,
+        @StringForgery fakeOtherFlagKey: String
+    ) {
+        // Given
+        val features = """[{"key":"text","value":"$fakeTextValue","destinations":["HOOK","FUTURE"]},""" +
+            """{"key":"number","value":$fakeNumberValue,"destinations":["FUTURE","OTHER"]},""" +
+            """{"key":"invalid","value":{}}]"""
+        val response = """{"data":{"attributes":{"flags":{"$fakeFlagKey":${assignmentJson(features)},""" +
+            """"${fakeFlagKey + fakeOtherFlagKey}":${assignmentJson(features)}}}}}"""
+
+        // When
+        val result = checkNotNull(testedMapper.map(response))
+        testedMapper.map(response)
+
+        // Then
+        assertThat(result.flags.values.map { it.features.map { feature -> feature.key } })
+            .containsOnly(listOf("text", "number"))
+        val maintainerCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.MAINTAINER),
+            maintainerCaptor.capture(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+        assertThat(maintainerCaptor.firstValue()).isEqualTo("Ignoring unknown feature destinations: FUTURE, OTHER")
+        val telemetryCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.TELEMETRY),
+            telemetryCaptor.capture(),
+            isNull(),
+            eq(true),
+            isNull()
+        )
+        assertThat(telemetryCaptor.firstValue()).isEqualTo("Ignoring unknown feature destinations")
+    }
+
+    @Test
+    fun `M stop listing destinations W map() {more unknown destinations than the warning cap}`(
+        @StringForgery fakeTextValue: String
+    ) {
+        // Given
+        val destinations = (0..64).joinToString(",") { "\"FUTURE_$it\"" }
+        val response = """{"data":{"attributes":{"flags":{"$fakeFlagKey":""" +
+            """${assignmentJson("""[{"key":"text","value":"$fakeTextValue","destinations":[$destinations]}]""")}}}}}"""
+
+        // When
+        testedMapper.map(response)
+        testedMapper.map(response)
+
+        // Then
+        val messageCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.MAINTAINER),
+            messageCaptor.capture(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+        val message = messageCaptor.firstValue()
+        assertThat(message.removePrefix("Ignoring unknown feature destinations: ").split(", "))
+            .hasSize(64)
+            .contains("FUTURE_63")
+            .doesNotContain("FUTURE_64")
+    }
+
+    private fun assignmentJson(features: String) =
+        """{"variationType":"boolean","variationValue":true,"doLog":true,"allocationKey":"$fakeAllocationKey",""" +
+            """"variationKey":"$fakeVariationKey","extraLogging":{},"reason":"TARGETING_MATCH","features":$features}"""
 
     // region Valid JSON Parsing
 
@@ -517,6 +595,23 @@ internal class PrecomputeMapperTest {
             eq(null)
         )
         assertThat(messageCaptor.firstValue.invoke()).isEqualTo("Failed to parse precomputed response")
+    }
+
+    @Test
+    fun `M redact parser throwable W map() {credentialed response}`() {
+        // Given
+        val invalidJson = "{ reflected-secret"
+
+        // When
+        val result = testedMapper.map(invalidJson, null, redactErrors = true)
+
+        // Then
+        assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            "Failed to parse precomputed response"
+        )
     }
 
     @Test

@@ -14,6 +14,8 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.res.Resources
 import android.os.Handler
+import android.view.ViewGroup
+import android.widget.LinearLayout
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.storage.DataWriter
@@ -756,7 +758,7 @@ internal class RumFeatureTest {
             .isInstanceOf(NoOpVitalMonitor::class.java)
         assertThat(testedFeature.frameRateVitalMonitor)
             .isInstanceOf(NoOpVitalMonitor::class.java)
-        assertThat(testedFeature.vitalExecutorService)
+        assertThat(testedFeature.schedulerExecutorService)
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
@@ -917,7 +919,7 @@ internal class RumFeatureTest {
             .getFieldValue<Looper, DefaultTimeseriesCollector>("looper")
         assertThat(
             looper.getFieldValue<ScheduledExecutorService, Looper>("scheduledExecutorService")
-        ).isSameAs(testedFeature.vitalExecutorService)
+        ).isSameAs(testedFeature.schedulerExecutorService)
 
         val sessionRegistry = timeseriesCollector
             .getFieldValue<CollectedTimeseriesSessionRegistry, DefaultTimeseriesCollector>("sessionRegistry")
@@ -1061,7 +1063,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M initialize vital executor W initialize { frequency = NEVER and timeseries enabled }`() {
+    fun `M initialize scheduler executor W initialize { frequency = NEVER and timeseries enabled }`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
@@ -1079,7 +1081,7 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then: timeseries sampling needs a real executor even when vitals are disabled.
-        assertThat(testedFeature.vitalExecutorService)
+        assertThat(testedFeature.schedulerExecutorService)
             .isNotInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
@@ -1133,7 +1135,7 @@ internal class RumFeatureTest {
 
     @ParameterizedTest
     @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
-    fun `M initialize vital executor W initialize { frequency != NEVER }()`(
+    fun `M initialize scheduler executor W initialize { frequency != NEVER }()`(
         fakeFrequency: VitalsUpdateFrequency
     ) {
         // Given
@@ -1164,7 +1166,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M not initialize vital executor W initialize { frequency = NEVER }()`() {
+    fun `M not initialize scheduler executor W initialize { frequency = NEVER }()`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
@@ -1181,7 +1183,7 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
-        assertThat(testedFeature.vitalExecutorService)
+        assertThat(testedFeature.schedulerExecutorService)
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
@@ -1228,21 +1230,21 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M shut down vital executor W onStop()`() {
+    fun `M shut down scheduler executor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
-        val mockVitalExecutorService: ScheduledThreadPoolExecutor = mock()
-        testedFeature.vitalExecutorService = mockVitalExecutorService
+        val mockSchedulerExecutorService: ScheduledThreadPoolExecutor = mock()
+        testedFeature.schedulerExecutorService = mockSchedulerExecutorService
 
         // When
         testedFeature.onStop()
 
         // Then
-        verify(mockVitalExecutorService).shutdownNow()
+        verify(mockSchedulerExecutorService).shutdownNow()
     }
 
     @Test
-    fun `M reset vital executor W onStop()`() {
+    fun `M reset scheduler executor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -1250,7 +1252,7 @@ internal class RumFeatureTest {
         testedFeature.onStop()
 
         // Then
-        assertThat(testedFeature.vitalExecutorService)
+        assertThat(testedFeature.schedulerExecutorService)
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
@@ -1277,9 +1279,9 @@ internal class RumFeatureTest {
         testedFeature.enableDebugging(mockRumMonitor)
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener.get()).isNotNull
+        assertThat(testedFeature.debugActivityLifecycleListener).isNotNull
         verify(testedFeature.appContext as Application)
-            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener.get())
+            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener)
     }
 
     @Test
@@ -1292,9 +1294,9 @@ internal class RumFeatureTest {
         testedFeature.enableDebugging(mockRumMonitor)
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener.get()).isNotNull
+        assertThat(testedFeature.debugActivityLifecycleListener).isNotNull
         verify(testedFeature.appContext as Application)
-            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener.get())
+            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener)
     }
 
     @Test
@@ -1303,7 +1305,7 @@ internal class RumFeatureTest {
         testedFeature.enableDebugging(mockRumMonitor)
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener).hasValue(null)
+        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
     }
 
     @Test
@@ -1311,13 +1313,92 @@ internal class RumFeatureTest {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.enableDebugging(mockRumMonitor)
-        val listener = testedFeature.debugActivityLifecycleListener.get()
+        val listener = testedFeature.debugActivityLifecycleListener
 
         // When
         testedFeature.disableDebugging()
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener).hasValue(null)
+        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
+        verify(testedFeature.appContext as Application)
+            .unregisterActivityLifecycleCallbacks(listener)
+    }
+
+    @Test
+    fun `M remove debug overlay W disableDebugging() {on main thread}`() {
+        // Given
+        val mockHandler: Handler = mock()
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            handler = mockHandler
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.enableDebugging(mockRumMonitor)
+        val mockParent: ViewGroup = mock()
+        val mockContainer: LinearLayout = mock()
+        whenever(mockContainer.parent) doReturn mockParent
+        checkNotNull(testedFeature.debugActivityLifecycleListener).rumViewsContainer = mockContainer
+
+        // When
+        testedFeature.disableDebugging()
+
+        // Then
+        verify(mockParent).removeView(mockContainer)
+        verify(mockRumMonitor).setDebugListener(null)
+        verifyNoInteractions(mockHandler)
+    }
+
+    @Test
+    fun `M post debug overlay removal to handler W disableDebugging() {not on main thread}`() {
+        // Given
+        val mockHandler: Handler = mock()
+        whenever(mockHandler.post(any())) doAnswer {
+            it.getArgument(0, Runnable::class.java).run()
+            true
+        }
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            handler = mockHandler
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.enableDebugging(mockRumMonitor)
+        val mockParent: ViewGroup = mock()
+        val mockContainer: LinearLayout = mock()
+        whenever(mockContainer.parent) doReturn mockParent
+        checkNotNull(testedFeature.debugActivityLifecycleListener).rumViewsContainer = mockContainer
+
+        // When
+        Thread { testedFeature.disableDebugging() }.apply {
+            start()
+            join()
+        }
+
+        // Then
+        inOrder(mockRumMonitor, mockHandler, mockParent) {
+            verify(mockRumMonitor).setDebugListener(null)
+            verify(mockHandler).post(any())
+            verify(mockParent).removeView(mockContainer)
+        }
+    }
+
+    @Test
+    fun `M disable RUM debugging W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.enableDebugging(mockRumMonitor)
+        val listener = testedFeature.debugActivityLifecycleListener
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
         verify(testedFeature.appContext as Application)
             .unregisterActivityLifecycleCallbacks(listener)
     }

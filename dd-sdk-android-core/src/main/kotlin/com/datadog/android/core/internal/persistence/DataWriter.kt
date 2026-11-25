@@ -15,7 +15,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  * @param T the type of data to store
  */
 @NoOpImplementation
-internal interface DataWriter<T : Any> {
+internal interface DataWriter<in T : Any> {
 
     /**
      * Writes the element into the relevant location.

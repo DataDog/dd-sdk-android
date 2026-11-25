@@ -117,7 +117,6 @@ dependencies {
 
     // Android Instrumentation
     implementation(libs.androidXAnnotation)
-    implementation(libs.androidXCollection)
     implementation(libs.androidXWorkManager)
 
     implementation(project(":dd-sdk-android-internal"))

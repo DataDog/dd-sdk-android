@@ -15,6 +15,7 @@ import com.datadog.android.flags.integration.tests.utils.FlagsTelemetryTestFixtu
 import com.datadog.android.flags.integration.tests.utils.FlagsTelemetryTestFixture.Companion.CONTROL
 import com.datadog.android.flags.integration.tests.utils.MainLooperTestConfiguration
 import com.datadog.android.flags.integration.tests.utils.bodyAsJson
+import com.datadog.android.flags.integration.tests.utils.getBooleanEvaluationWithHooks
 import com.datadog.android.flags.integration.tests.utils.httpResponse
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -48,6 +49,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import java.security.MessageDigest
 import java.util.Locale
+import java.util.concurrent.CancellationException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
@@ -112,7 +114,7 @@ internal class EvaluationTelemetryTest {
 
     @ParameterizedTest
     @MethodSource("interleavedContextUpdates")
-    fun `M bind policy to submitted context W context update() {concurrent conversion}`(
+    fun `M bind policy to latest update W context update() {concurrent conversion}`(
         initializing: Boolean,
         optedOut: Boolean
     ) = runBlocking<Unit> {
@@ -137,19 +139,23 @@ internal class EvaluationTelemetryTest {
 
         try {
             // When
-            if (initializing) provider.initialize(interleaved) else provider.onContextSet(original, interleaved)
-            val result = provider.getBooleanEvaluation("enabled", false, null)
+            val update = runCatching {
+                if (initializing) provider.initialize(interleaved) else provider.onContextSet(original, interleaved)
+            }
+            val result = provider.getBooleanEvaluationWithHooks("enabled", false)
             fixture.flush()
 
             // Then
+            assertThat(update.exceptionOrNull()).isInstanceOf(CancellationException::class.java)
             assertThat(interleavedUpdates).isPositive()
+            assertThat(fixture.stubCore.requestsSent()).hasSize(2)
             assertThat(result.value).isTrue()
             val attributes = fixture.stubCore.requestsSent().last().bodyAsJson()
                 .getJSONObject("data").getJSONObject("attributes")
                 .getJSONObject("subject").getJSONObject("targeting_attributes")
-            assertThat(attributes.getString(CONTROL)).isEqualTo(optedOut.toString())
-            assertThat(fixture.evaluationCount()).isEqualTo(if (optedOut) 0 else 1)
-            assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(if (optedOut) 0 else 1)
+            assertThat(attributes.getString(CONTROL)).isEqualTo((!optedOut).toString())
+            assertThat(fixture.evaluationCount()).isEqualTo(if (optedOut) 1 else 0)
+            assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(if (optedOut) 1 else 0)
             assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
         } finally {
             executor.shutdownNow()
@@ -169,11 +175,11 @@ internal class EvaluationTelemetryTest {
         }
 
         // When
-        val previous = provider.getBooleanEvaluation("enabled", false, null)
+        val previous = provider.getBooleanEvaluationWithHooks("enabled", false)
         val rumWhilePending = fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME).size
         fixture.completeNextAssignment()
         pending.join()
-        val updated = provider.getBooleanEvaluation("enabled", false, null)
+        val updated = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -196,7 +202,7 @@ internal class EvaluationTelemetryTest {
         }
 
         // When
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -221,7 +227,7 @@ internal class EvaluationTelemetryTest {
         }
 
         // When
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.completeNextAssignment()
         fixture.completeNextAssignment()
         first.join()
@@ -244,7 +250,7 @@ internal class EvaluationTelemetryTest {
         provider.initialize(context(Value.Boolean(true)))
 
         // When
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -268,7 +274,7 @@ internal class EvaluationTelemetryTest {
         provider.initialize(context(fakeControl))
 
         // When
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -448,7 +454,7 @@ internal class EvaluationTelemetryTest {
         val refresh = runCatching { provider.onContextSet(original, context(Value.Boolean(optedOut))) }
 
         // When
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -474,7 +480,7 @@ internal class EvaluationTelemetryTest {
 
         // When
         val wasPending = !pending.isCompleted
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.completeNextAssignment()
         pending.join()
         fixture.flush()
@@ -501,7 +507,7 @@ internal class EvaluationTelemetryTest {
 
         // When
         val latestWasPending = !newer.isCompleted
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.completeNextAssignment()
         newer.join()
         fixture.flush()
@@ -598,11 +604,11 @@ internal class EvaluationTelemetryTest {
         val provider = newClient().asOpenFeatureProvider()
         val original = context(Value.Boolean(false))
         provider.initialize(original)
-        provider.getBooleanEvaluation("enabled", false, null)
+        provider.getBooleanEvaluationWithHooks("enabled", false)
 
         // When
         provider.onContextSet(original, context(Value.Boolean(true)))
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -619,12 +625,12 @@ internal class EvaluationTelemetryTest {
         val original = context(Value.Boolean(false))
         fixture.assignments(enabled = false)
         provider.initialize(original)
-        val previous = provider.getBooleanEvaluation("enabled", true, null)
+        val previous = provider.getBooleanEvaluationWithHooks("enabled", true)
         fixture.assignments(enabled = true)
 
         // When
         provider.onContextSet(original, context(Value.Boolean(true)))
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then

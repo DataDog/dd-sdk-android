@@ -58,16 +58,32 @@ internal class EncryptedBatchReaderWriter(
         telemetryContext: TelemetryContext
     ): List<RawBatchEvent> {
         return delegate.readData(file, telemetryContext)
-            .map {
-                RawBatchEvent(
-                    data = if (it.data.isNotEmpty()) encryption.decrypt(it.data) else it.data,
-                    metadata = if (it.metadata.isNotEmpty()) encryption.decrypt(it.metadata) else it.metadata
-                )
-            }
+            .mapNotNull { decrypt(it, telemetryContext) }
+    }
+
+    private fun decrypt(event: RawBatchEvent, telemetryContext: TelemetryContext): RawBatchEvent? {
+        return try {
+            RawBatchEvent(
+                data = if (event.data.isNotEmpty()) encryption.decrypt(event.data) else event.data,
+                metadata = if (event.metadata.isNotEmpty()) encryption.decrypt(event.metadata) else event.metadata
+            )
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                { DECRYPTION_FAILED_MESSAGE },
+                throwable = e,
+                onlyOnce = true,
+                additionalProperties = telemetryContext.asAttributesMap(bytesLost = event.data.size)
+            )
+            null
+        }
     }
 
     companion object {
         internal const val BAD_ENCRYPTION_RESULT_MESSAGE = "Encryption of non-empty data produced" +
             " empty result, aborting write operation."
+        internal const val DECRYPTION_FAILED_MESSAGE = "Decryption of a batch event failed," +
+            " dropping the event."
     }
 }

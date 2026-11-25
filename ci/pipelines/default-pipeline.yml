@@ -56,6 +56,13 @@ stages:
         "-Dorg.gradle.logging.stacktrace=all"
       )
 
+      # On these branches we want to build and run tests from scratch.
+      case "${CI_COMMIT_BRANCH:-}" in
+        develop|release*|dogfooding*)
+          export DD_CI_RERUN_TASKS=true
+          ;;
+      esac
+
       printf -v configured_gradle_options ' %q' "${gradle_options[@]}"
       export GRADLE_OPTS="${GRADLE_OPTS:-}$configured_gradle_options"
 
@@ -185,6 +192,7 @@ test:debug:
 test:tools:
   extends: .verification-gradle-job
   script:
+    - python3 -m unittest discover -s ci/scripts -p test_publish_dogfood_to_depot.py
     - ./gradlew :unitTestTools
   artifacts:
     when: always
@@ -215,7 +223,7 @@ test:kover:
     - !reference [ .snippets, setup-gradle ]
   script:
     # The init script `gradle-cache-cleanup.init.gradle.kts` runs Gradle cache cleanup AFTER the build.
-    # Cache-entry retention policies: https://docs.gradle.org/9.8.2/userguide/directory_layout.html#dir:gradle_user_home:configure_cache_cleanup
+    # Cache-entry retention policies: https://docs.gradle.org/9.9.2/userguide/directory_layout.html#dir:gradle_user_home:configure_cache_cleanup
     # We force the cache cleanup only here because right now only test:kover uploads the new cache to GitLab.
     - >-
       DD_TAGS="test.configuration.variant:release" ./gradlew
@@ -582,6 +590,25 @@ publish:dogfooding:
     # Publishing is done by S3 repo, so credentials are managed by IAM from env set in the CI
     # job for the service account. Signing is also not required for internal build.
     - ./gradlew publishReleasePublicationToInternalRepository --stacktrace --no-daemon -Pdd-skip-signing
+
+
+# Runs independently of S3 publishing; a Depot failure must not fail the pipeline.
+publish:dogfooding-depot:
+  extends:
+    - .cpu-memory-intensive-job
+    - .real-sdk-commit-sha-job
+  tags: [ "arch:amd64" ]
+  only:
+    - dogfooding
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  interruptible: false
+  allow_failure: true
+  dependencies: []
+  script:
+    - !reference [.snippets, setup-gradle]
+    - python3 ci/scripts/publish_dogfood_to_depot.py
 
 
 # SLACK NOTIFICATIONS

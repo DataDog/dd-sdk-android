@@ -18,8 +18,7 @@ internal class BytesCompressor {
     fun compressBytes(uncompressedData: ByteArray): ByteArray {
         // Create the compressor with highest level of compression.
         val deflater = Deflater(COMPRESSION_LEVEL)
-        // We will start with an OutputStream double the size of the data
-        val outputStream = ByteArrayOutputStream(uncompressedData.size * 2)
+        val outputStream = ByteArrayOutputStream()
         // Compress the data
         // in order to align with dogweb way of decompressing the segments we need to compress
         // using the SYNC_FLUSH flag which adds the 0000FFFF flag at the end of the
@@ -46,7 +45,9 @@ internal class BytesCompressor {
         var retriesCounter = 1
         var bytesRead: Int
         do {
-            buffer = ByteArray(buffer.size * retriesCounter)
+            if (retriesCounter > 1) {
+                buffer = ByteArray(buffer.size * retriesCounter)
+            }
             if (flag == Deflater.SYNC_FLUSH) {
                 deflater.reset()
             }

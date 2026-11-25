@@ -6,9 +6,9 @@
 
 package com.datadog.gradle.plugin.transdeps
 
+import com.datadog.gradle.plugin.aarmetadata.readAarMetadata
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
-import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
@@ -30,10 +30,17 @@ abstract class GenerateTransitiveDependenciesTask : DefaultTask() {
 
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val resolvedArtifacts: ConfigurableFileCollection
+    abstract val compileArtifacts: ConfigurableFileCollection
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val runtimeArtifacts: ConfigurableFileCollection
 
     @get:OutputFile
     abstract val dependenciesFile: RegularFileProperty
+
+    private val sizeColumnWidth: Int
+        get() = if (humanReadableSize) HUMAN_READABLE_SIZE_WIDTH else RAW_SIZE_WIDTH
 
     init {
         group = "datadog"
@@ -45,39 +52,63 @@ abstract class GenerateTransitiveDependenciesTask : DefaultTask() {
     @TaskAction
     fun applyTask() {
         val outputFile = dependenciesFile.get().asFile
+        val compileFiles = compileArtifacts.files
+        val runtimeFiles = runtimeArtifacts.files
+        val artifacts = (compileFiles + runtimeFiles).toList()
         outputFile.writeText("Dependencies List\n\n")
-        listConfigurationDependencies(outputFile, resolvedArtifacts)
+        outputFile.appendText("${"Dependency".padEnd(PADDING)} | ${"Size".padStart(sizeColumnWidth)} | Classpath\n")
+        listDependencies(outputFile, artifacts, compileFiles, runtimeFiles)
+        val compileSize = size(compileFiles.sumOf { it.length() }).trim()
+        val runtimeSize = size(runtimeFiles.sumOf { it.length() }).trim()
+        outputFile.appendText("\nTotal compile dependency artifact size: $compileSize\n")
+        outputFile.appendText("Total runtime dependency artifact size: $runtimeSize\n")
     }
 
     // endregion
 
     // region Internal
 
-    private fun listConfigurationDependencies(outputFile: File, artifacts: FileCollection) {
+    private fun listDependencies(
+        outputFile: File,
+        artifacts: List<File>,
+        compileFiles: Set<File>,
+        runtimeFiles: Set<File>
+    ) {
         val sortedArtifacts = if (sortByName) {
             artifacts.sortedBy { it.absolutePath }
         } else {
             artifacts.sortedBy { -it.length() }
         }
 
-        var sum = 0L
-        sortedArtifacts.forEach {
-            sum += it.length()
-            outputFile.appendText(getDependencyFileDescription(it))
+        sortedArtifacts.forEach { artifact ->
+            val classpath = when {
+                artifact in compileFiles && artifact in runtimeFiles -> "both"
+                artifact in compileFiles -> "compile"
+                else -> "runtime"
+            }
+            outputFile.appendText(getDependencyFileDescription(artifact, classpath))
         }
-
-        outputFile.appendText("\n${TOTAL.padEnd(PADDING)}:${size(sum)}\n\n")
     }
 
-    private fun getDependencyFileDescription(it: File): String {
-        val hash = it.parentFile
+    private fun getDependencyFileDescription(artifact: File, classpath: String): String {
+        val artifactSize = size(artifact.length()).trim().padStart(sizeColumnWidth)
+        val minCompileSdk = if (artifact.extension.equals("aar", ignoreCase = true)) {
+            readAarMetadata(artifact)?.getProperty("minCompileSdk")?.trim()?.toIntOrNull()
+        } else {
+            null
+        }
+        val requirement = minCompileSdk?.let { " (minCompileSdk=$it)" }.orEmpty()
+        val dependency = dependencyCoordinates(artifact) + requirement
+        return "${dependency.padEnd(PADDING)} | $artifactSize | $classpath\n"
+    }
+
+    private fun dependencyCoordinates(artifactFile: File): String {
+        val hash = artifactFile.parentFile
         val version = hash.parentFile
         val artifact = version.parentFile
         val group = artifact.parentFile
 
-        val title = "${group.name}:${artifact.name}:${version.name}"
-
-        return "${title.padEnd(PADDING)}:${size(it.length())}\n"
+        return "${group.name}:${artifact.name}:${version.name}"
     }
 
     private fun size(size: Long): String {
@@ -87,19 +118,19 @@ abstract class GenerateTransitiveDependenciesTask : DefaultTask() {
                 size >= 2 * KB -> "${size / KB} Kb"
                 else -> "$size b "
             }
-            return rawSize.padStart(8)
+            return rawSize.padStart(HUMAN_READABLE_SIZE_WIDTH)
         } else {
-            return "$size b ".padStart(16)
+            return "$size b ".padStart(RAW_SIZE_WIDTH)
         }
     }
 
     // endregion
 
     companion object {
-        private const val PADDING = 64
+        private const val PADDING = 84
+        private const val HUMAN_READABLE_SIZE_WIDTH = 8
+        private const val RAW_SIZE_WIDTH = 16
         private const val KB = 1024
         private const val MB = 1024 * 1024
-
-        private const val TOTAL = "Total transitive dependencies size"
     }
 }

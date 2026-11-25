@@ -6,12 +6,12 @@
 
 package com.datadog.android.profiling.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.core.internal.persistence.file.readBytesSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
@@ -20,18 +20,27 @@ import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
+import com.datadog.android.profiling.internal.utils.CompressionResult
 import com.datadog.android.profiling.internal.utils.bootNtpOffsetNs
+import com.datadog.android.profiling.internal.utils.compressFileSafe
 import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonArray
+import java.io.ByteArrayInputStream
 import java.io.File
+import java.io.FileInputStream
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 internal class ProfilingDataWriter(
-    private val sdkCore: FeatureSdkCore
+    private val sdkCore: FeatureSdkCore,
+    private val compressFile: (File) -> CompressionResult = {
+        compressFileSafe(it, MAX_PROFILE_SIZE_BYTES, sdkCore.internalLogger)
+    }
 ) : ProfilingWriter {
+
     override fun writeManualProfile(
         profilingResult: PerfettoResult,
         longTasks: List<ProfilerEvent.RumLongTaskEvent>,
@@ -81,14 +90,13 @@ internal class ProfilingDataWriter(
         feature.withWriteContext { context, writeScope ->
             writeScope { writer ->
                 synchronized(this) {
-                    val profileBytes = readProfilingData(resultFilePath)
-                    if (profileBytes == null || profileBytes.isEmpty()) {
-                        logWriteResultMetric(
-                            dropped = true,
-                            dropReason = DROP_REASON_PERFETTO_UNREADABLE,
-                            startReason = operation,
-                            hasRumErrorId = rumErrorId.isNotEmpty()
-                        )
+                    val metadata = buildMetadataOrDrop(
+                        perfettoFilePath = resultFilePath,
+                        rumMobileEventsJson = buildTriggerRumMobileEventsJson(rumErrorId, detectedAtMs),
+                        startReason = operation,
+                        hasRumErrorId = rumErrorId.isNotEmpty()
+                    )
+                    if (metadata == null) {
                         fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
                         return@synchronized
                     }
@@ -110,16 +118,16 @@ internal class ProfilingDataWriter(
                         dd = ProfileEvent.Dd(bootNtp = perfettoResult.bootNtpOffsetNs)
                     )
                     val serialized = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
-                    val rumMobileEventsJson = buildTriggerRumMobileEventsJson(rumErrorId, detectedAtMs)
-                    val metadata = ProfilingBatchMetadata(profileBytes, rumMobileEventsJson).toBytes()
                     logWriteResultMetric(
                         dropped = false,
                         dropReason = null,
                         startReason = operation,
-                        hasRumErrorId = rumErrorId.isNotEmpty()
+                        hasRumErrorId = rumErrorId.isNotEmpty(),
+                        profileSizeBytes = metadata.sizeBytes,
+                        profileCompressed = metadata.compressed
                     )
                     writer.write(
-                        event = RawBatchEvent(data = serialized, metadata = metadata),
+                        event = RawBatchEvent(data = serialized, metadata = metadata.bytes),
                         batchMetadata = null,
                         eventType = EventType.DEFAULT
                     )
@@ -165,58 +173,51 @@ internal class ProfilingDataWriter(
         anrEvents: List<ProfilerEvent.RumAnrEvent>,
         vitalEvents: List<ProfilerEvent.RumVitalEvent>
     ): RawBatchEvent? {
-        val perfettoBytes = readProfilingData(profilingResult.resultFilePath)
+        // Checked first: a profile without a RUM context is dropped anyway, so the trace must not be read and
+        // compressed for nothing.
         val firstRumContext =
             longTaskEvents.firstOrNull()?.rumContext
                 ?: anrEvents.firstOrNull()?.rumContext
                 ?: vitalEvents.firstOrNull()?.rumContext
-        return when {
-            perfettoBytes == null || perfettoBytes.isEmpty() -> {
-                logWriteResultMetric(
-                    dropped = true,
-                    dropReason = DROP_REASON_PERFETTO_UNREADABLE,
-                    startReason = profilingResult.startReason.value,
-                    longTaskEvents = longTaskEvents,
-                    anrEvents = anrEvents,
-                    vitalEvents = vitalEvents
-                )
-                null
-            }
-
-            firstRumContext == null -> {
-                logWriteResultMetric(
-                    dropped = true,
-                    dropReason = DROP_REASON_NO_RUM_CONTEXT,
-                    startReason = profilingResult.startReason.value,
-                    longTaskEvents = longTaskEvents,
-                    anrEvents = anrEvents,
-                    vitalEvents = vitalEvents
-                )
-                null
-            }
-
-            else -> {
-                val profileEvent = createProfileEvent(
-                    context = context,
-                    rumContext = firstRumContext,
-                    profilingResult = profilingResult,
-                    longTaskEvents = longTaskEvents,
-                    anrEvents = anrEvents,
-                    vitalEvents = vitalEvents
-                )
-                val serializedEvent = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
-                val rumMobileEventsJson = buildRumMobileEventsJson(longTaskEvents, anrEvents, vitalEvents)
-                val metadata = ProfilingBatchMetadata(perfettoBytes, rumMobileEventsJson).toBytes()
-                logWriteResultMetric(
-                    dropped = false,
-                    dropReason = null,
-                    startReason = profilingResult.startReason.value,
-                    longTaskEvents = longTaskEvents,
-                    anrEvents = anrEvents,
-                    vitalEvents = vitalEvents
-                )
-                RawBatchEvent(data = serializedEvent, metadata = metadata)
-            }
+        if (firstRumContext == null) {
+            logWriteResultMetric(
+                dropped = true,
+                dropReason = DROP_REASON_NO_RUM_CONTEXT,
+                startReason = profilingResult.startReason.value,
+                longTaskEvents = longTaskEvents,
+                anrEvents = anrEvents,
+                vitalEvents = vitalEvents
+            )
+            return null
+        }
+        return buildMetadataOrDrop(
+            perfettoFilePath = profilingResult.resultFilePath,
+            rumMobileEventsJson = buildRumMobileEventsJson(longTaskEvents, anrEvents, vitalEvents),
+            startReason = profilingResult.startReason.value,
+            longTaskEvents = longTaskEvents,
+            anrEvents = anrEvents,
+            vitalEvents = vitalEvents
+        )?.let { metadata ->
+            val profileEvent = createProfileEvent(
+                context = context,
+                rumContext = firstRumContext,
+                profilingResult = profilingResult,
+                longTaskEvents = longTaskEvents,
+                anrEvents = anrEvents,
+                vitalEvents = vitalEvents
+            )
+            val serializedEvent = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
+            logWriteResultMetric(
+                dropped = false,
+                dropReason = null,
+                startReason = profilingResult.startReason.value,
+                longTaskEvents = longTaskEvents,
+                anrEvents = anrEvents,
+                vitalEvents = vitalEvents,
+                profileSizeBytes = metadata.sizeBytes,
+                profileCompressed = metadata.compressed
+            )
+            RawBatchEvent(data = serializedEvent, metadata = metadata.bytes)
         }
     }
 
@@ -227,7 +228,9 @@ internal class ProfilingDataWriter(
         longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>? = null,
         anrEvents: List<ProfilerEvent.RumAnrEvent>? = null,
         vitalEvents: List<ProfilerEvent.RumVitalEvent>? = null,
-        hasRumErrorId: Boolean? = null
+        hasRumErrorId: Boolean? = null,
+        profileSizeBytes: Long? = null,
+        profileCompressed: Boolean? = null
     ) {
         val writeResult = buildMap {
             put(KEY_DROPPED, dropped)
@@ -237,6 +240,8 @@ internal class ProfilingDataWriter(
             anrEvents?.let { put(KEY_ANR_COUNT, it.size) }
             vitalEvents?.let { put(KEY_VITAL_COUNT, it.size) }
             hasRumErrorId?.let { put(KEY_HAS_RUM_ERROR_ID, it) }
+            profileSizeBytes?.let { put(KEY_PROFILE_SIZE_BYTES, it) }
+            profileCompressed?.let { put(KEY_PROFILE_COMPRESSED, it) }
         }
         sdkCore.internalLogger.logMetric(
             messageBuilder = { ProfilingTelemetry.TELEMETRY_MSG_PROFILING_SESSION },
@@ -389,14 +394,113 @@ internal class ProfilingDataWriter(
         }
     }
 
-    private fun readProfilingData(profilingPath: String): ByteArray? {
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        // profilingPath is not null in kotlin, it can't throw NPE
-        return File(profilingPath).readBytesSafe(internalLogger = sdkCore.internalLogger)
+    /**
+     * Builds the batch metadata blob (see [ProfilingBatchMetadata]: a header, the Perfetto trace bytes, then the
+     * RUM mobile events) from the trace file: the gzip stream when it compresses, the raw trace when it does not.
+     * Logs the dropped write metric and returns null when the profile is too large or unreadable.
+     */
+    @Suppress("LongParameterList")
+    private fun buildMetadataOrDrop(
+        perfettoFilePath: String,
+        rumMobileEventsJson: ByteArray,
+        startReason: String,
+        longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>? = null,
+        anrEvents: List<ProfilerEvent.RumAnrEvent>? = null,
+        vitalEvents: List<ProfilerEvent.RumVitalEvent>? = null,
+        hasRumErrorId: Boolean? = null
+    ): PerfettoMetadata? {
+        val logDrop = { dropReason: String, sizeBytes: Long?, compressed: Boolean? ->
+            logWriteResultMetric(
+                dropped = true,
+                dropReason = dropReason,
+                startReason = startReason,
+                longTaskEvents = longTaskEvents,
+                anrEvents = anrEvents,
+                vitalEvents = vitalEvents,
+                hasRumErrorId = hasRumErrorId,
+                profileSizeBytes = sizeBytes,
+                profileCompressed = compressed
+            )
+        }
+        return when (val result = compressFile(File(perfettoFilePath))) {
+            is CompressionResult.Compressed -> encodeCompressedOrNull(
+                compressed = result,
+                rumMobileEventsJson = rumMobileEventsJson,
+                logDrop = logDrop
+            )
+
+            is CompressionResult.Raw -> encodeRawOrNull(
+                perfettoFilePath = perfettoFilePath,
+                sizeBytes = result.sizeBytes,
+                rumMobileEventsJson = rumMobileEventsJson,
+                logDrop = logDrop
+            )
+
+            is CompressionResult.TooLarge -> {
+                // profile_compressed is true when the size is the compressed bytes reached, false for the raw size
+                logDrop(DROP_REASON_PROFILE_TOO_LARGE, result.sizeBytes, result.compressed)
+                null
+            }
+
+            CompressionResult.Unreadable -> {
+                logDrop(DROP_REASON_PERFETTO_UNREADABLE, null, null)
+                null
+            }
+        }
     }
 
-    companion object {
+    private fun encodeCompressedOrNull(
+        compressed: CompressionResult.Compressed,
+        rumMobileEventsJson: ByteArray,
+        logDrop: (String, Long?, Boolean?) -> Unit
+    ): PerfettoMetadata? {
+        @Suppress("UnsafeThirdPartyFunctionCall") // The byte array is non-null; the constructor only throws NPE on null
+        val traceStream = ByteArrayInputStream(compressed.bytes)
+        val metadata = ProfilingBatchMetadata.encode(traceStream, compressed.bytes.size, rumMobileEventsJson)
+        return if (metadata == null) {
+            logDrop(DROP_REASON_PERFETTO_UNREADABLE, null, null)
+            null
+        } else {
+            PerfettoMetadata(metadata, compressed.bytes.size.toLong(), compressed = true)
+        }
+    }
 
+    // The raw trace is streamed into the blob. A file truncated or grown after it was measured is
+    // rejected by the encoder, since its size no longer matches.
+    private fun encodeRawOrNull(
+        perfettoFilePath: String,
+        sizeBytes: Long,
+        rumMobileEventsJson: ByteArray,
+        logDrop: (String, Long?, Boolean?) -> Unit
+    ): PerfettoMetadata? {
+        return try {
+            FileInputStream(perfettoFilePath).use { input ->
+                ProfilingBatchMetadata.encode(input, sizeBytes.toInt(), rumMobileEventsJson)
+            }
+        } catch (e: IOException) {
+            logReadFailure(e)
+            null
+        } catch (e: SecurityException) {
+            logReadFailure(e)
+            null
+        }?.let { PerfettoMetadata(it, sizeBytes, compressed = false) } ?: run {
+            logDrop(DROP_REASON_PERFETTO_UNREADABLE, null, null)
+            null
+        }
+    }
+
+    private fun logReadFailure(e: Exception) {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            { ERROR_READ_PERFETTO_FILE },
+            e
+        )
+    }
+
+    private class PerfettoMetadata(val bytes: ByteArray, val sizeBytes: Long, val compressed: Boolean)
+
+    companion object {
         internal const val METRIC_TYPE_PROFILING_WRITE = "profiling write"
         internal const val KEY_PROFILING_WRITE = "profiling_write"
         internal const val KEY_DROPPED = "dropped"
@@ -408,6 +512,15 @@ internal class ProfilingDataWriter(
         internal const val DROP_REASON_PERFETTO_UNREADABLE = "perfetto_unreadable"
         internal const val DROP_REASON_NO_RUM_CONTEXT = "no_rum_context"
         internal const val KEY_HAS_RUM_ERROR_ID = "has_rum_error_id"
+        internal const val KEY_PROFILE_SIZE_BYTES = "profile_size_bytes"
+        internal const val DROP_REASON_PROFILE_TOO_LARGE = "profile_too_large"
+
+        // The Datadog profiling intake rejects requests larger than 30 MiB; checked against the stored attachment:
+        // the compressed size when compressing, the raw size on the fallback.
+        internal const val MAX_PROFILE_SIZE_BYTES = 30 * 1024 * 1024
+
+        internal const val KEY_PROFILE_COMPRESSED = "profile_compressed"
+        internal const val ERROR_READ_PERFETTO_FILE = "Unable to read the perfetto profile file"
 
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"

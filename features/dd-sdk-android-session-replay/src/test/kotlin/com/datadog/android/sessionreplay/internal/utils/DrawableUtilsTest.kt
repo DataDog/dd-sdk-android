@@ -27,6 +27,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -42,6 +43,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -425,6 +427,37 @@ internal class DrawableUtilsTest {
             InternalLogger.Target.TELEMETRY,
             { it == "$DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION ${mockDrawable.javaClass.canonicalName}" },
             exceptionType
+        )
+    }
+
+    @Test
+    fun `M call onFailure W createBitmapOfApproxSizeFromDrawable { drawable setBounds throws runtime exception }`() {
+        // Given
+        val fakeException = AndroidRuntimeException()
+        whenever(mockDrawable.intrinsicWidth).thenReturn(1)
+        whenever(mockDrawable.intrinsicHeight).thenReturn(1)
+        whenever(mockDrawable.setBounds(any(), any(), any(), any())).thenThrow(fakeException)
+
+        // When
+        assertDoesNotThrow {
+            testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+                drawable = mockDrawable,
+                drawableWidth = mockDrawable.intrinsicWidth,
+                drawableHeight = mockDrawable.intrinsicHeight,
+                displayMetrics = mockDisplayMetrics,
+                config = mockConfig,
+                bitmapCreationCallback = mockBitmapCreationCallback
+            )
+        }
+
+        // Then
+        verify(mockBitmapCreationCallback).onFailure()
+        verify(mockDrawable, never()).draw(any())
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            "$DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION ${mockDrawable.javaClass.canonicalName}",
+            fakeException
         )
     }
 

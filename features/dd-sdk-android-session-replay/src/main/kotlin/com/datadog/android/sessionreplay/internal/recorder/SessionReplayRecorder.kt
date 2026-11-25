@@ -59,7 +59,6 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
@@ -83,8 +82,12 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     @Volatile
     private var shouldRecord = false
 
-    /** Whether a capture has been asked for and not yet honoured — see [requestCapture]. */
-    private val captureRequested = AtomicBoolean(false)
+    /**
+     * Whether a capture has been asked for and not yet honoured — see [requestCapture]. Written only
+     * under [slotsAwaitingPlaceholder], so that it always agrees with the slots still pending.
+     */
+    @Volatile
+    private var captureRequested = false
 
     /**
      * The slots a standing capture request still owes a placeholder, guarded by itself.
@@ -361,8 +364,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     override fun requestCapture(slotIds: Set<String>) {
         synchronized(slotsAwaitingPlaceholder) {
             slotsAwaitingPlaceholder.addAll(slotIds)
+            captureRequested = true
         }
-        captureRequested.set(true)
         uiHandler.post {
             @Suppress("ThreadSafety") // handler posts to the main looper
             performRequestedCapture(attempt = 0)
@@ -371,18 +374,17 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     /** Clears the request once every slot it was made for has its placeholder in storage. */
     private fun onPlaceholderWritten(slotId: String) {
-        val isSatisfied = synchronized(slotsAwaitingPlaceholder) {
+        synchronized(slotsAwaitingPlaceholder) {
             slotsAwaitingPlaceholder.remove(slotId)
-            slotsAwaitingPlaceholder.isEmpty()
-        }
-        if (isSatisfied) {
-            captureRequested.set(false)
+            if (slotsAwaitingPlaceholder.isEmpty()) {
+                captureRequested = false
+            }
         }
     }
 
     @MainThread
     private fun performRequestedCapture(attempt: Int) {
-        if (!shouldRecord || !captureRequested.get()) {
+        if (!shouldRecord || !captureRequested) {
             return
         }
         when (viewOnDrawInterceptor.requestCapture()) {
@@ -403,7 +405,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             // whatever draw or batch happens to come along next.
             ViewOnDrawInterceptor.CaptureRequestResult.NOT_CAPTURED -> Unit
         }
-        if (!captureRequested.get()) {
+        if (!captureRequested) {
             return
         }
         if (attempt < MAX_CAPTURE_ATTEMPTS) {
@@ -427,8 +429,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private fun abandonCaptureRequest() {
         synchronized(slotsAwaitingPlaceholder) {
             slotsAwaitingPlaceholder.clear()
+            captureRequested = false
         }
-        captureRequested.set(false)
     }
 
     override fun stopRecorders() {
@@ -472,7 +474,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
         windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
         viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
-        if (captureRequested.get()) {
+        if (captureRequested) {
             viewOnDrawInterceptor.requestCapture()
         }
     }

@@ -97,13 +97,15 @@ Do not block. Proceed to Step 1.
 
 ## Step 2 — Analyze the diff
 
-Build a working list of **candidate findings**. Aim for **at least 5 candidates** as a guideline — if you have fewer, re-read the diff once more and look harder (missing null/thread annotations, allocations in loops, etc.). This is not a hard limit in either direction: report only real findings, even if there are fewer than 5 or none, and do not cap the list if there are more.
+Build a working list of **candidate findings**, checking every changed file against the categories below. Report only real findings, even if there are none, and do not cap the list.
 
 In parallel, run your own built-in code review (e.g. the `code-review` skill in Claude Code, or `/review` in Codex) on the same diff. Merge its findings into the candidate list, dropping duplicates.
 
 Verify every candidate against the code before keeping it, including findings from other review bots on the PR. Common false positives: ABI breaks for declarations customers can't reach, "a Kotlin `List` can be cast to `MutableList`" as a reason to wrap collections, and treating an existing SDK-owned call site as a precedent for a customer-code boundary.
 
 Check every changed file against the following categories. Findings may belong to multiple categories; record the most specific one.
+
+**Performance note.** This project is an SDK that runs inside the host application, and it must be a good citizen there. Public API calls must not block the caller's thread for long, whichever thread the host calls from. Move non-trivial work to the SDK's background executors. Be mindful of memory (allocations, retained objects, buffer and cache sizes) and of CPU use (polling, repeated work, unbounded loops). Any cost the SDK adds is paid by the host app's users.
 
 ### 2.1 UI / hot-path allocations and work
 
@@ -167,20 +169,52 @@ The SDK must never stall the host app's UI thread. Flag:
 - Newly added methods on classes historically called from the main thread (check the class's KDoc / existing callers).
 - Non-UI work posted to a main-thread `Handler` (e.g. reusing the `Handler` RUM keeps for lifecycle tracking), and `@MainThread` annotations without a real main-thread requirement.
 - Immutable configuration re-read from the feature context on every call instead of once.
+- Work added to SDK or feature initialization, which runs on the caller's thread at app startup: file listing, directory creation, `SharedPreferences` reads, reflection. Defer it to a worker thread, or ask for a measured cost.
+- Blocking reads of state owned by another thread (context `Future`s, a busy context queue) on init or per-event paths. Pass the data with the event, read it in `withWriteContext`, or read it once at init. Block only on I/O or network threads, and always with a timeout.
+- IPC or system-service calls in `BroadcastReceiver.onReceive`, which runs on the main looper. Move them to an executor, or register the receiver with a background `Handler`.
+- An interface with a blocking implementation but no `@WorkerThread` on the interface itself.
 
-### 2.6 PR scope
+### 2.6 Resource usage (memory, CPU, threads)
+
+Weigh how often the code runs before flagging. Small overhead on cold paths is acceptable, so focus on per-event, per-frame, per-request and startup paths, and ask for measured benefit before accepting a new cache or optimization. Flag:
+
+- **Expensive work before cheap checks.** Sanitizing, copying, compressing or locking before the early return that makes it pointless (feature disabled, no RUM context, consent `NOT_GRANTED`, event dropped). The disabled path should cost nothing.
+- **Per-call allocations.** The 2.1 checks also apply to per-event and per-request paths: a new `Map` or copy per event, capturing lambdas, `Regex` compiled per instance, and per-element `split`/`lowercase` chains. Logger calls count too: `messageBuilder` lambdas that capture variables, and `additionalProperties` maps built for `onlyOnce` logs that are usually dropped.
+- **Redundant work.** Computing the same result twice (e.g. a second `toByteArray` just to measure size), and deserializing and re-serializing data at upload time instead of writing the final form once.
+- **Unbounded growth.** Maps, caches, registries, queues and thread pools with no eviction or cap, and user-controlled data captured with no byte limit. Ask what clears them: view stop, session end, a size cap or `LruCache`.
+- **Peak memory.** Large files or blobs read whole into memory, or copied through intermediate byte arrays. Prefer streaming, and storing a file path instead of the bytes in batch storage, which has a size quota. Validate a length read from disk before allocating with it.
+- **Leaks.** Long-lived references to an `Activity`, `Fragment` or `View`, and listeners or subscriptions with no unregister path on `Datadog.stop`, feature stop or lifecycle end.
+- **Thread cost.** Each thread reserves about 1 MB of stack and adds scheduler load, so beyond the reuse rule in 2.3, flag threads created per instance or session, threads that mostly idle, and threads created when the consuming feature is off. Also flag a new `OkHttpClient`, which brings its own thread and connection pools; use `FeatureSdkCore.createOkHttpCallFactory` instead.
+- **Executor misuse.** Long CPU work on the shared persistence executor instead of an existing feature-scoped one. Blocking I/O on a single-thread executor that also runs short, latency-sensitive tasks. Customer callbacks run on an SDK worker or under a lock, where a slow callback stalls persistence or deadlocks. `Future.cancel` on `LoggingScheduledThreadPoolExecutor` or `BackPressureExecutorService` tasks, which logs each `CancellationException` to logcat and telemetry.
+- **Unneeded thread hops.** Re-dispatching work already on the right thread, or posting to a target that re-dispatches anyway. On the crash path, the only acceptable hop is the final I/O write, because the process may die first.
+- **Lock cost.** Work done under a lock that could happen before it: validate and prepare first, then lock only to publish. New call sites of `updateFeatureContext`, which takes the feature context write lock and runs every update receiver under it, on the caller's thread when `useContextThread = false`. Use `safeTryWithLock` rather than a raw `tryLock`, so a timeout is reported. When `synchronized` blocks and atomics keep multiplying, suggest a single processing thread.
+- **Missing caches.** Reflection lookups (including failed ones) retried on every call, and per-process facts recomputed at each feature start. Check that a cache key gives a good hit rate.
+- **I/O and network volume.** `SharedPreferences.commit()` where `apply()` would do, retry loops with no delay between attempts, and many tiny uploads (from racing flushes or high-frequency events sent without aggregation).
+
+### 2.7 PR scope
 
 Flag changes unrelated to the PR's stated purpose (drive-by refactors, unrelated bug fixes, dependency bumps, formatting churn, build-script cleanups) and suggest a separate PR for each. `AGENTS.md` requires focused PRs; mixed changes are harder to review and to revert.
 
-### 2.7 Schemas, models and build logic
+### 2.8 Schemas, models and build logic
 
 - Edits to schema folders cloned from `rum-events-format` (listed under Generated Models in `AGENTS.md`): the change must be made upstream first.
 - Hand-written JSON parsing or serialization where a JSON schema and a generated model would do, or manual parsing next to a schema that already exists.
 - Build scripts and `build-logic`: eager task APIs where lazy ones exist (`tasks.matching { }` instead of `tasks.named { }` / `configureEach`), dependencies on the Kotlin Gradle Plugin artifact where its API artifact suffices, dependency resolution at configuration time, dependencies declared out of order (main source set first, then test, then test fixtures; see Static Analysis and Compatibility in `AGENTS.md`), and hard-coded worker counts or memory settings without evidence they help.
+- New dependencies: they add to the host's APK size through their transitive dependencies. Check the `transitiveDependencies` diff.
 
-### 2.8 Other defects (open-ended)
+### 2.9 Billing impact
 
-Also flag anything else you would catch in a normal review: null-deref risks, incorrect `equals`/`hashCode`, resource leaks (`Cursor`, `InputStream`, `BufferedReader` not closed / no `use {}`), swallowed exceptions, catching `Error` (`OutOfMemoryError`, `AssertionError`) to continue, logging of PII, non-exhaustive `when` over sealed types or enums (an `else` branch that silently absorbs new subtypes), misuse of `apply`/`also`, off-by-one, missing `@Throws`, wrong unit-test assertions, a new copy of a helper that already exists in the module, time values whose name doesn't state the clock base and unit, cross-platform assumptions about `DatadogContext.sdkVersion` (see Public API in `AGENTS.md`), etc.
+Datadog is a paid product, and customers are billed for the data the SDK sends:
+
+- Logs and Traces are billed by the number of logs and spans.
+- RUM is billed by the number of sessions. A session is created by the first view event with a new session ID.
+- Profiling and Session Replay are billed by the number of RUM sessions that include profiling or Session Replay data, respectively.
+
+Flag any change that can change what customers are billed for, unless the PR already acknowledges it (e.g. in the PR description). Examples: more logs or spans sent, changed default sampling rates, new or split sessions (e.g. a view event that starts a new session ID), or more sessions carrying profiling or Session Replay data.
+
+### 2.10 Other defects (open-ended)
+
+Also flag anything else you would catch in a normal review: null-deref risks, incorrect `equals`/`hashCode`, resource leaks (`Cursor`, `InputStream`, `BufferedReader` not closed / no `use {}`), swallowed exceptions, catching `Error` (`OutOfMemoryError`, `AssertionError`) to continue, logging of PII, non-exhaustive `when` over sealed types or enums (an `else` branch that silently absorbs new subtypes), misuse of `apply`/`also`, off-by-one, missing `@Throws`, wrong unit-test assertions, a new copy of a helper that already exists in the module, time values whose name doesn't state the clock base and unit, cross-platform assumptions about `DatadogContext.sdkVersion` (see Public API in `AGENTS.md`), reflection on hidden APIs (`@UnsupportedAppUsage`) without an API-level gate when a public API exists (it logs a warning and can be blocked on newer API levels), etc.
 
 Also check that the project's agent docs (`AGENTS.md`, `ai/skills/*`) are still accurate after the change — especially when Gradle tasks, build scripts, or module layout change. Flag any skill or doc that references a renamed, removed, or changed task, command, file, or path.
 
@@ -191,8 +225,8 @@ Do **not** ask the user about each finding individually. Instead, present the fu
 1. Print a **detailed description of every finding** to the terminal, in order. Each finding gets its own numbered section with:
    - **Title** — short, category-tagged, e.g. `[UI hot path] Paint allocated in onDraw`.
    - **Location** — `path/to/File.kt:line` (use the current HEAD line, not the diff index).
-   - **Category** — one of `UI hot path`, `Binary compatibility`, `Concurrency`, `Redundant sync`, `Main-thread blocking`, `PR scope`, `Schemas and build`, `Other`.
-   - **Explanation** — 3–6 sentences. Explain *what* the problem is, *why* it matters (concrete user-visible impact: dropped frames, crash on update, ANR, data corruption, etc.), and *how* a reader can verify it. Quote the offending snippet.
+   - **Category** — one of `UI hot path`, `Binary compatibility`, `Concurrency`, `Redundant sync`, `Main-thread blocking`, `Resource usage`, `PR scope`, `Schemas and build`, `Billing`, `Other`.
+   - **Explanation** — explain *what* the problem is, *why* it matters (concrete user-visible impact: dropped frames, crash on update, ANR, data corruption, etc.), and *how* a reader can verify it. Quote the offending snippet.
    - **Suggested fix** — one concrete suggestion.
 
 2. After all detailed descriptions, print a **short summary table** at the end with sequential numbers, one row per finding:

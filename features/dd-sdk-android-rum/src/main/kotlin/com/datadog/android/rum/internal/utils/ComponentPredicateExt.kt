@@ -17,7 +17,7 @@ import com.datadog.android.rum.tracking.ComponentPredicate
  * @param operation to be executed
  */
 @Suppress("TooGenericExceptionCaught")
-internal inline fun <reified T : Any> ComponentPredicate<T>.runIfValid(
+internal inline fun <T : Any> ComponentPredicate<T>.runIfValid(
     component: T,
     internalLogger: InternalLogger,
     operation: (T) -> Unit
@@ -36,7 +36,7 @@ internal inline fun <reified T : Any> ComponentPredicate<T>.runIfValid(
     }
 }
 
-internal inline fun <reified T : Any> ComponentPredicate<T>.resolveViewName(component: T): String {
+internal fun <T : Any> ComponentPredicate<T>.resolveViewName(component: T): String {
     val customName = getViewName(component)
     return if (customName.isNullOrBlank()) {
         component.resolveViewUrl()

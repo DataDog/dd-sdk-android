@@ -20,6 +20,9 @@ public final class com/datadog/android/flags/Flags {
 	public static synthetic fun enable$default (Lcom/datadog/android/flags/FlagsConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 }
 
+public final class com/datadog/android/flags/FlagsAssignmentAuthorizationException : java/lang/RuntimeException {
+}
+
 public abstract interface class com/datadog/android/flags/FlagsClient {
 	public static final field Companion Lcom/datadog/android/flags/FlagsClient$Companion;
 	public static fun get ()Lcom/datadog/android/flags/FlagsClient;
@@ -114,9 +117,11 @@ public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public fun <init> (Lcom/datadog/android/flags/FlagsClient;)V
 	public final fun getFlagAssignmentsSnapshot ()Ljava/util/Map;
 	public final fun getFlagAssignmentsSnapshot (Lcom/datadog/android/flags/model/EvaluationContext;)Ljava/util/Map;
+	public final fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
 	public final fun isEvaluationTelemetryOptOutParameterEnabled ()Z
 	public final fun isExperimentationOptOutEnabled ()Z
-	public final fun setEvaluationContext (Lcom/datadog/android/flags/model/EvaluationContext;Lcom/datadog/android/flags/EvaluationContextCallback;Z)V
+	public final fun resolveDeferringExposure (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/flags/_FlagsInternalProxy$DeferredExposureResolution;
+	public final fun setEvaluationContextWithOutcome (Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/Boolean;Lkotlin/jvm/functions/Function2;)V
 	public final fun trackFlagEvaluationEvent (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;)V
 	public final fun trackFlagEvaluationEvent (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;ZLjava/lang/String;)V
 	public final fun trackFlagExposure (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;)V
@@ -125,8 +130,16 @@ public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;)V
 }
 
+public final class com/datadog/android/flags/_FlagsInternalProxy$DeferredExposureResolution {
+	public fun <init> (Lcom/datadog/android/flags/model/ResolutionDetails;Lcom/datadog/android/flags/model/EvaluationContext;Lkotlin/jvm/functions/Function0;)V
+	public final fun getContext ()Lcom/datadog/android/flags/model/EvaluationContext;
+	public final fun getDetails ()Lcom/datadog/android/flags/model/ResolutionDetails;
+	public final fun getRecordExposure ()Lkotlin/jvm/functions/Function0;
+}
+
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
 	public static final field FLAG_NOT_FOUND Lcom/datadog/android/flags/model/ErrorCode;
+	public static final field GENERAL Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field INVALID_CONTEXT Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field PARSE_ERROR Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field PROVIDER_NOT_READY Lcom/datadog/android/flags/model/ErrorCode;

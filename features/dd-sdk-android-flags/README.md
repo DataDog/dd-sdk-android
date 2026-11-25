@@ -82,6 +82,8 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
+With `trackExposures(false)`, the SDK sends no exposure events to Datadog. It still records which exposures it has seen, so that the OpenFeature `ExposureHook` reports correct exposure decisions. See [Exposures in your own data store](../dd-sdk-android-flags-openfeature/README.md#exposures-in-your-own-data-store).
+
 #### Configure custom endpoints
 
 For testing or proxy purposes, you can configure custom endpoints:
@@ -127,6 +129,63 @@ val client = FlagsClient.Builder().build()
 val analyticsClient = FlagsClient.Builder("analytics").build()
 ```
 
+### Authorize assignment downloads for a subject
+
+Subject authorization prevents the SDK from returning cached flag assignments for one subject (targeting key) while
+the app requests assignments for another subject. If your environment requires subject authorization, get a JWT for
+the subject from your backend. Then pass the complete evaluation context, including the token in the
+`dd_assignment_token` attribute, in a single `setEvaluationContext` call:
+
+```kotlin
+client.setEvaluationContext(
+    EvaluationContext(
+        targetingKey = "user-123",
+        attributes = mapOf(
+            "country" to "US",
+            "dd_assignment_token" to jwtFromYourBackend
+        )
+    )
+)
+```
+
+Your backend signs the token for the requested subject and environment. Keep the private signing key on the backend.
+Before the token expires, call `setEvaluationContext` again with the complete context and a new token. Changing only
+the token triggers a full assignment download. To remove the token, omit `dd_assignment_token` or set it to an empty
+string. The SDK does not restore an earlier token.
+
+The SDK sends the token only in the reserved `DD-Assignment-Token` request header. It removes
+`dd_assignment_token` from targeting attributes, persisted assignment context, exposure data, evaluation telemetry,
+and SDK logs.
+
+With a custom flag endpoint, the proxy must forward the `DD-Assignment-Token` header.
+
+The SDK does not parse the token or validate its claims. The assignment endpoint validates its signature, expiration,
+and other claims, so validation does not depend on the device clock. The token must contain only printable ASCII
+characters and no whitespace. If the value is unusable, the SDK omits it, logs a fixed warning that does not include
+the value, and sends the request without a token.
+
+A usable token establishes a **subject boundary** for its targeting key as soon as the SDK accepts the context update:
+
+- Retained assignments for a different targeting key are unavailable while the assignment download is in progress and
+  after the download fails. Evaluation returns the application default with `ErrorCode.GENERAL`.
+- Retained assignments for the same targeting key remain available as a fallback. The fallback keeps the context that
+  was used to download the assignments, and the client state changes to `Stale`.
+- [Experimentation opt-out modes](#exclude-a-subject-from-experimentation) still require an exact context match.
+
+The SDK also establishes a subject boundary when the server returns an HTTP 401 response with the JSON:API error code
+`ASSIGNMENT_AUTHORIZATION_FAILED`, even if the request had no token. The context callback receives
+`FlagsAssignmentAuthorizationException` for this rejection. An eligible same-subject fallback remains available and
+keeps the client `Stale`, but the callback still reports the failed refresh. Removing a token or retrying does not
+restore another subject's assignments. A successful download or an eligible same-subject fallback clears the boundary.
+The SDK does not automatically refresh tokens, retry the update, or verify signed assignment responses.
+
+Without a token or an `ASSIGNMENT_AUTHORIZATION_FAILED` rejection, the SDK does not establish a subject boundary, and
+evaluation works the same as in environments that do not require subject authorization. Missing, empty, and unusable
+token values do not establish a boundary.
+
+**Note**: `ErrorCode.GENERAL` is a public enum constant. Exhaustive Kotlin `when` expressions over `ErrorCode` must
+handle it.
+
 ### Exclude a subject from experimentation
 
 Configure the client to honor `dd_experimentation_opt_out_at`:
@@ -154,7 +213,9 @@ client.setEvaluationContext(
 )
 ```
 
-`setEvaluationContext` is asynchronous. Resolve the flag after its success callback.
+`setEvaluationContext` is asynchronous. A success callback means that fresh assignments are ready. A failure callback
+can accompany the `Stale` state when eligible cached assignments remain available; inspect `client.state` before
+deciding whether to continue using cached values.
 Callbacks run on a background thread. Dispatch UI changes to the main thread.
 A newer context can replace the assignments before a callback runs. In enabled modes, a request replaced
 before its result is processed fails with `FlagsContextSupersededException`, unless its timeout already completed it.
@@ -346,6 +407,10 @@ if (result.errorCode != null) {
 - `errorMessage: String?` - Optional human-readable error message
 - `flagMetadata: Map<String, Any>?` - Optional metadata associated with the flag
 
+##### Split features
+
+When the selected split has features for application hooks, `flagMetadata` contains one entry for each of them, with the key `__dd_feature.<feature key>`. For example, a holdout gives `__dd_feature.holdout.key`, `__dd_feature.holdout.assignment_group` and `__dd_feature.holdout.should_include_in_holdout_analysis`. A value is a `String`, `Double` or `Boolean`. Other `__dd_` entries are internal and can change without notice.
+
 ##### Error codes
 - `FLAG_NOT_FOUND` - The flag could not be found
 - `PARSE_ERROR` - Error parsing the flag value
@@ -444,6 +509,12 @@ not change evaluation inputs, assignment requests, exposure events, or RUM integ
 Evaluation telemetry error messages contain stable error codes in both consent modes, with
 `GENERAL` for unknown failures. `trackEvaluations(false)` disables this track. Assignment `doLog`
 controls exposures independently.
+
+## Usage attribution
+
+Flag requests send the SDK's `service` in the `dd-service` header, so Usage Attribution can split Feature Flags
+usage by `service`. It is the same service RUM reports: the one set in the core `Configuration`, or else the
+package name. A service that is not a valid HTTP header value is not sent, and the request still goes out.
 
 ## Integration with RUM
 

@@ -237,12 +237,9 @@ verify(mockWriter).write(argThat { name == fakeName })
 
 ### Logger verification — always use `verifyLog` / `verifyApiUsage`
 
-**Never call `verify(mockInternalLogger).log(...)` directly.** Use the `InternalLoggerUtils` extensions:
-
-- Core (shared via testFixtures): `dd-sdk-android-core/src/testFixtures/kotlin/com/datadog/android/utils/InternalLoggerUtils.kt`
-- Per-module copies, e.g. `integrations/dd-sdk-android-cronet/src/test/kotlin/com/datadog/android/api/InternalLoggerUtils.kt`
-
-Use whichever copy is already imported in the test module. Always assert the message, not only level and target.
+**Never call `verify(mockInternalLogger).log(...)` directly.** Use the `InternalLoggerUtils` extensions from core testFixtures
+(`dd-sdk-android-core/src/testFixtures/kotlin/com/datadog/android/utils/InternalLoggerUtils.kt`).
+Always assert the message, not only level and target.
 
 #### `verifyLog`
 
@@ -291,8 +288,8 @@ mockInternalLogger.verifyLog(
 
 ```kotlin
 mockInternalLogger.verifyApiUsage(
-    expectedApiUsageEvent = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(...),
-    expectedSamplingRate = 15f
+    apiUsage = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(...),
+    samplingRate = 15f
 )
 ```
 
@@ -364,8 +361,6 @@ internal class Configurator : BaseConfigurator() {
     }
 }
 ```
-
-Location: `src/test/kotlin/com/datadog/android/*/utils/forge/Configurator.kt`
 
 ## Assertions (AssertJ)
 

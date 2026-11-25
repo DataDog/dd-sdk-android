@@ -456,6 +456,47 @@ internal class RumViewEventWriterTest {
     }
 
     @Test
+    fun `M write full view checkpoint every 10 versions W writeViewEvent() {versions 1 to 21}`(
+        @Forgery fakeViewEvent: ViewEvent
+    ) {
+        // Given
+        val events = (1L..21L).map { version ->
+            fakeViewEvent.copy(
+                dd = fakeViewEvent.dd.copy(documentVersion = version),
+                view = fakeViewEvent.view.copy(isActive = true)
+            )
+        }
+        whenever(mockViewEventMapper.map(any())) doAnswer { it.getArgument<ViewEvent>(0) }
+        val writtenEvents = mutableListOf<Any>()
+        whenever(mockDataWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doAnswer {
+            writtenEvents += it.getArgument<Any>(1)
+            true
+        }
+
+        // When
+        events.forEach {
+            testedWriter.writeViewEvent(
+                viewEvent = it,
+                datadogContext = fakeDatadogContext,
+                writeScope = mockEventWriteScope,
+                writer = mockDataWriter,
+                eventType = fakeEventType
+            )
+        }
+
+        // Then
+        val writtenTypes = writtenEvents.map { it::class }
+        val expectedTypes = (1L..21L).map { version ->
+            when {
+                version == 1L -> MappedViewEvent::class
+                version % 10L == 0L -> DiffThenFullView::class
+                else -> RumViewUpdateData::class
+            }
+        }
+        assertThat(writtenTypes).isEqualTo(expectedTypes)
+    }
+
+    @Test
     fun `M write diff then full view W writeViewEvent() {checkpoint, then resume diffs}`(
         @Forgery fakeViewEvent: ViewEvent
     ) {
