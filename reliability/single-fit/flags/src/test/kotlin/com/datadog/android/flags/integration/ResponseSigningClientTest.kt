@@ -88,6 +88,8 @@ internal class ResponseSigningClientTest {
 
     // Scheduled timers run on elapsed time; a wall-clock step changes only now.
     private var elapsedShift = 0L
+    private var coreContextReads = 0
+    private var buildContextReads = 0
     private var cancelledChecks = 0
     private val requests = mutableListOf<Request>()
     private val scheduledExecutors = mutableListOf<StubScheduledExecutorService>()
@@ -1058,6 +1060,68 @@ internal class ResponseSigningClientTest {
     }
 
     @Test
+    fun `M ignore the kept deadline W later context {required, replacement succeeded}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject-a"), null)
+        testedClient.setEvaluationContext(EvaluationContext("subject-b"), null)
+        queue.removeFirst().run()
+        queue.removeFirst().run()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        testedClient.setEvaluationContext(EvaluationContext("subject-c"), null)
+        // When the first request's deadline passes
+        advanceClock(INITIALIZATION_TIMEOUT_SECONDS + 1)
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ResponseSigningMode::class)
+    fun `M read the core context only with signing W build()`(mode: ResponseSigningMode) {
+        // When
+        create(mode.takeUnless { it == ResponseSigningMode.OFF })
+        // Then
+        assertThat(buildContextReads).isEqualTo(if (mode == ResponseSigningMode.OFF) 0 else 1)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M report proof expiry W OpenFeatureAPI {required, expireVerifiedFlags, context set pending}`() = runTest {
+        // Given
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = true)
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val errorEvents = mutableListOf<OpenFeatureProviderEvents.ProviderError>()
+        backgroundScope.launch(dispatcher) {
+            OpenFeatureAPI.observe<OpenFeatureProviderEvents.ProviderError>().collect { errorEvents += it }
+        }
+        try {
+            val initialize = launch(dispatcher) {
+                OpenFeatureAPI.setProviderAndWait(
+                    testedClient.asOpenFeatureProvider(),
+                    ImmutableContext("subject"),
+                    dispatcher
+                )
+            }
+            queue.removeFirst().run()
+            initialize.join()
+            val contextSet = launch(dispatcher) {
+                OpenFeatureAPI.setEvaluationContextAndWait(ImmutableContext("other-subject"))
+            }
+            // When the proof expires while the context update is pending
+            advanceClock(PROOF_WINDOW_SECONDS)
+            // Then
+            assertThat(errorEvents).hasSize(1)
+            assertThat(errorEvents.single().error.message).startsWith("Flag response signing failed (expired-proof)")
+            assertThat(OpenFeatureAPI.getStatus()).isInstanceOf(OpenFeatureStatus.Error::class.java)
+            signedAt = now
+            queue.removeFirst().run()
+            contextSet.join()
+        } finally {
+            OpenFeatureAPI.shutdown()
+        }
+    }
+
+    @Test
     fun `M wait for the proof deadline W expiry timer fires early {required, clock stepped back}`() {
         // Given
         create(ResponseSigningMode.REQUIRED)
@@ -1287,7 +1351,9 @@ internal class ResponseSigningClientTest {
                     scheduledExecutors +=
                         it
                 }
-            override fun getDatadogContext(withFeatureContexts: Set<String>) = fakeDatadogContext
+            override fun getDatadogContext(withFeatureContexts: Set<String>) = fakeDatadogContext.also {
+                if (withFeatureContexts.isEmpty()) coreContextReads++
+            }
             override fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
                 stubCore.setContextUpdateReceiver(listener)
                 fakeDatadogContext.featuresContext[Feature.RUM_FEATURE_NAME]?.let {
@@ -1325,8 +1391,10 @@ internal class ResponseSigningClientTest {
             else -> builder.responseSigningWithTestRoots(mode, roots, expireVerifiedFlags)
         }
         Flags.enable(builder.build(), core)
+        val readsBeforeBuild = coreContextReads
         testedClient =
             (if (name == null) FlagsClient.Builder(sdkCore = core) else FlagsClient.Builder(name, core)).build()
+        buildContextReads = coreContextReads - readsBeforeBuild
     }
 
     private fun response(request: Request): Response {

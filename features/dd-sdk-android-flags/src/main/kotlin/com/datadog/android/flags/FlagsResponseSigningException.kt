@@ -14,4 +14,7 @@ package com.datadog.android.flags
 @ExperimentalFlagsApi
 class FlagsResponseSigningException internal constructor(
     val reason: ResponseSigningFailureReason
-) : RuntimeException(reason.message)
+) : RuntimeException(reason.message) {
+    // True when the failing context update also delivers this instance to its callback, not only as a state.
+    internal var reportedByContextUpdate: Boolean = false
+}

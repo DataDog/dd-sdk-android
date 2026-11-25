@@ -9,6 +9,7 @@
 package com.datadog.android.flags
 
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATURE_NAME
@@ -39,6 +40,7 @@ import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.SigningFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.internal.signing.ResponseSigningContext
 import com.datadog.android.flags.internal.signing.ResponseSigningState
 import com.datadog.android.flags.internal.signing.ResponseSigningTelemetry
 import com.datadog.android.flags.internal.signing.ResponseSigningTrustRoots
@@ -498,14 +500,14 @@ interface FlagsClient {
             evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
             val signingMode = configuration.responseSigning.mode
-            val signingDatadogContext = (featureSdkCore as? InternalSdkCore)?.getDatadogContext()
-            val signingContext = flagsFeature.signingContext?.takeIf { signingAvailable(featureSdkCore, signingMode) }
-            // No production anchor exists yet, so required signing off staging must not accept unsigned flags.
-            val unsupportedSigningError = if (signingMode == ResponseSigningMode.REQUIRED && signingContext == null) {
-                FlagsResponseSigningException(ResponseSigningFailureReason.UNSUPPORTED_SITE)
-            } else {
-                null
+            // getDatadogContext() waits for the core context executor, so only a client with signing reads it, once.
+            val signingDatadogContext = flagsFeature.signingContext?.let {
+                (featureSdkCore as? InternalSdkCore)?.getDatadogContext()
             }
+            val signingContext = flagsFeature.signingContext?.takeIf {
+                signingAvailable(featureSdkCore, signingMode, signingDatadogContext?.site)
+            }
+            val unsupportedSigningError = unsupportedSigningError(signingMode, signingContext)
             val experimentationOptOut = ExperimentationOptOut(
                 experimentationOptOutMode,
                 signingContext?.lock ?: Any()
@@ -661,9 +663,24 @@ interface FlagsClient {
             }
         }
 
+        // No production anchor exists yet, so required signing off staging must not accept unsigned flags.
+        private fun unsupportedSigningError(
+            mode: ResponseSigningMode,
+            signingContext: ResponseSigningContext?
+        ): FlagsResponseSigningException? = if (mode == ResponseSigningMode.REQUIRED && signingContext == null) {
+            FlagsResponseSigningException(ResponseSigningFailureReason.UNSUPPORTED_SITE).apply {
+                reportedByContextUpdate = true
+            }
+        } else {
+            null
+        }
+
         // The staging site is the only site with a pinned anchor. Elsewhere OBSERVE keeps today's requests.
-        private fun signingAvailable(featureSdkCore: FeatureSdkCore, mode: ResponseSigningMode): Boolean {
-            val site = (featureSdkCore as? InternalSdkCore)?.getDatadogContext()?.site
+        private fun signingAvailable(
+            featureSdkCore: FeatureSdkCore,
+            mode: ResponseSigningMode,
+            site: DatadogSite?
+        ): Boolean {
             val available = ResponseSigningTrustRoots.isAvailable(site)
             if (!available) {
                 val required = mode == ResponseSigningMode.REQUIRED

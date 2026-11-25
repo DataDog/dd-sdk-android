@@ -63,6 +63,14 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
         }
     }
 
+    /**
+     * Returns true when [error] is a response signing failure that the failing context update also delivers to its
+     * callback. A proof expiry reaches only the client state.
+     */
+    @OptIn(ExperimentalFlagsApi::class)
+    fun isReportedByContextUpdate(error: Throwable): Boolean =
+        (error as? FlagsResponseSigningException)?.reportedByContextUpdate == true
+
     fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean =
         (client as? DatadogFlagsClient)?.evaluationTelemetryOptOutParameterEnabled == true
 

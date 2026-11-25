@@ -79,6 +79,7 @@ class com.datadog.android.flags._FlagsInternalProxy
   fun getInternalLogger(): com.datadog.android.api.InternalLogger
   fun isExperimentationOptOutEnabled(): Boolean
   fun setEvaluationContextWithOutcome(com.datadog.android.flags.model.EvaluationContext, Boolean?, (com.datadog.android.flags.model.FlagsClientState, Throwable?) -> Unit)
+  fun isReportedByContextUpdate(Throwable): Boolean
   fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean
   fun getFlagAssignmentsSnapshot(com.datadog.android.flags.model.EvaluationContext): Map<String, com.datadog.android.flags.model.UnparsedFlag>?
   fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.UnparsedFlag>

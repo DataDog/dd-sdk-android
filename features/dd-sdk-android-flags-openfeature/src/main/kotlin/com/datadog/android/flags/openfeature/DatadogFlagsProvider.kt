@@ -7,10 +7,8 @@
 package com.datadog.android.flags.openfeature
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInvalidContextException
-import com.datadog.android.flags.FlagsResponseSigningException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.FlagsClientState
@@ -235,7 +233,8 @@ class DatadogFlagsProvider private constructor(
      * - [FlagsClientState.Ready] → [OpenFeatureProviderEvents.ProviderReady]
      * - [FlagsClientState.Stale] → [OpenFeatureProviderEvents.ProviderStale]
      * - [FlagsClientState.Error] → [OpenFeatureProviderEvents.ProviderError], except for a response signing failure
-     *   while [initialize] or [onContextSet] runs: the error those methods throw already sets the Error status.
+     *   that [initialize] or [onContextSet] throws: that error already sets the Error status. A proof expiry while
+     *   either method runs keeps its event.
      *
      * **SDK emits** (not from provider):
      * - [PROVIDER_RECONCILING]: SDK emits while [onContextSet] is executing
@@ -349,9 +348,9 @@ class DatadogFlagsProvider private constructor(
 
     // OpenFeature sets the Error status from the error that initialize() or onContextSet() throws. A provider event
     // for the same signing failure would make listeners see it twice. Other failures keep their event.
-    @OptIn(ExperimentalFlagsApi::class)
     private fun isReportedByContextOperation(error: Throwable?): Boolean =
-        error is FlagsResponseSigningException && contextOperationsInFlight.get() > 0
+        error != null && contextOperationsInFlight.get() > 0 &&
+            _FlagsInternalProxy(flagsClient).isReportedByContextUpdate(error)
 
     private fun targetingContext(context: OpenFeatureEvaluationContext?): DatadogEvaluationContext =
         context?.toDatadogEvaluationContext(experimentationOptOutEnabled) ?: DatadogEvaluationContext.EMPTY

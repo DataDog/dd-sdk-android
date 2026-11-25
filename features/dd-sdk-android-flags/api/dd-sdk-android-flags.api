@@ -156,6 +156,7 @@ public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public final fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
 	public final fun isEvaluationTelemetryOptOutParameterEnabled ()Z
 	public final fun isExperimentationOptOutEnabled ()Z
+	public final fun isReportedByContextUpdate (Ljava/lang/Throwable;)Z
 	public final fun resolveDeferringExposure (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/flags/_FlagsInternalProxy$DeferredExposureResolution;
 	public final fun setEvaluationContextWithOutcome (Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/Boolean;Lkotlin/jvm/functions/Function2;)V
 	public final fun trackFlagEvaluationEvent (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;)V

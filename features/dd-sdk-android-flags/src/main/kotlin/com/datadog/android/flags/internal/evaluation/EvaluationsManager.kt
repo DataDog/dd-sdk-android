@@ -107,6 +107,13 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
         InitializationResult(callback).also { callback = null }
     }
 
+    // A terminal result of the newer request ends the kept deadline, so it cannot change a later request's state.
+    fun retireDeadline(): (() -> Unit)? = synchronized(lock) {
+        if (!deadlinePending) return null
+        deadlinePending = false
+        cancelTimeout.also { cancelTimeout = null }
+    }
+
     fun claimDeadline(): DeadlineClaim? = synchronized(lock) {
         when {
             isPending -> {
@@ -116,6 +123,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
             }
             deadlinePending -> {
                 deadlinePending = false
+                cancelTimeout = null
                 DeadlineClaim(InitializationResult(null), superseded = true)
             }
             else -> null
@@ -174,6 +182,7 @@ internal class EvaluationsManager(
     // Changes with every state transition, so a clock step can tell whether it still owns the state.
     private var stateRevision = 0L
     private var acceptedTimeoutFallback: AcceptedTimeoutFallback? = null
+    private var retainedDeadline: InitializationCompletion? = null
     private var proofExpiryToken: Any? = null
     private var proofExpiresAt: Long = Long.MAX_VALUE
     private var proofVerifiedAt: Long = Long.MIN_VALUE
@@ -440,7 +449,9 @@ internal class EvaluationsManager(
                 val eligible = assignments != null && sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null
                 val signingRejected = result as? PrecomputedAssignmentsResult.SigningRejected
                 // The signing state already logged the reason; the caller gets a signing error, not a network error.
-                val throwable = signingRejected?.let { FlagsResponseSigningException(it.reason) }
+                val throwable = signingRejected?.let {
+                    FlagsResponseSigningException(it.reason).apply { reportedByContextUpdate = true }
+                }
                     ?: failure(networkFailed = result == null, authorizationRejected = authorizationRejected)
                 var installed = false
                 var proofTimer: ProofTimer? = null
@@ -721,6 +732,7 @@ internal class EvaluationsManager(
     ) {
         val timeoutFallback = acceptedTimeoutFallback?.takeIf { it.request === request }
         if (timeoutFallback != null) acceptedTimeoutFallback = null
+        retireRetainedDeadlineLocked()
         if (authorizationRejected) {
             assignmentAuthorization.onAuthorizationRejected(request.assignmentAuthorization)
         }
@@ -799,8 +811,19 @@ internal class EvaluationsManager(
     // Callers hold initializationTerminalLock. With signing, the initialization deadline still applies to the newer
     // request: superseded completion is decided after admission, when the newer request has no timer of its own.
     private fun completeSuperseded(completion: InitializationCompletion?, callback: EvaluationContextCallback?) {
-        val result = if (completion == null) InitializationResult(callback) else completion.takeKeepingDeadline()
+        val result = if (completion == null) {
+            InitializationResult(callback)
+        } else {
+            completion.takeKeepingDeadline()?.also { retainedDeadline = completion }
+        }
         enqueueCompletion(result, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
+    }
+
+    // Callers hold initializationTerminalLock.
+    private fun retireRetainedDeadlineLocked() {
+        val cancel = retainedDeadline?.retireDeadline()
+        retainedDeadline = null
+        cancel?.let { effects.enqueue { effects.notifySafely { it() } } }
     }
 
     // Callers hold initializationTerminalLock and checked that the request is current.
@@ -811,6 +834,7 @@ internal class EvaluationsManager(
     ) {
         assignmentAuthorization.onAssignmentsAccepted(request.assignmentAuthorization)
         if (acceptedTimeoutFallback?.request === request) acceptedTimeoutFallback = null
+        retireRetainedDeadlineLocked()
         setStateLocked(FlagsClientState.Ready)
         effects.enqueue {
             installation.complete {
