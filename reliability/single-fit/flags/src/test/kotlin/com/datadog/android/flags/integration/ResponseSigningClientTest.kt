@@ -85,6 +85,9 @@ internal class ResponseSigningClientTest {
     private val store = RecordingStore()
     private val queue = ArrayDeque<Runnable>()
     private var now = CanonicalResponseSigner.now
+
+    // Scheduled timers run on elapsed time; a wall-clock step changes only now.
+    private var elapsedShift = 0L
     private var cancelledChecks = 0
     private val requests = mutableListOf<Request>()
     private val scheduledExecutors = mutableListOf<StubScheduledExecutorService>()
@@ -1024,17 +1027,134 @@ internal class ResponseSigningClientTest {
         testedClient.setEvaluationContext(EvaluationContext("subject"), null)
         queue.removeFirst().run()
         stubCore.stopFeatures()
-        assertThat(store.values.keys).anyMatch { it.endsWith("-signing-v1-observe") }
-        assertThat(store.values.keys).anyMatch { !it.endsWith("-signing-v1-observe") }
+        assertThat(store.values.keys).anyMatch { it.contains("signing-v1-observe-state-") }
+        assertThat(store.values.keys).anyMatch { !it.contains("signing-v1-observe-state-") }
         // When
         create(mode)
         // Then
-        assertThat(store.values.keys).noneMatch { it.endsWith("-signing-v1-observe") }
+        assertThat(store.values.keys).noneMatch { it.contains("signing-v1-observe-state-") }
         if (mode == ResponseSigningMode.REQUIRED) {
             assertThat(store.values).isEmpty()
         } else {
             assertThat(store.values).isNotEmpty()
         }
+    }
+
+    @Test
+    fun `M apply the initialization timeout W superseded request completes first {required}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject-a"), null)
+        testedClient.setEvaluationContext(EvaluationContext("subject-b"), null)
+        queue.removeFirst().run()
+        // When
+        advanceClock(INITIALIZATION_TIMEOUT_SECONDS + 1)
+        // Then
+        val state = testedClient.state.getCurrentState()
+        assertThat(state).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(
+            (state as FlagsClientState.Error).error
+        ).isInstanceOf(FlagsInitializationTimeoutException::class.java)
+    }
+
+    @Test
+    fun `M wait for the proof deadline W expiry timer fires early {required, clock stepped back}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // When the wall clock steps back 20 s, and the timer's elapsed delay passes
+        now -= 20
+        elapsedShift += 20
+        advanceClock(PROOF_WINDOW_SECONDS)
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        // When the wall clock reaches expires-at
+        advanceClock(20)
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+    }
+
+    @Test
+    fun `M keep Ready W previous proof timer fires during installation {required}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        advanceClock(PROOF_WINDOW_SECONDS - 10)
+        signedAt = now
+        var armed = false
+        var stepped = false
+        testedClient.state.addListener(object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (armed && newState == FlagsClientState.Ready && !stepped) {
+                    stepped = true
+                    advanceClock(20)
+                }
+            }
+        })
+        armed = true
+        // When the refresh installs, and the previous proof's timer fires before Ready is delivered
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        assertThat(stepped).isTrue()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+    }
+
+    @Test
+    fun `M keep the refresh result W clock returns {required, refresh failed during clock step}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        val verifiedAt = now
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        now = verifiedAt - CLOCK_STEP_ALLOWANCE_SECONDS - 1
+        testedClient.resolveBooleanValue("critical-demo", false)
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        responseKind = "403"
+        queue.removeFirst().run()
+        val afterFailure = testedClient.state.getCurrentState()
+        // When the clock returns into the proof window
+        now = verifiedAt + 1
+        testedClient.resolveBooleanValue("critical-demo", false)
+        // Then: no request is pending, so the client does not return to Reconciling.
+        assertThat(testedClient.state.getCurrentState()).isNotEqualTo(FlagsClientState.Reconciling)
+        assertThat(afterFailure).isNotEqualTo(FlagsClientState.Reconciling)
+    }
+
+    @Test
+    fun `M stay reconciling W proof expires {required, new context has no fallback}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject-a"), null)
+        queue.removeFirst().run()
+        testedClient.setEvaluationContext(EvaluationContext("subject-b"), null)
+        // When
+        advanceClock(PROOF_WINDOW_SECONDS)
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        // When the pending fetch fails
+        responseKind = "403"
+        queue.removeFirst().run()
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+    }
+
+    @Test
+    fun `M keep another client's cache W build() {name ends with the observe suffix}`() {
+        // Given
+        create(null, name = "a-signing-v1-observe")
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        val persisted = store.values.keys.toSet()
+        assertThat(persisted).isNotEmpty()
+        stubCore.stopFeatures()
+        // When
+        create(null, name = "a")
+        // Then
+        assertThat(store.values.keys).containsAll(persisted)
     }
 
     @ParameterizedTest
@@ -1136,7 +1256,8 @@ internal class ResponseSigningClientTest {
     private fun create(
         mode: ResponseSigningMode?,
         roots: List<String>? = listOf(CanonicalResponseSigner.root),
-        expireVerifiedFlags: Boolean = false
+        expireVerifiedFlags: Boolean = false,
+        name: String? = null
     ) {
         val core = object : InternalSdkCore by stubCore {
             override val internalLogger: InternalLogger = object : InternalLogger by stubCore.internalLogger {
@@ -1160,7 +1281,12 @@ internal class ResponseSigningClientTest {
                 }
             }
             override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService =
-                StubScheduledExecutorService(executorContext) { now * 1000 }.also { scheduledExecutors += it }
+                StubScheduledExecutorService(executorContext) {
+                    (now + elapsedShift) * 1000
+                }.also {
+                    scheduledExecutors +=
+                        it
+                }
             override fun getDatadogContext(withFeatureContexts: Set<String>) = fakeDatadogContext
             override fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
                 stubCore.setContextUpdateReceiver(listener)
@@ -1199,7 +1325,8 @@ internal class ResponseSigningClientTest {
             else -> builder.responseSigningWithTestRoots(mode, roots, expireVerifiedFlags)
         }
         Flags.enable(builder.build(), core)
-        testedClient = FlagsClient.Builder(sdkCore = core).build()
+        testedClient =
+            (if (name == null) FlagsClient.Builder(sdkCore = core) else FlagsClient.Builder(name, core)).build()
     }
 
     private fun response(request: Request): Response {

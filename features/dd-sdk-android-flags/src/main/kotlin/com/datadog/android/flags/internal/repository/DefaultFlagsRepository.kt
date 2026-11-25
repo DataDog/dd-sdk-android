@@ -33,7 +33,8 @@ internal class DefaultFlagsRepository(
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
     private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run,
     experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
-    responseSigningCacheScope: String? = null
+    responseSigningCacheScope: String? = null,
+    observeSigning: Boolean = false
 ) : FlagsRepository {
     private data class FlagsState(
         val context: EvaluationContext,
@@ -63,7 +64,8 @@ internal class DefaultFlagsRepository(
         flagSelection = flagSelection,
         internalLogger = internalLogger,
         experimentationOptOutMode = experimentationOptOutMode,
-        responseSigningCacheScope = responseSigningCacheScope
+        responseSigningCacheScope = responseSigningCacheScope,
+        observeSigning = observeSigning
     ) { loadedState ->
         // State fetched with a different selection holds a different set of flags.
         val persistedState = loadedState?.takeIf {

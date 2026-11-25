@@ -63,9 +63,14 @@ private data class AcceptedTimeoutFallback(
     val authorizationProtected: Boolean
 )
 
+private class DeadlineClaim(val result: InitializationResult, val superseded: Boolean)
+
 private class InitializationCompletion(private var callback: EvaluationContextCallback?) {
     private val lock = Any()
     private var isPending = true
+
+    // A superseded request delivered its callback, but the deadline still applies to the newer request.
+    private var deadlinePending = false
     private var cancelTimeout: (() -> Unit)? = null
     private var cancelTimeoutWhenArmed = false
 
@@ -81,18 +86,40 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
         if (cancelNow) cancellation()
     }
 
-    fun take(shouldCancelTimeout: Boolean = true): InitializationResult? {
+    fun take(): InitializationResult? {
         val outcome = synchronized(lock) {
             if (!isPending) return null
             isPending = false
             val timeoutCancellation = cancelTimeout
-            cancelTimeoutWhenArmed = shouldCancelTimeout && timeoutCancellation == null
-            val outcome = callback to if (shouldCancelTimeout) timeoutCancellation else null
+            cancelTimeoutWhenArmed = timeoutCancellation == null
+            val outcome = callback to timeoutCancellation
             callback = null
             cancelTimeout = null
             outcome
         }
         return InitializationResult(outcome.first, outcome.second)
+    }
+
+    fun takeKeepingDeadline(): InitializationResult? = synchronized(lock) {
+        if (!isPending) return null
+        isPending = false
+        deadlinePending = true
+        InitializationResult(callback).also { callback = null }
+    }
+
+    fun claimDeadline(): DeadlineClaim? = synchronized(lock) {
+        when {
+            isPending -> {
+                isPending = false
+                cancelTimeout = null
+                DeadlineClaim(InitializationResult(callback), superseded = false).also { callback = null }
+            }
+            deadlinePending -> {
+                deadlinePending = false
+                DeadlineClaim(InitializationResult(null), superseded = true)
+            }
+            else -> null
+        }
     }
 }
 
@@ -143,13 +170,16 @@ internal class EvaluationsManager(
     private val initializationTerminalLock = experimentationOptOut.stateLock
     private val effects = EvaluationEffects(initializationTerminalLock, internalLogger)
     private var currentState: FlagsClientState = FlagsClientState.NotReady
+
+    // Changes with every state transition, so a clock step can tell whether it still owns the state.
+    private var stateRevision = 0L
     private var acceptedTimeoutFallback: AcceptedTimeoutFallback? = null
     private var proofExpiryToken: Any? = null
     private var proofExpiresAt: Long = Long.MAX_VALUE
     private var proofVerifiedAt: Long = Long.MIN_VALUE
 
-    // The state before a backward clock step changed it, and the state that step set; null without a step.
-    private var clockStepRestore: Pair<FlagsClientState, FlagsClientState>? = null
+    // The state before a backward clock step changed it; null without a step.
+    private var clockStep: ClockStep? = null
     private var cancelProofExpiry: (() -> Unit)? = null
 
     /**
@@ -413,10 +443,11 @@ internal class EvaluationsManager(
                 val throwable = signingRejected?.let { FlagsResponseSigningException(it.reason) }
                     ?: failure(networkFailed = result == null, authorizationRejected = authorizationRejected)
                 var installed = false
+                var proofTimer: ProofTimer? = null
                 val admitted = signing.admit(generation) {
                     synchronized(initializationTerminalLock) {
-                        val outcome = takeCompletion(completion, callback)
                         val current = ifCurrent(request) {
+                            val outcome = takeCompletion(completion, callback)
                             val installation = if (eligible && !response.isCancelled()) {
                                 flagsRepository.installSignedFlagsAndContext(
                                     context,
@@ -429,13 +460,18 @@ internal class EvaluationsManager(
                                 null
                             }
                             if (installation != null) {
+                                proofTimer = response?.proof?.let { replaceProofExpiryLocked(signing, it) }
                                 completeInstallation(request, installation, outcome)
                                 installed = true
                             } else {
                                 flagsRepository.restoreVerifiedFlags()?.let { effects.enqueue { it.complete {} } }
-                                // Recheck eligibility now: the proof may have expired while the refresh was pending.
-                                val eligibleContext = flagsRepository.takeIf { it.hasConfiguration() }
-                                    ?.getEvaluationContext()
+                                // REQUIRED rechecks eligibility: the proof may have expired while the refresh was
+                                // pending. It has no persistence, so this read does not wait under the policy lock.
+                                val eligibleContext = if (signing.configuration.mode == ResponseSigningMode.REQUIRED) {
+                                    flagsRepository.takeIf { it.hasConfiguration() }?.getEvaluationContext()
+                                } else {
+                                    cachedContext.get()
+                                }
                                 applyRequestFailure(
                                     request,
                                     outcome,
@@ -445,23 +481,23 @@ internal class EvaluationsManager(
                                 )
                             }
                         }
-                        if (!current) enqueueCompletion(outcome, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
+                        if (!current) completeSuperseded(completion, callback)
                     }
                 }
                 if (!admitted) {
                     // A newer context superseded this request; a lifecycle change keeps the ordinary failure.
-                    val failure = if (signing.isLatest(generation)) {
-                        throwable
-                    } else {
-                        FlagsContextSupersededException(SUPERSEDED_MESSAGE)
-                    }
+                    val latest = signing.isLatest(generation)
                     synchronized(initializationTerminalLock) {
-                        enqueueCompletion(takeCompletion(completion, callback), failure)
+                        if (latest) {
+                            enqueueCompletion(takeCompletion(completion, callback), throwable)
+                        } else {
+                            completeSuperseded(completion, callback)
+                        }
                     }
                 }
                 effects.drain()
+                proofTimer?.let { startProofTimer(signing, it) }
                 if (installed) {
-                    response?.proof?.let { scheduleProofExpiry(signing, it) }
                     response?.flagSelectionIgnoredReason?.let { internalLogger.logIgnoredFlagSelection(it) }
                 } else if (admitted && signingRejected == null) {
                     val message = failureMessage(result == null, authorizationRejected)
@@ -474,24 +510,43 @@ internal class EvaluationsManager(
     }
 
     // Required mode moves Ready to Stale, or to Error with expireVerifiedFlags, when the installed proof expires.
-    private fun scheduleProofExpiry(signing: ResponseSigningState, proof: VerifiedResponse) {
-        if (signing.configuration.mode != ResponseSigningMode.REQUIRED) return
+    // Callers hold initializationTerminalLock: the new token disarms the previous timer before Ready is delivered.
+    private fun replaceProofExpiryLocked(signing: ResponseSigningState, proof: VerifiedResponse): ProofTimer? {
+        if (signing.configuration.mode != ResponseSigningMode.REQUIRED) return null
         val token = Any()
-        val previous = synchronized(initializationTerminalLock) {
-            proofExpiryToken = token
-            proofExpiresAt = proof.expiresAt
-            proofVerifiedAt = proof.verifiedAt
-            clockStepRestore = null
-            cancelProofExpiry.also { cancelProofExpiry = null }
+        proofExpiryToken = token
+        proofExpiresAt = proof.expiresAt
+        proofVerifiedAt = proof.verifiedAt
+        clockStep = null
+        val previous = cancelProofExpiry
+        cancelProofExpiry = null
+        return ProofTimer(token, previous)
+    }
+
+    private fun startProofTimer(signing: ResponseSigningState, timer: ProofTimer) {
+        timer.cancelPrevious?.invoke()
+        scheduleProofTimer(signing, timer.token)
+    }
+
+    private fun scheduleProofTimer(signing: ResponseSigningState, token: Any) {
+        val delayMs = synchronized(initializationTerminalLock) {
+            if (proofExpiryToken !== token) return
+            (proofExpiresAt - signing.now()).coerceAtLeast(0) * MILLIS_PER_SECOND
         }
-        previous?.invoke()
-        val delayMs = (proof.expiresAt - signing.now()).coerceAtLeast(0) * MILLIS_PER_SECOND
-        val cancel = initializationTimeoutScheduler.schedule(delayMs) { onProofExpired(signing, token) }
+        val cancel = initializationTimeoutScheduler.schedule(delayMs) { onProofTimer(signing, token) }
         val superseded = synchronized(initializationTerminalLock) {
             if (proofExpiryToken === token) cancelProofExpiry = cancel
             proofExpiryToken !== token
         }
         if (superseded) cancel()
+    }
+
+    // The timer runs on elapsed time. After a backward wall-clock step it fires before expires-at, so it waits again.
+    private fun onProofTimer(signing: ResponseSigningState, token: Any) {
+        val early = synchronized(initializationTerminalLock) {
+            proofExpiryToken === token && signing.now() < proofExpiresAt
+        }
+        if (early) scheduleProofTimer(signing, token) else onProofExpired(signing, token)
     }
 
     /**
@@ -508,7 +563,7 @@ internal class EvaluationsManager(
                     now >= proofExpiresAt -> ProofCheck(token, ProofTime.EXPIRED)
                     now + ResponseSigningState.CLOCK_STEP_ALLOWANCE_SECONDS < proofVerifiedAt ->
                         ProofCheck(token, ProofTime.CLOCK_BEHIND)
-                    clockStepRestore != null -> ProofCheck(token, ProofTime.VALID)
+                    clockStep != null -> ProofCheck(token, ProofTime.VALID)
                     else -> null
                 }
             }
@@ -524,11 +579,28 @@ internal class EvaluationsManager(
 
     private class ProofCheck(val token: Any, val time: ProofTime)
 
+    private class ProofTimer(val token: Any, val cancelPrevious: (() -> Unit)?)
+
+    private class ClockStep(val previous: FlagsClientState, val revision: Long)
+
     // Ready and Reconciling go Stale by default; with expireVerifiedFlags, Ready, Reconciling and Stale go to Error.
     // A pending refresh stays pending: its verified response still restores Ready.
-    private fun expiryAppliesLocked(expireFlags: Boolean): Boolean =
-        currentState == FlagsClientState.Ready || currentState == FlagsClientState.Reconciling ||
-            (expireFlags && currentState == FlagsClientState.Stale)
+    private fun expiryAppliesLocked(expireFlags: Boolean): Boolean = when (currentState) {
+        FlagsClientState.Ready -> true
+        // Stale must describe assignments that the pending context can use.
+        FlagsClientState.Reconciling -> expireFlags || pendingRequestHasFallbackLocked()
+        FlagsClientState.Stale -> expireFlags
+        FlagsClientState.NotReady, is FlagsClientState.Error -> false
+    }
+
+    private fun pendingRequestHasFallbackLocked(): Boolean {
+        val request = experimentationOptOut.currentValidRequest() ?: return false
+        return assignmentAuthorization.fallback(
+            request.assignmentAuthorization,
+            fallbackContext(request, null),
+            experimentationOptOut.enabled
+        ).usable
+    }
 
     private fun expiredState(expireFlags: Boolean): FlagsClientState = if (expireFlags) {
         FlagsClientState.Error(FlagsResponseSigningException(ResponseSigningFailureReason.EXPIRED_PROOF))
@@ -539,10 +611,10 @@ internal class EvaluationsManager(
     private fun onClockBehind(signing: ResponseSigningState, token: Any) {
         val expireFlags = signing.configuration.expireVerifiedFlags
         synchronized(initializationTerminalLock) {
-            if (proofExpiryToken !== token || clockStepRestore != null || !expiryAppliesLocked(expireFlags)) return
-            val stepState = expiredState(expireFlags)
-            clockStepRestore = currentState to stepState
-            enqueueState(stepState)
+            if (proofExpiryToken !== token || clockStep != null || !expiryAppliesLocked(expireFlags)) return
+            val previous = currentState
+            enqueueState(expiredState(expireFlags))
+            clockStep = ClockStep(previous, stateRevision)
         }
         effects.drain()
         internalLogger.log(
@@ -555,11 +627,11 @@ internal class EvaluationsManager(
 
     private fun onClockRestored(token: Any) {
         synchronized(initializationTerminalLock) {
-            val (previous, stepState) = clockStepRestore ?: return
+            val step = clockStep ?: return
             if (proofExpiryToken !== token) return
-            clockStepRestore = null
+            clockStep = null
             // Another transition since the clock step owns the state now.
-            if (currentState === stepState) enqueueState(previous)
+            if (stateRevision == step.revision) enqueueState(step.previous)
         }
         effects.drain()
     }
@@ -567,17 +639,17 @@ internal class EvaluationsManager(
     private fun onProofExpired(signing: ResponseSigningState, token: Any) {
         val expireFlags = signing.configuration.expireVerifiedFlags
         val cancelTimer = synchronized(initializationTerminalLock) {
-            val stepState = clockStepRestore?.second
-            if (proofExpiryToken !== token || (!expiryAppliesLocked(expireFlags) && currentState !== stepState)) {
+            val stepCurrent = clockStep?.revision == stateRevision
+            if (proofExpiryToken !== token || (!expiryAppliesLocked(expireFlags) && !stepCurrent)) {
                 return
             }
             proofExpiryToken = null
             proofExpiresAt = Long.MAX_VALUE
-            clockStepRestore = null
+            clockStep = null
             val cancel = cancelProofExpiry
             cancelProofExpiry = null
             // A clock step already published the same expired state.
-            if (currentState !== stepState) enqueueState(expiredState(expireFlags))
+            if (!stepCurrent) enqueueState(expiredState(expireFlags))
             cancel
         }
         cancelTimer?.invoke()
@@ -724,6 +796,13 @@ internal class EvaluationsManager(
         completeInstallation(request, installation, takeCompletion(initializationCompletion, callback))
     }
 
+    // Callers hold initializationTerminalLock. With signing, the initialization deadline still applies to the newer
+    // request: superseded completion is decided after admission, when the newer request has no timer of its own.
+    private fun completeSuperseded(completion: InitializationCompletion?, callback: EvaluationContextCallback?) {
+        val result = if (completion == null) InitializationResult(callback) else completion.takeKeepingDeadline()
+        enqueueCompletion(result, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
+    }
+
     // Callers hold initializationTerminalLock and checked that the request is current.
     private fun completeInstallation(
         request: ExperimentationOptOut.Request,
@@ -732,7 +811,7 @@ internal class EvaluationsManager(
     ) {
         assignmentAuthorization.onAssignmentsAccepted(request.assignmentAuthorization)
         if (acceptedTimeoutFallback?.request === request) acceptedTimeoutFallback = null
-        currentState = FlagsClientState.Ready
+        setStateLocked(FlagsClientState.Ready)
         effects.enqueue {
             installation.complete {
                 effects.notifySafely { flagStateManager.updateState(FlagsClientState.Ready) }
@@ -758,10 +837,9 @@ internal class EvaluationsManager(
             val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
                 val error = FlagsInitializationTimeoutException(timeoutMs)
                 synchronized(initializationTerminalLock) {
-                    val claimedResult = completion.take(shouldCancelTimeout = false)
-                        ?: return@synchronized null
-                    val target = if (
-                        experimentationOptOut.enabled || assignmentAuthorization.isStaleResponseProtectionEnabled()
+                    val claim = completion.claimDeadline() ?: return@synchronized null
+                    val target = if (claim.superseded || experimentationOptOut.enabled ||
+                        assignmentAuthorization.isStaleResponseProtectionEnabled()
                     ) {
                         experimentationOptOut.currentValidRequest()
                     } else {
@@ -796,7 +874,7 @@ internal class EvaluationsManager(
                             enqueueState(timeoutState)
                         }
                     }
-                    enqueueCompletion(claimedResult, error)
+                    enqueueCompletion(claim.result, error)
                 }
                 effects.drain()
             }
@@ -818,8 +896,13 @@ internal class EvaluationsManager(
 
     // Called under the policy lock. State delivery must not acquire the state-holder lock here.
     private fun enqueueState(state: FlagsClientState) {
-        currentState = state
+        setStateLocked(state)
         effects.enqueue { flagStateManager.updateState(state) }
+    }
+
+    private fun setStateLocked(state: FlagsClientState) {
+        currentState = state
+        stateRevision++
     }
 
     private fun takeCompletion(

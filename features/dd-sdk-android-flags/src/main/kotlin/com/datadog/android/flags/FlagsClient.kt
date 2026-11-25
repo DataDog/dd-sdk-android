@@ -398,7 +398,6 @@ interface FlagsClient {
      */
     companion object {
         private const val SIGNING_MILLIS_PER_SECOND = 1000
-        private const val OBSERVE_STATE_SUFFIX = "-signing-v1-observe"
         private const val RESPONSE_SIGNING_STAGING_ONLY =
             "Flags response signing is supported only on the Datadog staging site in this SDK version. " +
                 "Production support comes in a later release."
@@ -546,16 +545,17 @@ interface FlagsClient {
             val datastore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)
                 ?.dataStore
             datastore?.let { removeOtherModeEntries(it, name, signingMode) }
-            val ordinaryRepository: (String, String?) -> FlagsRepository = { instanceName, scope ->
+            val ordinaryRepository: (String?, Boolean) -> FlagsRepository = { scope, observeSigning ->
                 if (datastore != null) {
                     DefaultFlagsRepository(
                         featureSdkCore = featureSdkCore,
                         dataStore = datastore,
-                        instanceName = instanceName,
+                        instanceName = name,
                         flagSelection = flagsFeature.flagSelection,
                         experimentationOptOutMode = experimentationOptOutMode,
                         deliverFirstFlags = deliverFirstFlags,
-                        responseSigningCacheScope = scope
+                        responseSigningCacheScope = scope,
+                        observeSigning = observeSigning
                     )
                 } else {
                     NoOpFlagsRepository()
@@ -566,11 +566,11 @@ interface FlagsClient {
             } else {
                 signing?.let {
                     SigningFlagsRepository(
-                        { scope -> ordinaryRepository(observeStateName(name), scope) },
+                        { scope -> ordinaryRepository(scope, true) },
                         it,
                         deliverFirstFlags
                     )
-                } ?: ordinaryRepository(name, null)
+                } ?: ordinaryRepository(null, false)
             }
 
             val callFactory = if (signing == null) {
@@ -642,19 +642,20 @@ interface FlagsClient {
             )
         }
 
-        private fun observeStateName(name: String): String = name + OBSERVE_STATE_SUFFIX
-
         // A mode change must not leave the other mode's persisted targeting data on disk.
         private fun removeOtherModeEntries(dataStore: DataStoreHandler, name: String, mode: ResponseSigningMode) {
-            val names = when (mode) {
-                ResponseSigningMode.OFF -> listOf(observeStateName(name))
-                ResponseSigningMode.OBSERVE -> emptyList()
-                ResponseSigningMode.REQUIRED -> listOf(name, observeStateName(name))
-            }
-            names.forEach { instanceName ->
+            listOf(false, true).forEach { observeSigning ->
+                val remove = when (mode) {
+                    ResponseSigningMode.OFF -> observeSigning
+                    ResponseSigningMode.OBSERVE -> false
+                    ResponseSigningMode.REQUIRED -> true
+                }
+                if (!remove) return@forEach
                 ExperimentationOptOutMode.values().forEach { optOut ->
                     listOf(false, true).forEach { selected ->
-                        dataStore.removeValue(FlagsPersistenceManager.stateKey(instanceName, optOut, selected))
+                        dataStore.removeValue(
+                            FlagsPersistenceManager.stateKey(name, optOut, selected, observeSigning)
+                        )
                     }
                 }
             }

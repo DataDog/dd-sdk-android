@@ -15,12 +15,14 @@ import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsAssignmentAuthorizationException
 import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
@@ -40,6 +42,7 @@ import com.datadog.android.flags.internal.repository.FlagsInstallation
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.internal.signing.ResponseSigningConfiguration
 import com.datadog.android.flags.internal.signing.ResponseSigningState
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
@@ -98,6 +101,37 @@ import java.util.concurrent.atomic.AtomicReference
 @ForgeConfiguration(ForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class EvaluationsManagerTest {
+    @OptIn(ExperimentalFlagsApi::class)
+    @ParameterizedTest
+    @EnumSource(ResponseSigningMode::class, names = ["OBSERVE", "REQUIRED"])
+    fun `M recheck persistence only in required mode W signed fetch fails under the policy lock`(
+        mode: ResponseSigningMode,
+        @Mock mockSigning: ResponseSigningState
+    ) {
+        // Given
+        whenever(mockSigning.configuration) doReturn ResponseSigningConfiguration(mode)
+        whenever(mockSigning.begin(any())) doReturn 1L
+        whenever(mockSigning.admit(eq(1L), any())) doAnswer {
+            it.getArgument<() -> Unit>(1).invoke()
+            true
+        }
+        val manager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, mockFlagsRepository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            initializationTimeoutMs = null, initializationTimeoutScheduler = { _, _ -> {} },
+            signing = mockSigning, experimentationOptOut = ExperimentationOptOut()
+        )
+        // When
+        manager.updateEvaluationsForContext(EvaluationContext("subject"))
+        // Then: OBSERVE keeps the context captured before admission, so no persistence wait holds the lock.
+        if (mode == ResponseSigningMode.REQUIRED) {
+            verify(mockFlagsRepository).hasConfiguration()
+        } else {
+            verify(mockFlagsRepository, never()).hasConfiguration()
+        }
+        verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
+    }
+
     @ParameterizedTest
     @EnumSource(ExperimentationOptOutMode::class)
     fun `M keep latest signing generation W updatePreparedEvaluations() {registration reordered}`(

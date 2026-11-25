@@ -25,6 +25,7 @@ internal class FlagsPersistenceManager(
     private val internalLogger: InternalLogger,
     experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
     private val responseSigningCacheScope: String? = null,
+    observeSigning: Boolean = false,
     onStateLoaded: (FlagsStateEntry?) -> Unit
 ) {
     private val serializer = FlagsStateSerializer(internalLogger)
@@ -32,8 +33,10 @@ internal class FlagsPersistenceManager(
 
     // SDK versions without flag selection read only the unselected key for their opt-out mode and ignore the
     // flagSelection field, so selected state uses its own key and is never read by them as a full configuration.
-    private val unselectedStateKey = stateKey(instanceName, experimentationOptOutMode, selected = false)
-    private val selectedStateKey = stateKey(instanceName, experimentationOptOutMode, selected = true)
+    private val unselectedStateKey =
+        stateKey(instanceName, experimentationOptOutMode, selected = false, observeSigning = observeSigning)
+    private val selectedStateKey =
+        stateKey(instanceName, experimentationOptOutMode, selected = true, observeSigning = observeSigning)
     private val flagsStateKey: String = if (flagSelection == null) unselectedStateKey else selectedStateKey
     private val staleStateKey: String = if (flagSelection == null) selectedStateKey else unselectedStateKey
 
@@ -92,14 +95,23 @@ internal class FlagsPersistenceManager(
     }
 
     companion object {
-        internal fun stateKey(instanceName: String, mode: ExperimentationOptOutMode, selected: Boolean): String {
+        // The OBSERVE namespace comes before "state-", so no client name can produce an OBSERVE key.
+        internal fun stateKey(
+            instanceName: String,
+            mode: ExperimentationOptOutMode,
+            selected: Boolean,
+            observeSigning: Boolean = false
+        ): String {
             val selection = if (selected) "selection-" else ""
             val modePart = when (mode) {
                 ExperimentationOptOutMode.DISABLED -> ""
                 ExperimentationOptOutMode.IMMEDIATE -> "immediate-v1-"
                 ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY -> "future-v1-"
             }
-            return "flags-$selection${modePart}state-$instanceName"
+            val signingPart = if (observeSigning) OBSERVE_SIGNING_NAMESPACE else ""
+            return "flags-$selection$modePart${signingPart}state-$instanceName"
         }
+
+        private const val OBSERVE_SIGNING_NAMESPACE = "signing-v1-observe-"
     }
 }
