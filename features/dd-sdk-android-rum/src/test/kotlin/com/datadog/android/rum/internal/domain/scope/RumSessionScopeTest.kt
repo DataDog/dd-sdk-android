@@ -1402,9 +1402,7 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     testedScope.getRumContext().sessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1413,9 +1411,7 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     testedScope.getRumContext().sessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
     }
@@ -1451,9 +1447,7 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     testedScope.getRumContext().sessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1462,9 +1456,7 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     testedScope.getRumContext().sessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
     }
@@ -1499,9 +1491,7 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1509,9 +1499,7 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
     }
@@ -1547,9 +1535,7 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     firstSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1558,9 +1544,7 @@ internal class RumSessionScopeTest {
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
                     secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
     }
@@ -1597,9 +1581,7 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1607,9 +1589,7 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
     }
@@ -1646,9 +1626,7 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to firstSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
         assertThat(argumentCaptor.secondValue).isEqualTo(
@@ -1656,9 +1634,7 @@ internal class RumSessionScopeTest {
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
                     RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to secondSessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
+                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate
             )
         )
     }
@@ -2251,7 +2227,7 @@ internal class RumSessionScopeTest {
     /**
      * Simulates device deep sleep: the wall-clock (elapsedRealtime / device timestamp)
      * advances by [ms], but the monotonic clock (System.nanoTime / CLOCK_MONOTONIC,
-     * exposed via [TimeProvider.getDeviceElapsedTimeNanos]) is frozen — exactly as it is
+     * exposed via [com.datadog.android.internal.time.TimeProvider.getDeviceElapsedTimeNanos]) is frozen — exactly as it is
      * on a real Android device in deep sleep.
      *
      * This is the scenario reported in RUMS-6221: the app stays inactive for several
