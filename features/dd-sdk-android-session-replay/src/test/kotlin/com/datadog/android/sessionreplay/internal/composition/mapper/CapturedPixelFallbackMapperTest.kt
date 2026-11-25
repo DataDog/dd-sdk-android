@@ -47,6 +47,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -106,7 +107,12 @@ internal class CapturedPixelFallbackMapperTest {
         )
     }
 
-    private fun eligibleView(width: Int = 100, height: Int = 100, mockView: View = mock()): View {
+    // A custom view stands for one drawing in onDraw(), unlike a bare View that has nothing to draw.
+    private fun eligibleView(
+        width: Int = 100,
+        height: Int = 100,
+        mockView: View = mock<CustomDrawnView>()
+    ): View {
         val resources: Resources = mock()
         val displayMetrics = DisplayMetrics().apply {
             widthPixels = 1000
@@ -317,6 +323,77 @@ internal class CapturedPixelFallbackMapperTest {
         // Then: never even considered for a placeholder or pixel capture.
         verify(mockFallbackMapper).map(mockView, mappingContext)
         verifyNoInteractions(mockViewBoundsResolver)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ImagePrivacy::class)
+    fun `M delegate to fallback without capturing W map and capture { bare view }`(fakePrivacy: ImagePrivacy) {
+        // Given: a transparent touch overlay or spacer. A plain View reports willNotDraw() == false,
+        // yet with no background or foreground it draws nothing and must not hide what is under it.
+        val mockBareView = eligibleView(mockView = mock<View>())
+        val mockRasterizer: ViewRasterizer = mock()
+        val testedMapperWithMockRasterizer = CapturedPixelFallbackMapper(
+            fallbackMapper = mockFallbackMapper,
+            internalLogger = mockInternalLogger,
+            viewBoundsResolver = mockViewBoundsResolver,
+            viewRasterizer = mockRasterizer,
+            canMaskText = true
+        )
+        val fakeFallbackData = CapturedViewData.Mapped(CapturedViewMapperResult.None)
+        whenever(mockFallbackMapper.map(any(), any())).thenReturn(CapturedViewMapperResult.None)
+        whenever(mockFallbackMapper.capture(any(), any())).thenReturn(fakeFallbackData)
+        val mappingContext = mappingContext(fakePrivacy)
+
+        // When
+        val mapped = testedMapperWithMockRasterizer.map(mockBareView, mappingContext)
+        val captured = testedMapperWithMockRasterizer.capture(mockBareView, mappingContext)
+
+        // Then
+        assertThat(mapped).isSameAs(CapturedViewMapperResult.None)
+        assertThat(captured).isSameAs(fakeFallbackData)
+        verifyNoInteractions(mockRasterizer, mockViewBoundsResolver)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M still capture W map { view of the exact class has a background or foreground }`(fakeBackground: Boolean) {
+        // Given: a divider or scrim drawn by a gradient, or a foreground drawn on top.
+        val mockPlainView = eligibleView(mockView = mock<View>())
+        val mockDrawable: Drawable = mock()
+        if (fakeBackground) {
+            whenever(mockPlainView.background).thenReturn(mockDrawable)
+        } else {
+            whenever(mockPlainView.foreground).thenReturn(mockDrawable)
+        }
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockPlainView, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        val registered = mutableListOf<PendingPixelCapture>()
+        val mappingContext = mappingContext(
+            ImagePrivacy.MASK_NONE,
+            sink = PendingPixelCaptureSink { registered += it }
+        )
+
+        // When
+        val result = testedMapper.map(mockPlainView, mappingContext) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+        assertThat(registered).hasSize(1)
+    }
+
+    @Test
+    fun `M still capture W map { view subclass with no background or foreground }`() {
+        // Given: a subclass may draw in onDraw(), so it is not assumed to be empty.
+        val mockCustomView = eligibleView()
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockCustomView, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
+
+        // When
+        val result = testedMapper.map(mockCustomView, mappingContext) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
     }
 
     @Test
@@ -835,3 +912,5 @@ internal class CapturedPixelFallbackMapperTest {
 }
 
 private open class CustomRecyclerView(context: Context) : RecyclerView(context)
+
+private open class CustomDrawnView(context: Context) : View(context)

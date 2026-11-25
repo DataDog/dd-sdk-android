@@ -113,8 +113,9 @@ internal class CapturedPixelFallbackMapper(
     /**
      * Whether [view] needs no pixels: it draws nothing, it is a container left to the fallback (see
      * [capturesContainers]), its fallback output already describes it ([hasFallbackOutput]) unless
-     * an image draws above that, or it is a composition host, whose content is described by its
-     * decomposition and which a raster would duplicate while bypassing the privacy modifiers inside it.
+     * an image draws above that, it is a bare [View] with nothing to draw, or it is a composition
+     * host, whose content is described by its decomposition and which a raster would duplicate
+     * while bypassing the privacy modifiers inside it.
      */
     @UiThread
     private fun isDescribedWithoutPixels(
@@ -124,10 +125,21 @@ internal class CapturedPixelFallbackMapper(
     ): Boolean = mappingContext.isCompositionHost ||
         view.willNotDraw() ||
         (view is ViewGroup && !capturesContainers) ||
+        isBareView(view) ||
         (hasFallbackOutput && !hasImageContent(view))
 
     @UiThread
     private fun hasImageContent(view: View): Boolean = view is ImageView && view.drawable != null
+
+    /**
+     * Unlike a [ViewGroup], a plain [View] reports `willNotDraw() == false` even though it draws
+     * nothing without a background or foreground, so a transparent touch overlay or spacer would
+     * otherwise end as a placeholder hiding the content captured underneath it. A subclass may
+     * draw in `onDraw()`, so only the exact class qualifies.
+     */
+    @UiThread
+    private fun isBareView(view: View): Boolean =
+        view.javaClass == View::class.java && view.background == null && view.foreground == null
 
     /**
      * `NestedScrollView`/`RecyclerView` are matched by class name rather than type, the same way
