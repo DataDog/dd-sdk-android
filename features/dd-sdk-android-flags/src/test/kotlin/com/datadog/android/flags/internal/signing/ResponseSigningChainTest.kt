@@ -120,8 +120,13 @@ internal class ResponseSigningChainTest {
         // Then
         assertThat(transcript).isEqualTo(expectedTranscript(request, BODY, credential.leaf, credential.chain, now))
         assertThat(transcript.copyOfRange(0, V1_DOMAIN.size)).isEqualTo(V1_DOMAIN)
+        // The chain hashes, then the signed response list: one name, present, with its value.
         val tail = Buffer().write(sha(credential.leaf)).writeByte(2)
-            .write(sha(credential.chain[0])).write(sha(credential.chain[1])).readByteArray()
+            .write(sha(credential.chain[0])).write(sha(credential.chain[1]))
+            .writeByte(
+                1
+            ).writeInt(12).writeUtf8("content-type").writeByte(1).writeInt(16).writeUtf8(RESPONSE_CONTENT_TYPE)
+            .readByteArray()
         assertThat(transcript.copyOfRange(transcript.size - tail.size, transcript.size)).isEqualTo(tail)
     }
 
@@ -704,6 +709,8 @@ internal class ResponseSigningChainTest {
                 .add(PREFIX + "issued-at", now.toString())
                 .add(PREFIX + "expires-at", (now + 300).toString())
                 .add(PREFIX + "signature", signature.toByteString().base64())
+                .add(SIGNED_RESPONSE_HEADERS, "content-type")
+                .add("content-type", RESPONSE_CONTENT_TYPE)
                 .apply { minimumNotBefore?.let { add(MINIMUM_NOT_BEFORE, it.toString()) } }
                 .build()
         }
@@ -821,6 +828,7 @@ internal class ResponseSigningChainTest {
             .header("x-dd-feature-flags-capabilities", "response-signing-v1")
             .header(PREFIX + "signature-version", "1")
             .header(PREFIX + "request-nonce", "00112233445566778899aabbccddeeff")
+            .header(SIGNED_HEADERS, "content-type,x-dd-feature-flags-capabilities")
             .post("""{"data":{"type":"precompute-assignments-request"}}""".toRequestBody())
             .build()
 
@@ -829,6 +837,9 @@ internal class ResponseSigningChainTest {
         private const val CHAIN = PREFIX + "signing-chain"
         private const val MINIMUM_NOT_BEFORE = PREFIX + "minimum-leaf-not-before"
         private const val CERTIFICATE_ID = PREFIX + "certificate-id"
+        private const val SIGNED_HEADERS = PREFIX + "signed-headers"
+        private const val SIGNED_RESPONSE_HEADERS = PREFIX + "signed-response-headers"
+        private const val RESPONSE_CONTENT_TYPE = "application/json"
 
         // Minimum leaf not-before scenario (unix seconds, UTC): staging-like intermediates are older than the leaves.
         private const val NOV_01 = 1793491200L
@@ -878,12 +889,15 @@ internal class ResponseSigningChainTest {
             lp(checkNotNull(request.header(PREFIX + "request-nonce")).decodeHex().toByteArray())
             out.write(sha(Buffer().also { request.body?.writeTo(it) }.readByteArray()))
             out.write(sha(checkNotNull(request.header("dd-client-token")).toByteArray()))
-            listOf("content-type", "dd-application-id", "x-rkyv", "x-use-cache", "x-dd-feature-flags-capabilities")
-                .forEach { name ->
-                    val value = request.header(name)
+            fun list(entries: List<Pair<String, String?>>) {
+                out.writeByte(entries.size)
+                entries.forEach { (name, value) ->
+                    lp(name.toByteArray())
                     out.writeByte(if (value == null) 0 else 1)
-                    if (value != null) lp(value.toByteArray())
+                    lp((value ?: "").toByteArray())
                 }
+            }
+            list(checkNotNull(request.header(SIGNED_HEADERS)).split(',').map { it to request.header(it) })
             out.writeByte(0)
             out.writeShort(200)
             out.writeLong(now)
@@ -893,6 +907,7 @@ internal class ResponseSigningChainTest {
             out.write(sha(leaf))
             out.writeByte(chain.size)
             chain.forEach { out.write(sha(it)) }
+            list(listOf("content-type" to RESPONSE_CONTENT_TYPE))
             minimumNotBefore?.let {
                 out.writeByte(1)
                 out.writeLong(it)

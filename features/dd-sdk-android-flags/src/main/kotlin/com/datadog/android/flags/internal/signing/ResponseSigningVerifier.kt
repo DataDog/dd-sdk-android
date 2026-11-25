@@ -24,7 +24,13 @@ import java.security.ProviderException
 import java.security.PublicKey
 import java.util.Locale
 
-internal data class VerifiedResponse(val scope: String, val verifiedAt: Long, val expiresAt: Long)
+/** [responseHeaders] holds each name of the signed response list, in list order, with its value or null when absent. */
+internal data class VerifiedResponse(
+    val scope: String,
+    val verifiedAt: Long,
+    val expiresAt: Long,
+    val responseHeaders: Map<String, String?>
+)
 
 /**
  * Native JCA verifies signatures; the pinned anchor never enters a system trust/path builder.
@@ -85,6 +91,7 @@ internal class ResponseSigningVerifier(
         val issued = seconds(single(headers, ISSUED_AT_HEADER))
         val expires = seconds(single(headers, EXPIRES_AT_HEADER))
         val announcedMinimum = minimumNotBefore(headers)
+        val responseHeaders = signedResponseHeaders(request, headers)
         signingCheck(
             now >= 0 && expires > issued && expires - issued <= 300 && issued <= now + 30 && expires > now,
             ResponseSigningFailureReason.EXPIRED_PROOF
@@ -98,7 +105,7 @@ internal class ResponseSigningVerifier(
             ResponseSigningFailureReason.INVALID_SIGNATURE
         )
         applyMinimumLeafNotBefore(chain.anchorId, chain.leaf.notBefore, announcedMinimum)
-        return VerifiedResponse(scope(request), now, expires)
+        return VerifiedResponse(scope(request), now, expires, responseHeaders)
     }
 
     // The response headers are already valid here, so a transcript failure comes from the request shape.
@@ -310,6 +317,8 @@ internal class ResponseSigningVerifier(
         private const val ISSUED_AT_HEADER = PREFIX + "issued-at"
         private const val EXPIRES_AT_HEADER = PREFIX + "expires-at"
         private const val SIGNATURE_HEADER = PREFIX + "signature"
+        const val SIGNED_HEADERS_HEADER = PREFIX + "signed-headers"
+        private const val SIGNED_RESPONSE_HEADERS_HEADER = PREFIX + "signed-response-headers"
         private val PROOF_HEADERS = listOf(
             SIGNATURE_VERSION_HEADER,
             SIGNING_CERTIFICATE_HEADER,
@@ -317,7 +326,8 @@ internal class ResponseSigningVerifier(
             CERTIFICATE_ID_HEADER,
             ISSUED_AT_HEADER,
             EXPIRES_AT_HEADER,
-            SIGNATURE_HEADER
+            SIGNATURE_HEADER,
+            SIGNED_RESPONSE_HEADERS_HEADER
         )
         private const val MINIMUM_LEAF_NOT_BEFORE_HEADER = PREFIX + "minimum-leaf-not-before"
         const val CAPABILITY = "response-signing-v1"
@@ -345,8 +355,17 @@ internal class ResponseSigningVerifier(
         private const val HTTPS_PORT = 443
         private const val HTTP_PORT = 80
         private const val APPLICATION_ID_HEADER = "dd-application-id"
-        private val SEMANTIC_HEADERS =
-            listOf("content-type", APPLICATION_ID_HEADER, "x-rkyv", "x-use-cache", "x-dd-feature-flags-capabilities")
+        private const val CONTENT_TYPE_HEADER = "content-type"
+        private const val CAPABILITIES_HEADER = "x-dd-feature-flags-capabilities"
+        const val FLAG_SELECTION_IGNORED_HEADER = "dd-flag-selection-ignored"
+
+        /** Request headers that can change a signed response; each one that is present must be in the signed list. */
+        val BOUND_HEADERS =
+            listOf(CONTENT_TYPE_HEADER, APPLICATION_ID_HEADER, CAPABILITIES_HEADER, "x-rkyv", "x-use-cache")
+        private val NAME_LIST = Regex("[0-9a-z!#$%&'*+.^_`|~-]+(,[0-9a-z!#$%&'*+.^_`|~-]+)*")
+        private const val MAX_LISTED_NAMES = 32
+        private const val MAX_LISTED_NAME_BYTES = 64
+        private val SELECTION_QUERY_PARAMETERS = listOf("selected_flag_tags", "selected_flag_key_patterns")
 
         fun transcript(request: Request, status: Int, headers: Headers, body: ByteArray): ByteArray {
             val minimum = minimumNotBefore(headers)
@@ -360,6 +379,7 @@ internal class ResponseSigningVerifier(
                 write(leaf.signingBytes().sha256())
                 writeByte(intermediates.size)
                 intermediates.forEach { write(it.signingBytes().sha256()) }
+                headerList(signedResponseHeaders(request, headers))
                 // Draft: the edge binds the revocation floor only when it sends one, so v1 stays unchanged.
                 minimum?.let { writeByte(1).writeLong(it) }
             }.signingBytes()
@@ -368,12 +388,16 @@ internal class ResponseSigningVerifier(
         fun matchesRequest(expected: Request, actual: Request): Boolean = try {
             requestTranscript(expected, includeNonce = false).signingBytes()
                 .contentEquals(requestTranscript(actual, includeNonce = false).signingBytes()) &&
-                expected.header(NONCE_HEADER) == actual.header(NONCE_HEADER)
+                expected.header(NONCE_HEADER) == actual.header(NONCE_HEADER) &&
+                expected.headers.values(SIGNED_HEADERS_HEADER) == actual.headers.values(SIGNED_HEADERS_HEADER)
         } catch (_: IllegalArgumentException) {
             false
         }
 
-        /** Cache and admission scope; omits the RUM application ID, which each transcript still binds. */
+        /**
+         * Cache and admission scope; omits the RUM application ID, which each transcript still binds. The scope encodes
+         * the [BOUND_HEADERS] that are present, not the signed list, so a verified and an unverified request share it.
+         */
         fun scope(request: Request): String = requestTranscript(
             request,
             includeNonce = false,
@@ -427,11 +451,17 @@ internal class ResponseSigningVerifier(
             val scopedBytes = if (includeNonce) requestBytes else withoutDiagnostics(requestBytes)
             result.write(scopedBytes.signingBytes().sha256())
             result.write(single(request.headers, "dd-client-token").toByteArray(Charsets.UTF_8).signingBytes().sha256())
-            SEMANTIC_HEADERS.filter { includeApplicationId || it != APPLICATION_ID_HEADER }.forEach { name ->
-                val values = request.headers.values(name)
-                signingCheck(values.size <= 1)
-                result.writeByte(if (values.isEmpty()) 0 else 1)
-                if (values.isNotEmpty()) result.lp(values[0].toByteArray(Charsets.UTF_8))
+            if (includeNonce) {
+                result.headerList(signedRequestHeaders(request))
+            } else {
+                // The scope keeps the list rules, so prepare() and the transport match fail as the transcript does.
+                if (validateSigning) signedRequestHeaders(request)
+                BOUND_HEADERS.filter { includeApplicationId || it != APPLICATION_ID_HEADER }.forEach { name ->
+                    val values = request.headers.values(name)
+                    signingCheck(values.size <= 1)
+                    result.writeByte(if (values.isEmpty()) 0 else 1)
+                    if (values.isNotEmpty()) result.lp(values[0].toByteArray(Charsets.UTF_8))
+                }
             }
             val authorization = request.headers.values("authorization")
             signingCheck(authorization.size <= 1)
@@ -467,6 +497,72 @@ internal class ResponseSigningVerifier(
         private fun Buffer.lp(bytes: ByteArray) {
             writeInt(bytes.size)
             write(bytes)
+        }
+
+        /** `u8(count)`, then `lp(name) u8(1) lp(value)` for a present header or `lp(name) u8(0) lp("")` when absent. */
+        private fun Buffer.headerList(entries: Map<String, String?>) {
+            writeByte(entries.size)
+            entries.forEach { (name, value) ->
+                lp(name.toByteArray(Charsets.UTF_8))
+                writeByte(if (value == null) 0 else 1)
+                lp((value ?: "").toByteArray(Charsets.UTF_8))
+            }
+        }
+
+        /** Lowercase tokens in ascending byte order, unique, joined by commas without spaces, 1 to 32 names. */
+        private fun nameList(value: String): List<String> {
+            signingCheck(value.matches(NAME_LIST))
+            val names = value.split(',')
+            signingCheck(names.size <= MAX_LISTED_NAMES)
+            signingCheck(names.all { it.length <= MAX_LISTED_NAME_BYTES })
+            signingCheck(names.zipWithNext().all { (previous, next) -> previous < next })
+            return names
+        }
+
+        /** The signed request list with each value; every listed header must be present on exactly one line. */
+        private fun signedRequestHeaders(request: Request): Map<String, String?> {
+            val names = nameList(single(request.headers, SIGNED_HEADERS_HEADER))
+            signingCheck(CONTENT_TYPE_HEADER in names && CAPABILITIES_HEADER in names)
+            signingCheck(
+                !names.any { it == "dd-client-token" || it == "authorization" || it.startsWith(PREFIX) }
+            )
+            signingCheck(BOUND_HEADERS.all { it in names || request.headers.values(it).isEmpty() })
+            return names.associateWith { name ->
+                val value = single(request.headers, name)
+                // Only the capabilities header is a comma-separated list; a comma elsewhere means combined lines.
+                signingCheck(name == CAPABILITIES_HEADER || ',' !in value)
+                value
+            }
+        }
+
+        /** The signed response list with each value or null; any list or name failure is an invalid proof. */
+        private fun signedResponseHeaders(request: Request, headers: Headers): Map<String, String?> {
+            val names = nameList(single(headers, SIGNED_RESPONSE_HEADERS_HEADER))
+            signingCheck(CONTENT_TYPE_HEADER in names)
+            signingCheck(!hasFlagSelection(request) || FLAG_SELECTION_IGNORED_HEADER in names)
+            signingCheck(!names.any { it in PROOF_HEADERS })
+            return names.associateWith { name ->
+                val values = headers.values(name)
+                signingCheck(values.size <= 1)
+                values.firstOrNull()
+            }
+        }
+
+        /** A non-null `flag_selection` in the JSON body, or a selection query parameter. */
+        private fun hasFlagSelection(request: Request): Boolean {
+            if (SELECTION_QUERY_PARAMETERS.any { request.url.queryParameterNames.contains(it) }) return true
+            val body = Buffer()
+            try {
+                request.body?.writeTo(body)
+            } catch (_: IOException) {
+                signingFailure()
+            }
+            return try {
+                val json = JsonParser.parseString(body.signingBytes().toString(Charsets.UTF_8))
+                json.isJsonObject && json.asJsonObject.get("flag_selection")?.isJsonNull == false
+            } catch (_: JsonParseException) {
+                false
+            }
         }
 
         /** Intermediates in header order: 1 to 3 strict base64 DER entries joined by commas without spaces. */

@@ -142,7 +142,13 @@ internal class PrecomputedAssignmentsDownloader(
                     bytes.toString(Charsets.UTF_8),
                     proof,
                     if (requestFactory.sendsFlagSelection) {
-                        response.header(HEADER_FLAG_SELECTION_IGNORED)?.takeIf(String::isNotEmpty)
+                        // A verified response acts only on the signed value, never on a second read of the header.
+                        val ignored = if (proof != null) {
+                            proof.responseHeaders[ResponseSigningVerifier.FLAG_SELECTION_IGNORED_HEADER]
+                        } else {
+                            response.header(HEADER_FLAG_SELECTION_IGNORED)
+                        }
+                        ignored?.takeIf(String::isNotEmpty)
                             ?.let { if (credentialUsed) REDACTED_REASON else FlagSelectionIgnoredReason.sanitize(it) }
                     } else {
                         null

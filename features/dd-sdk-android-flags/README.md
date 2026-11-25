@@ -79,8 +79,8 @@ A v1 response carries the leaf in `x-datadog-feature-flags-signing-certificate` 
 standard base64 DER entries joined by `,` without spaces. Index 0 issued the leaf, each
 next entry issued the previous one, and a pinned root issued the last entry. The SDK
 rejects a response that has only the old `x-datadog-feature-flags-signing-intermediate`
-header. The transcript ends with `SHA256(leaf)`, one count byte, and the SHA-256 of each
-intermediate in header order. The leaf extended key usage must contain the FFE
+header. The transcript binds `SHA256(leaf)`, one count byte, and the SHA-256 of each
+intermediate in header order. The signed response list follows the certificate hashes. The leaf extended key usage must contain the FFE
 assignment-signing purpose and must not contain `anyExtendedKeyUsage`. The purpose OID
 is a placeholder until Datadog assigns the production value. An intermediate at
 index `i` must have a path length of at least `i`. An intermediate or root extended key
@@ -110,6 +110,22 @@ val flagsConfig = FlagsConfiguration.Builder()
 An opted-in request adds `response-signing-v1` to `X-DD-FEATURE-FLAGS-CAPABILITIES`, sends
 signature version `1`, and sends a fresh 32-character lowercase hex nonce in
 `x-datadog-feature-flags-request-nonce`.
+
+Signed header lists:
+
+- The request sends `x-datadog-feature-flags-signed-headers`. It names each bound request header
+  that the request carries: `content-type`, `dd-application-id`, `x-dd-feature-flags-capabilities`,
+  `x-rkyv` and `x-use-cache`. The names are lowercase, sorted, unique, and joined by `,` without spaces.
+- The transcript binds the list as one count byte, then the length-prefixed name, one presence byte
+  and the length-prefixed value of each name. `dd-client-token` and `authorization` keep their hashed fields.
+- A listed request header must be present on one line. Only the capabilities value can contain a comma.
+  A bound header that is present but not listed, or a list without `content-type` and the capabilities
+  header, gives the reason `unsupported-request`.
+- The response must carry `x-datadog-feature-flags-signed-response-headers`, in the same syntax.
+  It must name `content-type`, and `dd-flag-selection-ignored` when the request has a flag selection.
+  The transcript binds this list after the certificate hashes. An absent listed header is bound as absent.
+- A missing response list is `missing-proof`. Any other response list error is `invalid-proof`.
+- On a verified response, the SDK acts only on the verified values of the response list.
 
 The SDK pins one root: `CN=Datadog Customer Signing Root CA - staging`, SHA-256
 `0e469f3cecc9cd51fd64373879636540512d56e99eecd70361c78b98c47ea934`. A response never
@@ -186,7 +202,7 @@ Minimum leaf not-before revocation (draft wire, pending the edge and the shared 
 
 - A response can carry `x-datadog-feature-flags-minimum-leaf-not-before`: unix seconds, one canonical
   decimal value. When present, the SDK appends `0x01` and the value as a big-endian u64 to the
-  v1 transcript, after the certificate hashes. When absent, the transcript is unchanged.
+  v1 transcript, after the signed response list. When absent, the transcript is unchanged.
 - The SDK accepts the value only from a fully verified response. It ignores a value that is
   lower than the stored value. It ignores a value that is greater than the `notBefore` of the
   leaf in the same response, with the reason `minimum-not-before-ignored`, because a response
@@ -209,7 +225,7 @@ val strictConfig = FlagsConfiguration.Builder()
 
 Observe mode keeps one persisted entry per client, under the key `flags-…signing-v1-observe-state-<client name>`.
 No client name can produce this key. The entry is tagged with a hash of the request scope: the
-emitted token, endpoint and query, environment, evaluation context, and semantic headers. The RUM
+emitted token, endpoint and query, environment, evaluation context, and bound request headers. The RUM
 application ID is not part of the scope. When a transport changes the request, the entry uses the
 scope of the request that the transport sent. A client built in another signing mode removes the
 entries that this mode left on disk.
@@ -298,6 +314,7 @@ val flagsConfig = FlagsConfiguration.Builder()
 - The flag selection is fixed when the Flags feature is enabled and applies to every `FlagsClient`. Flags cached under a different selection are not loaded at startup; until the next successful fetch, a client starts without cached flags.
 - If the server ignores a selection, the SDK loads the full flag configuration and logs an error with the reason. A reason that the SDK does not know is reported as `unknown`.
 - With a custom flag endpoint, the proxy must forward the `DD-Flag-Selection-Ignored` response header. Otherwise, the SDK cannot report a selection that the server ignored.
+- With response signing, a verified response reports only the signed `DD-Flag-Selection-Ignored` value.
 
 ## Use the Feature Flags SDK
 

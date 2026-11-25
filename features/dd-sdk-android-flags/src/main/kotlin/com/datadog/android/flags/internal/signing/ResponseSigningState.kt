@@ -118,8 +118,16 @@ internal class ResponseSigningState(
             ?.split(',')?.map { it.trim() }?.toMutableSet() ?: mutableSetOf()
         capabilities.add(ResponseSigningVerifier.CAPABILITY)
         // The edge buffers responses it signs, so the request keeps its ordinary transport selection.
-        val request = original.newBuilder()
+        val withCapabilities = original.newBuilder()
             .header("x-dd-feature-flags-capabilities", capabilities.sorted().joinToString(","))
+            .build()
+        // The list names every bound header that the request carries, so the edge binds each name and value.
+        val signedHeaders = ResponseSigningVerifier.BOUND_HEADERS
+            .filter { withCapabilities.headers.values(it).isNotEmpty() }
+            .sorted()
+            .joinToString(",")
+        val request = withCapabilities.newBuilder()
+            .header(ResponseSigningVerifier.SIGNED_HEADERS_HEADER, signedHeaders)
             .header(ResponseSigningVerifier.PREFIX + "signature-version", ResponseSigningVerifier.SIGNATURE_VERSION)
             .header(ResponseSigningVerifier.PREFIX + "request-nonce", nonce.signingBytes().hex())
             .build()

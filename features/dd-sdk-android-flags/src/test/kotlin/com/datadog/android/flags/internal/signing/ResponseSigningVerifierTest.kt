@@ -119,6 +119,10 @@ internal class ResponseSigningVerifierTest {
                             bytes(response["body_base64"].asString)
                         )
                         assertThat(transcript.toByteString().base64()).isEqualTo(vector["transcript_base64"].asString)
+                        // The SDK acts only on the verified response values, in list order.
+                        val expected = vector.getAsJsonObject("verified_response_headers").entrySet()
+                            .map { (header, value) -> header to value.takeUnless { it.isJsonNull }?.asString }
+                        assertThat(checkNotNull(result.proof).responseHeaders.toList()).isEqualTo(expected)
                     }
                 }
             }

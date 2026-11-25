@@ -28,6 +28,9 @@ import java.security.spec.PKCS8EncodedKeySpec
 internal object CanonicalResponseSigner {
     private const val PREFIX = "x-datadog-feature-flags-"
     const val DEFAULT_CREDENTIAL = "two-intermediates"
+    private const val CONTENT_TYPE_HEADER = "content-type"
+    private const val CONTENT_TYPE = "application/json"
+    private const val SELECTION_IGNORED_HEADER = "dd-flag-selection-ignored"
 
     /** Another generation under the same test root, with a different leaf and lower intermediate. */
     const val ROTATED_CREDENTIAL = "rotated-lower-intermediate"
@@ -43,15 +46,28 @@ internal object CanonicalResponseSigner {
     val root = checkNotNull(javaClass.getResource("/response-signing-chain/root-a.pem")).readText()
         .lines().filter { it.isNotBlank() && !it.startsWith("-----") }.joinToString("")
 
-    /** [minimumNotBefore] adds the draft revocation header, bound into the transcript. */
+    /**
+     * [minimumNotBefore] adds the draft revocation header, bound into the transcript. The signed response list is the
+     * default edge list; [flagSelectionIgnored] sets its `dd-flag-selection-ignored` value.
+     */
     fun response(
         request: Request,
         body: String,
         credentialName: String = DEFAULT_CREDENTIAL,
         issuedAt: Long = now,
-        minimumNotBefore: Long? = null
+        minimumNotBefore: Long? = null,
+        flagSelectionIgnored: String? = null
     ): Response = httpResponse(request, body = body).newBuilder()
-        .headers(signedHeaders(request, body.toByteArray(Charsets.UTF_8), credentialName, issuedAt, minimumNotBefore))
+        .headers(
+            signedHeaders(
+                request,
+                body.toByteArray(Charsets.UTF_8),
+                credentialName,
+                issuedAt,
+                minimumNotBefore,
+                flagSelectionIgnored
+            )
+        )
         .build()
 
     fun notBefore(credentialName: String): Long = (
@@ -67,7 +83,8 @@ internal object CanonicalResponseSigner {
         body: ByteArray,
         credentialName: String,
         issuedAt: Long,
-        minimumNotBefore: Long?
+        minimumNotBefore: Long?,
+        flagSelectionIgnored: String?
     ): Headers {
         val credential = credential(credentialName)
         val leaf = bytes(credential["certificate_der_base64"].asString)
@@ -85,17 +102,16 @@ internal object CanonicalResponseSigner {
         lp(checkNotNull(request.header(PREFIX + "request-nonce")).decodeHex().toByteArray())
         transcript.write(sha(Buffer().also { request.body?.writeTo(it) }.readByteArray()))
         transcript.write(sha(checkNotNull(request.header("dd-client-token")).toByteArray()))
-        listOf(
-            "content-type",
-            "dd-application-id",
-            "x-rkyv",
-            "x-use-cache",
-            "x-dd-feature-flags-capabilities"
-        ).forEach {
-            val header = request.header(it)
-            transcript.writeByte(if (header == null) 0 else 1)
-            if (header != null) lp(header.toByteArray())
+        fun list(entries: List<Pair<String, String?>>) {
+            transcript.writeByte(entries.size)
+            entries.forEach { (name, value) ->
+                lp(name.toByteArray())
+                transcript.writeByte(if (value == null) 0 else 1)
+                lp((value ?: "").toByteArray())
+            }
         }
+        // The edge writes each listed request header that it received.
+        list(checkNotNull(request.header(PREFIX + "signed-headers")).split(',').map { it to request.header(it) })
         transcript.writeByte(0)
         transcript.writeShort(200)
         transcript.writeLong(issuedAt)
@@ -104,6 +120,11 @@ internal object CanonicalResponseSigner {
         transcript.write(sha(body)); transcript.write(sha(leaf))
         transcript.writeByte(intermediates.size)
         intermediates.forEach { transcript.write(sha(bytes(it))) }
+        val responseHeaders = listOf(
+            CONTENT_TYPE_HEADER to CONTENT_TYPE,
+            SELECTION_IGNORED_HEADER to flagSelectionIgnored
+        )
+        list(responseHeaders)
         minimumNotBefore?.let {
             transcript.writeByte(1)
             transcript.writeLong(it)
@@ -122,6 +143,8 @@ internal object CanonicalResponseSigner {
             .add(PREFIX + "issued-at", issuedAt.toString())
             .add(PREFIX + "expires-at", (issuedAt + 300).toString())
             .add(PREFIX + "signature", signature.toByteString().base64())
+            .add(PREFIX + "signed-response-headers", responseHeaders.joinToString(",") { it.first })
+            .apply { responseHeaders.forEach { (name, value) -> value?.let { add(name, it) } } }
             .apply { minimumNotBefore?.let { add(PREFIX + "minimum-leaf-not-before", it.toString()) } }
             .build()
     }

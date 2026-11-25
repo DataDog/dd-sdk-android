@@ -96,6 +96,8 @@ internal class ResponseSigningClientTest {
     private val userMessages = mutableListOf<String>()
     private var signedAt: Long? = null
     private var minimumNotBefore: Long? = null
+    private var flagSelectionTags: List<String>? = null
+    private var flagSelectionIgnored: String? = null
     private var responseKind = "valid"
     private var credentialName = CanonicalResponseSigner.DEFAULT_CREDENTIAL
     private var observeFullEvaluationData = false
@@ -136,6 +138,45 @@ internal class ResponseSigningClientTest {
         assertThat(requests.single().header(PREFIX + "signature-version"))
             .isEqualTo(if (mode == ResponseSigningMode.OFF) null else "1")
         if (mode == ResponseSigningMode.REQUIRED) assertThat(store.operations).isZero()
+    }
+
+    @ParameterizedTest
+    @EnumSource(ResponseSigningMode::class)
+    fun `M list each bound header W setEvaluationContext() {all modes}`(mode: ResponseSigningMode) {
+        // Given
+        updateApp("app-1")
+        create(mode)
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        val request = requests.single()
+        if (mode == ResponseSigningMode.OFF) {
+            assertThat(request.header(PREFIX + "signed-headers")).isNull()
+        } else {
+            assertThat(request.header(PREFIX + "signed-headers"))
+                .isEqualTo("content-type,dd-application-id,x-dd-feature-flags-capabilities")
+            assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["OBSERVE", "REQUIRED"])
+    fun `M report the signed ignored reason W setEvaluationContext() {verified response with selection}`(
+        mode: ResponseSigningMode
+    ) {
+        // Given
+        flagSelectionTags = listOf("team:payments")
+        flagSelectionIgnored = "tag_load_failed"
+        create(mode)
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        assertThat(userMessages).contains(
+            "flagSelection was ignored by the server (tag_load_failed). Loaded the full flag configuration."
+        )
     }
 
     @ParameterizedTest
@@ -1417,6 +1458,7 @@ internal class ResponseSigningClientTest {
         }
         val builder = FlagsConfiguration.Builder().trackExposures(false).trackEvaluations(false)
             .rumIntegrationEnabled(false).useCustomFlagEndpoint(endpoint)
+        flagSelectionTags?.let { builder.flagSelection(it, null) }
         when {
             mode == null -> Unit
             roots == null -> builder.experimentalResponseSigning(mode).expireVerifiedFlags(expireVerifiedFlags)
@@ -1441,7 +1483,8 @@ internal class ResponseSigningClientTest {
             json,
             credentialName,
             issuedAt = signedAt ?: CanonicalResponseSigner.now,
-            minimumNotBefore = minimumNotBefore
+            minimumNotBefore = minimumNotBefore,
+            flagSelectionIgnored = flagSelectionIgnored
         ).headers
         val response = Response.Builder().request(request).protocol(Protocol.HTTP_1_1).message("test")
             .code(if (responseKind == "403") 403 else 200)
