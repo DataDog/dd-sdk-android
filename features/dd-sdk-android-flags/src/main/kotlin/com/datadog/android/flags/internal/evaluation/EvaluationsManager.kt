@@ -183,6 +183,9 @@ internal class EvaluationsManager(
     private var stateRevision = 0L
     private var acceptedTimeoutFallback: AcceptedTimeoutFallback? = null
     private var retainedDeadline: InitializationCompletion? = null
+
+    // Set when a current request reaches a terminal result; a later superseded request then keeps no deadline.
+    private var initializationSettled = false
     private var proofExpiryToken: Any? = null
     private var proofExpiresAt: Long = Long.MAX_VALUE
     private var proofVerifiedAt: Long = Long.MIN_VALUE
@@ -477,11 +480,13 @@ internal class EvaluationsManager(
                             } else {
                                 flagsRepository.restoreVerifiedFlags()?.let { effects.enqueue { it.complete {} } }
                                 // REQUIRED rechecks eligibility: the proof may have expired while the refresh was
-                                // pending. It has no persistence, so this read does not wait under the policy lock.
+                                // pending. It reads verified assignments from memory, so this read does not wait.
+                                // OBSERVE reads the current scope without waiting: a transport can change the scope
+                                // after the context was captured.
                                 val eligibleContext = if (signing.configuration.mode == ResponseSigningMode.REQUIRED) {
                                     flagsRepository.takeIf { it.hasConfiguration() }?.getEvaluationContext()
                                 } else {
-                                    cachedContext.get()
+                                    flagsRepository.getAssignmentsSnapshot()?.context
                                 }
                                 applyRequestFailure(
                                     request,
@@ -811,16 +816,17 @@ internal class EvaluationsManager(
     // Callers hold initializationTerminalLock. With signing, the initialization deadline still applies to the newer
     // request: superseded completion is decided after admission, when the newer request has no timer of its own.
     private fun completeSuperseded(completion: InitializationCompletion?, callback: EvaluationContextCallback?) {
-        val result = if (completion == null) {
-            InitializationResult(callback)
-        } else {
-            completion.takeKeepingDeadline()?.also { retainedDeadline = completion }
+        val result = when {
+            completion == null -> InitializationResult(callback)
+            initializationSettled -> completion.take()
+            else -> completion.takeKeepingDeadline()?.also { retainedDeadline = completion }
         }
         enqueueCompletion(result, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
     }
 
     // Callers hold initializationTerminalLock.
     private fun retireRetainedDeadlineLocked() {
+        initializationSettled = true
         val cancel = retainedDeadline?.retireDeadline()
         retainedDeadline = null
         cancel?.let { effects.enqueue { effects.notifySafely { it() } } }

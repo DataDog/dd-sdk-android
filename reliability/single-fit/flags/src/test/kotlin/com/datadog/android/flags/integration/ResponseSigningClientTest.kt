@@ -1075,6 +1075,38 @@ internal class ResponseSigningClientTest {
         assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
     }
 
+    @Test
+    fun `M ignore the superseded deadline W replacement installs first {required}`() {
+        // Given
+        create(ResponseSigningMode.REQUIRED)
+        testedClient.setEvaluationContext(EvaluationContext("subject-a"), null)
+        testedClient.setEvaluationContext(EvaluationContext("subject-b"), null)
+        queue.removeLast().run()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        queue.removeFirst().run()
+        testedClient.setEvaluationContext(EvaluationContext("subject-c"), null)
+        // When the first request's deadline passes
+        advanceClock(INITIALIZATION_TIMEOUT_SECONDS + 1)
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+    }
+
+    @Test
+    fun `M use the current scope for fallback W refresh fails {OBSERVE, transport changed the token}`() {
+        // Given
+        create(ResponseSigningMode.OBSERVE)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        responseKind = "emitted-token-invalid"
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then: the new scope has no assignments, so the client does not report Stale.
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+        assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+    }
+
     @ParameterizedTest
     @EnumSource(ResponseSigningMode::class)
     fun `M read the core context only with signing W build()`(mode: ResponseSigningMode) {
@@ -1417,11 +1449,12 @@ internal class ResponseSigningClientTest {
             .body(
                 when (responseKind) {
                     "tampered" -> (json + " ").toResponseBody()
+                    "emitted-token-invalid" -> "{".toResponseBody()
                     "unsigned-false" -> json.replace("\"true\"", "\"false\"").toResponseBody()
                     else -> json.toResponseBody()
                 }
             )
-        if (responseKind == "emitted-token") {
+        if (responseKind.startsWith("emitted-token")) {
             response.request(request.newBuilder().header("dd-client-token", "different-emitted-token").build())
         }
         if (responseKind == "redirect") {
