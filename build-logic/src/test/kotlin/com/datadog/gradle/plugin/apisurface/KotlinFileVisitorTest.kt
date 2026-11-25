@@ -149,8 +149,8 @@ internal class KotlinFileVisitorTest {
                 "  - B\n" +
                 "  val value: Int\n" +
                 "  class Nested\n" +
-                "    constructor(Int)\n" +
-                "    constructor(String)\n"
+                "    constructor(i: Int)\n" +
+                "    constructor(s: String)\n"
         )
     }
 
@@ -173,7 +173,7 @@ internal class KotlinFileVisitorTest {
             testedVisitor.description.toString()
         ).isEqualTo(
             "annotation foo.bar.Spam\n" +
-                "  constructor(String, String, String)\n"
+                "  constructor(A: String, B: String, C: String)\n"
         )
     }
 
@@ -363,7 +363,7 @@ internal class KotlinFileVisitorTest {
             testedVisitor.description.toString()
         ).isEqualTo(
             "class foo.bar.Spam\n" +
-                "  constructor(Int)\n"
+                "  constructor(i: Int)\n"
         )
     }
 
@@ -385,7 +385,7 @@ internal class KotlinFileVisitorTest {
             testedVisitor.description.toString()
         ).isEqualTo(
             "class foo.bar.Spam\n" +
-                "  constructor(String)\n"
+                "  constructor(s: String)\n"
         )
     }
 
@@ -523,8 +523,8 @@ internal class KotlinFileVisitorTest {
             testedVisitor.description.toString()
         ).isEqualTo(
             "class foo.bar.Spam\n" +
-                "  fun <T: java.io.IOException> doSomething(T): java.io.IOException\n" +
-                "  fun <K, V> doSomethingElse(Map<K, V>): Pair<List<K>, List<V>>\n"
+                "  fun <T: java.io.IOException> doSomething(input: T): java.io.IOException\n" +
+                "  fun <K, V> doSomethingElse(map: Map<K, V>): Pair<List<K>, List<V>>\n"
         )
     }
 
@@ -548,7 +548,7 @@ internal class KotlinFileVisitorTest {
             testedVisitor.description.toString()
         ).isEqualTo(
             "class foo.bar.Spam\n" +
-                "  fun <K, V> doSomethingElse(Map<*, *>): Pair<List<*>, List<*>>\n"
+                "  fun <K, V> doSomethingElse(map: Map<*, *>): Pair<List<*>, List<*>>\n"
         )
     }
 
@@ -610,7 +610,7 @@ internal class KotlinFileVisitorTest {
             testedVisitor.description.toString()
         ).isEqualTo(
             "class foo.bar.Spam\n" +
-                "  fun doSomething(Int, String?, List<String?>)\n"
+                "  fun doSomething(i: Int, s: String?, l: List<String?>)\n"
         )
     }
 
@@ -630,7 +630,7 @@ internal class KotlinFileVisitorTest {
             testedVisitor.description.toString()
         ).isEqualTo(
             "class foo.bar.Spam\n" +
-                "  constructor(Int, String? = null, List<String> = emptyList())\n"
+                "  constructor(i: Int, s: String? = null, l: List<String> = emptyList())\n"
         )
     }
 
@@ -651,7 +651,7 @@ internal class KotlinFileVisitorTest {
             testedVisitor.description.toString()
         ).isEqualTo(
             "class foo.bar.Spam\n" +
-                "  fun doSomething(Int, String? = null, List<String> = emptyList())\n"
+                "  fun doSomething(i: Int, s: String? = null, l: List<String> = emptyList())\n"
         )
     }
 
@@ -697,11 +697,11 @@ internal class KotlinFileVisitorTest {
             testedVisitor.description.toString()
         ).isEqualTo(
             "class foo.bar.Spam\n" +
-                "  fun withInputs((String, Char) -> Int)\n" +
-                "  fun unit((String) -> Unit)\n" +
-                "  fun nullable((String) -> Any?)\n" +
-                "  fun withReceiver(String.() -> Int)\n" +
-                "  fun withNamedArgumentOfLambda((String) -> Unit)\n"
+                "  fun withInputs(block: (String, Char) -> Int)\n" +
+                "  fun unit(block: (String) -> Unit)\n" +
+                "  fun nullable(block: (String) -> Any?)\n" +
+                "  fun withReceiver(block: String.() -> Int)\n" +
+                "  fun withNamedArgumentOfLambda(block: (String) -> Unit)\n"
         )
     }
 
@@ -721,7 +721,7 @@ internal class KotlinFileVisitorTest {
             testedVisitor.description.toString()
         ).isEqualTo(
             "class foo.bar.Spam\n" +
-                "  constructor((String, Char) -> Int)\n"
+                "  constructor(block: (String, Char) -> Int)\n"
         )
     }
 
@@ -946,8 +946,8 @@ internal class KotlinFileVisitorTest {
             testedVisitor.description.toString()
         ).isEqualTo(
             "class foo.bar.Spam\n" +
-                "  constructor(Int)\n" +
-                "  DEPRECATED constructor(String)\n"
+                "  constructor(i: Int)\n" +
+                "  DEPRECATED constructor(s: String)\n"
         )
     }
 
@@ -1054,7 +1054,7 @@ internal class KotlinFileVisitorTest {
             visitor.description.toString()
         }
 
-        assertThat(descriptions).containsOnly("fun doSomething(Int = foo(1,2))\n")
+        assertThat(descriptions).containsOnly("fun doSomething(i: Int = foo(1,2))\n")
     }
 
     @Test
@@ -1069,7 +1069,7 @@ internal class KotlinFileVisitorTest {
         }
 
         assertThat(descriptions)
-            .containsOnly("fun doSomething(Map<String, Any?> = remember { emptyMap() })\n")
+            .containsOnly("fun doSomething(m: Map<String, Any?> = remember { emptyMap() })\n")
     }
 
     @Test
@@ -1084,7 +1084,7 @@ internal class KotlinFileVisitorTest {
 
         assertThat(
             testedVisitor.description.toString()
-        ).isEqualTo("fun doSomething(() -> Unit = {}, () -> Unit = {})\n")
+        ).isEqualTo("fun doSomething(a: () -> Unit = {}, b: () -> Unit = {})\n")
     }
 
     @Test
@@ -1099,7 +1099,7 @@ internal class KotlinFileVisitorTest {
 
         assertThat(
             testedVisitor.description.toString()
-        ).isEqualTo("fun doSomething(Map<String, Int> = mapOf(\"x\" to 1), Any = o as String)\n")
+        ).isEqualTo("fun doSomething(m: Map<String, Int> = mapOf(\"x\" to 1), a: Any = o as String)\n")
     }
 
     @Test
@@ -1114,7 +1114,7 @@ internal class KotlinFileVisitorTest {
 
         assertThat(
             testedVisitor.description.toString()
-        ).isEqualTo("fun doSomething(String = \"a  b\", String = \"not /* a */ comment\")\n")
+        ).isEqualTo("fun doSomething(s: String = \"a  b\", c: String = \"not /* a */ comment\")\n")
     }
 
     @Test
@@ -1136,9 +1136,9 @@ internal class KotlinFileVisitorTest {
         // Then
         assertThat(testedVisitor.description.toString()).isEqualTo(
             "class foo.bar.First\n" +
-                "  constructor(unavailable.library.Widget)\n" +
+                "  constructor(widget: unavailable.library.Widget)\n" +
                 "class Second\n" +
-                "  constructor(Widget)\n"
+                "  constructor(widget: Widget)\n"
         )
     }
 

@@ -1,22 +1,22 @@
 class com.datadog.android.flags.openfeature.DatadogFlagsProvider : dev.openfeature.kotlin.sdk.FeatureProvider
   override val metadata: dev.openfeature.kotlin.sdk.ProviderMetadata
   override val hooks: List<dev.openfeature.kotlin.sdk.Hook<*>>
-  override fun initialize(dev.openfeature.kotlin.sdk.EvaluationContext?)
-  override fun onContextSet(dev.openfeature.kotlin.sdk.EvaluationContext?, dev.openfeature.kotlin.sdk.EvaluationContext)
-  override fun getBooleanEvaluation(String, Boolean, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Boolean>
-  override fun getStringEvaluation(String, String, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<String>
-  override fun getIntegerEvaluation(String, Int, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Int>
-  override fun getDoubleEvaluation(String, Double, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Double>
-  override fun getObjectEvaluation(String, dev.openfeature.kotlin.sdk.Value, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<dev.openfeature.kotlin.sdk.Value>
+  override fun initialize(initialContext: dev.openfeature.kotlin.sdk.EvaluationContext?)
+  override fun onContextSet(oldContext: dev.openfeature.kotlin.sdk.EvaluationContext?, newContext: dev.openfeature.kotlin.sdk.EvaluationContext)
+  override fun getBooleanEvaluation(key: String, defaultValue: Boolean, context: dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Boolean>
+  override fun getStringEvaluation(key: String, defaultValue: String, context: dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<String>
+  override fun getIntegerEvaluation(key: String, defaultValue: Int, context: dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Int>
+  override fun getDoubleEvaluation(key: String, defaultValue: Double, context: dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Double>
+  override fun getObjectEvaluation(key: String, defaultValue: dev.openfeature.kotlin.sdk.Value, context: dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<dev.openfeature.kotlin.sdk.Value>
   override fun shutdown()
   override fun observe(): kotlinx.coroutines.flow.Flow<dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents>
   companion object 
 interface com.datadog.android.flags.openfeature.ExposureCallback
-  fun onEvaluation(ExposureEvaluation)
+  fun onEvaluation(evaluation: ExposureEvaluation)
 class com.datadog.android.flags.openfeature.ExposureEvaluation
   val isCacheHit: Boolean
   fun shouldSend(): Boolean
 class com.datadog.android.flags.openfeature.ExposureHook : dev.openfeature.kotlin.sdk.Hook<Any>
-  constructor(ExposureCallback)
-  override fun finallyAfter(dev.openfeature.kotlin.sdk.HookContext<Any>, dev.openfeature.kotlin.sdk.FlagEvaluationDetails<Any>, Map<String, Any>)
+  constructor(callback: ExposureCallback)
+  override fun finallyAfter(ctx: dev.openfeature.kotlin.sdk.HookContext<Any>, details: dev.openfeature.kotlin.sdk.FlagEvaluationDetails<Any>, hints: Map<String, Any>)
 fun com.datadog.android.flags.FlagsClient.asOpenFeatureProvider(): dev.openfeature.kotlin.sdk.FeatureProvider
