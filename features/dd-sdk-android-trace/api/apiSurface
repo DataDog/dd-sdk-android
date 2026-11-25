@@ -96,6 +96,7 @@ object com.datadog.android.trace.internal._TraceInternalProxy
   fun activateSpan(tracer: com.datadog.android.trace.api.tracer.DatadogTracer, span: com.datadog.android.trace.api.span.DatadogSpan, asyncPropagating: Boolean): com.datadog.android.trace.api.scope.DatadogScope?
   fun isDefaultTracer(tracer: com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
   fun mergeBaggage(oldHeader: String?, newHeader: String): String
+  fun removeRetainedUserAnonymousIdBaggage(span: com.datadog.android.trace.api.span.DatadogSpan, headerValues: List<String>): List<String>?
   fun createApmNetworkInstrumentation(name: String, configuration: com.datadog.android.trace.ApmNetworkInstrumentationConfiguration)
 fun com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>.effectiveSampleRate(span: com.datadog.android.trace.api.span.DatadogSpan): Float?
 fun com.datadog.android.trace.api.span.DatadogSpan.finishRumAware(isSampled: Boolean, canSendSpan: Boolean, isDefaultTracer: Boolean)
