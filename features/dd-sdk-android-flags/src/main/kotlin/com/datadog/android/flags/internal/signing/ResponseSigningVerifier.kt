@@ -360,7 +360,10 @@ internal class ResponseSigningVerifier(
         const val FLAG_SELECTION_IGNORED_HEADER = "dd-flag-selection-ignored"
 
         /** Request headers that can change a signed response; each one that is present must be in the signed list. */
-        val BOUND_HEADERS =
+        val BOUND_HEADERS = listOf(CONTENT_TYPE_HEADER, APPLICATION_ID_HEADER, CAPABILITIES_HEADER, "x-rkyv")
+
+        // The staging-only x-use-cache is not bound unless listed, but it still separates cache scopes.
+        private val SCOPE_HEADERS =
             listOf(CONTENT_TYPE_HEADER, APPLICATION_ID_HEADER, CAPABILITIES_HEADER, "x-rkyv", "x-use-cache")
         private val NAME_LIST = Regex("[0-9a-z!#$%&'*+.^_`|~-]+(,[0-9a-z!#$%&'*+.^_`|~-]+)*")
         private const val MAX_LISTED_NAMES = 32
@@ -396,7 +399,7 @@ internal class ResponseSigningVerifier(
 
         /**
          * Cache and admission scope; omits the RUM application ID, which each transcript still binds. The scope encodes
-         * the [BOUND_HEADERS] that are present, not the signed list, so a verified and an unverified request share it.
+         * the [SCOPE_HEADERS] that are present, not the signed list, so a verified and an unverified request share it.
          */
         fun scope(request: Request): String = requestTranscript(
             request,
@@ -456,7 +459,7 @@ internal class ResponseSigningVerifier(
             } else {
                 // The scope keeps the list rules, so prepare() and the transport match fail as the transcript does.
                 if (validateSigning) signedRequestHeaders(request)
-                BOUND_HEADERS.filter { includeApplicationId || it != APPLICATION_ID_HEADER }.forEach { name ->
+                SCOPE_HEADERS.filter { includeApplicationId || it != APPLICATION_ID_HEADER }.forEach { name ->
                     val values = request.headers.values(name)
                     signingCheck(values.size <= 1)
                     result.writeByte(if (values.isEmpty()) 0 else 1)

@@ -114,8 +114,8 @@ signature version `1`, and sends a fresh 32-character lowercase hex nonce in
 Signed header lists:
 
 - The request sends `x-datadog-feature-flags-signed-headers`. It names each bound request header
-  that the request carries: `content-type`, `dd-application-id`, `x-dd-feature-flags-capabilities`,
-  `x-rkyv` and `x-use-cache`. The names are lowercase, sorted, unique, and joined by `,` without spaces.
+  that the request carries: `content-type`, `dd-application-id`, `x-dd-feature-flags-capabilities`
+  and `x-rkyv`. The staging-only `x-use-cache` is bound only when it is listed. The names are lowercase, sorted, unique, and joined by `,` without spaces.
 - The transcript binds the list as one count byte, then the length-prefixed name, one presence byte
   and the length-prefixed value of each name. `dd-client-token` and `authorization` keep their hashed fields.
 - A listed request header must be present on one line. Only the capabilities value can contain a comma.
