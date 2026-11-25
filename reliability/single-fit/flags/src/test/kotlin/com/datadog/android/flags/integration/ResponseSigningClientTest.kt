@@ -99,8 +99,10 @@ internal class ResponseSigningClientTest {
     // Every log of every target: message, properties and throwable messages.
     private val loggedText = mutableListOf<String>()
 
-    // When set, the wall clock moves by this step before the second elapsed-time read; the first is at verification.
+    // When set, the wall clock moves by this step before elapsed-time read number stepAtElapsedRead; read 1 is at
+    // verification.
     private var stepAfterVerification: Long? = null
+    private var stepAtElapsedRead = 2
     private var elapsedReads = 0
     private var signedAt: Long? = null
     private var minimumNotBefore: Long? = null
@@ -1362,6 +1364,36 @@ internal class ResponseSigningClientTest {
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
     }
 
+    @ParameterizedTest(name = "expires at elapsed read {0}")
+    @ValueSource(ints = [2, 3])
+    fun `M fail with expired-proof W proof expires around installation {required, expireVerifiedFlags}`(read: Int) {
+        // Given a response with 1 s left, and a clock that passes expires-at before (read 2) or after (read 3) the
+        // repository admits the proof
+        signedAt = now - PROOF_WINDOW_SECONDS + 1
+        stepAfterVerification = 2
+        stepAtElapsedRead = read
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = true)
+        val states = mutableListOf<FlagsClientState>()
+        testedClient.state.addListener(object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                states += newState
+            }
+        })
+        val failures = mutableListOf<Throwable>()
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), failureCallback(failures))
+        queue.removeFirst().run()
+        // Then the strict policy never reports the expired proof as Ready or Stale
+        assertThat(stepAfterVerification).isNull()
+        assertThat(states).noneMatch { it == FlagsClientState.Ready || it == FlagsClientState.Stale }
+        val state = testedClient.state.getCurrentState()
+        assertThat(((state as FlagsClientState.Error).error as FlagsResponseSigningException).reason)
+            .isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
+        assertThat((failures.single() as FlagsResponseSigningException).reason)
+            .isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+    }
+
     @Test
     fun `M fail with expired-proof W leaf expired before the build floor {required, device clock in leaf validity}`() {
         // Given the device clock is inside the leaf validity, but the leaf expired before the release build floor
@@ -1647,7 +1679,7 @@ internal class ResponseSigningClientTest {
                 override fun getDeviceTimestampMillis() = now * 1000
                 override fun getDeviceElapsedRealtimeMillis(): Long {
                     elapsedReads++
-                    stepAfterVerification?.takeIf { elapsedReads == 2 }?.let { step ->
+                    stepAfterVerification?.takeIf { elapsedReads == stepAtElapsedRead }?.let { step ->
                         stepAfterVerification = null
                         now += step
                         elapsedShift -= step

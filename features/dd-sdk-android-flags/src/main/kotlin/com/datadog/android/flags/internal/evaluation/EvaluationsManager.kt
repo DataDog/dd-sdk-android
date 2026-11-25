@@ -478,7 +478,7 @@ internal class EvaluationsManager(
                     synchronized(initializationTerminalLock) {
                         val current = ifCurrent(request) {
                             val outcome = takeCompletion(completion, callback)
-                            val installation = if (eligible && !response.isCancelled()) {
+                            var installation = if (eligible && !response.isCancelled()) {
                                 flagsRepository.installSignedFlagsAndContext(
                                     context,
                                     assignments.flags,
@@ -489,11 +489,19 @@ internal class EvaluationsManager(
                             } else {
                                 null
                             }
+                            // One expiry read after installation decides the result, so the outcome never contradicts
+                            // the expiry that the timer applies later.
+                            val proof = response?.proof
+                            val expired = signing.configuration.mode == ResponseSigningMode.REQUIRED &&
+                                proof != null && signing.isExpired(proof)
+                            val strictExpiry = expired && signing.configuration.expireVerifiedFlags
+                            if (installation != null && strictExpiry) {
+                                flagsRepository.retireVerifiedFlags(proof.expiresAt)
+                                installation = null
+                            }
                             if (installation != null) {
-                                proofTimer = response?.proof?.let { replaceProofExpiryLocked(signing, it) }
-                                // A proof that expired before installation is Stale at once, never Ready first.
-                                val expired = signing.configuration.mode == ResponseSigningMode.REQUIRED &&
-                                    response?.proof?.let { signing.isExpired(it) } == true
+                                proofTimer = proof?.let { replaceProofExpiryLocked(signing, it) }
+                                // By default, a proof that expired before installation is Stale at once, never Ready.
                                 completeInstallation(
                                     request,
                                     installation,
@@ -517,7 +525,11 @@ internal class EvaluationsManager(
                                     outcome,
                                     eligibleContext,
                                     authorizationRejected,
-                                    throwable
+                                    if (strictExpiry) {
+                                        FlagsResponseSigningException(ResponseSigningFailureReason.EXPIRED_PROOF)
+                                    } else {
+                                        throwable
+                                    }
                                 )
                             }
                         }

@@ -203,7 +203,8 @@ When the proof of the last verified response expires in `REQUIRED` mode:
   (`SystemClock.elapsedRealtime`). The verification time is the later of `issued-at` and the verifier
   clock at verification, so a response that arrives late in its window keeps its original deadline.
 - By default, a verified response whose proof expires between verification and installation is installed,
-  and the client goes directly to `Stale`, never `Ready`. With `expireVerifiedFlags(true)`, it is not installed.
+  and the client goes directly to `Stale`, never `Ready`. With `expireVerifiedFlags(true)`, it is not installed,
+  and the fetch fails with `expired-proof`. One expiry check after installation decides the result.
 - A new verified response returns the client to `FlagsClientState.Ready` in both settings.
   The customer decides when to refetch.
 - `expireVerifiedFlags` has no effect in `OBSERVE` or `OFF` mode.
