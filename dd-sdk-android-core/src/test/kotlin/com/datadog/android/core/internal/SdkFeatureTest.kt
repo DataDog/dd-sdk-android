@@ -167,7 +167,7 @@ internal class SdkFeatureTest {
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
-        assertThat(testedFeature.isInitialized()).isTrue()
+        assertThat(testedFeature.initialized).isTrue()
     }
 
     @Test
@@ -297,7 +297,7 @@ internal class SdkFeatureTest {
         testedFeature.initialize(appContext.mockInstance, fakeInstanceId)
 
         // Then
-        assertThat(testedFeature.isInitialized()).isTrue
+        assertThat(testedFeature.initialized).isTrue
 
         assertThat(testedFeature.uploadScheduler)
             .isInstanceOf(NoOpUploadScheduler::class.java)
@@ -369,7 +369,7 @@ internal class SdkFeatureTest {
         testedFeature.stop()
 
         // Then
-        assertThat(testedFeature.isInitialized()).isFalse()
+        assertThat(testedFeature.initialized).isFalse()
     }
 
     @Test
