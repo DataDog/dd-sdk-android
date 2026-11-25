@@ -19,7 +19,7 @@ enum class ResponseSigningMode {
 
     /**
      * Reports verification outcomes while accepting otherwise valid unsigned assignments. Its persisted assignments are
-     * scoped to the request, so a new context, token or environment can start without them, where OFF keeps them.
+     * scoped to the request, so a new context, token or environment can start without them.
      */
     OBSERVE,
 
