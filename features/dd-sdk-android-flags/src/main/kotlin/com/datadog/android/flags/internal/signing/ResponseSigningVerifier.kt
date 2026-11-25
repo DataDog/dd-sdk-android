@@ -283,6 +283,8 @@ internal class ResponseSigningVerifier(
             signingCheck(usage.second.contentEquals(hex("03020780")))
             val eku = extendedKeyUsages(extensions[EXTENDED_KEY_USAGE]?.second ?: signingFailure())
             signingCheck(FFE_ASSIGNMENT_SIGNING_EKU in eku && ANY_EXTENDED_KEY_USAGE !in eku)
+            // The issuance policy bound; the build floor relies on it to expire every leaked leaf.
+            signingCheck(notAfter - notBefore <= MAX_LEAF_LIFETIME_SECONDS)
         }
 
         fun restrictIntermediate(index: Int) {
@@ -381,6 +383,9 @@ internal class ResponseSigningVerifier(
          * never later than the release build. A leaf that expired before the release never verifies again.
          */
         const val BUILD_FLOOR = 1795564800L
+
+        /** Longest leaf validity (`notAfter - notBefore`): 120 h plus a 5 min backdate, as the edge and issuance. */
+        const val MAX_LEAF_LIFETIME_SECONDS = 432300L
         private const val NONCE_HEADER = PREFIX + "request-nonce"
         private const val SIGNATURE_VERSION_HEADER = PREFIX + "signature-version"
         private const val SIGNING_CERTIFICATE_HEADER = PREFIX + "signing-certificate"

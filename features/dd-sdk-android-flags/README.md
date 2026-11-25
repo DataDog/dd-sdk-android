@@ -134,6 +134,8 @@ The SDK pins one root: `CN=Datadog Customer Signing Root CA - staging`, SHA-256
 supplies the root. The SDK uses no system trust store and downloads no certificates.
 Every certificate, including the root, must satisfy `notBefore <= now < notAfter`.
 Each child validity must be inside its parent validity. The SDK does not check leaf issuance freshness.
+A leaf validity (`notAfter - notBefore`) of more than 432300 s (120 h plus a 5 min backdate, the issuance
+policy) gives `invalid-certificate`. The build floor relies on this bound. Intermediates have no such limit.
 
 The server rotates the leaf daily inside a 120-hour validity window. Each response carries
 its own leaf and chain. The SDK does not pin or cache a leaf or intermediate identity, so any

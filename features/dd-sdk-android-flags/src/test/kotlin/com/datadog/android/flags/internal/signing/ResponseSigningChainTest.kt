@@ -619,6 +619,34 @@ internal class ResponseSigningChainTest {
 
     // endregion
 
+    // region Leaf lifetime
+
+    @Test
+    fun `M accept the leaf W verify() {leaf lifetime exactly 432300 s}`() {
+        // Given
+        val chain = ProfileCase("max lifetime", true, leafNotAfter = "260604000500Z").mint()
+        val request = request()
+        // When
+        val result = ResponseSigningVerifier(listOf(chain.root))
+            .verify(request, 200, chain.sign(request, BODY, MINTED_NOW), BODY, MINTED_NOW)
+        // Then
+        assertThat(result).isNotNull()
+    }
+
+    @Test
+    fun `M report invalid-certificate W verification() {leaf lifetime 432301 s}`() {
+        // Given
+        val chain = ProfileCase("over lifetime", false, leafNotAfter = "260604000501Z").mint()
+        val request = request()
+        // When
+        val result = ResponseSigningVerifier(listOf(chain.root))
+            .verification(request, 200, chain.sign(request, BODY, MINTED_NOW), BODY, MINTED_NOW)
+        // Then
+        assertThat(result.failure).isEqualTo(ResponseSigningFailureReason.INVALID_CERTIFICATE)
+    }
+
+    // endregion
+
     // region Clock floor
 
     @Test
@@ -628,7 +656,7 @@ internal class ResponseSigningChainTest {
         val request = request()
         val headers = generations.newLeaf.sign(request, BODY, NOV_21_0200)
         // When
-        val result = ResponseSigningVerifier(listOf(generations.root), buildFloor = MINTED_NOT_AFTER + DAY)
+        val result = ResponseSigningVerifier(listOf(generations.root), buildFloor = NEW_LEAF_NOT_AFTER + DAY)
             .verification(request, 200, headers, BODY, NOV_21_0200)
         // Then
         assertThat(result.failure).isEqualTo(ResponseSigningFailureReason.EXPIRED_PROOF)
@@ -807,7 +835,7 @@ internal class ResponseSigningChainTest {
                     )
                         .also { it.parent = upper }
                 }
-                fun leaf(name: String, issuer: Minted, notBefore: String): Credential {
+                fun leaf(name: String, issuer: Minted, notBefore: String, notAfter: String): Credential {
                     val key = keyPair()
                     val leaf = Minted.mint(
                         name,
@@ -818,7 +846,8 @@ internal class ResponseSigningChainTest {
                             extension(KEY_USAGE, true, "03020780".decodeHex().toByteArray()),
                             extension(EKU, false, eku(listOf(FFE)))
                         ),
-                        notBefore
+                        notBefore,
+                        notAfter
                     )
                     return Credential(key.private, leaf.der, listOf(issuer.der, checkNotNull(issuer.parent).der))
                 }
@@ -827,9 +856,10 @@ internal class ResponseSigningChainTest {
                 return Generations(
                     root = root.der.toByteString().base64(),
                     anchorId = sha(root.der).toByteString().hex(),
-                    oldLeaf = leaf("ffe-old", old, "261101000000Z"),
-                    previousLeaf = leaf("ffe-previous", current, "261120060000Z"),
-                    newLeaf = leaf("ffe-new", current, "261121010000Z")
+                    // Leaves stay within the 120 h leaf lifetime.
+                    oldLeaf = leaf("ffe-old", old, "261117000000Z", "261122000000Z"),
+                    previousLeaf = leaf("ffe-previous", current, "261120060000Z", "261125060000Z"),
+                    newLeaf = leaf("ffe-new", current, "261121010000Z", "261126010000Z")
                 )
             }
         }
@@ -893,7 +923,9 @@ internal class ResponseSigningChainTest {
         val intermediateBasicCritical: Boolean = true,
         val intermediateKeyUsage: String = "03020106",
         val rootEku: List<String>? = null,
-        val leafKeyUsage: String = "03020780"
+        val leafKeyUsage: String = "03020780",
+        val leafNotBefore: String = "260530000000Z",
+        val leafNotAfter: String = "260603000000Z"
     ) {
         fun mint(): MintedChain {
             val rootKey = keyPair()
@@ -914,7 +946,7 @@ internal class ResponseSigningChainTest {
                 extension(KEY_USAGE, true, leafKeyUsage.decodeHex().toByteArray())
             )
             leafEku?.let { leafExtensions.add(extension(EKU, leafEkuCritical, eku(it))) }
-            val leaf = Minted.mint("ffe-signer", leafKey, issuer, leafExtensions)
+            val leaf = Minted.mint("ffe-signer", leafKey, issuer, leafExtensions, leafNotBefore, leafNotAfter)
             return MintedChain(
                 root.der.toByteString().base64(),
                 Credential(leafKey.private, leaf.der, intermediates.map { it.der })
@@ -931,7 +963,8 @@ internal class ResponseSigningChainTest {
                 keyPair: KeyPair,
                 issuer: Minted?,
                 extensions: List<ByteArray>,
-                notBefore: String = "260101000000Z"
+                notBefore: String = "260101000000Z",
+                notAfter: String = "270101000000Z"
             ): Minted {
                 val name = der(0x30, der(0x31, der(0x30, der(6, "550403".hex()), der(12, subject.toByteArray()))))
                 val keyId = sha(keyPair.public.encoded).copyOf(20)
@@ -946,7 +979,7 @@ internal class ResponseSigningChainTest {
                     der(2, byteArrayOf(0x01) + sha(subject.toByteArray()).copyOf(8)),
                     ECDSA_SHA256,
                     signer.name,
-                    der(0x30, der(23, notBefore.toByteArray()), der(23, "270101000000Z".toByteArray())),
+                    der(0x30, der(23, notBefore.toByteArray()), der(23, notAfter.toByteArray())),
                     name,
                     keyPair.public.encoded,
                     der(0xa3, der(0x30, *all.toTypedArray()))
@@ -1013,7 +1046,7 @@ internal class ResponseSigningChainTest {
 
         // 2026-06-01T00:00:00Z, inside the minted 2026-01-01..2027-01-01 validity.
         private const val MINTED_NOW = 1780272000L
-        private const val MINTED_NOT_AFTER = 1798761600L
+        private const val NEW_LEAF_NOT_AFTER = 1795654800L
         private const val HOUR = 3600L
         private const val DAY = 86400L
 
