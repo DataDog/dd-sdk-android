@@ -5,13 +5,12 @@ interface com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 fun heatmapViewKey(view: android.view.View): Long
 object com.datadog.android.internal.FeatureContextKeys
   const val RUM_CONTEXT: String
+  const val SESSION_REPLAY_VIEW_HAS_REPLAY: String
+  const val SESSION_REPLAY_VIEW_RECORDS_COUNT: String
   const val PROFILER_IS_RUNNING: String
   const val PROFILING_SAMPLE_RATE: String
   const val PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE: String
   const val PROFILING_ANR_ENABLED: String
-  const val RUM_SESSION_ID: String
-  const val RUM_SESSION_SAMPLE_RATE: String
-  const val RUM_SESSION_STATE: String
   const val PROFILING_QUOTA_REASON: String
   const val PROFILING_QUOTA_SESSION_ID: String
 interface com.datadog.android.internal.attributes.LocalAttribute
@@ -217,7 +216,6 @@ data class com.datadog.android.internal.rum.RumContext
 fun Map<String, Any?>.rumContext(): RumContext?
 object com.datadog.android.internal.rum.RumSessionConstants
   const val EMPTY_RUM_SESSION_ID: String
-  const val TRACKED_SESSION_STATE: String
 enum com.datadog.android.internal.rum.RumSessionStartReason
   - USER_APP_LAUNCH
   - INACTIVITY_TIMEOUT

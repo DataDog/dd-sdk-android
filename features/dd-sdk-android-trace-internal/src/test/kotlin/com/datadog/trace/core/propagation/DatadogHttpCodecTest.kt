@@ -6,6 +6,7 @@
 
 package com.datadog.trace.core.propagation
 
+import com.datadog.android.log.LogAttributes
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.core.DDSpanContext
@@ -70,7 +71,7 @@ internal class DatadogHttpCodecTest {
             mapOf(
                 HttpCodec.RUM_KEY_USER_ID to userId,
                 HttpCodec.RUM_KEY_ACCOUNT_ID to accountId,
-                HttpCodec.RUM_KEY_SESSION_ID to sessionId
+                LogAttributes.RUM_SESSION_ID to sessionId
             )
         )
 

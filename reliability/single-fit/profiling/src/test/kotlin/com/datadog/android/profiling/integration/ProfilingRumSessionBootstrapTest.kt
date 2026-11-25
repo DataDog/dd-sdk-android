@@ -8,9 +8,9 @@ package com.datadog.android.profiling.integration
 
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.stub.StubSDKCore
-import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.rum.RumSessionConstants
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.fixtures.ProfilingFeatureTestHandle
 import com.datadog.android.profiling.fixtures.ProfilingStorageFixture
@@ -79,7 +79,7 @@ class ProfilingRumSessionBootstrapTest {
         )
         GlobalRumMonitor.get(stubSdkCore).startView(viewKey, viewName)
         val rumSessionId = stubSdkCore
-            .getFeatureContext(Feature.RUM_FEATURE_NAME)[FeatureContextKeys.RUM_SESSION_ID] as? String
+            .getFeatureContext(Feature.RUM_FEATURE_NAME).rumContext()?.sessionId
         check(!rumSessionId.isNullOrEmpty() && rumSessionId != RumSessionConstants.EMPTY_RUM_SESSION_ID) {
             "Precondition: RUM feature context must hold a real session id before Profiling registers"
         }
@@ -129,7 +129,7 @@ class ProfilingRumSessionBootstrapTest {
 
         // Then
         val rumSessionId = stubSdkCore
-            .getFeatureContext(Feature.RUM_FEATURE_NAME)[FeatureContextKeys.RUM_SESSION_ID] as? String
+            .getFeatureContext(Feature.RUM_FEATURE_NAME).rumContext()?.sessionId
         assertThat(rumSessionId).isNotNull()
         assertThat(handle.lastSeenRumSessionId).isEqualTo(rumSessionId)
         assertThat(handle.schedulerSessionId).isEqualTo(rumSessionId)

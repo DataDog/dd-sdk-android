@@ -10,12 +10,12 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.utils.DdTagsUtils
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.TimeseriesMemoryEventAssert
-import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -70,12 +70,6 @@ internal class MemoryEventFactoryTest {
     @Mock
     lateinit var stubDisplayInfoProvider: InfoProvider<DisplayInfo>
 
-    @StringForgery
-    lateinit var fakeSessionId: String
-
-    @StringForgery
-    lateinit var fakeApplicationId: String
-
     @LongForgery(min = 1_000_000_000L, max = 16_000_000_000L)
     var fakeTotalRamBytes: Long = 0L
 
@@ -98,9 +92,6 @@ internal class MemoryEventFactoryTest {
 
     @Forgery
     lateinit var fakeRumContext: RumContext
-
-    private val fakeSerializedRumContext: RumContext
-        get() = fakeRumContext.copy(applicationId = fakeApplicationId, sessionId = fakeSessionId)
 
     private val oneSample = listOf(DataPoint(1L, 1.0))
 
@@ -133,7 +124,7 @@ internal class MemoryEventFactoryTest {
     @Test
     fun `M return null W create() { empty input }`() {
         // When
-        val result = testedFactory().create(fakeDatadogContext, fakeSerializedRumContext, emptyList())
+        val result = testedFactory().create(fakeDatadogContext, fakeRumContext, emptyList())
 
         // Then
         assertThat(result).isNull()
@@ -144,7 +135,7 @@ internal class MemoryEventFactoryTest {
     fun `M return null W create() { totalRamBytes is not positive }`(totalRamBytes: Long) {
         // When
         val result = testedFactory(totalRamBytes = totalRamBytes)
-            .create(fakeDatadogContext, fakeSerializedRumContext, oneSample)
+            .create(fakeDatadogContext, fakeRumContext, oneSample)
 
         // Then
         assertThat(result).isNull()
@@ -173,8 +164,8 @@ internal class MemoryEventFactoryTest {
             .hasDataPointsCount(2)
             .hasTimeseriesStart(fakeTs)
             .hasTimeseriesEnd(fakeTs + 1L)
-            .hasApplicationId(fakeApplicationId)
-            .hasSessionId(fakeSessionId)
+            .hasApplicationId(fakeRumContext.applicationId)
+            .hasSessionId(fakeRumContext.sessionId)
             .hasSessionType(TimeseriesMemoryEventSessionType.USER)
             .hasService(fakeDatadogContext.service)
             .hasVersion(fakeDatadogContext.version)
@@ -240,7 +231,7 @@ internal class MemoryEventFactoryTest {
         val event = createEvent(datadogContext = datadogContext)
 
         // Then
-        assertThat(event.application.id).isEqualTo(fakeApplicationId)
+        assertThat(event.application.id).isEqualTo(fakeRumContext.applicationId)
         assertThat(event.application.currentLocale)
             .isEqualTo(datadogContext.deviceInfo.localeInfo.currentLocale)
         assertThat(event.source).isEqualTo(fakeSource)
@@ -300,7 +291,7 @@ internal class MemoryEventFactoryTest {
         @DoubleForgery(min = 0.0, max = 100.0) fakeSampleRate: Double
     ) {
         // Given
-        val rumContext = fakeSerializedRumContext.copy(
+        val rumContext = fakeRumContext.copy(
             sessionStartReason = RumSessionStartReason.INACTIVITY_TIMEOUT,
             sessionSampleRate = fakeSampleRate.toFloat()
         )
@@ -367,11 +358,11 @@ internal class MemoryEventFactoryTest {
         @StringForgery fakeViewId: String
     ) {
         // Given
-        val rumContext = fakeSerializedRumContext.copy(viewId = fakeViewId)
+        val rumContext = fakeRumContext.copy(viewId = fakeViewId)
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext + mapOf(
                 Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
-                    fakeViewId to mapOf(FeaturesContextResolver.HAS_REPLAY_KEY to true)
+                    fakeViewId to mapOf(FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY to true)
                 )
             )
         )
@@ -388,11 +379,11 @@ internal class MemoryEventFactoryTest {
         @StringForgery fakeViewId: String
     ) {
         // Given
-        val rumContext = fakeSerializedRumContext.copy(viewId = fakeViewId)
+        val rumContext = fakeRumContext.copy(viewId = fakeViewId)
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext + mapOf(
                 Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
-                    fakeViewId to mapOf(FeaturesContextResolver.HAS_REPLAY_KEY to false)
+                    fakeViewId to mapOf(FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY to false)
                 )
             )
         )
@@ -428,7 +419,7 @@ internal class MemoryEventFactoryTest {
         @StringForgery fakeResultId: String
     ) {
         // Given
-        val rumContext = fakeSerializedRumContext.copy(
+        val rumContext = fakeRumContext.copy(
             syntheticsTestId = fakeTestId,
             syntheticsResultId = fakeResultId
         )
@@ -448,7 +439,7 @@ internal class MemoryEventFactoryTest {
         syntheticsResultId: String?
     ) {
         // Given
-        val rumContext = fakeSerializedRumContext.copy(
+        val rumContext = fakeRumContext.copy(
             syntheticsTestId = syntheticsTestId,
             syntheticsResultId = syntheticsResultId
         )
@@ -477,7 +468,7 @@ internal class MemoryEventFactoryTest {
 
     private fun createSerializedEvent(
         datadogContext: DatadogContext = fakeDatadogContext,
-        rumContext: RumContext = fakeSerializedRumContext,
+        rumContext: RumContext = fakeRumContext,
         sessionType: RumSessionType = RumSessionType.USER,
         dataPoints: List<DataPoint<Double>> = oneSample
     ): TimeseriesMemoryEvent = TimeseriesMemoryEvent.fromJson(
@@ -489,7 +480,7 @@ internal class MemoryEventFactoryTest {
 
     private fun createEvent(
         datadogContext: DatadogContext = fakeDatadogContext,
-        rumContext: RumContext = fakeSerializedRumContext,
+        rumContext: RumContext = fakeRumContext,
         sessionType: RumSessionType = RumSessionType.USER
     ): TimeseriesMemoryEvent = checkNotNull(
         testedFactory(sessionType = sessionType)

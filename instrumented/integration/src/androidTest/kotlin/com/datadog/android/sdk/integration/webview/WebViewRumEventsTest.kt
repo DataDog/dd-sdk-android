@@ -12,6 +12,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -42,12 +45,12 @@ internal class WebViewRumEventsTest {
     fun verifyWebViewEventSessionHasTimeseries() {
         // Given
         GlobalRumMonitor.get().startView("view-1", "TestView")
-        ConditionWatcher { currentRumContext()[SESSION_STATE_KEY] == "TRACKED" }
+        ConditionWatcher { currentRumContext()?.sessionState == RumSessionState.TRACKED }
             .doWait(timeoutMs = RumTest.FINAL_WAIT_MS)
-        val sessionId = currentRumContext()[SESSION_ID_KEY]
+        val sessionId = checkNotNull(currentRumContext()).sessionId
         ConditionWatcher {
             refreshRumContext()
-            currentRumContext()[SESSION_HAS_TIMESERIES_KEY] == true
+            currentRumContext()?.hasTimeseries == true
         }.doWait(timeoutMs = RumTest.FINAL_WAIT_MS)
         val webViewId = UUID.randomUUID().toString()
 
@@ -93,8 +96,8 @@ internal class WebViewRumEventsTest {
         }
     }
 
-    private fun currentRumContext(): Map<String, Any?> =
-        (Datadog.getInstance() as FeatureSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
+    private fun currentRumContext(): RumContext? =
+        (Datadog.getInstance() as FeatureSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME).rumContext()
 
     // The RUM feature context is republished only after RUM handles an event, not when a timeseries
     // data point is collected. Sends the same no-op notification the WebView bridge sends before each event.
@@ -111,9 +114,6 @@ internal class WebViewRumEventsTest {
         get() = getAsJsonObject(VIEW_KEY)?.get(ID_KEY)?.asString
 
     companion object {
-        private const val SESSION_STATE_KEY = "session_state"
-        private const val SESSION_ID_KEY = "session_id"
-        private const val SESSION_HAS_TIMESERIES_KEY = "session_has_timeseries"
         private const val WEB_VIEW_INGESTED_NOTIFICATION = "web_view_ingested_notification"
         private const val SESSION_KEY = "session"
         private const val VIEW_KEY = "view"

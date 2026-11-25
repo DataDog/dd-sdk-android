@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -50,7 +51,7 @@ internal class FeaturesContextResolverTest {
         val fakeFeaturesContext = mapOf(
             Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
                 fakeViewId to
-                    mapOf(FeaturesContextResolver.HAS_REPLAY_KEY to true)
+                    mapOf(FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY to true)
             )
         )
         val fakeDatadogContext: DatadogContext = forge.getForgery<DatadogContext>()
@@ -72,7 +73,7 @@ internal class FeaturesContextResolverTest {
         val fakeFeaturesContext = mapOf(
             Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
                 fakeViewId to
-                    mapOf(FeaturesContextResolver.HAS_REPLAY_KEY to false)
+                    mapOf(FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY to false)
             )
         )
         val fakeDatadogContext: DatadogContext = forge.getForgery<DatadogContext>()
@@ -94,7 +95,7 @@ internal class FeaturesContextResolverTest {
         val fakeFeaturesContext = mapOf(
             Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
                 fakeViewId to
-                    mapOf(FeaturesContextResolver.HAS_REPLAY_KEY to forge.aString())
+                    mapOf(FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY to forge.aString())
             )
         )
         val fakeDatadogContext: DatadogContext = forge.getForgery<DatadogContext>()
@@ -116,7 +117,7 @@ internal class FeaturesContextResolverTest {
         val fakeFeaturesContext = mapOf(
             Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
                 fakeViewId to
-                    mapOf(FeaturesContextResolver.HAS_REPLAY_KEY to forge.aString())
+                    mapOf(FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY to forge.aString())
             )
         )
         val fakeDatadogContext: DatadogContext = forge.getForgery<DatadogContext>()
@@ -173,7 +174,7 @@ internal class FeaturesContextResolverTest {
         val fakeFeaturesContext = mapOf(
             Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
                 fakeViewId to
-                    mapOf(FeaturesContextResolver.VIEW_RECORDS_COUNT_KEY to fakeRecordsCount)
+                    mapOf(FeatureContextKeys.SESSION_REPLAY_VIEW_RECORDS_COUNT to fakeRecordsCount)
             )
         )
         val fakeDatadogContext: DatadogContext = forge.getForgery<DatadogContext>()
@@ -195,7 +196,7 @@ internal class FeaturesContextResolverTest {
         val fakeFeaturesContext = mapOf(
             Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
                 fakeViewId to
-                    mapOf(FeaturesContextResolver.VIEW_RECORDS_COUNT_KEY to forge.aString())
+                    mapOf(FeatureContextKeys.SESSION_REPLAY_VIEW_RECORDS_COUNT to forge.aString())
             )
         )
         val fakeDatadogContext: DatadogContext = forge.getForgery<DatadogContext>()

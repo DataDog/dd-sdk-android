@@ -13,6 +13,12 @@ object FeatureContextKeys {
     /** Immutable [com.datadog.android.internal.rum.RumContext] snapshot published by RUM. */
     const val RUM_CONTEXT: String = "rum_context"
 
+    /** Whether Session Replay has persisted records for a view, stored in that view's metadata. */
+    const val SESSION_REPLAY_VIEW_HAS_REPLAY: String = "has_replay"
+
+    /** Number of persisted Session Replay records for a view, stored as a [Long] in its metadata. */
+    const val SESSION_REPLAY_VIEW_RECORDS_COUNT: String = "records_count"
+
     /**
      * Indicates whether the profiler is currently running.
      * Written by the profiling feature and read by RUM and debug widget consumers.
@@ -36,27 +42,6 @@ object FeatureContextKeys {
      * by RUM when building the SDK configuration telemetry event.
      */
     const val PROFILING_ANR_ENABLED: String = "profiling_anr_enabled"
-
-    /**
-     * Current RUM session identifier. Written by the RUM feature into its own feature
-     * context on every session renewal; read by other features (e.g. profiling) that
-     * subscribe via [com.datadog.android.api.feature.FeatureContextUpdateReceiver].
-     */
-    const val RUM_SESSION_ID: String = "session_id"
-
-    /**
-     * Sample rate (0..100) of the current RUM session. Written by the RUM feature into
-     * its own feature context; read by other features that need to combine it with their
-     * own sampling.
-     */
-    const val RUM_SESSION_SAMPLE_RATE: String = "session_sample_rate"
-
-    /**
-     * State of the current RUM session (see [com.datadog.android.internal.rum.RumSessionConstants]).
-     * Written by the RUM feature into its own feature context; read by other features that need
-     * to know whether the session is tracked (sampled in).
-     */
-    const val RUM_SESSION_STATE: String = "session_state"
 
     /**
      * Reason profiling was denied by the quota API for the current RUM session.
