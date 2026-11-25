@@ -326,7 +326,8 @@ interface FlagsClient {
          * events and are not recorded for deduplication, so a later evaluation of the same flag and subject through
          * another client still sends its exposure. Flag values are unchanged. This can only narrow
          * [FlagsConfiguration.Builder.trackExposures]; it never enables exposures that the feature configuration
-         * disables.
+         * disables. Configure this before building the client. An existing named client retains its configuration,
+         * so use a separate client name for each set of tracking options.
          *
          * @param enabled whether this client tracks exposures.
          * @return this [Builder] instance.
@@ -341,7 +342,9 @@ interface FlagsClient {
          * Enabled by default. When disabled, evaluations through this client send no evaluation telemetry and add no
          * RUM feature flag evaluations. Flag values and exposures are unchanged. This can only narrow
          * [FlagsConfiguration.Builder.trackEvaluations] and [FlagsConfiguration.Builder.rumIntegrationEnabled]; it
-         * never enables them when the feature configuration disables them.
+         * never enables them when the feature configuration disables them. Configure this before building the client.
+         * An existing named client retains its configuration, so use a separate client name for each set of tracking
+         * options.
          *
          * @param enabled whether this client tracks evaluations.
          * @return this [Builder] instance.

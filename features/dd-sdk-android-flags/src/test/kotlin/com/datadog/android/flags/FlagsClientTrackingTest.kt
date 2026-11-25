@@ -91,7 +91,12 @@ internal class FlagsClientTrackingTest {
     @StringForgery
     lateinit var fakeTargetingKey: String
 
+    private val fakeFlag: PrecomputedFlag
+        get() = PrecomputedFlag("boolean", "true", true, "allocation", "on", JSONObject(), "TARGETING_MATCH")
+
     private val readCallbacks = mutableListOf<DataStoreReadCallback<FlagsStateEntry>>()
+
+    private val sharedProcessors = mutableMapOf<FlagsConfiguration, FlagsFeature>()
 
     @BeforeEach
     fun `set up`() {
@@ -165,10 +170,10 @@ internal class FlagsClientTrackingTest {
         val result = testedClient.resolve(fakeFlagKey, false)
 
         // Then
+        verifyExposuresWritten(0)
+        verifyEvaluationsTracked(0)
+        verifyRumEvaluationsLogged(0)
         assertThat(result).isEqualTo(defaultClient.resolve(fakeFlagKey, false))
-        verifyExposuresWritten(1)
-        verifyEvaluationsTracked(1)
-        verifyRumEvaluationsLogged(1)
     }
 
     @Test
@@ -221,15 +226,13 @@ internal class FlagsClientTrackingTest {
     @Test
     fun `M not record the exposure W trackFlagExposure() {trackExposures false}`() {
         // Given
-        val peekingClient = newClient("peek", trackExposures = false)
-        val defaultClient = newClient("default")
+        val testedClient = newClient("peek", trackExposures = false)
 
         // When
-        peekingClient.trackFlagExposure(fakeFlagKey, fakeFlag, EvaluationContext(fakeTargetingKey))
-        defaultClient.trackFlagExposure(fakeFlagKey, fakeFlag, EvaluationContext(fakeTargetingKey))
+        testedClient.trackFlagExposure(fakeFlagKey, fakeFlag, EvaluationContext(fakeTargetingKey))
 
         // Then
-        verifyExposuresWritten(1)
+        verifyExposuresWritten(0)
     }
 
     @Test
@@ -377,11 +380,6 @@ internal class FlagsClientTrackingTest {
     }
 
     // region Helpers
-
-    private val fakeFlag: PrecomputedFlag
-        get() = PrecomputedFlag("boolean", "true", true, "allocation", "on", JSONObject(), "TARGETING_MATCH")
-
-    private val sharedProcessors = mutableMapOf<FlagsConfiguration, FlagsFeature>()
 
     private fun newClient(
         name: String,

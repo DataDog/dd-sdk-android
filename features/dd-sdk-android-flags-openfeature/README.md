@@ -278,10 +278,12 @@ The same features are in the flag metadata as `__dd_feature.<feature key>`, so o
 
 To stop sending exposures to Datadog and keep only your own, use `FlagsConfiguration.Builder().trackExposures(false)`. The hook still reports the same decisions.
 
+A client built with `FlagsClient.Builder(name).trackExposures(false)` is different: its evaluations are not exposures. The hook reports `isExposure = false`, and the SDK records nothing for deduplication, so a later evaluation through a client that tracks exposures still sends its exposure.
+
 Keep in mind:
 
 - The provider records the exposure in the final hook stage, after the provider and every `before` and `after` hook succeed. A failure in those stages prevents the exposure. Provider hooks run first in the final stage. If a later `finallyAfter` hook throws, the exposure stays recorded, OpenFeature rethrows the exception to the caller, and it skips the `finallyAfter` hooks after the failing one. An `ExposureHook` registered with `OpenFeatureAPI.addHooks` runs last in that stage, so OpenFeature skips its callback for that evaluation.
-- `FlagsClient` evaluations record exposures directly, in the same exposure cache as the provider, and reach Datadog without `ExposureHook`. A later OpenFeature evaluation of the same flag for the same subject is then a repeat while the same allocation, variant and split stay cached.
+- `FlagsClient` evaluations record exposures directly, unless the client was built with `trackExposures(false)`, in the same exposure cache as the provider, and reach Datadog without `ExposureHook`. A later OpenFeature evaluation of the same flag for the same subject is then a repeat while the same allocation, variant and split stay cached.
 - With experimentation opt-out enabled, the provider checks the evaluation context again when it records the exposure. An evaluation whose context a newer context replaced is a non-exposure for both Datadog and `ExposureHook`.
 - The provider records exposures in its own hook. Evaluate flags through an OpenFeature client: a direct call to a provider `get...Evaluation` method records no exposure.
 - The callback runs on the evaluating thread. Do not do I/O in it: hand the data to a background queue.
