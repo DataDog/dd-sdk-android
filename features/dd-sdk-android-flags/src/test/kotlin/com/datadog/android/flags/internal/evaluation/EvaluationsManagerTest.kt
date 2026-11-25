@@ -132,6 +132,29 @@ internal class EvaluationsManagerTest {
         verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
     }
 
+    @OptIn(ExperimentalFlagsApi::class)
+    @ParameterizedTest
+    @ValueSource(longs = [0L, 5000L])
+    fun `M not publish Reconciling W signed request superseded before its fetch {initialization timeout}`(
+        timeoutMs: Long,
+        @Mock mockSigning: ResponseSigningState
+    ) {
+        // Given: a newer request took the signing generation after this one registered.
+        whenever(mockSigning.configuration) doReturn ResponseSigningConfiguration(ResponseSigningMode.REQUIRED)
+        whenever(mockSigning.begin(any())) doReturn 1L
+        whenever(mockSigning.admit(eq(1L), any())) doReturn false
+        val manager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, mockFlagsRepository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            initializationTimeoutMs = timeoutMs.takeIf { it > 0 }, initializationTimeoutScheduler = { _, _ -> {} },
+            signing = mockSigning, experimentationOptOut = ExperimentationOptOut()
+        )
+        // When
+        manager.updateEvaluationsForContext(EvaluationContext("subject"))
+        // Then
+        verify(mockFlagsStateManager, never()).updateState(FlagsClientState.Reconciling)
+    }
+
     @ParameterizedTest
     @EnumSource(ExperimentationOptOutMode::class)
     fun `M keep latest signing generation W updatePreparedEvaluations() {registration reordered}`(

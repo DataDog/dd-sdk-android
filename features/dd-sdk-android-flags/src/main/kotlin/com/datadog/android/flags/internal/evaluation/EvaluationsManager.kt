@@ -433,13 +433,9 @@ internal class EvaluationsManager(
             { signing.isIdentityCurrent() },
             { registerSignedInitialization(it) }
         ) {
-            ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
-            effects.drain()
+            enqueueSignedReconciling(request, generation, signing)
         }
-        if (completion == null) {
-            ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
-            effects.drain()
-        }
+        if (completion == null) enqueueSignedReconciling(request, generation, signing)
         completionAwareExecutor(onFetchFinished).executeSafe(FETCH_AND_STORE_OPERATION_NAME, internalLogger) {
             try {
                 val datadogContext = if (sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null) {
@@ -673,11 +669,11 @@ internal class EvaluationsManager(
         val expireFlags = signing.configuration.expireVerifiedFlags
         val cancelTimer = synchronized(initializationTerminalLock) {
             val stepCurrent = clockStep?.revision == stateRevision
-            if (proofExpiryToken !== token || (!expiryAppliesLocked(expireFlags) && !stepCurrent)) {
-                return
-            }
-            // The caller saw this proof expire; the clock is not read again, so a rollback cannot skip it.
+            if (proofExpiryToken !== token) return
+            // The caller saw this proof expire; the clock is not read again, so a rollback cannot skip it. The
+            // snapshot is retired even when no state change applies, for example in Error after a failed switch.
             if (expireFlags) flagsRepository.retireVerifiedFlags(proofExpiresAt)
+            if (!expiryAppliesLocked(expireFlags) && !stepCurrent) return
             proofExpiryToken = null
             proofExpiresAt = Long.MAX_VALUE
             clockStep = null
@@ -841,6 +837,20 @@ internal class EvaluationsManager(
             else -> completion.takeKeepingDeadline()?.also { retainedDeadline = completion }
         }
         enqueueCompletion(result, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
+    }
+
+    // A request that a newer one superseded after registration must not replace the newer request's state.
+    private fun enqueueSignedReconciling(
+        request: ExperimentationOptOut.Request,
+        generation: Long,
+        signing: ResponseSigningState
+    ) {
+        signing.admit(generation) {
+            synchronized(initializationTerminalLock) {
+                ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+            }
+        }
+        effects.drain()
     }
 
     // Runs before the timer is scheduled, so no settlement can happen between arming and registration.

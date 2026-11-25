@@ -417,6 +417,25 @@ internal class ResponseSigningClientTest {
         assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
     }
 
+    @Test
+    fun `M keep defaults W proof expires in Error, then clock moves back {required, expireVerifiedFlags}`() {
+        // Given: flags for the subject, then a failed switch to another context
+        create(ResponseSigningMode.REQUIRED, expireVerifiedFlags = true)
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        responseKind = "tampered"
+        testedClient.setEvaluationContext(EvaluationContext("other"), null)
+        queue.removeFirst().run()
+        assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+        // When the proof expires while the client is in Error, and the clock moves back without a read
+        advanceClock(PROOF_WINDOW_SECONDS)
+        now -= PROOF_WINDOW_SECONDS / 2
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then the expired subject flags stay retired
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+    }
+
     @ParameterizedTest(name = "expireVerifiedFlags={0}, from Stale={1}, by read={2}")
     @MethodSource("expiryCases")
     fun `M apply expiry W proof expires {required}`(expireVerifiedFlags: Boolean, fromStale: Boolean, byRead: Boolean) {
