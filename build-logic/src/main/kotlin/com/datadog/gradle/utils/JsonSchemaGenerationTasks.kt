@@ -82,8 +82,12 @@ fun Project.createJsonModelsGenerationTask(
         )
         inputDir.set(layout.projectDirectory.dir(inputDirPath))
         inputFiles.from(
-            inputDir.map {
-                it.asFileTree.matching { include { it.file.isFile && it.file.extension == "json" } }
+            inputDir.map { schemaDirectory ->
+                schemaDirectory.asFileTree.matching {
+                    include { element ->
+                        element.file.isFile && element.file.extension == "json"
+                    }
+                }
             }
         )
     }

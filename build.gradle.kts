@@ -9,6 +9,7 @@ import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.registerSubModuleAggregationTask
 import com.datadog.gradle.utils.CLONE_RUM_EVENTS_FORMAT_SCHEMAS_TASK_NAME
 import com.datadog.gradle.utils.GENERATE_JSON_MODELS_TASK_NAME
+import dev.detekt.gradle.Detekt
 
 plugins {
     `maven-publish`
@@ -26,7 +27,7 @@ plugins {
     alias(libs.plugins.koverPlugin) apply false
     alias(libs.plugins.androidLibraryPlugin) apply false
     alias(libs.plugins.dokkaGradlePlugin) apply false
-    alias(libs.plugins.detektGradlePlugin) apply false
+    alias(libs.plugins.detektGradlePlugin)
     alias(libs.plugins.unmockGradlePlugin) apply false
 }
 
@@ -133,6 +134,30 @@ tasks.register("ktlintFormatAll") {
     dependsOn(allprojects.mapNotNull { it.tasks.named { it == "ktlintFormat" } })
     dependsOn(gradle.includedBuild("build-logic").task(":ktlintFormat"))
     dependsOn(gradle.includedBuild("build-logic-settings").task(":ktlintFormat"))
+}
+
+val detektScripts = tasks.register<Detekt>("detektScripts") {
+    group = "verification"
+    description = "Checks Kotlin scripts without type resolution."
+    config.setFrom(file("detekt.yml"))
+    basePath.set(rootDir.absolutePath)
+    setSource(rootDir)
+    include("**/*.kts")
+    exclude("**/.*/**", "**/build/**", "**/cache/**")
+    reports {
+        sarif.required = false
+        html.required = false
+        markdown.required = false
+        checkstyle.required = false
+    }
+}
+
+// The root has no Kotlin source sets. The unqualified detekt task also selects SDK module checks.
+tasks.named<Detekt>("detekt") {
+    enabled = false
+    dependsOn(detektScripts)
+    dependsOn(gradle.includedBuild("build-logic").task(":detekt"))
+    dependsOn(gradle.includedBuild("build-logic-settings").task(":detekt"))
 }
 
 registerSubModuleAggregationTask(

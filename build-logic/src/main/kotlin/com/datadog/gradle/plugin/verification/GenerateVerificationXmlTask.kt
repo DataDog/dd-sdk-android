@@ -20,6 +20,7 @@ import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.xml
 import java.io.File
 import java.security.MessageDigest
+import java.util.Locale
 
 abstract class GenerateVerificationXmlTask : DefaultTask() {
 
@@ -108,7 +109,7 @@ abstract class GenerateVerificationXmlTask : DefaultTask() {
 
     fun File.sha256(): String {
         return MessageDigest.getInstance("SHA-256")
-            .digest(readBytes()).fold("") { str, byte -> str + "%02x".format(byte) }
+            .digest(readBytes()).fold("") { str, byte -> str + "%02x".format(Locale.US, byte) }
     }
 
     // endregion

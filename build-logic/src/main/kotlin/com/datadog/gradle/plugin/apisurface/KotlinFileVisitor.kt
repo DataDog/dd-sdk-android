@@ -54,6 +54,7 @@ import java.io.File
  * file records the API as it is declared.
  * Enum constructors are excluded because they are private even without an explicit modifier.
  */
+@Suppress("TooManyFunctions")
 class KotlinFileVisitor {
 
     val description = StringBuilder()
@@ -115,12 +116,12 @@ class KotlinFileVisitor {
         description.append(INDENT.repeat(level))
 
         // Modifiers
-        if (declaration.isDeprecated()) description.append("DEPRECATED ")
+        if (declaration.isDeprecated()) description.append(DEPRECATION_MARKER)
         if (declaration.isData()) description.append("data ")
         if (declaration.isSealed()) description.append("sealed ")
-        if (declaration.isProtected()) description.append("protected ")
-        if (declaration.isOpen()) description.append("open ")
-        if (declaration.isAbstract()) description.append("abstract ")
+        if (declaration.isProtected()) description.append(PROTECTED_MODIFIER)
+        if (declaration.isOpen()) description.append(OPEN_MODIFIER)
+        if (declaration.isAbstract()) description.append(ABSTRACT_MODIFIER)
 
         when {
             declaration.isInterface() -> description.append("interface ")
@@ -170,8 +171,8 @@ class KotlinFileVisitor {
         description.append(INDENT.repeat(level))
 
         // Modifiers
-        if (constructor.isDeprecated()) description.append("DEPRECATED ")
-        if (constructor.isProtected()) description.append("protected ")
+        if (constructor.isDeprecated()) description.append(DEPRECATION_MARKER)
+        if (constructor.isProtected()) description.append(PROTECTED_MODIFIER)
 
         description.append("constructor")
         visitParameters(constructor.valueParameters)
@@ -184,11 +185,11 @@ class KotlinFileVisitor {
         description.append(INDENT.repeat(level))
 
         // Modifiers
-        if (function.isDeprecated()) description.append("DEPRECATED ")
+        if (function.isDeprecated()) description.append(DEPRECATION_MARKER)
         if (function.isOverride()) description.append("override ")
-        if (function.isProtected()) description.append("protected ")
-        if (function.isOpen()) description.append("open ")
-        if (function.isAbstract()) description.append("abstract ")
+        if (function.isProtected()) description.append(PROTECTED_MODIFIER)
+        if (function.isOpen()) description.append(OPEN_MODIFIER)
+        if (function.isAbstract()) description.append(ABSTRACT_MODIFIER)
 
         description.append("fun ")
 
@@ -226,11 +227,11 @@ class KotlinFileVisitor {
         description.append(INDENT.repeat(level))
 
         // Modifiers
-        if (property.isDeprecated()) description.append("DEPRECATED ")
+        if (property.isDeprecated()) description.append(DEPRECATION_MARKER)
         if (property.isOverride()) description.append("override ")
-        if (property.isProtected()) description.append("protected ")
-        if (property.isOpen()) description.append("open ")
-        if (property.isAbstract()) description.append("abstract ")
+        if (property.isProtected()) description.append(PROTECTED_MODIFIER)
+        if (property.isOpen()) description.append(OPEN_MODIFIER)
+        if (property.isAbstract()) description.append(ABSTRACT_MODIFIER)
         if (property.isConst()) description.append("const ")
 
         // Property type
@@ -485,6 +486,10 @@ class KotlinFileVisitor {
     // endregion
 
     companion object {
+        private const val DEPRECATION_MARKER = "DEPRECATED "
+        private const val PROTECTED_MODIFIER = "protected "
+        private const val OPEN_MODIFIER = "open "
+        private const val ABSTRACT_MODIFIER = "abstract "
         private const val INDENT = "  "
 
         /**

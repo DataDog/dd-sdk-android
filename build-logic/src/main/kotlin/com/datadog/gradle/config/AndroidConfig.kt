@@ -20,6 +20,7 @@ object AndroidConfig {
     const val MIN_SDK_FOR_AUTO = 29
     const val BUILD_TOOLS_VERSION = "36.0.0"
 
+    @Suppress("MagicNumber")
     val VERSION = Version(3, 17, 0, Version.Type.Snapshot).forCi()
 }
 

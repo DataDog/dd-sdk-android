@@ -252,7 +252,7 @@ class ClassJsonElementDeserializerGenerator(
         val opt = if (nullable) "?" else ""
         beginControlFlow("$assignee = $getter$opt.asJsonObject$opt.let")
         addStatement(
-            "%T.%L(it)",
+            DESERIALIZE_CURRENT_ELEMENT_FORMAT,
             propertyType.asKotlinTypeName(rootTypeName),
             Identifier.FUN_FROM_JSON_OBJ
         )
@@ -270,7 +270,7 @@ class ClassJsonElementDeserializerGenerator(
         beginControlFlow("$assignee = $getter$opt.let")
 
         addStatement(
-            "%T.%L(it)",
+            DESERIALIZE_CURRENT_ELEMENT_FORMAT,
             propertyType.asKotlinTypeName(rootTypeName),
             Identifier.FUN_FROM_JSON_ELEMENT
         )
@@ -306,7 +306,7 @@ class ClassJsonElementDeserializerGenerator(
         } else if (nullable) {
             beginControlFlow("$assignee = $getter?.asString?.let")
             addStatement(
-                "%T.%L(it)",
+                DESERIALIZE_CURRENT_ELEMENT_FORMAT,
                 propertyType.asKotlinTypeName(rootTypeName),
                 Identifier.FUN_FROM_JSON
             )
@@ -368,6 +368,7 @@ class ClassJsonElementDeserializerGenerator(
     // endregion
 
     companion object {
+        private const val DESERIALIZE_CURRENT_ELEMENT_FORMAT = "%T.%L(it)"
         private const val PARSE_ERROR_MSG = "Unable to parse json into type"
 
         private val caughtExceptions = arrayOf(

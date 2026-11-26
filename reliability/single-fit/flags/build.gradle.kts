@@ -92,6 +92,7 @@ val pullFeatureFlagsFixturesTask = tasks.register<Exec>("pullFeatureFlagsFixture
     workingDir = rootDir
     commandLine("python3", "ci/sync-feature-flags-precomputed-fixtures.py")
     // The script also bounds each fetch attempt; this bounds the whole task, including retries.
+    @Suppress("MagicNumber")
     timeout.set(Duration.ofMinutes(10))
 }
 

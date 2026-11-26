@@ -67,10 +67,9 @@ abstract class GenerateCompilerMetaTask @Inject constructor(
             .removePrefix("major version: ")
             .toInt()
             .let {
-                // Java 25
-                require(it <= 69) { "Unsupported JVM major version value: $it" }
+                require(it <= JAVA_25_CLASS_FILE_VERSION) { "Unsupported JVM major version value: $it" }
                 // at least between Java 25 and Java 5 this formula is true
-                it - 44
+                it - CLASS_FILE_VERSION_OFFSET
             }
 
         metadataInfoFile.get().asFile
@@ -95,5 +94,10 @@ abstract class GenerateCompilerMetaTask @Inject constructor(
         }
 
         return outputStream.toString(Charsets.UTF_8)
+    }
+
+    private companion object {
+        const val JAVA_25_CLASS_FILE_VERSION = 69
+        const val CLASS_FILE_VERSION_OFFSET = 44
     }
 }

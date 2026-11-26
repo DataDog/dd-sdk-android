@@ -55,6 +55,8 @@ abstract class DatadogBuildExtension @Inject constructor(
 
     /**
      * Declares the Maven publication (POM metadata, sources/javadoc jars) and its signing.
+     * @param projectDescription the description written to the POM.
+     * @param customArtifactId the Maven artifact ID, which defaults to the Gradle project name.
      * @param destination where this module's releases and snapshots are published: Maven Central (through
      * Sonatype), or the internal binaries.ddbuild.io repositories, in which case its Sonatype upload is disabled.
      * Dogfood versions are published to the internal releases repository whatever the destination.

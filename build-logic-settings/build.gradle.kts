@@ -4,9 +4,35 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import dev.detekt.gradle.Detekt
+
 plugins {
     `kotlin-dsl`
     alias(libs.plugins.ktlintGradlePlugin)
+    alias(libs.plugins.detektGradlePlugin)
+}
+
+detekt {
+    config.setFrom(file("../detekt.yml"))
+    basePath = layout.projectDirectory.dir("..")
+}
+
+tasks.withType<Detekt>().configureEach {
+    // Gradle scripts need DSL context. The root detektScripts task checks them separately.
+    exclude("**/*.kts")
+    val buildDirectory = layout.buildDirectory
+    exclude { it.file.startsWith(buildDirectory.get().asFile) }
+    reports {
+        sarif.required = false
+        html.required = false
+        markdown.required = false
+        checkstyle.required = false
+    }
+}
+
+tasks.named<Detekt>("detekt") {
+    enabled = false
+    dependsOn(tasks.named { it in setOf("detektMain") })
 }
 
 dependencies {

@@ -128,6 +128,7 @@ class MultiClassGenerator(
         return funBuilder.build()
     }
 
+    @Suppress("LongMethod")
     private fun generateMultiClassDeserializer(
         definition: TypeDefinition.OneOfClass,
         rootTypeName: String

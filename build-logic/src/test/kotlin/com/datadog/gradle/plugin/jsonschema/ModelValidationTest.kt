@@ -66,7 +66,7 @@ class ModelValidationTest {
     @ParameterizedTest
     @MethodSource("data")
     fun `validate model serialization and deserialization`(
-        @Suppress("unused") schemaResourcePath: String,
+        schemaResourcePath: String,
         outputInfo: OutputInfo,
         forge: Forge
     ) {
@@ -84,8 +84,8 @@ class ModelValidationTest {
 
             assertThat(generatedModel)
                 .overridingErrorMessage(
-                    "Deserialized model was not the same " +
-                        "with the serialized for type: [$type] and test iteration: [$it]\n" +
+                    "Deserialized model differs from the original for schema [$schemaResourcePath], " +
+                        "type [$type] and test iteration [$it]\n" +
                         " -  input: $entity \n" +
                         " -   json: $json \n" +
                         " - output: $generatedModel"

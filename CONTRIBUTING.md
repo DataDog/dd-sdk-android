@@ -250,6 +250,12 @@ To execute Detekt check, run:
 ./gradlew detekt
 ```
 
+This runs the SDK module checks and the build tooling checks. Use `./gradlew :detekt`
+to check build tooling alone. The `build-logic` and `build-logic-settings` builds check
+Kotlin sources with type resolution. The root `:detektScripts` task checks Gradle and
+other Kotlin scripts without type resolution. All tasks share `detekt.yml`. The SDK
+convention also loads the SDK-specific rules from `detekt-sdk.yml`.
+
 ### Code style
 
 Our coding style is ensured by [KtLint](https://ktlint.github.io/), with the

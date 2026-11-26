@@ -95,8 +95,11 @@ Detekt checks:
 ```bash
 ./gradlew <module_name>:detekt
 
-# or for all modules
+# or for all modules and build tooling
 ./gradlew detekt
+
+# build-logic, build-logic-settings, and Kotlin scripts
+./gradlew :detekt
 ```
 
 # Before You Finish
@@ -105,7 +108,7 @@ Run these for every module you changed before considering the work done:
 
 ```bash
 ./gradlew :<module>:ktlintFormat
-./gradlew :<module>:detekt              # only modules applying `detekt-conventions` (not tools/*, sample/*, reliability/*, instrumented/*)
+./gradlew :<module>:detekt              # modules applying `detekt-conventions`, build-logic, and build-logic-settings
 ./gradlew :<module>:testDebugUnitTest   # Android modules; JVM modules (tools/detekt, tools/lint, tools/noopfactory) use :<module>:test, build-logic uses :build-logic:test
 ./gradlew checkGeneratedFiles   # if public API, dependencies or Kotlin/AAR metadata may have changed
 ```

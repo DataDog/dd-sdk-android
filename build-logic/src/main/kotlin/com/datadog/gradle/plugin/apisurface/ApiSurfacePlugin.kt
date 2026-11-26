@@ -23,6 +23,7 @@ import java.nio.file.Paths
 
 class ApiSurfacePlugin : Plugin<Project> {
 
+    @Suppress("LongMethod")
     override fun apply(target: Project) {
         target.configureBinaryCompatibilityApiValidation()
         val srcDir = target.layout.projectDirectory

@@ -71,6 +71,8 @@ internal fun internalRepositoryUrlFor(
     }
 }
 
+// Configure the component, its publication and signing in the same evaluation callback.
+@Suppress("LongMethod")
 internal fun Project.publishingConfig(
     projectDescription: String,
     customArtifactId: String = name,
@@ -135,7 +137,7 @@ internal fun Project.publishingConfig(
                 pom {
                     name.set(projectName)
                     description.set(projectDescription)
-                    url.set("https://github.com/DataDog/dd-sdk-android/")
+                    url.set(PROJECT_URL)
 
                     licenses {
                         license {
@@ -145,23 +147,23 @@ internal fun Project.publishingConfig(
                     }
 
                     organization {
-                        name.set("Datadog")
-                        url.set("https://www.datadoghq.com/")
+                        name.set(ORGANIZATION_NAME)
+                        url.set(ORGANIZATION_URL)
                     }
 
                     developers {
                         developer {
-                            name.set("Datadog")
+                            name.set(ORGANIZATION_NAME)
                             email.set("info@datadoghq.com")
-                            organization.set("Datadog")
-                            organizationUrl.set("https://www.datadoghq.com/")
+                            organization.set(ORGANIZATION_NAME)
+                            organizationUrl.set(ORGANIZATION_URL)
                         }
                     }
 
                     scm {
-                        url.set("https://github.com/DataDog/dd-sdk-android/")
-                        connection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
-                        developerConnection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
+                        url.set(PROJECT_URL)
+                        connection.set(SCM_CONNECTION)
+                        developerConnection.set(SCM_CONNECTION)
                     }
                 }
             }
@@ -184,6 +186,7 @@ internal fun Project.publishingConfig(
                         name = MavenConfig.INTERNAL_REPOSITORY
                         url = uri(internalRepositoryUrl)
                         authentication {
+                            @Suppress("DEPRECATION")
                             create<AwsImAuthentication>("awsIm")
                         }
                     }
@@ -200,3 +203,8 @@ internal fun Project.publishingConfig(
         }
     }
 }
+
+private const val PROJECT_URL = "https://github.com/DataDog/dd-sdk-android/"
+private const val ORGANIZATION_NAME = "Datadog"
+private const val ORGANIZATION_URL = "https://www.datadoghq.com/"
+private const val SCM_CONNECTION = "scm:git:git@github.com:Datadog/dd-sdk-android.git"

@@ -26,6 +26,7 @@ import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 
+@Suppress("TooManyFunctions")
 class ClassGenerator(
     packageName: String,
     knownTypes: MutableSet<KotlinTypeWrapper>,
