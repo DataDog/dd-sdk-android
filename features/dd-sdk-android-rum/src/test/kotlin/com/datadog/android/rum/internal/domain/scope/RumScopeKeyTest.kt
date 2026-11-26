@@ -157,10 +157,12 @@ internal class RumScopeKeyTest {
     }
 
     @Test
-    fun `M create a key W from() {AndroidX Fragment}`() {
+    fun `M create a key W from() {AndroidX Fragment}`(
+        @StringForgery fakeDescription: String
+    ) {
         // Given
-        val input = StubFragment()
-        val expectedId = input.toString()
+        val input = StubFragment(fakeDescription)
+        val expectedId = StubFragment::class.java.name + "@" + System.identityHashCode(input)
         val expectedUrl = StubFragment::class.java.canonicalName
         val expectedName = StubFragment::class.java.name
 
@@ -171,6 +173,38 @@ internal class RumScopeKeyTest {
         assertThat(key.id).isEqualTo(expectedId)
         assertThat(key.url).isEqualTo(expectedUrl)
         assertThat(key.name).isEqualTo(expectedName)
+    }
+
+    @Test
+    fun `M preserve key W from() {AndroidX Fragment representation changes}`(
+        @StringForgery fakeDescription: String
+    ) {
+        // Given
+        val stubFragment = StubFragment(fakeDescription)
+        val fakeInitialKey = RumScopeKey.from(stubFragment)
+        stubFragment.description = "$fakeDescription-removed"
+
+        // When
+        val key = RumScopeKey.from(stubFragment)
+
+        // Then
+        assertThat(key).isEqualTo(fakeInitialKey)
+    }
+
+    @Test
+    fun `M create distinct keys W from() {AndroidX Fragments have identical representations}`(
+        @StringForgery fakeDescription: String
+    ) {
+        // Given
+        val stubFirstFragment = StubFragment(fakeDescription)
+        val stubSecondFragment = StubFragment(fakeDescription)
+
+        // When
+        val firstKey = RumScopeKey.from(stubFirstFragment)
+        val secondKey = RumScopeKey.from(stubSecondFragment)
+
+        // Then
+        assertThat(firstKey.id).isNotEqualTo(secondKey.id)
     }
 
     @Test
@@ -263,7 +297,11 @@ internal class RumScopeKeyTest {
         }
     }
 
-    class StubFragment : Fragment()
+    class StubFragment(var description: String) : Fragment() {
+        override fun toString(): String {
+            return description
+        }
+    }
 
     class StubObject
 
