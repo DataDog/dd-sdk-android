@@ -63,7 +63,7 @@ internal abstract class CheckableCompoundButtonMapper<in T : CompoundButton>(
             (it.constantState as? DrawableContainer.DrawableContainerState)?.getChild(
                 checkableDrawableIndex
             )
-        } ?: kotlin.run {
+        } ?: run {
             internalLogger.log(
                 level = InternalLogger.Level.ERROR,
                 targets = listOf(

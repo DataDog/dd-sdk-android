@@ -7,6 +7,7 @@
 package com.datadog.android.internal.utils
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.MapEntry
 import org.junit.jupiter.api.Test
 
 /**
@@ -425,5 +426,4 @@ class DiffBuilderTest {
     // endregion
 }
 
-private fun entry(key: String, value: String) =
-    org.assertj.core.data.MapEntry.entry(key, value)
+private fun entry(key: String, value: String) = MapEntry.entry(key, value)

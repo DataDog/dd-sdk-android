@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
+import java.util.Locale
 
 internal fun MobileSegment.Wireframe.copy(clip: MobileSegment.WireframeClip?): MobileSegment.Wireframe {
     return when (this) {
@@ -30,7 +31,7 @@ internal fun MobileSegment.Source.Companion.tryFromSource(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
-            { UNKNOWN_MOBILE_SEGMENT_SOURCE_WARNING_MESSAGE_FORMAT.format(java.util.Locale.US, source) },
+            { UNKNOWN_MOBILE_SEGMENT_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
             e
         )
         MobileSegment.Source.ANDROID
