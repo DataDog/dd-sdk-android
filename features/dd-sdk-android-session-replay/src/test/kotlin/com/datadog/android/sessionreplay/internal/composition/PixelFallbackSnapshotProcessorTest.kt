@@ -39,6 +39,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -160,6 +161,7 @@ internal class PixelFallbackSnapshotProcessorTest {
         val processed = process(fixture, textDetector = null)
 
         // Then
+        assertThat(fakeScheduler.scheduled).isEmpty()
         val placeholder = processed.snapshot.wireframes.single() as CapturedWireframe.PrivacyPlaceholder
         assertThat(placeholder.bounds).isEqualTo(fixture.bounds)
         val ownerLayer = processed.snapshot.layers.single { it.identity == fixture.ownerIdentity }
@@ -201,20 +203,21 @@ internal class PixelFallbackSnapshotProcessorTest {
     ) {
         // Given
         val fixture = Fixture(fakeScope)
-        val fakeRegion = Rect(0, 0, 5, 5)
+        val fakeRegions = listOf(Rect(0, 0, 5, 5), Rect(10, 10, 20, 20))
         stubResolution(fakeResourceId)
 
         // When
         val processed = process(
             fixture,
-            TextDetector { _, onComplete -> onComplete(TextDetectionOutcome.Detected(listOf(fakeRegion))) }
+            TextDetector { _, onComplete -> onComplete(TextDetectionOutcome.Detected(fakeRegions)) }
         )
 
         // Then
         assertResolved(processed.snapshot, fakeResourceId)
         verify(mockCanvasWrapper).createCanvas(fixture.bitmap)
-        verify(mockCanvas).drawRect(eq(fakeRegion), any<Paint>())
-        verify(mockResourceResolver).resolveResourceIdFromBitmap(eq(fixture.bitmap), any())
+        val inOrder = inOrder(mockCanvas, mockResourceResolver)
+        fakeRegions.forEach { inOrder.verify(mockCanvas).drawRect(eq(it), any<Paint>()) }
+        inOrder.verify(mockResourceResolver).resolveResourceIdFromBitmap(eq(fixture.bitmap), any())
     }
 
     @Test
@@ -501,6 +504,70 @@ internal class PixelFallbackSnapshotProcessorTest {
     }
 
     @Test
+    fun `M not arm the timeout W process { every capture skips text detection }`(
+        @StringForgery fakeScope: String,
+        @StringForgery fakeResourceId: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        stubResolution(fakeResourceId)
+
+        // When
+        process(fixture, TextDetector { _, _ -> }, captures = listOf(fixture.pendingSkippingDetection))
+
+        // Then
+        assertThat(fakeScheduler.scheduled).isEmpty()
+    }
+
+    @Test
+    fun `M not arm the timeout W process { the generation is already over }`(@StringForgery fakeScope: String) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        fakeNowNs = FAKE_DEADLINE_NS + 1
+
+        // When
+        process(fixture, TextDetector { _, _ -> })
+
+        // Then
+        assertThat(fakeScheduler.scheduled).isEmpty()
+    }
+
+    @Test
+    fun `M keep the encoding W process { the timeout passes while a capture is encoding }`(
+        @StringForgery fakeScope: String,
+        @StringForgery fakeResourceId: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        var resolverCallback: ResourceResolverCallback? = null
+        doAnswer { invocation ->
+            resolverCallback = invocation.getArgument<ResourceResolverCallback>(1)
+            null
+        }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        val processed = process(
+            fixture,
+            TextDetector { bitmap, onComplete ->
+                if (bitmap === fixture.bitmap) onComplete(TextDetectionOutcome.Detected(emptyList()))
+            },
+            captures = listOf(
+                fixture.pending,
+                PendingPixelCapture(fixture.otherPixel, fixture.otherOwner, fixture.otherBitmap)
+            ),
+            snapshot = fixture.twoPixelSnapshot
+        )
+
+        // When
+        fakeScheduler.scheduled.single().second()
+        checkNotNull(resolverCallback).onSuccess(fakeResourceId)
+
+        // Then
+        val wireframes = processed.snapshot.wireframes
+        assertThat(wireframes.filterIsInstance<CapturedWireframe.Pixel>().single().resource)
+            .isEqualTo(PixelResource.Resolved(fakeResourceId, "image/webp"))
+        assertThat(wireframes.filterIsInstance<CapturedWireframe.PrivacyPlaceholder>()).hasSize(1)
+    }
+
+    @Test
     fun `M leave the timeout to expire W process { detection completes before process returns }`(
         @StringForgery fakeScope: String
     ) {
@@ -587,7 +654,12 @@ internal class PixelFallbackSnapshotProcessorTest {
             TextDetector { _, _ -> fakeNowNs = FAKE_DEADLINE_NS + 1 },
             captures = listOf(
                 fixture.pending,
-                PendingPixelCapture(fixture.otherPixel, fixture.otherOwner, fixture.otherBitmap, true)
+                PendingPixelCapture(
+                    fixture.otherPixel,
+                    fixture.otherOwner,
+                    fixture.otherBitmap,
+                    skipsTextDetection = true
+                )
             ),
             snapshot = fixture.twoPixelSnapshot
         )
