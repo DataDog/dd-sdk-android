@@ -8,9 +8,11 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
@@ -148,6 +150,99 @@ internal class ViewPixelCaptureTest {
         assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
         verifyNoInteractions(mockRasterizer)
         assertThat(fakePending).isEmpty()
+    }
+
+    @Test
+    fun `M emit a terminal placeholder without drawing W capture() { image is large by its intrinsic size }`() {
+        // Given
+        val stubImageView = imageView(stubDrawable(intrinsicSizeDp = 200))
+
+        // When
+        val result = ViewPixelCapture(mock(), rasterizer = mockRasterizer, canMaskText = true)
+            .capture(stubImageView, smallLargeOnlyContext()) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.isTerminal).isTrue()
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+        verifyNoInteractions(mockRasterizer)
+        assertThat(fakePending).isEmpty()
+    }
+
+    @Test
+    fun `M register the rasterized view W capture() { image is small by its intrinsic size }`() {
+        // Given
+        val stubImageView = imageView(stubDrawable(intrinsicSizeDp = 20))
+        val mockBitmap: Bitmap = mock()
+        whenever(mockRasterizer.rasterize(any())).thenReturn(mockBitmap)
+
+        // When
+        val result = ViewPixelCapture(mock(), rasterizer = mockRasterizer, canMaskText = true)
+            .capture(stubImageView, smallLargeOnlyContext()) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+        assertThat(fakePending.single().bitmap).isSameAs(mockBitmap)
+    }
+
+    @Test
+    fun `M leave the container to the fallback W capture() { descendant image is large by its intrinsic size }`() {
+        // Given
+        val stubParent: ViewGroup = mock()
+        val stubResources = resources()
+        val stubChild = imageView(stubDrawable(intrinsicSizeDp = 200))
+        whenever(stubParent.resources).thenReturn(stubResources)
+        whenever(stubParent.width).thenReturn(50)
+        whenever(stubParent.height).thenReturn(50)
+        whenever(stubParent.childCount).thenReturn(1)
+        whenever(stubParent.getChildAt(0)).thenReturn(stubChild)
+
+        // When
+        val result = ViewPixelCapture(mock(), rasterizer = mockRasterizer, canMaskText = true)
+            .capture(stubParent, smallLargeOnlyContext())
+
+        // Then
+        assertThat(result).isNull()
+        verifyNoInteractions(mockRasterizer)
+        assertThat(fakePending).isEmpty()
+    }
+
+    @Test
+    fun `M leave the view to the fallback W capture() { background is large by its intrinsic size }`() {
+        // Given
+        val stubView = view()
+        val stubBackground = stubDrawable(intrinsicSizeDp = 300)
+        whenever(stubView.background).thenReturn(stubBackground)
+
+        // When
+        val result = ViewPixelCapture(mock(), rasterizer = mockRasterizer, canMaskText = true)
+            .capture(stubView, smallLargeOnlyContext())
+
+        // Then
+        assertThat(result).isNull()
+        verifyNoInteractions(mockRasterizer)
+        assertThat(fakePending).isEmpty()
+    }
+
+    private fun smallLargeOnlyContext(): CapturedMappingContext = fakeContext.copy(
+        imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY,
+        bounds = CapturedBounds(0, 0, 50, 50)
+    )
+
+    private fun stubDrawable(intrinsicSizeDp: Int): Drawable {
+        val stubDrawable: Drawable = mock()
+        whenever(stubDrawable.intrinsicWidth).thenReturn(intrinsicSizeDp)
+        whenever(stubDrawable.intrinsicHeight).thenReturn(intrinsicSizeDp)
+        return stubDrawable
+    }
+
+    private fun imageView(drawable: Drawable): ImageView {
+        val stubImageView: ImageView = mock()
+        val stubResources = resources()
+        whenever(stubImageView.resources).thenReturn(stubResources)
+        whenever(stubImageView.width).thenReturn(50)
+        whenever(stubImageView.height).thenReturn(50)
+        whenever(stubImageView.drawable).thenReturn(drawable)
+        return stubImageView
     }
 
     private fun maskedContext(forge: Forge): CapturedMappingContext = fakeContext.copy(
