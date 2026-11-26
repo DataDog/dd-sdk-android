@@ -28,6 +28,7 @@ import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.rum.RumViewType
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.utils.isOrIsCausedByOutOfMemoryError
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumActionType
@@ -756,7 +757,7 @@ internal open class RumViewScope(
         )
 
         val errorId = UUID.randomUUID().toString()
-        val isFatalOom = isFatal && event.throwable is OutOfMemoryError
+        val isFatalOom = isFatal && event.throwable?.isOrIsCausedByOutOfMemoryError() == true
         val oomQuotaReason = if (isFatalOom) datadogContext.resolveProfilingQuotaReason(sessionId) else null
         // region profiling
         val profilingStatus = when {
@@ -913,6 +914,8 @@ internal open class RumViewScope(
         // that can't be held is written as any other, with no gating event, so no profile is attached.
         var oomErrorEventSource: (() -> Any)? = null
         val heldErrorEvent = pendingOomErrorStore?.let { store ->
+            // TODO RUM-20496: Guard this eager build: unlike the lazy eventSource of the write operation,
+            //  it runs outside WriteOperation's try/catch.
             val errorEvent = buildErrorEvent()
             oomErrorEventSource = { errorEvent }
             errorEvent.takeIf { store.tryHold(errorEvent) }

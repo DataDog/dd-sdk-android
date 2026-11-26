@@ -16,6 +16,7 @@ import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.perfetto.ProfileType
@@ -92,51 +93,76 @@ internal class ProfilingDataWriter(
         }
         feature.withWriteContext { context, writeScope ->
             writeScope { writer ->
-                val isWritten = synchronized(this) {
-                    val metadata = buildMetadataOrDrop(
-                        perfettoFilePath = resultFilePath,
-                        rumMobileEventsJson = buildTriggerRumMobileEventsJson(rumErrorId, detectedAtMs),
-                        startReason = operation,
-                        hasRumErrorId = rumErrorId.isNotEmpty()
-                    )
-                    if (metadata == null) {
-                        return@synchronized false
+                var isWritten = false
+                var isFailed = true
+                try {
+                    isWritten = synchronized(this) {
+                        // Without consent the batch writer is a no-op that reports success for dropped data:
+                        // skip the write, so the profile is never reported as written.
+                        if (context.trackingConsent == TrackingConsent.NOT_GRANTED) {
+                            return@synchronized false
+                        }
+                        val metadata = buildMetadataOrDrop(
+                            perfettoFilePath = resultFilePath,
+                            rumMobileEventsJson = buildTriggerRumMobileEventsJson(rumErrorId, detectedAtMs),
+                            startReason = operation,
+                            hasRumErrorId = rumErrorId.isNotEmpty()
+                        )
+                        if (metadata == null) {
+                            return@synchronized false
+                        }
+                        val profileEvent = ProfileEvent(
+                            start = formatIsoUtc(detectedAtMs),
+                            end = formatIsoUtc(perfettoResult.end),
+                            attachments = listOf(PERFETTO_ATTACHMENT_NAME, RUM_MOBILE_EVENTS_ATTACHMENT_NAME),
+                            family = ProfileEvent.Family.ANDROID,
+                            runtime = ProfileEvent.Family.ANDROID,
+                            version = VERSION_NUMBER,
+                            tagsProfiler = buildTags(context, operation, perfettoResult.profileTypes),
+                            application = ProfileEvent.Application(id = rumContext.applicationId),
+                            session = ProfileEvent.Session(id = rumContext.sessionId),
+                            view = ProfileEvent.View(
+                                id = listOfNotNull(rumContext.viewId),
+                                name = listOfNotNull(rumContext.viewName)
+                            ),
+                            error = ProfileEvent.Error(id = listOfNotNull(rumErrorId.ifEmpty { null })),
+                            dd = ProfileEvent.Dd(bootNtp = perfettoResult.bootNtpOffsetNs)
+                        )
+                        val serialized = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
+                        logWriteResultMetric(
+                            dropped = false,
+                            dropReason = null,
+                            startReason = operation,
+                            hasRumErrorId = rumErrorId.isNotEmpty(),
+                            profileSizeBytes = metadata.sizeBytes,
+                            profileCompressed = metadata.compressed
+                        )
+                        writer.write(
+                            event = RawBatchEvent(data = serialized, metadata = metadata.bytes),
+                            batchMetadata = null,
+                            eventType = EventType.DEFAULT
+                        )
                     }
-                    val profileEvent = ProfileEvent(
-                        start = formatIsoUtc(detectedAtMs),
-                        end = formatIsoUtc(perfettoResult.end),
-                        attachments = listOf(PERFETTO_ATTACHMENT_NAME, RUM_MOBILE_EVENTS_ATTACHMENT_NAME),
-                        family = ProfileEvent.Family.ANDROID,
-                        runtime = ProfileEvent.Family.ANDROID,
-                        version = VERSION_NUMBER,
-                        tagsProfiler = buildTags(context, operation, perfettoResult.profileTypes),
-                        application = ProfileEvent.Application(id = rumContext.applicationId),
-                        session = ProfileEvent.Session(id = rumContext.sessionId),
-                        view = ProfileEvent.View(
-                            id = listOfNotNull(rumContext.viewId),
-                            name = listOfNotNull(rumContext.viewName)
-                        ),
-                        error = ProfileEvent.Error(id = listOfNotNull(rumErrorId.ifEmpty { null })),
-                        dd = ProfileEvent.Dd(bootNtp = perfettoResult.bootNtpOffsetNs)
-                    )
-                    val serialized = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
-                    logWriteResultMetric(
-                        dropped = false,
-                        dropReason = null,
-                        startReason = operation,
-                        hasRumErrorId = rumErrorId.isNotEmpty(),
-                        profileSizeBytes = metadata.sizeBytes,
-                        profileCompressed = metadata.compressed
-                    )
-                    writer.write(
-                        event = RawBatchEvent(data = serialized, metadata = metadata.bytes),
-                        batchMetadata = null,
-                        eventType = EventType.DEFAULT
-                    )
+                    isFailed = false
+                } finally {
+                    fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
+                    if (isFailed) notifyWrittenAfterFailure(onWritten) else onWritten(isWritten)
                 }
-                onWritten(isWritten)
-                fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
             }
+        }
+    }
+
+    /** Reports the failed write without letting a failure of [onWritten] hide the exception being propagated. */
+    private fun notifyWrittenAfterFailure(onWritten: (Boolean) -> Unit) {
+        try {
+            onWritten(false)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { LOG_ON_WRITTEN_FAILED },
+                e
+            )
         }
     }
 
@@ -505,6 +531,7 @@ internal class ProfilingDataWriter(
 
     companion object {
         internal const val METRIC_TYPE_PROFILING_WRITE = "profiling write"
+        internal const val LOG_ON_WRITTEN_FAILED = "Failed to report the result of a trigger profile write that failed."
         internal const val KEY_PROFILING_WRITE = "profiling_write"
         internal const val KEY_DROPPED = "dropped"
         internal const val KEY_DROP_REASON = "drop_reason"

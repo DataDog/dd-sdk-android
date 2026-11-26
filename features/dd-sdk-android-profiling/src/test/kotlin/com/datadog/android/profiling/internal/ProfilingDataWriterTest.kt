@@ -20,6 +20,7 @@ import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.formatIsoUtc
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assertThat
 import com.datadog.android.profiling.assertj.RumMetadataEventsAssert.Companion.assertThat
 import com.datadog.android.profiling.forge.Configurator
@@ -30,6 +31,7 @@ import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.utils.CompressionResult
 import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
+import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -38,6 +40,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -51,6 +54,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
@@ -98,7 +102,11 @@ internal class ProfilingDataWriterTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        // Without consent, trigger profiles are never written: tests expecting a write need a consent.
+        fakeDatadogContext = fakeDatadogContext.copy(
+            trackingConsent = forge.anElementFrom(TrackingConsent.GRANTED, TrackingConsent.PENDING)
+        )
         testedDataWriterTest =
             ProfilingDataWriter(mockSdkCore, identityCompressFile)
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
@@ -404,15 +412,18 @@ internal class ProfilingDataWriterTest {
         val fakeSize = PROFILE_SIZE_LIMIT_BYTES + 1
         RandomAccessFile(file, "rw").use { it.setLength(fakeSize) }
         val fakeErrorId = forge.anAlphabeticalString()
+        val mockOnWritten = mock<(Boolean) -> Unit>()
 
         // When
         testedDataWriterTest.writeTriggerProfile(
             perfettoResult = fakeResult.copy(resultFilePath = file.absolutePath),
             rumErrorId = fakeErrorId,
-            rumContext = fakeRumContext
+            rumContext = fakeRumContext,
+            onWritten = mockOnWritten
         )
 
         // Then
+        verify(mockOnWritten)(false)
         assertThat(file.exists()).isFalse()
         val expectedProps = mapOf(
             ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
@@ -481,7 +492,8 @@ internal class ProfilingDataWriterTest {
         testedDataWriterTest.writeTriggerProfile(
             perfettoResult = fakeResult.copy(resultFilePath = file.absolutePath),
             rumErrorId = forge.anAlphabeticalString(),
-            rumContext = fakeRumContext
+            rumContext = fakeRumContext,
+            onWritten = {}
         )
 
         // Then
@@ -511,7 +523,8 @@ internal class ProfilingDataWriterTest {
         testedDataWriterTest.writeTriggerProfile(
             perfettoResult = fakeResult.copy(resultFilePath = file.absolutePath),
             rumErrorId = fakeErrorId,
-            rumContext = fakeRumContext
+            rumContext = fakeRumContext,
+            onWritten = {}
         )
 
         // Then
@@ -1198,6 +1211,184 @@ internal class ProfilingDataWriterTest {
         verify(mockOnWritten)(false)
         verifyNoMoreInteractions(mockOnWritten)
         verifyNoInteractions(mockEventBatchWriter)
+        assertThat(profileFile.exists()).isFalse()
+    }
+
+    @Test
+    fun `M report not written once and delete file W writeTriggerProfile() {batch write throws}`(
+        @StringForgery rumErrorId: String,
+        @Forgery rumContext: ProfilingRumContext,
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeFileName: String,
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val profileFile = File(tmp, fakeFileName).apply { writeBytes(forge.aString().toByteArray()) }
+        val fakeException = IllegalStateException(fakeMessage)
+        whenever(mockEventBatchWriter.write(any(), anyOrNull(), any())) doThrow fakeException
+        val mockOnWritten = mock<(Boolean) -> Unit>()
+
+        // When / Then
+        assertThatThrownBy {
+            testedDataWriterTest.writeTriggerProfile(
+                perfettoResult = fakePerfettoResult.copy(
+                    startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                    resultFilePath = profileFile.absolutePath,
+                    profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+                ),
+                rumErrorId = rumErrorId,
+                rumContext = rumContext,
+                onWritten = mockOnWritten
+            )
+        }.isSameAs(fakeException)
+        verify(mockOnWritten)(false)
+        verifyNoMoreInteractions(mockOnWritten)
+        assertThat(profileFile.exists()).isFalse()
+    }
+
+    @Test
+    fun `M report not written once and delete file W writeTriggerProfile() {compression throws}`(
+        @StringForgery rumErrorId: String,
+        @Forgery rumContext: ProfilingRumContext,
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeFileName: String,
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val profileFile = File(tmp, fakeFileName).apply { writeBytes(forge.aString().toByteArray()) }
+        val fakeException = IllegalStateException(fakeMessage)
+        testedDataWriterTest = ProfilingDataWriter(mockSdkCore, { throw fakeException })
+        val mockOnWritten = mock<(Boolean) -> Unit>()
+
+        // When / Then
+        assertThatThrownBy {
+            testedDataWriterTest.writeTriggerProfile(
+                perfettoResult = fakePerfettoResult.copy(
+                    startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                    resultFilePath = profileFile.absolutePath,
+                    profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+                ),
+                rumErrorId = rumErrorId,
+                rumContext = rumContext,
+                onWritten = mockOnWritten
+            )
+        }.isSameAs(fakeException)
+        verify(mockOnWritten)(false)
+        verifyNoMoreInteractions(mockOnWritten)
+        verifyNoInteractions(mockEventBatchWriter)
+        assertThat(profileFile.exists()).isFalse()
+    }
+
+    @Test
+    fun `M propagate the write failure W writeTriggerProfile() {batch write throws, onWritten throws}`(
+        @StringForgery rumErrorId: String,
+        @Forgery rumContext: ProfilingRumContext,
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeFileName: String,
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val profileFile = File(tmp, fakeFileName).apply { writeBytes(forge.aString().toByteArray()) }
+        val fakeException = IllegalStateException(fakeMessage)
+        val fakeCallbackException = IllegalArgumentException(fakeMessage)
+        whenever(mockEventBatchWriter.write(any(), anyOrNull(), any())) doThrow fakeException
+
+        // When / Then
+        assertThatThrownBy {
+            testedDataWriterTest.writeTriggerProfile(
+                perfettoResult = fakePerfettoResult.copy(
+                    startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                    resultFilePath = profileFile.absolutePath,
+                    profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+                ),
+                rumErrorId = rumErrorId,
+                rumContext = rumContext,
+                onWritten = { throw fakeCallbackException }
+            )
+        }.isSameAs(fakeException)
+        assertThat(profileFile.exists()).isFalse()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            ProfilingDataWriter.LOG_ON_WRITTEN_FAILED,
+            fakeCallbackException
+        )
+    }
+
+    @Test
+    fun `M not write, delete file and report not written W writeTriggerProfile() {consent not granted}`(
+        @StringForgery rumErrorId: String,
+        @Forgery rumContext: ProfilingRumContext,
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeFileName: String,
+        forge: Forge
+    ) {
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
+        val profileFile = File(tmp, fakeFileName).apply { writeBytes(forge.aString().toByteArray()) }
+        val compressedFiles = mutableListOf<File>()
+        testedDataWriterTest = ProfilingDataWriter(
+            mockSdkCore,
+            { traceFile ->
+                compressedFiles.add(traceFile)
+                CompressionResult.Raw(traceFile.length())
+            }
+        )
+        val mockOnWritten = mock<(Boolean) -> Unit>()
+
+        // When
+        testedDataWriterTest.writeTriggerProfile(
+            perfettoResult = fakePerfettoResult.copy(
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                resultFilePath = profileFile.absolutePath,
+                profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+            ),
+            rumErrorId = rumErrorId,
+            rumContext = rumContext,
+            onWritten = mockOnWritten
+        )
+
+        // Then
+        verify(mockOnWritten)(false)
+        verifyNoMoreInteractions(mockOnWritten)
+        verifyNoInteractions(mockEventBatchWriter)
+        assertThat(compressedFiles).isEmpty()
+        assertThat(profileFile.exists()).isFalse()
+    }
+
+    @Test
+    fun `M write and report written W writeTriggerProfile() {consent pending}`(
+        @StringForgery rumErrorId: String,
+        @Forgery rumContext: ProfilingRumContext,
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeFileName: String,
+        forge: Forge
+    ) {
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
+        val profileFile = File(tmp, fakeFileName).apply { writeBytes(forge.aString().toByteArray()) }
+        whenever(mockEventBatchWriter.write(any(), anyOrNull(), any())) doReturn true
+        val mockOnWritten = mock<(Boolean) -> Unit>()
+
+        // When
+        testedDataWriterTest.writeTriggerProfile(
+            perfettoResult = fakePerfettoResult.copy(
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                resultFilePath = profileFile.absolutePath,
+                profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+            ),
+            rumErrorId = rumErrorId,
+            rumContext = rumContext,
+            onWritten = mockOnWritten
+        )
+
+        // Then
+        verify(mockEventBatchWriter).write(any(), isNull(), eq(EventType.DEFAULT))
+        verify(mockOnWritten)(true)
+        verifyNoMoreInteractions(mockOnWritten)
         assertThat(profileFile.exists()).isFalse()
     }
 }

@@ -37,3 +37,20 @@ fun Throwable.loggableMessage(): String? {
         null
     }
 }
+
+/**
+ * Whether this throwable or any throwable in its cause chain is an [OutOfMemoryError]. A cyclic cause chain stops
+ * after a fixed depth.
+ */
+fun Throwable.isOrIsCausedByOutOfMemoryError(): Boolean {
+    var current: Throwable? = this
+    var depth = 0
+    while (current != null && depth < MAX_CAUSE_CHAIN_DEPTH) {
+        if (current is OutOfMemoryError) return true
+        current = current.cause
+        depth++
+    }
+    return false
+}
+
+private const val MAX_CAUSE_CHAIN_DEPTH = 64

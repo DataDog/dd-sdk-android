@@ -67,6 +67,9 @@ class ProfilingRumHeldOomErrorTest {
     private val rumDataStore = StubDataStoreHandler()
     private val prefs = mutableMapOf<String, String>()
 
+    // Every launch's core: stopping its features unregisters its RUM monitor from GlobalRumMonitor.
+    private val launchedCores = mutableListOf<StubSDKCore>()
+
     @TempDir
     lateinit var tempDir: File
 
@@ -77,6 +80,7 @@ class ProfilingRumHeldOomErrorTest {
 
     @AfterEach
     fun `tear down`() {
+        launchedCores.forEach { it.stopFeatures() }
         ProfilingStorageFixture.reset()
     }
 
@@ -164,7 +168,7 @@ class ProfilingRumHeldOomErrorTest {
     private class Launch(val core: StubSDKCore, val profiling: ProfilingFeatureTestHandle)
 
     private fun launch(forge: Forge, isProfilingFirst: Boolean): Launch {
-        val core = StubSDKCore(forge)
+        val core = StubSDKCore(forge).also { launchedCores.add(it) }
         // Only an error captured with tracking consent is held.
         core.stubTrackingConsent(TrackingConsent.GRANTED)
         core.stubDataStore(Feature.RUM_FEATURE_NAME, rumDataStore)
