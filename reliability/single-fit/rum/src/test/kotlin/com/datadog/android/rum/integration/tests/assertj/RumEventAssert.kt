@@ -60,6 +60,11 @@ class RumEventAssert(actual: JsonObject) :
         return this
     }
 
+    fun hasContextAttribute(key: String, value: String): RumEventAssert {
+        hasField("context.$key", value)
+        return this
+    }
+
     // endregion
 
     // region View Attribute
