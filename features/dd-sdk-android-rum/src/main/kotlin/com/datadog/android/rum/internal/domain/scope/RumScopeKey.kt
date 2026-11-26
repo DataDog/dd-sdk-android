@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import android.app.Activity
 import android.content.ComponentName
+import androidx.fragment.app.Fragment
 import androidx.navigation.ActivityNavigator
 import androidx.navigation.fragment.DialogFragmentNavigator
 import androidx.navigation.fragment.FragmentNavigator
@@ -46,6 +47,8 @@ internal data class RumScopeKey(
                 is Number -> key.toString()
 
                 is Enum<*> -> "${key.javaClass.name}@${key.name}"
+
+                is Fragment -> "${key.javaClass.name}@${System.identityHashCode(key)}"
 
                 is DialogFragmentNavigator.Destination -> "${key.className}#${key.id}"
                 is FragmentNavigator.Destination -> "${key.className}#${key.id}"
