@@ -25,6 +25,7 @@ import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Resolves each [PendingPixelCapture] whose wireframe survived construction: text-region
@@ -33,17 +34,20 @@ import java.util.concurrent.atomic.AtomicInteger
  * wireframes/child-references its own pending captures produced - everything else in the snapshot
  * passes through untouched.
  *
- * The [TextDetector] is optional third-party code, so nothing it does can upload unmasked pixels: a
- * detector that throws resolves that capture to a placeholder, and the rest of the snapshot still
- * completes. Only the first result a detector reports counts. Cancellation is not handled here: once
- * a generation expires or is accepted, [CaptureGenerationContext] itself invalidates every
- * [CaptureWorkToken] this processor created, and this processor checks [CaptureWorkToken.isValid]
- * before writing any result back.
+ * The [TextDetector] is optional third-party code, so nothing it does can leave a capture unresolved
+ * or upload unmasked pixels: a detector that throws, or does not complete within
+ * [DETECTION_BUDGET_PERCENT] of the time left when processing starts, resolves that capture to a
+ * placeholder, and the rest of the snapshot still completes. Only the first result a detector
+ * reports counts. A detection that has no chance of being used is not acted on: once the generation has
+ * expired or been accepted, [CaptureGenerationContext] invalidates every [CaptureWorkToken] this
+ * processor created, and a result arriving then is neither masked nor encoded. A detection already
+ * in flight cannot be interrupted, as [TextDetector] has no cancellation handle.
  */
 internal class PixelFallbackSnapshotProcessor(
     private val resourceResolver: ResourceResolver,
     private val textDetector: TextDetector?,
     private val internalLogger: InternalLogger,
+    private val detectionTimeoutScheduler: CaptureTaskScheduler,
     private val canvasWrapper: CanvasWrapper = CanvasWrapper(internalLogger)
 ) : CapturedSnapshotProcessor {
 
@@ -63,8 +67,13 @@ internal class PixelFallbackSnapshotProcessor(
         val outcomes = ConcurrentHashMap<Long, PixelOutcome>()
         val remaining = AtomicInteger(pending.size)
 
+        @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts this non-null input.
+        val detectionTimeout = AtomicReference(CancellableCaptureWork.NONE)
         val onCaptureDone: () -> Unit = {
-            if (remaining.decrementAndGet() == 0) finish(request, outcomes, callback)
+            if (remaining.decrementAndGet() == 0) {
+                detectionTimeout.get().cancel()
+                finish(request, outcomes, callback)
+            }
         }
 
         val resolutions = pending.mapNotNull { capture ->
@@ -79,9 +88,24 @@ internal class PixelFallbackSnapshotProcessor(
                 onCaptureDone()
             }
         }
+        // Armed before any detector is called, so a detector that blocks in the call is timed out too.
+        if (textDetector != null && remaining.get() > 0 && pending.any { !it.skipsTextDetection }) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts this non-null input.
+            detectionTimeout.set(scheduleDetectionTimeout(request.generation, resolutions))
+        }
         resolutions.forEach { it.start() }
 
-        return CancellableCaptureWork { }
+        return CancellableCaptureWork { detectionTimeout.get().cancel() }
+    }
+
+    private fun scheduleDetectionTimeout(
+        generation: CaptureGenerationContext,
+        resolutions: List<CaptureResolution>
+    ): CancellableCaptureWork {
+        val delayNs = generation.remainingBudgetNs() * DETECTION_BUDGET_PERCENT / PERCENT
+        return detectionTimeoutScheduler.schedule(delayNs) {
+            resolutions.forEach { it.failClosedIfAwaitingDetection() }
+        }
     }
 
     private fun finish(
@@ -160,6 +184,7 @@ internal class PixelFallbackSnapshotProcessor(
         fun start() {
             val detector = textDetector
             when {
+                !token.isValid() -> failClosed()
                 capture.skipsTextDetection -> resolveBitmap()
                 detector == null -> failClosed()
                 else -> detect(detector)
@@ -192,6 +217,10 @@ internal class PixelFallbackSnapshotProcessor(
         }
 
         private fun resolveDetection(detection: TextDetectionOutcome) {
+            if (!token.isValid()) {
+                failClosed()
+                return
+            }
             when (detection) {
                 is TextDetectionOutcome.Unavailable -> failClosed()
                 is TextDetectionOutcome.Detected ->
@@ -268,7 +297,11 @@ internal class PixelFallbackSnapshotProcessor(
         data class Placeholder(val identity: CapturedIdentity) : PixelOutcome
     }
 
-    private companion object {
+    internal companion object {
+        // Detection gets this share of the time left when processing starts; the rest is for
+        // encoding the captures that did resolve, and for completing the snapshot.
+        internal const val DETECTION_BUDGET_PERCENT = 50L
+        private const val PERCENT = 100L
         private const val MIME_TYPE_WEBP = "image/webp"
         private const val MASK_ALL_CONTENT_LABEL = "Image"
         private const val DETECTION_FAILED_MESSAGE =

@@ -57,6 +57,7 @@ internal class PixelFallbackSnapshotProcessorTest {
     private val mockInternalLogger: InternalLogger = mock()
     private val mockCanvasWrapper: CanvasWrapper = mock()
     private val mockCanvas: Canvas = mock()
+    private val fakeScheduler = FakeCaptureTaskScheduler()
     private var fakeNowNs = 0L
 
     @BeforeEach
@@ -292,6 +293,7 @@ internal class PixelFallbackSnapshotProcessorTest {
 
         // Then
         assertPlaceholderWithoutUpload(processed.snapshot)
+        assertThat(fakeScheduler.cancelCount).isEqualTo(1)
     }
 
     @Test
@@ -380,6 +382,21 @@ internal class PixelFallbackSnapshotProcessorTest {
     }
 
     @Test
+    fun `M arm the timeout before calling the detector W process { detector blocks }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        var scheduledWhenCalled = 0
+
+        // When
+        process(fixture, TextDetector { _, _ -> scheduledWhenCalled = fakeScheduler.scheduled.size })
+
+        // Then
+        assertThat(scheduledWhenCalled).isEqualTo(1)
+    }
+
+    @Test
     fun `M keep the encoding W process { detector throws after completing, resolver is asynchronous }`(
         @StringForgery fakeScope: String,
         @StringForgery fakeResourceId: String
@@ -406,8 +423,108 @@ internal class PixelFallbackSnapshotProcessorTest {
         assertResolved(processed.snapshot, fakeResourceId)
     }
 
+    @Test
+    fun `M cancel the timeout W process { detection completes before process returns }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+
+        // When
+        process(fixture, TextDetector { _, onComplete -> onComplete(TextDetectionOutcome.Unavailable) })
+
+        // Then
+        assertThat(fakeScheduler.cancelCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `M downgrade to a placeholder and ignore the late result W process { detector misses its deadline }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        var capturedOnComplete: ((TextDetectionOutcome) -> Unit)? = null
+        val processed = process(fixture, TextDetector { _, onComplete -> capturedOnComplete = onComplete })
+        assertThat(processed.results).isEmpty()
+
+        // When
+        val (delayNs, timeoutTask) = fakeScheduler.scheduled.single()
+        timeoutTask()
+        capturedOnComplete?.invoke(TextDetectionOutcome.Detected(listOf(Rect(0, 0, 5, 5))))
+
+        // Then
+        assertThat(delayNs).isEqualTo(
+            FAKE_DEADLINE_NS * PixelFallbackSnapshotProcessor.DETECTION_BUDGET_PERCENT / 100
+        )
+        assertPlaceholderWithoutUpload(processed.snapshot)
+        verifyNoInteractions(mockCanvasWrapper)
+    }
+
+    @Test
+    fun `M cancel the timeout W cancel returned work`(@StringForgery fakeScope: String) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        val processed = process(fixture, TextDetector { _, _ -> })
+
+        // When
+        processed.work.cancel()
+
+        // Then
+        assertThat(fakeScheduler.cancelCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `M neither paint nor encode W process { generation is over before the detector completes }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        var capturedOnComplete: ((TextDetectionOutcome) -> Unit)? = null
+        process(fixture, TextDetector { _, onComplete -> capturedOnComplete = onComplete })
+
+        // When
+        fakeNowNs = FAKE_DEADLINE_NS + 1
+        capturedOnComplete?.invoke(TextDetectionOutcome.Detected(listOf(Rect(0, 0, 5, 5))))
+
+        // Then
+        verifyNoInteractions(mockCanvasWrapper)
+        verify(mockResourceResolver, never()).resolveResourceIdFromBitmap(any(), any())
+    }
+
+    @Test
+    fun `M not encode W process { generation is over before a capture with no detection starts }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+
+        // When
+        process(
+            fixture,
+            TextDetector { _, _ -> fakeNowNs = FAKE_DEADLINE_NS + 1 },
+            captures = listOf(
+                fixture.pending,
+                PendingPixelCapture(fixture.otherPixel, fixture.otherOwner, fixture.otherBitmap, true)
+            ),
+            snapshot = fixture.twoPixelSnapshot
+        )
+
+        // Then
+        verifyNoInteractions(mockResourceResolver)
+    }
+
     private class Processed(val work: CancellableCaptureWork, val results: List<SnapshotProcessingResult>) {
         val snapshot: CapturedFullSnapshot get() = (results.single() as SnapshotProcessingResult.Completed).snapshot
+    }
+
+    private class FakeCaptureTaskScheduler : CaptureTaskScheduler {
+        val scheduled = mutableListOf<Pair<Long, () -> Unit>>()
+        var cancelCount = 0
+
+        override fun schedule(delayNs: Long, task: () -> Unit): CancellableCaptureWork {
+            scheduled += delayNs to task
+            return CancellableCaptureWork { cancelCount++ }
+        }
     }
 
     private fun process(
@@ -420,6 +537,7 @@ internal class PixelFallbackSnapshotProcessorTest {
             resourceResolver = mockResourceResolver,
             textDetector = textDetector,
             internalLogger = mockInternalLogger,
+            detectionTimeoutScheduler = fakeScheduler,
             canvasWrapper = mockCanvasWrapper
         )
         val results = mutableListOf<SnapshotProcessingResult>()
