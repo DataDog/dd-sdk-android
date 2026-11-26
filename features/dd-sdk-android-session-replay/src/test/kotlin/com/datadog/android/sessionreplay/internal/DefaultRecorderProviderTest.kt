@@ -155,7 +155,7 @@ internal class DefaultRecorderProviderTest {
     @ValueSource(booleans = [false, true])
     fun `M capture custom drawable backgrounds W provideSessionReplayRecorder { composition enabled }`(
         fakeTextView: Boolean,
-        @IntForgery fakeColor: Int,
+        @IntForgery(min = 0x01000000) fakeColor: Int,
         @StringForgery fakeViewId: String
     ) {
         // Given: only the configured extension understands this drawable.
@@ -163,6 +163,7 @@ internal class DefaultRecorderProviderTest {
         val mockDrawableMapper: DrawableToColorMapper = mock()
         whenever(mockDrawableMapper.mapDrawableToColor(fakeDrawable, mockInternalLogger)).thenReturn(fakeColor)
         val mockView: View = if (fakeTextView) mock<TextView>() else mock<ViewGroup>()
+        if (mockView is TextView) whenever(mockView.compoundDrawables).thenReturn(arrayOfNulls(4))
         val stubResources: Resources = mock()
         whenever(stubResources.displayMetrics).thenReturn(DisplayMetrics().apply { density = 1f })
         whenever(mockView.resources).thenReturn(stubResources)

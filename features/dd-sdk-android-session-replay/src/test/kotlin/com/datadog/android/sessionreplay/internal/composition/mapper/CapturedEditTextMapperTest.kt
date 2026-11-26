@@ -184,6 +184,7 @@ internal class CapturedEditTextMapperTest {
             on { this.text } doReturn stubEditable
             on { this.inputType } doReturn inputType
             on { background } doReturn null
+            on { compoundDrawables } doReturn arrayOfNulls(4)
         }
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(stubEditText, 1f))
             .thenReturn(GlobalBounds(0, 0, 100, 20))
