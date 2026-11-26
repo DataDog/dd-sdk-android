@@ -42,7 +42,8 @@ import java.util.concurrent.atomic.AtomicInteger
  * [CaptureGenerationContext] invalidates every [CaptureWorkToken] this processor created, and a result
  * arriving then is neither masked nor encoded. A detection already in flight cannot be interrupted, as
  * [TextDetector] has no cancellation handle, and a call that blocks is bounded for its own capture only:
- * it still holds the thread processing the snapshot.
+ * it holds the thread processing the snapshot, so the captures behind it start when it returns, and the
+ * snapshot is dropped at the generation deadline if that is later.
  */
 internal class PixelFallbackSnapshotProcessor(
     private val resourceResolver: ResourceResolver,
@@ -84,7 +85,7 @@ internal class PixelFallbackSnapshotProcessor(
                 onCaptureDone()
             }
         }
-        // Armed before any detector is called, so a call that blocks still has its capture bounded.
+        // Armed before any detector is called, so a call that blocks still has its own capture bounded.
         if (textDetector != null && remaining.get() > 0 && pending.any { !it.skipsTextDetection }) {
             scheduleDetectionTimeout(request.generation, detectionTimedOut, resolutions)
         }
