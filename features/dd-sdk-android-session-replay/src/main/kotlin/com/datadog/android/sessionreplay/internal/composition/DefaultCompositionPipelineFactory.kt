@@ -112,23 +112,27 @@ internal class DefaultCompositionPipelineFactory(
             ),
             internalLogger = internalLogger
         )
+        // The generation expiry and the text detection timeouts are both short one-shot tasks.
+        val expiryScheduler = ExecutorCaptureTaskScheduler(
+            executorService = sdkCore.createScheduledExecutorService(EXPIRY_EXECUTOR_NAME),
+            internalLogger = internalLogger
+        )
         val orchestrator = SnapshotCaptureOrchestrator(
             producer = snapshotProducerFactory(windowSource, rumContextProvider),
             processor = ChainedCapturedSnapshotProcessor(
                 ExecutorCapturedSnapshotProcessor(constructionExecutor, internalLogger),
                 PixelFallbackSnapshotProcessor(
-                    resourceResolverBundle.resourceResolver,
-                    textDetector
+                    resourceResolver = resourceResolverBundle.resourceResolver,
+                    textDetector = textDetector,
+                    internalLogger = internalLogger,
+                    detectionTimeoutScheduler = expiryScheduler
                 )
             ),
             consumer = completionQueue,
             timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
             captureScheduler = HandlerCaptureTaskScheduler(),
             mainThreadExecutor = HandlerCaptureMainThreadExecutor(),
-            expiryScheduler = ExecutorCaptureTaskScheduler(
-                executorService = sdkCore.createScheduledExecutorService(EXPIRY_EXECUTOR_NAME),
-                internalLogger = internalLogger
-            ),
+            expiryScheduler = expiryScheduler,
             timeBudget = createTimeBudget(),
             onFrameSkipped = { skippedFrameNotifier.notifySkippedFrame() },
             internalLogger = internalLogger
