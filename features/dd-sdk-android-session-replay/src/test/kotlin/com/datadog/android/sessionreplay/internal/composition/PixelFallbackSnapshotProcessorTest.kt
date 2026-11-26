@@ -89,7 +89,7 @@ internal class PixelFallbackSnapshotProcessorTest {
             viewportSize = CapturedViewportSize(0L, 0L)
         )
         val pending = PendingPixelCapture(pixelIdentity, ownerIdentity, bitmap)
-        val pendingTextFree = PendingPixelCapture(pixelIdentity, ownerIdentity, bitmap, isTextFree = true)
+        val pendingTextFree = PendingPixelCapture(pixelIdentity, ownerIdentity, bitmap, skipsTextDetection = true)
     }
 
     @Test

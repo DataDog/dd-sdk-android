@@ -58,7 +58,7 @@ internal class ChainedCapturedSnapshotProcessorTest {
             )
         ),
         CapturedViewportSize(0L, 0L),
-        listOf(PendingPixelCapture(fakePixelIdentity, fakeOwner, mockBitmap, isTextFree = true)),
+        listOf(PendingPixelCapture(fakePixelIdentity, fakeOwner, mockBitmap, skipsTextDetection = true)),
         fakeFactory
     )
 

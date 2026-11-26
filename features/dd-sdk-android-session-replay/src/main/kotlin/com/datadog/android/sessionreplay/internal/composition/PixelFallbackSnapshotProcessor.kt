@@ -76,7 +76,7 @@ internal class PixelFallbackSnapshotProcessor(
         identityFactory: CompositionIdentityFactory,
         onResolved: (PixelOutcome) -> Unit
     ) {
-        if (capture.isTextFree) {
+        if (capture.skipsTextDetection) {
             resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity, onResolved)
             return
         }

@@ -74,7 +74,7 @@ internal class ViewPixelCaptureTest {
         assertThat(result.isTerminal).isTrue()
         assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
         assertThat(fakePending.single().bitmap).isSameAs(mockBitmap)
-        assertThat(fakePending.single().isTextFree).isFalse()
+        assertThat(fakePending.single().skipsTextDetection).isFalse()
     }
 
     @Test

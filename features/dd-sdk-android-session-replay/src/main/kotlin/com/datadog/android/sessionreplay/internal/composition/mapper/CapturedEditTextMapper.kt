@@ -29,12 +29,14 @@ internal class CapturedEditTextMapper(
     viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
     backgroundShapeStyleResolver: CapturedBackgroundShapeStyleResolver,
-    internalLogger: InternalLogger
+    internalLogger: InternalLogger,
+    canMaskText: Boolean = false
 ) : CapturedTextViewMapper<EditText>(
     viewBoundsResolver = viewBoundsResolver,
     colorStringFormatter = colorStringFormatter,
     backgroundShapeStyleResolver = backgroundShapeStyleResolver,
-    internalLogger = internalLogger
+    internalLogger = internalLogger,
+    canMaskText = canMaskText
 ) {
 
     override fun resolveCapturedText(view: EditText, textAndInputPrivacy: TextAndInputPrivacy): CapturedText {

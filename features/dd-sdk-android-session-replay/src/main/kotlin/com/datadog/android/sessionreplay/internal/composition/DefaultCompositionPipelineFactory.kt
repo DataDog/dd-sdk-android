@@ -214,14 +214,16 @@ internal class DefaultCompositionPipelineFactory(
                         EditText::class.java,
                         CapturedEditTextMapper(
                             backgroundShapeStyleResolver = backgroundResolver,
-                            internalLogger = internalLogger
+                            internalLogger = internalLogger,
+                            canMaskText = canMaskText
                         )
                     ),
                     CapturedMapperTypeWrapper(
                         TextView::class.java,
                         CapturedTextViewMapper<TextView>(
                             backgroundShapeStyleResolver = backgroundResolver,
-                            internalLogger = internalLogger
+                            internalLogger = internalLogger,
+                            canMaskText = canMaskText
                         )
                     )
                 ),
