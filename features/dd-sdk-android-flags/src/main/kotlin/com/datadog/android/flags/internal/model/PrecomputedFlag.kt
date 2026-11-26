@@ -19,5 +19,6 @@ internal data class PrecomputedFlag(
     override val reason: String,
     override val serialId: Long? = null,
     override val observeFullEvaluationData: Boolean = false,
-    val features: List<SplitFeature> = emptyList()
+    val features: List<SplitFeature> = emptyList(),
+    val dependencyEvaluations: List<PrecomputedDependencyEvaluation> = emptyList()
 ) : UnparsedFlagWithConsent

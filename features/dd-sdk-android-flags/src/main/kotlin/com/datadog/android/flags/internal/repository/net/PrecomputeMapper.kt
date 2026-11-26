@@ -40,6 +40,7 @@ internal class PrecomputeMapper(
         redactErrors: Boolean
     ): PrecomputedAssignments? = mapInternal(rawJson, experimentationOptOut, redactErrors)
 
+    @Suppress("LongMethod", "UnsafeThirdPartyFunctionCall", "ThrowingInternalException")
     private fun mapInternal(
         rawJson: String,
         experimentationOptOut: ExperimentationOptOut.Request?,
@@ -56,15 +57,35 @@ internal class PrecomputeMapper(
             val obfuscation = FlagsJson.readObfuscation(metadata)
             val observeFullEvaluationData = FlagsJson.readConsent(metadata)
             val flags = attributes.flags.additionalProperties
-            if (obfuscation != null) FlagsJson.validateKeys(flags.keys.iterator())
+            val rawErrors = metadata.get("flagEvaluationErrors")
+            if (rawErrors != null && !rawErrors.isJsonObject) {
+                throw JsonParseException("Precomputed flagEvaluationErrors must be an object")
+            }
+            val errors = rawErrors?.asJsonObject?.entrySet().orEmpty()
+            if (flags.keys.any { rawErrors?.asJsonObject?.has(it) == true }) {
+                throw JsonParseException("A precomputed flag cannot have both an assignment and an evaluation error")
+            }
+            if (obfuscation != null) {
+                FlagsJson.validateKeys(flags.keys.iterator())
+                FlagsJson.validateKeys(errors.map { it.key }.iterator())
+            }
             val assignments = flags.mapValues { (_, value) ->
                 FlagsJson.readAssignment(FlagsJson.objectValue(value)).copy(
                     observeFullEvaluationData = observeFullEvaluationData
                 )
             }
             if (assignments.values.any { !VariationType.isSupported(it.variationType) }) warnUnsupportedType()
+            val evaluationErrors = errors.associate { (key, value) ->
+                key to FlagsJson.readEvaluationError(FlagsJson.objectValue(value))
+            }
+            FlagsJson.validateDependencyEncryption(assignments.values, evaluationErrors.values, obfuscation)
             warnUnknownDestinations(assignments.values)
-            PrecomputedAssignments(assignments, obfuscation, observeFullEvaluationData)
+            PrecomputedAssignments(
+                flags = assignments,
+                obfuscation = obfuscation,
+                observeFullEvaluationData = observeFullEvaluationData,
+                flagEvaluationErrors = evaluationErrors
+            )
         } else {
             internalLogger.log(
                 InternalLogger.Level.WARN,

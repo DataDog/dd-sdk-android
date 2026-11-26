@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.openfeature.internal.exposure
 
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.EvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationMetadata
 import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
@@ -30,19 +31,21 @@ internal class ExposureDecisions(
      * @param context the context of the assignment that was evaluated.
      * @param recordExposure records the exposure and returns whether it was already recorded, or null when the
      * evaluation turned stale. It is null for a non-exposure.
+     * @param isExposure true when the root evaluation is an exposure.
+     * @param dependencyExposures selected prerequisite decisions, in evaluation order.
      */
     internal class Decision(
         features: Map<String, Any>,
         val context: EvaluationContext?,
-        private val recordExposure: (() -> Boolean?)?
+        private val recordExposure: (() -> Boolean?)?,
+        val isExposure: Boolean = recordExposure != null,
+        dependencyExposures: List<_FlagsInternalProxy.DeferredDependencyExposure> = emptyList()
     ) {
         val hookFeatures: Map<String, Any> = features.toMap()
+        val dependencies: List<DependencyDecision> = dependencyExposures.map { DependencyDecision(it) }
 
         private var isCompleted = false
         private var isRecorded: Boolean? = null
-
-        val isExposure: Boolean
-            get() = recordExposure != null
 
         /**
          * Records the exposure on the first call.
@@ -57,16 +60,58 @@ internal class ExposureDecisions(
             }
             return isRecorded
         }
+
+        @Synchronized
+        fun completeAll(): Completion {
+            val completedDependencies = dependencies.map { it.complete() }
+            return Completion(complete(), completedDependencies)
+        }
     }
+
+    internal class DependencyDecision(exposure: _FlagsInternalProxy.DeferredDependencyExposure) {
+        val flagKey: String = exposure.flagKey
+        val variantKey: String? = exposure.variantKey
+        val allocationKey: String? = exposure.allocationKey
+        val hookFeatures: Map<String, Any> = exposure.hookFeatures.toMap()
+        val isExposure: Boolean = exposure.isExposure
+        private val recordExposure = exposure.recordExposure
+        private var isCompleted = false
+        private var isRecorded: Boolean? = null
+
+        @Synchronized
+        fun complete(): CompletedDependency {
+            if (!isCompleted) {
+                isRecorded = recordExposure?.invoke()
+                isCompleted = true
+            }
+            return CompletedDependency(this, isRecorded)
+        }
+    }
+
+    internal data class CompletedDependency(val decision: DependencyDecision, val cacheHit: Boolean?)
+
+    internal data class Completion(
+        val rootCacheHit: Boolean?,
+        val dependencies: List<CompletedDependency>
+    )
 
     fun register(
         metadata: EvaluationMetadata,
         hookFeatures: Map<String, Any>,
         context: EvaluationContext?,
         recordExposure: (() -> Boolean?)?
+    ) = registerWithDependencies(metadata, hookFeatures, context, recordExposure, recordExposure != null, emptyList())
+
+    fun registerWithDependencies(
+        metadata: EvaluationMetadata,
+        hookFeatures: Map<String, Any>,
+        context: EvaluationContext?,
+        recordExposure: (() -> Boolean?)?,
+        isExposure: Boolean,
+        dependencyExposures: List<_FlagsInternalProxy.DeferredDependencyExposure>
     ) {
-        if (hookFeatures.isEmpty() && recordExposure == null) return
-        val decision = Decision(hookFeatures, context, recordExposure)
+        if (hookFeatures.isEmpty() && recordExposure == null && dependencyExposures.isEmpty()) return
+        val decision = Decision(hookFeatures, context, recordExposure, isExposure, dependencyExposures)
         synchronized(decisions) { decisions[metadata] = decision }
     }
 
@@ -78,4 +123,7 @@ internal class ExposureDecisions(
      */
     fun complete(details: FlagEvaluationDetails<*>): Boolean? =
         if (details.errorCode != null || details.reason == Reason.ERROR.name) null else find(details)?.complete()
+
+    fun completeAll(details: FlagEvaluationDetails<*>): Completion? =
+        if (details.errorCode != null || details.reason == Reason.ERROR.name) null else find(details)?.completeAll()
 }

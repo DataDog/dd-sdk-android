@@ -7,9 +7,12 @@
 package com.datadog.android.flags.internal.serialization
 
 import com.datadog.android.flags.internal.model.Assignment
+import com.datadog.android.flags.internal.model.DependencyFlagKeyEncryption
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsState
+import com.datadog.android.flags.internal.model.PrecomputedDependencyEvaluation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.PrecomputedFlagEvaluationError
 import com.datadog.android.flags.internal.model.SplitFeature
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -18,6 +21,16 @@ import org.json.JSONException
 import org.json.JSONObject
 
 /** Generated model adapters, legacy JSON conversions, and encoding validation. */
+@Suppress(
+    "TooManyFunctions",
+    "StringLiteralDuplication",
+    "ComplexCondition",
+    "CyclomaticComplexMethod",
+    "MagicNumber",
+    "ThrowsCount",
+    "UnsafeThirdPartyFunctionCall",
+    "ThrowingInternalException"
+) // Wire validation intentionally keeps every rejected union shape explicit and local.
 internal object FlagsJson {
     fun readConsent(json: JsonObject): Boolean {
         val value = json.get(OBSERVE_FULL_EVALUATION_DATA)
@@ -43,6 +56,7 @@ internal object FlagsJson {
         if (serialId?.isJsonPrimitive != true || !serialId.asJsonPrimitive.isNumber) json.remove("serialId")
         val features = SplitFeaturesJson.normalize(json.get(FEATURES))
         if (features == null) json.remove(FEATURES) else json.add(FEATURES, features)
+        val dependencyEvaluations = readDependencyEvaluations(json.get(DEPENDENCY_EVALUATIONS))
 
         if (!json.has("extraLogging")) json.add("extraLogging", JsonObject())
         // An unsupported variationType stays in the flag, so that the flag resolves with PARSE_ERROR.
@@ -65,7 +79,8 @@ internal object FlagsJson {
             serialId = assignment.serialId,
             features = assignment.features.orEmpty().map { feature ->
                 SplitFeature(feature.key, SplitFeaturesJson.value(feature.value), feature.destinations)
-            }
+            },
+            dependencyEvaluations = dependencyEvaluations
         )
     }
 
@@ -83,10 +98,74 @@ internal object FlagsJson {
         }
     )
 
+    fun writeAssignmentJson(flag: PrecomputedFlag): JsonObject = writeAssignment(
+        flag
+    ).toJson().asJsonObject.also { json ->
+        writeDependencyEvaluations(flag.dependencyEvaluations)?.let { json.add(DEPENDENCY_EVALUATIONS, it) }
+    }
+
+    @Throws(JsonParseException::class)
+    fun readEvaluationError(json: JsonObject): PrecomputedFlagEvaluationError {
+        val reason = json.get("reason")
+        val errorCode = json.get("errorCode")
+        val errorMessage = json.get("errorMessage")
+        val invalidReason = reason?.isJsonPrimitive != true || !reason.asJsonPrimitive.isString ||
+            reason.asString != "ERROR"
+        val invalidErrorCode = errorCode?.isJsonPrimitive != true || !errorCode.asJsonPrimitive.isString ||
+            errorCode.asString != "GENERAL"
+        if (invalidReason || invalidErrorCode ||
+            (
+                errorMessage != null &&
+                    (
+                        errorMessage.isJsonPrimitive.not() || errorMessage.asJsonPrimitive.isString.not() ||
+                            errorMessage.asString.isEmpty()
+                        )
+                )
+        ) {
+            throw JsonParseException("Invalid precomputed flag evaluation error")
+        }
+        return PrecomputedFlagEvaluationError(
+            errorCode = errorCode.asString,
+            errorMessage = errorMessage?.asString,
+            dependencyEvaluations = readDependencyEvaluations(json.get(DEPENDENCY_EVALUATIONS))
+        )
+    }
+
+    fun writeEvaluationError(error: PrecomputedFlagEvaluationError): JsonObject = JsonObject().apply {
+        addProperty("reason", "ERROR")
+        addProperty("errorCode", error.errorCode)
+        error.errorMessage?.let { addProperty("errorMessage", it) }
+        writeDependencyEvaluations(error.dependencyEvaluations)?.let { add(DEPENDENCY_EVALUATIONS, it) }
+    }
+
+    @Throws(JsonParseException::class)
+    fun validateDependencyEncryption(
+        flags: Collection<PrecomputedFlag>,
+        errors: Collection<PrecomputedFlagEvaluationError>,
+        obfuscation: FlagKeyObfuscation?
+    ) {
+        val dependencies = flags.flatMap { it.dependencyEvaluations } + errors.flatMap { it.dependencyEvaluations }
+        if (dependencies.isNotEmpty() && obfuscation != null && !obfuscation.dependencyKeyEncryption) {
+            throw JsonParseException("Unsupported dependency flag-key encryption scheme")
+        }
+        dependencies.forEach { dependency ->
+            val key = dependency.flagKey
+            if (obfuscation != null &&
+                (
+                    key.length < MIN_ENCRYPTED_DEPENDENCY_KEY_LENGTH || key.length % 4 == 1 ||
+                        key.any { it !in BASE64_URL_ALPHABET }
+                    )
+            ) {
+                throw JsonParseException("Invalid encrypted dependency flag key")
+            }
+        }
+    }
+
     @Throws(JsonParseException::class)
     fun readState(json: JsonObject, obfuscation: FlagKeyObfuscation?): FlagsState {
         // Preserve old caches: ignore the unused map and accept JSONObject's context conversions.
         json.remove(if (obfuscation == null) "encodedFlags" else "flags")
+        json.remove(if (obfuscation == null) "encodedFlagEvaluationErrors" else "flagEvaluationErrors")
         val context = objectValue(json.get("evaluationContext"))
         if (context.get("attributes") !is JsonObject) context.remove("attributes")
         context.get("targetingKey")?.let { context.addProperty("targetingKey", stringValue(it)) }
@@ -123,7 +202,16 @@ internal object FlagsJson {
             @Suppress("ThrowingInternalException") // Caught by the response or cache deserializer.
             throw JsonParseException("Unsupported flag-key obfuscation scheme")
         }
-        return FlagKeyObfuscation.fromSalt(encoding.salt)
+        val dependencyEncryption = descriptor.get("dependencyKeyEncryption")
+        val supportedDependencyEncryption = if (dependencyEncryption == null) {
+            false
+        } else {
+            val dependencyDescriptor = objectValue(dependencyEncryption)
+            val scheme = dependencyDescriptor.get("scheme")
+            scheme?.isJsonPrimitive == true && scheme.asJsonPrimitive.isString &&
+                scheme.asString == DependencyFlagKeyEncryption.SCHEME
+        }
+        return FlagKeyObfuscation.fromSalt(encoding.salt, supportedDependencyEncryption)
     }
 
     @Throws(JsonParseException::class)
@@ -145,8 +233,76 @@ internal object FlagsJson {
     fun objectValue(value: Any?): JsonObject = (value as? JsonObject)
         ?: throw JsonParseException("Expected a JSON object")
 
+    @Throws(JsonParseException::class)
+    private fun readDependencyEvaluations(value: JsonElement?): List<PrecomputedDependencyEvaluation> {
+        if (value == null) return emptyList()
+        if (!value.isJsonArray) throw JsonParseException("Invalid dependency evaluations")
+        val keys = mutableSetOf<String>()
+        return value.asJsonArray.map { entry ->
+            val json = objectValue(entry)
+            val flagKey = json.get("flagKey")
+            if (flagKey?.isJsonPrimitive != true || !flagKey.asJsonPrimitive.isString ||
+                flagKey.asString.isEmpty() || !keys.add(flagKey.asString)
+            ) {
+                throw JsonParseException("Invalid dependency flag key")
+            }
+            val reason = json.get("reason")
+            val errorCode = json.get("errorCode")
+            val errorMessage = json.get("errorMessage")
+            val isPresent = json.get("isPresentInAssignment")
+            if (reason?.isJsonPrimitive == true && reason.asJsonPrimitive.isString && reason.asString == "ERROR") {
+                if (errorCode?.isJsonPrimitive != true || !errorCode.asJsonPrimitive.isString ||
+                    errorCode.asString.isEmpty() || isPresent != null ||
+                    (
+                        errorMessage != null &&
+                            (
+                                errorMessage.isJsonPrimitive.not() || errorMessage.asJsonPrimitive.isString.not() ||
+                                    errorMessage.asString.isEmpty()
+                                )
+                        )
+                ) {
+                    throw JsonParseException("Invalid dependency evaluation error")
+                }
+                PrecomputedDependencyEvaluation.Error(flagKey.asString, errorCode.asString, errorMessage?.asString)
+            } else {
+                if (reason != null || errorCode != null || errorMessage != null ||
+                    isPresent?.isJsonPrimitive != true || !isPresent.asJsonPrimitive.isBoolean
+                ) {
+                    throw JsonParseException("Invalid successful dependency evaluation")
+                }
+                PrecomputedDependencyEvaluation.Success(flagKey.asString, isPresent.asBoolean)
+            }
+        }
+    }
+
+    private fun writeDependencyEvaluations(
+        dependencies: List<PrecomputedDependencyEvaluation>
+    ): com.google.gson.JsonArray? = dependencies.takeIf { it.isNotEmpty() }?.let { evaluations ->
+        com.google.gson.JsonArray().apply {
+            evaluations.forEach { dependency ->
+                add(
+                    JsonObject().apply {
+                        addProperty("flagKey", dependency.flagKey)
+                        when (dependency) {
+                            is PrecomputedDependencyEvaluation.Success ->
+                                addProperty("isPresentInAssignment", dependency.isPresentInAssignment)
+                            is PrecomputedDependencyEvaluation.Error -> {
+                                addProperty("reason", "ERROR")
+                                addProperty("errorCode", dependency.errorCode)
+                                dependency.errorMessage?.let { addProperty("errorMessage", it) }
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
+
     private val STRING_FIELDS = listOf("variationType", "variationValue", "allocationKey", "variationKey", "reason")
     private const val DIGEST_HEX_LENGTH = 64
     private const val OBSERVE_FULL_EVALUATION_DATA = "observeFullEvaluationData"
     private const val FEATURES = "features"
+    private const val DEPENDENCY_EVALUATIONS = "dependencyEvaluations"
+    private const val MIN_ENCRYPTED_DEPENDENCY_KEY_LENGTH = 38
+    private const val BASE64_URL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 }

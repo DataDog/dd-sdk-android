@@ -96,7 +96,8 @@ class FlagsEvaluationTest {
 
         // Then
         val request = stubSdkCore.requestsSent().single()
-        assertThat(request.url.toString()).isEqualTo(fakeFlagEndpoint)
+        assertThat(request.url.toString())
+            .isEqualTo("$fakeFlagEndpoint?cap_dependent-flags-variant-key=v1")
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.header("dd-client-token")).isEqualTo(datadogContext.clientToken)
         val attributes = request.bodyAsJson().getJSONObject("data").getJSONObject("attributes")
@@ -152,10 +153,11 @@ class FlagsEvaluationTest {
     }
 
     @Test
-    fun `M ignore dependent fields W resolve() {legacy client}`(
+    fun `M omit dependent entries W resolve() {bridge client}`(
         @BoolForgery fakeValue: Boolean
     ) {
         // Given
+        stubSdkCore.stubSource("react-native")
         val response = JSONObject(
             precomputedAssignmentsBody(mapOf(fakeFlagKey to assignment("boolean", fakeValue)))
         )
@@ -181,19 +183,20 @@ class FlagsEvaluationTest {
 
         // When
         val details = client.resolve(fakeFlagKey, !fakeValue)
+        val failedDetails = client.resolve("failed-flag", fakeValue)
         stubSdkCore.stopFeatures()
 
         // Then
-        assertThat(details.value).isEqualTo(fakeValue)
-        assertThat(details.errorCode).isNull()
+        assertThat(details.value).isEqualTo(!fakeValue)
+        assertThat(details.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
+        assertThat(failedDetails.value).isEqualTo(fakeValue)
+        assertThat(failedDetails.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
         val exposureEvents = stubSdkCore.eventsWritten(Feature.FLAGS_FEATURE_NAME)
         val evaluationEvents = stubSdkCore.eventsWritten(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)
-        assertThat(exposureEvents).hasSize(1)
-        assertThat(evaluationEvents).hasSize(1)
-        assertThat(JSONObject(exposureEvents.single().eventData).getJSONObject("flag").getString("key"))
-            .isEqualTo(fakeFlagKey)
-        assertThat(JSONObject(evaluationEvents.single().eventData).getJSONObject("flag").getString("key"))
-            .isEqualTo(fakeFlagKey)
+        assertThat(exposureEvents).isEmpty()
+        assertThat(evaluationEvents).hasSize(2)
+        assertThat(evaluationEvents.map { JSONObject(it.eventData).getJSONObject("flag").getString("key") })
+            .containsExactlyInAnyOrder(fakeFlagKey, "failed-flag")
     }
 
     @Test

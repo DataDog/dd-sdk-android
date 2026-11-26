@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.model.PrecomputedDependencyEvaluation
 import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.utils.verifyLog
@@ -19,6 +20,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -803,6 +805,112 @@ internal class PrecomputeMapperTest {
     }
 
     // endregion
+
+    @Test
+    fun `M retain dependency traces and root errors W map()`() {
+        // Given
+        val parent = buildFlagJson(VariationType.BOOLEAN.value, true)
+        val root = buildFlagJson(VariationType.BOOLEAN.value, false).put(
+            "dependencyEvaluations",
+            JSONArray().put(JSONObject().put("flagKey", "parent").put("isPresentInAssignment", true))
+        )
+        val attributes = JSONObject(buildValidJson(mapOf("parent" to parent, "root" to root)))
+            .getJSONObject("data").getJSONObject("attributes")
+        attributes.put(
+            "flagEvaluationErrors",
+            JSONObject().put(
+                "failed-root",
+                JSONObject()
+                    .put("reason", "ERROR")
+                    .put("errorCode", "GENERAL")
+                    .put(
+                        "dependencyEvaluations",
+                        JSONArray()
+                            .put(JSONObject().put("flagKey", "parent").put("isPresentInAssignment", false))
+                            .put(
+                                JSONObject()
+                                    .put("flagKey", "missing")
+                                    .put("reason", "ERROR")
+                                    .put("errorCode", "FLAG_NOT_FOUND")
+                            )
+                    )
+            )
+        )
+        val response = JSONObject().put("data", JSONObject().put("attributes", attributes)).toString()
+
+        // When
+        val result = checkNotNull(testedMapper.map(response))
+
+        // Then
+        assertThat(result.flags.getValue("root").dependencyEvaluations).containsExactly(
+            PrecomputedDependencyEvaluation.Success("parent", true)
+        )
+        assertThat(result.flagEvaluationErrors.getValue("failed-root").dependencyEvaluations).containsExactly(
+            PrecomputedDependencyEvaluation.Success("parent", false),
+            PrecomputedDependencyEvaluation.Error("missing", "FLAG_NOT_FOUND")
+        )
+    }
+
+    @Test
+    fun `M reject response W map() {flag is both assignment and error}`() {
+        // Given
+        val attributes = JSONObject(
+            buildValidJson(mapOf(fakeFlagKey to buildFlagJson(VariationType.BOOLEAN.value, true)))
+        )
+            .getJSONObject("data").getJSONObject("attributes")
+        attributes.put(
+            "flagEvaluationErrors",
+            JSONObject().put(fakeFlagKey, JSONObject().put("reason", "ERROR").put("errorCode", "GENERAL"))
+        )
+        val response = JSONObject().put("data", JSONObject().put("attributes", attributes)).toString()
+
+        // When
+        val result = testedMapper.map(response)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M accept encrypted dependency W map() {declared scheme}`() {
+        // Given
+        val root = buildFlagJson(VariationType.BOOLEAN.value, true).put(
+            "dependencyEvaluations",
+            JSONArray().put(
+                JSONObject()
+                    .put("flagKey", "tATBHdKpF-zxZ2Fr70UGwTMfPcXSdulh78uKYPpNzVBoSlNnB6qMCTtI1o8")
+                    .put("isPresentInAssignment", true)
+            )
+        )
+        val attributes = JSONObject(
+            buildValidJson(
+                mapOf(
+                    "a".repeat(64) to root,
+                    "b".repeat(64) to buildFlagJson(VariationType.BOOLEAN.value, false)
+                )
+            )
+        )
+            .getJSONObject("data").getJSONObject("attributes")
+        attributes.put("obfuscated", true)
+        attributes.put(
+            "obfuscation",
+            JSONObject()
+                .put("scheme", "flag-key-sha256-v1")
+                .put("salt", "000102030405060708090a0b0c0d0e0f")
+                .put(
+                    "dependencyKeyEncryption",
+                    JSONObject().put("scheme", "dependency-key-hkdf-sha256-aes-256-gcm-v1")
+                )
+        )
+        val response = JSONObject().put("data", JSONObject().put("attributes", attributes)).toString()
+
+        // When
+        val result = testedMapper.map(response)
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result?.obfuscation?.dependencyKeyEncryption).isTrue()
+    }
 
     // region Helper Methods
 

@@ -70,7 +70,10 @@ class com.datadog.android.flags._FlagsInternalProxy
   fun trackFlagRumEvaluation(flagKey: String, variantKey: String, context: com.datadog.android.flags.model.EvaluationContext)
   fun <T: Any> resolveDeferringExposure(flagKey: String, defaultValue: T): DeferredExposureResolution<T>
   class DeferredExposureResolution<T: Any>
+    constructor(details: com.datadog.android.flags.model.ResolutionDetails<T>, context: com.datadog.android.flags.model.EvaluationContext?, recordExposure: () -> Boolean??, isRootExposure: Boolean, dependencyExposures: List<DeferredDependencyExposure> = emptyList())
     constructor(details: com.datadog.android.flags.model.ResolutionDetails<T>, context: com.datadog.android.flags.model.EvaluationContext?, recordExposure: () -> Boolean??)
+  class DeferredDependencyExposure
+    constructor(flagKey: String, variantKey: String?, allocationKey: String?, hookFeatures: Map<String, Any>, isExposure: Boolean, recordExposure: () -> Boolean??)
 enum com.datadog.android.flags.model.ErrorCode
   - PROVIDER_NOT_READY
   - FLAG_NOT_FOUND

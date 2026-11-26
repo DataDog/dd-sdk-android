@@ -15,5 +15,8 @@ internal data class FlagEvaluationSnapshot(
     val context: EvaluationContext,
     val observeFullEvaluationData: Boolean,
     val telemetryTargetingKey: EvaluationTargetingKey =
-        EvaluationTargetingKey.create(context.targetingKey, observeFullEvaluationData)
+        EvaluationTargetingKey.create(context.targetingKey, observeFullEvaluationData),
+    val evaluationError: PrecomputedFlagEvaluationError? = null,
+    val dependencyEvaluations: List<ResolvedDependencyEvaluation> = emptyList(),
+    val dependencyResolutionError: String? = null
 )

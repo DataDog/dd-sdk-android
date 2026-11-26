@@ -296,18 +296,21 @@ class DatadogFlagsProvider private constructor(
     }
 
     private fun hasDecision(resolution: _FlagsInternalProxy.DeferredExposureResolution<*>): Boolean =
-        resolution.recordExposure != null || resolution.details.hookFeatures().isNotEmpty()
+        resolution.recordExposure != null || resolution.details.hookFeatures().isNotEmpty() ||
+            resolution.dependencyExposures.isNotEmpty()
 
     private fun register(
         evaluation: ProviderEvaluation<*>,
         resolution: _FlagsInternalProxy.DeferredExposureResolution<*>
     ) {
         if (!hasDecision(resolution)) return
-        exposureDecisions.register(
+        exposureDecisions.registerWithDependencies(
             evaluation.metadata,
             resolution.details.hookFeatures(),
             resolution.context,
-            resolution.recordExposure
+            resolution.recordExposure,
+            resolution.isRootExposure,
+            resolution.dependencyExposures
         )
     }
 

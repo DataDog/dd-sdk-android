@@ -14,7 +14,10 @@ import java.util.Locale
 /** Salt validated before lookup hashes are computed. */
 // Keep copy() private so callers cannot bypass salt validation.
 @ConsistentCopyVisibility
-internal data class FlagKeyObfuscation private constructor(val salt: String) {
+internal data class FlagKeyObfuscation private constructor(
+    val salt: String,
+    val dependencyKeyEncryption: Boolean
+) {
     @Suppress("UnsafeThirdPartyFunctionCall") // The cache limit is a positive constant.
     private val lookupKeys = LruCache<String, String>(LOOKUP_CACHE_LIMIT)
 
@@ -46,12 +49,12 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
         private const val LOOKUP_CACHE_LIMIT = 1024
 
         @Throws(JsonParseException::class)
-        fun fromSalt(salt: String): FlagKeyObfuscation {
+        fun fromSalt(salt: String, dependencyKeyEncryption: Boolean = false): FlagKeyObfuscation {
             if (!isLowercaseHex(salt, SALT_BYTES)) {
                 @Suppress("ThrowingInternalException") // Caught by the response or cache parser.
                 throw JsonParseException("Flag-key salt must contain 32 lowercase hexadecimal characters")
             }
-            return FlagKeyObfuscation(salt)
+            return FlagKeyObfuscation(salt, dependencyKeyEncryption)
         }
 
         private fun isLowercaseHex(value: String, bytes: Int): Boolean =

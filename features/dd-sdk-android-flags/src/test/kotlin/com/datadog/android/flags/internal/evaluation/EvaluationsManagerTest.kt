@@ -300,7 +300,7 @@ internal class EvaluationsManagerTest {
             fakeDatadogContext
         }
 
-        whenever(mockFlagsRepository.installFlagsAndContext(any(), any(), anyOrNull(), any())).thenAnswer {
+        whenever(mockFlagsRepository.installFlagsAndContext(any(), any(), anyOrNull(), any(), any())).thenAnswer {
             FlagsInstallation { onInstalled -> onInstalled() }
         }
 
@@ -680,7 +680,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context)
 
         // Then
-        verify(mockFlagsRepository).installFlagsAndContext(context, expectedFlags, null, false)
+        verify(mockFlagsRepository).installFlagsAndContext(context, expectedFlags, null, false, emptyMap())
         verify(mockInternalLogger, times(2)).log(
             eq(InternalLogger.Level.DEBUG),
             eq(InternalLogger.Target.MAINTAINER),
@@ -741,7 +741,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context, callback)
 
         // Then
-        verify(mockFlagsRepository, never()).installFlagsAndContext(any(), any(), anyOrNull(), any())
+        verify(mockFlagsRepository, never()).installFlagsAndContext(any(), any(), anyOrNull(), any(), any())
         verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
         verify(mockFlagsStateManager, never()).updateState(FlagsClientState.Ready)
         verify(callback).onFailure(any())
@@ -937,7 +937,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(publicContext)
 
         // Then
-        verify(mockFlagsRepository).installFlagsAndContext(sanitizedContext, emptyMap(), null, false)
+        verify(mockFlagsRepository).installFlagsAndContext(sanitizedContext, emptyMap(), null, false, emptyMap())
     }
 
     @Test
@@ -1020,7 +1020,7 @@ internal class EvaluationsManagerTest {
         // Then
         verify(mockCallback).onSuccess()
         verify(mockCallback, never()).onFailure(any())
-        verify(mockFlagsRepository).installFlagsAndContext(publicContext, emptyMap(), null, fakeConsent)
+        verify(mockFlagsRepository).installFlagsAndContext(publicContext, emptyMap(), null, fakeConsent, emptyMap())
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
 
@@ -1656,7 +1656,7 @@ internal class EvaluationsManagerTest {
         // Then
         verify(mockCallback).onFailure(any<FlagsInitializationTimeoutException>())
         verify(mockCallback, never()).onSuccess()
-        verify(mockFlagsRepository).installFlagsAndContext(context, emptyMap(), null, false)
+        verify(mockFlagsRepository).installFlagsAndContext(context, emptyMap(), null, false, emptyMap())
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
 
@@ -2150,7 +2150,8 @@ internal class EvaluationsManagerTest {
             lastUpdateTimestamp = 0L,
             flagSelection = null
         )
-        lateinit var persistenceCallback: DataStoreReadCallback<FlagsStateEntry>
+        lateinit var dependentPersistenceCallback: DataStoreReadCallback<FlagsStateEntry>
+        lateinit var legacyPersistenceCallback: DataStoreReadCallback<FlagsStateEntry>
         whenever(
             mockDataStore.value<FlagsStateEntry>(
                 key = any(),
@@ -2159,7 +2160,11 @@ internal class EvaluationsManagerTest {
                 deserializer = any()
             )
         ).doAnswer {
-            persistenceCallback = it.getArgument(2)
+            if (it.getArgument<String>(0).contains("dependent-v1")) {
+                dependentPersistenceCallback = it.getArgument(2)
+            } else {
+                legacyPersistenceCallback = it.getArgument(2)
+            }
             null
         }
         val testedRepository = DefaultFlagsRepository(
@@ -2177,7 +2182,8 @@ internal class EvaluationsManagerTest {
                 isA<Diagnostics>()
             )
         ).thenAnswer {
-            persistenceCallback.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+            dependentPersistenceCallback.onFailure()
+            legacyPersistenceCallback.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
             null
         }
         val testedManager = createManagerWithRepository(testedRepository)
@@ -2298,7 +2304,13 @@ internal class EvaluationsManagerTest {
             additionalProperties = mapOf("reason" to fakeIgnoredReason)
         )
         assertThat(capturedLogMessages()).contains("Successfully processed context $fakeTargetingKey with 0 flags")
-        verify(mockFlagsRepository).installFlagsAndContext(eq(context), eq(emptyMap()), anyOrNull(), eq(false))
+        verify(mockFlagsRepository).installFlagsAndContext(
+            eq(context),
+            eq(emptyMap()),
+            anyOrNull(),
+            eq(false),
+            eq(emptyMap())
+        )
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
 
@@ -2322,7 +2334,7 @@ internal class EvaluationsManagerTest {
 
         // Then
         assertThat(capturedLogMessages()).noneMatch { "flagSelection" in it || "Flag selection" in it }
-        verify(mockFlagsRepository, never()).installFlagsAndContext(any(), any(), anyOrNull(), any())
+        verify(mockFlagsRepository, never()).installFlagsAndContext(any(), any(), anyOrNull(), any(), any())
         verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
     }
 
@@ -2347,7 +2359,7 @@ internal class EvaluationsManagerTest {
 
         // Then
         assertThat(capturedLogMessages()).noneMatch { "flagSelection" in it || "Flag selection" in it }
-        verify(mockFlagsRepository, never()).installFlagsAndContext(any(), any(), anyOrNull(), any())
+        verify(mockFlagsRepository, never()).installFlagsAndContext(any(), any(), anyOrNull(), any(), any())
         verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
     }
 
@@ -2397,7 +2409,13 @@ internal class EvaluationsManagerTest {
 
         // Then
         assertThat(capturedLogMessages()).noneMatch { "flagSelection" in it || "Flag selection" in it }
-        verify(mockFlagsRepository).installFlagsAndContext(eq(context), eq(emptyMap()), anyOrNull(), eq(false))
+        verify(mockFlagsRepository).installFlagsAndContext(
+            eq(context),
+            eq(emptyMap()),
+            anyOrNull(),
+            eq(false),
+            eq(emptyMap())
+        )
     }
 
     @Test
@@ -2776,7 +2794,7 @@ internal class EvaluationsManagerTest {
         verify(newerCallback).onSuccess()
         verify(firstCallback).onFailure(isA<FlagsContextSupersededException>())
         verify(firstCallback, never()).onSuccess()
-        verify(mockFlagsRepository, never()).installFlagsAndContext(eq(first), any(), anyOrNull(), any())
+        verify(mockFlagsRepository, never()).installFlagsAndContext(eq(first), any(), anyOrNull(), any(), any())
     }
 
     @ParameterizedTest

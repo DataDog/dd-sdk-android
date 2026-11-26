@@ -64,23 +64,58 @@ class ExposureHook internal constructor(
         }
         @Suppress("TooGenericExceptionCaught") // The callback is application code; an Error propagates.
         try {
-            callback.onEvaluation(createEvaluation(ctx, details, providerMetadata))
+            createEvaluations(ctx, details, providerMetadata).forEach(callback::onEvaluation)
         } catch (e: Exception) {
             val level = if (callbackFailed.getAndSet(true)) InternalLogger.Level.DEBUG else InternalLogger.Level.WARN
             log(providerMetadata.internalLogger, level, e) { CALLBACK_FAILED_MESSAGE }
         }
     }
 
-    private fun createEvaluation(
+    private fun createEvaluations(
         hookContext: HookContext<Any>,
         details: FlagEvaluationDetails<Any>,
         providerMetadata: DatadogProviderMetadata
-    ): ExposureEvaluation {
+    ): List<ExposureEvaluation> {
         val decisions = providerMetadata.exposureDecisions
         val decision = decisions.find(details)
-        val cacheHit = if (decision?.isExposure == true) decisions.complete(details) else null
-        val isExposure = cacheHit != null
-        val subject = decision?.context
+        val completion = if (decision != null) decisions.completeAll(details) else null
+        val dependencyEvaluations = completion?.dependencies.orEmpty().map { dependency ->
+            val dependencyDecision = dependency.decision
+            createEvaluation(
+                flagKey = dependencyDecision.flagKey,
+                variant = dependencyDecision.variantKey,
+                allocationKey = dependencyDecision.allocationKey,
+                hookFeatures = dependencyDecision.hookFeatures,
+                isExposureDecision = dependencyDecision.isExposure,
+                cacheHit = dependency.cacheHit,
+                hookContext = hookContext,
+                subject = decision?.context
+            )
+        }
+        val cacheHit = completion?.rootCacheHit.takeIf { decision?.isExposure == true }
+        return dependencyEvaluations + createEvaluation(
+            flagKey = details.flagKey,
+            variant = details.variant,
+            allocationKey = details.metadata.getString(ExposureMetadata.ALLOCATION_KEY),
+            hookFeatures = decision?.hookFeatures.orEmpty(),
+            isExposureDecision = decision?.isExposure == true,
+            cacheHit = cacheHit,
+            hookContext = hookContext,
+            subject = decision?.context
+        )
+    }
+
+    private fun createEvaluation(
+        flagKey: String,
+        variant: String?,
+        allocationKey: String?,
+        hookFeatures: Map<String, Any>,
+        isExposureDecision: Boolean,
+        cacheHit: Boolean?,
+        hookContext: HookContext<Any>,
+        subject: com.datadog.android.flags.model.EvaluationContext?
+    ): ExposureEvaluation {
+        val isExposure = isExposureDecision && cacheHit != null
         val openFeatureContext = hookContext.ctx
         val context = if (subject != null) {
             ImmutableContext(subject.targetingKey, subject.attributes.mapValues { Value.String(it.value) })
@@ -88,12 +123,12 @@ class ExposureHook internal constructor(
             openFeatureContext?.let { ImmutableContext(it.getTargetingKey(), it.asMap()) }
         }
         return ExposureEvaluation(
-            flagKey = details.flagKey,
-            variant = details.variant,
-            allocationKey = details.metadata.getString(ExposureMetadata.ALLOCATION_KEY),
+            flagKey = flagKey,
+            variant = variant,
+            allocationKey = allocationKey,
             targetingKey = (subject?.targetingKey ?: openFeatureContext?.getTargetingKey())?.takeIf { it.isNotEmpty() },
             evaluationContext = context,
-            features = decision?.hookFeatures.orEmpty(),
+            features = hookFeatures,
             isExposure = isExposure,
             cacheHit = cacheHit
         )

@@ -20,6 +20,7 @@ import com.google.gson.JsonParser
 internal class FlagsStateDeserializer(private val internalLogger: InternalLogger) :
     Deserializer<String, FlagsStateEntry> {
 
+    @Suppress("LongMethod", "UnsafeThirdPartyFunctionCall", "ThrowingInternalException")
     override fun deserialize(model: String): FlagsStateEntry? = try {
         val json = FlagsJson.objectValue(JsonParser.parseString(model))
         val obfuscation = FlagsJson.readObfuscation(json)
@@ -30,7 +31,22 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
             throw JsonParseException("Missing persisted assignments")
         }
         if (obfuscation != null) FlagsJson.validateKeys(assignments.keys.iterator())
+        val rawErrors = (
+            if (obfuscation == null) {
+                state.flagEvaluationErrors
+            } else {
+                state.encodedFlagEvaluationErrors
+            }
+            )?.additionalProperties.orEmpty()
+        if (obfuscation != null) FlagsJson.validateKeys(rawErrors.keys.iterator())
+        if (assignments.keys.any { rawErrors.containsKey(it) }) {
+            throw JsonParseException("A persisted flag cannot have both an assignment and an evaluation error")
+        }
         val flags = readFlags(assignments)
+        val flagEvaluationErrors = rawErrors.mapValues { (_, value) ->
+            FlagsJson.readEvaluationError(FlagsJson.objectValue(value))
+        }
+        FlagsJson.validateDependencyEncryption(flags.values, flagEvaluationErrors.values, obfuscation)
 
         // A nonempty cache with no readable flags is not a valid empty configuration.
         if (flags.isEmpty() && assignments.isNotEmpty()) {
@@ -45,6 +61,7 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
                 ),
                 flags = flags,
                 lastUpdateTimestamp = state.lastUpdateTimestamp,
+                flagEvaluationErrors = flagEvaluationErrors,
                 obfuscation = obfuscation,
                 observeFullEvaluationData = state.observeFullEvaluationData == true,
                 flagSelection = state.flagSelection?.let { CanonicalFlagSelection(it.tags, it.keyPatterns) }

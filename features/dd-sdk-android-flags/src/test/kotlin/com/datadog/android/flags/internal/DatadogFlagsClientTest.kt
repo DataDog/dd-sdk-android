@@ -21,6 +21,8 @@ import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.PrecomputedFlagEvaluationError
+import com.datadog.android.flags.internal.model.ResolvedDependencyEvaluation
 import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FirstFlagsLatch
@@ -241,6 +243,118 @@ internal class DatadogFlagsClientTest {
         verify(mockRepository).getEvaluationSnapshot(fakeJsonKey)
         verify(mockRepository, never()).getEvaluationContext()
         verify(mockRepository).waitForPersistenceLoad()
+    }
+
+    @Test
+    fun `M defer dependency-only exposure W resolveDeferringExposure() {root is not exposure}`(forge: Forge) {
+        // Given
+        val fakeRootKey = forge.anAlphabeticalString()
+        val fakeDependencyKey = forge.anAlphabeticalString()
+        val fakeContext = EvaluationContext(forge.anAlphabeticalString())
+        val fakeRoot = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = "true",
+            doLog = false,
+            allocationKey = "root-allocation",
+            variationKey = "root-variant"
+        )
+        val fakeDependency = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = "true",
+            doLog = true,
+            allocationKey = "dependency-allocation",
+            variationKey = "dependency-variant"
+        )
+        whenever(mockFlagsRepository.getEvaluationSnapshot(fakeRootKey)) doReturn FlagEvaluationSnapshot(
+            flag = fakeRoot,
+            context = fakeContext,
+            observeFullEvaluationData = false,
+            dependencyEvaluations = listOf(
+                ResolvedDependencyEvaluation(
+                    flagKey = fakeDependencyKey,
+                    flag = fakeDependency,
+                    isPresentInAssignment = true
+                )
+            )
+        )
+
+        // When
+        val resolution = testedClient.resolveDeferringExposure(fakeRootKey, false)
+
+        // Then
+        assertThat(resolution.details.value).isTrue()
+        assertThat(resolution.isRootExposure).isFalse()
+        verifyNoInteractions(mockProcessor)
+        assertThat(resolution.recordExposure as Any?).isNull()
+        val dependencyExposure = resolution.dependencyExposures.single()
+        assertThat(dependencyExposure.flagKey).isEqualTo(fakeDependencyKey)
+        assertThat(dependencyExposure.isExposure).isTrue()
+        checkNotNull(dependencyExposure.recordExposure).invoke()
+        verify(mockProcessor).processEvent(fakeDependencyKey, fakeContext, fakeDependency)
+        verify(mockProcessor, never()).processEvent(fakeRootKey, fakeContext, fakeRoot)
+    }
+
+    @Test
+    fun `M suppress dependency exposure and RUM W resolveDeferringExposure() {root error}`(forge: Forge) {
+        // Given
+        val fakeRootKey = forge.anAlphabeticalString()
+        val fakeDependencyKey = forge.anAlphabeticalString()
+        val fakeContext = EvaluationContext(forge.anAlphabeticalString())
+        val fakeDependency = forge.getForgery<PrecomputedFlag>().copy(
+            doLog = true,
+            allocationKey = "dependency-allocation",
+            variationKey = "dependency-variant"
+        )
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore,
+            mockEvaluationsManager,
+            mockFlagsRepository,
+            FlagsConfiguration.Builder().trackEvaluations(true)
+                .trackExposures(true).rumIntegrationEnabled(true).build(),
+            mockRumEvaluationLogger,
+            mockProcessor,
+            mockEvaluationsFeature,
+            mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false,
+            experimentationOptOut = ExperimentationOptOut()
+        )
+        whenever(mockFlagsRepository.getEvaluationSnapshot(fakeRootKey)) doReturn FlagEvaluationSnapshot(
+            flag = null,
+            context = fakeContext,
+            observeFullEvaluationData = false,
+            evaluationError = PrecomputedFlagEvaluationError(ErrorCode.GENERAL.name),
+            dependencyEvaluations = listOf(
+                ResolvedDependencyEvaluation(
+                    flagKey = fakeDependencyKey,
+                    flag = fakeDependency,
+                    isPresentInAssignment = true
+                )
+            )
+        )
+
+        // When
+        val resolution = testedClient.resolveDeferringExposure(fakeRootKey, false)
+
+        // Then
+        assertThat(resolution.details.value).isFalse()
+        assertThat(resolution.details.errorCode).isEqualTo(ErrorCode.GENERAL)
+        assertThat(resolution.recordExposure as Any?).isNull()
+        verifyNoInteractions(mockProcessor, mockRumEvaluationLogger)
+        val keyCaptor = argumentCaptor<String>()
+        verify(mockEvaluationsFeature, times(2)).processEvaluation(
+            keyCaptor.capture(),
+            eq(fakeContext),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            eq(false),
+            eq(fakeContext.targetingKey),
+            any(),
+            any()
+        )
+        assertThat(keyCaptor.allValues).containsExactly(fakeDependencyKey, fakeRootKey)
     }
 
     @Test

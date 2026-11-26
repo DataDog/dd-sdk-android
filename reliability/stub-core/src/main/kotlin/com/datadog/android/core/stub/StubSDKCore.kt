@@ -199,6 +199,11 @@ class StubSDKCore(
         )
     }
 
+    /** Changes the SDK source used by bridge-compatibility tests. */
+    fun stubSource(source: String) {
+        datadogContext = datadogContext.copy(source = source)
+    }
+
     /**
      * Advances the current time and drains due tasks on all scheduled executors created by this core.
      * @param durationMs the duration to advance in milliseconds

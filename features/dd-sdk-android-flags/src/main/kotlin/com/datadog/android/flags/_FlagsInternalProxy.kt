@@ -190,10 +190,39 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
      * @property recordExposure records the exposure, sends it when exposure tracking is on, and returns whether
      * it was already recorded. It returns null when a newer evaluation context has replaced the evaluated one.
      * The property is null for a non-exposure.
+     * @property isRootExposure true when the root assignment itself records an exposure.
+     * @property dependencyExposures selected prerequisite evaluations, in evaluation order.
      */
     class DeferredExposureResolution<T : Any>(
         val details: ResolutionDetails<T>,
         val context: EvaluationContext?,
+        val recordExposure: (() -> Boolean?)?,
+        val isRootExposure: Boolean,
+        val dependencyExposures: List<DeferredDependencyExposure> = emptyList()
+    ) {
+        constructor(
+            details: ResolutionDetails<T>,
+            context: EvaluationContext?,
+            recordExposure: (() -> Boolean?)?
+        ) : this(details, context, recordExposure, recordExposure != null)
+    }
+
+    /**
+     * A selected prerequisite evaluation whose custom exposure callback is deferred with the root evaluation.
+     *
+     * @property flagKey plaintext prerequisite flag key.
+     * @property variantKey selected variant key.
+     * @property allocationKey selected allocation key.
+     * @property hookFeatures features addressed to the custom hook.
+     * @property isExposure true when this prerequisite records a Datadog exposure.
+     * @property recordExposure records the prerequisite exposure and returns its cache-hit status.
+     */
+    class DeferredDependencyExposure(
+        val flagKey: String,
+        val variantKey: String?,
+        val allocationKey: String?,
+        val hookFeatures: Map<String, Any>,
+        val isExposure: Boolean,
         val recordExposure: (() -> Boolean?)?
     )
 }

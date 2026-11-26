@@ -13,9 +13,13 @@ import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
+import com.datadog.android.flags.internal.model.DependencyFlagKeyEncryption
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
+import com.datadog.android.flags.internal.model.PrecomputedDependencyEvaluation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.PrecomputedFlagEvaluationError
+import com.datadog.android.flags.internal.model.ResolvedDependencyEvaluation
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
@@ -37,16 +41,75 @@ internal class DefaultFlagsRepository(
     private data class FlagsState(
         val context: EvaluationContext,
         val flags: Map<String, PrecomputedFlag>,
+        val flagEvaluationErrors: Map<String, PrecomputedFlagEvaluationError>,
         val obfuscation: FlagKeyObfuscation?,
         val observeFullEvaluationData: Boolean
     ) {
         val telemetryTargetingKey = EvaluationTargetingKey.create(context.targetingKey, observeFullEvaluationData)
 
-        operator fun get(key: String): PrecomputedFlag? =
-            if (obfuscation == null) flags[key] else obfuscation.encode(key)?.let { flags[it] }
+        private fun lookupKey(key: String): String? = obfuscation?.encode(key) ?: key.takeIf { obfuscation == null }
+
+        operator fun get(key: String): PrecomputedFlag? = lookupKey(key)?.let { flags[it] }
+
+        fun evaluationError(key: String): PrecomputedFlagEvaluationError? =
+            lookupKey(key)?.let { flagEvaluationErrors[it] }
+
+        @Suppress("ReturnCount") // Invalid graph references fail immediately with their specific reason.
+        fun resolveDependencies(
+            rootFlagKey: String,
+            dependencies: List<PrecomputedDependencyEvaluation>,
+            rootSucceeded: Boolean
+        ): Pair<List<ResolvedDependencyEvaluation>, String?> {
+            val resolved = mutableListOf<ResolvedDependencyEvaluation>()
+            dependencies.forEach { dependency ->
+                val plaintextKey = if (obfuscation == null) {
+                    dependency.flagKey
+                } else {
+                    DependencyFlagKeyEncryption.decrypt(dependency.flagKey, rootFlagKey, obfuscation.salt)
+                        ?: return emptyList<ResolvedDependencyEvaluation>() to "Invalid encrypted dependency flag key"
+                }
+                when (dependency) {
+                    is PrecomputedDependencyEvaluation.Error -> {
+                        if (rootSucceeded) {
+                            return emptyList<ResolvedDependencyEvaluation>() to
+                                "Successful root assignment contains a failed dependency evaluation"
+                        }
+                        resolved += ResolvedDependencyEvaluation(
+                            flagKey = plaintextKey,
+                            errorCode = dependency.errorCode,
+                            errorMessage = dependency.errorMessage
+                        )
+                    }
+                    is PrecomputedDependencyEvaluation.Success -> {
+                        val lookupKey = lookupKey(plaintextKey)
+                            ?: return emptyList<ResolvedDependencyEvaluation>() to "Invalid dependency flag key"
+                        val flag = flags[lookupKey]
+                        if (flag == null || flagEvaluationErrors.containsKey(lookupKey)) {
+                            return emptyList<ResolvedDependencyEvaluation>() to
+                                "Successful dependency evaluation is missing its top-level assignment"
+                        }
+                        resolved += ResolvedDependencyEvaluation(
+                            flagKey = plaintextKey,
+                            flag = flag,
+                            isPresentInAssignment = dependency.isPresentInAssignment
+                        )
+                    }
+                }
+            }
+            return resolved to null
+        }
     }
     private val atomicState = AtomicReference<FlagsState?>(null)
     private val obfuscationSupported = (featureSdkCore as? InternalSdkCore)?.source == "android"
+    private val dependentFlagsSupported =
+        (featureSdkCore as? InternalSdkCore)?.source?.let { it == "android" } ?: true
+
+    private fun compatibleFlags(flags: Map<String, PrecomputedFlag>): Map<String, PrecomputedFlag> =
+        if (dependentFlagsSupported) flags else flags.filterValues { it.dependencyEvaluations.isEmpty() }
+
+    private fun legacyCompatibleErrors(
+        errors: Map<String, PrecomputedFlagEvaluationError>
+    ): Map<String, PrecomputedFlagEvaluationError> = if (dependentFlagsSupported) errors else emptyMap()
 
     private val readableState: FlagsState?
         get() = atomicState.get()?.takeIf { it.obfuscation == null || obfuscationSupported }
@@ -67,14 +130,16 @@ internal class DefaultFlagsRepository(
         val persistedState = loadedState?.takeIf { it.flagSelection == flagSelection }
         val cachedState = try {
             persistedState?.let {
+                val compatibleFlags = compatibleFlags(it.flags)
                 FlagsState(
                     it.evaluationContext,
-                    it.flags.mapValues { (_, flag) ->
+                    compatibleFlags.mapValues { (_, flag) ->
                         flag.copy(
                             reason = ResolutionReason.CACHED.name,
                             observeFullEvaluationData = it.observeFullEvaluationData
                         )
                     },
+                    legacyCompatibleErrors(it.flagEvaluationErrors),
                     it.obfuscation,
                     it.observeFullEvaluationData
                 ).takeIf { state -> atomicState.compareAndSet(null, state) }
@@ -83,7 +148,7 @@ internal class DefaultFlagsRepository(
             persistenceLoadedLatch.countDown()
         }
         if (cachedState != null && persistedState != null) {
-            publishFirstFlags(cachedState, persistedState.flags.keys)
+            publishFirstFlags(cachedState, cachedState.flags.keys)
         }
     }
 
@@ -91,9 +156,12 @@ internal class DefaultFlagsRepository(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
         obfuscation: FlagKeyObfuscation?,
-        observeFullEvaluationData: Boolean
+        observeFullEvaluationData: Boolean,
+        flagEvaluationErrors: Map<String, PrecomputedFlagEvaluationError>
     ): FlagsInstallation {
-        val newState = FlagsState(context, flags, obfuscation, observeFullEvaluationData)
+        val compatibleFlags = compatibleFlags(flags)
+        val compatibleErrors = legacyCompatibleErrors(flagEvaluationErrors)
+        val newState = FlagsState(context, compatibleFlags, compatibleErrors, obfuscation, observeFullEvaluationData)
 
         val previousState = atomicState.getAndSet(newState)
         val firstInstallation = previousState == null ||
@@ -101,11 +169,11 @@ internal class DefaultFlagsRepository(
         persistenceLoadedLatch.countDown()
 
         return FlagsInstallation { onInstalled ->
-            persistFlags(context, flags, obfuscation, observeFullEvaluationData)
+            persistFlags(context, compatibleFlags, compatibleErrors, obfuscation, observeFullEvaluationData)
             try {
                 onInstalled()
             } finally {
-                if (firstInstallation) publishFirstFlags(newState, flags.keys)
+                if (firstInstallation) publishFirstFlags(newState, compatibleFlags.keys)
             }
         }
     }
@@ -113,6 +181,7 @@ internal class DefaultFlagsRepository(
     private fun persistFlags(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
+        flagEvaluationErrors: Map<String, PrecomputedFlagEvaluationError>,
         obfuscation: FlagKeyObfuscation?,
         observeFullEvaluationData: Boolean
     ) {
@@ -120,6 +189,7 @@ internal class DefaultFlagsRepository(
             persistenceManager.saveFlagsState(
                 context = context,
                 flags = flags,
+                flagEvaluationErrors = flagEvaluationErrors,
                 currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
                 callback = object : DataStoreWriteCallback {
                     override fun onSuccess() {
@@ -171,7 +241,22 @@ internal class DefaultFlagsRepository(
     override fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot? {
         val state = readableState ?: return null
         val flag = state[key]
-        return FlagEvaluationSnapshot(flag, state.context, state.observeFullEvaluationData, state.telemetryTargetingKey)
+        val evaluationError = state.evaluationError(key)
+        val dependencies = flag?.dependencyEvaluations ?: evaluationError?.dependencyEvaluations.orEmpty()
+        val (resolvedDependencies, dependencyResolutionError) = state.resolveDependencies(
+            key,
+            dependencies,
+            rootSucceeded = flag != null
+        )
+        return FlagEvaluationSnapshot(
+            flag = flag,
+            context = state.context,
+            observeFullEvaluationData = state.observeFullEvaluationData,
+            telemetryTargetingKey = state.telemetryTargetingKey,
+            evaluationError = evaluationError,
+            dependencyEvaluations = resolvedDependencies,
+            dependencyResolutionError = dependencyResolutionError
+        )
     }
 
     override fun waitForPersistenceLoad() {
