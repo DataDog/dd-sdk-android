@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.internal.composition.mapper
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AbsListView
@@ -113,7 +115,7 @@ internal class CapturedPixelFallbackMapper(
     /**
      * Whether [view] needs no pixels: it draws nothing, it is a container left to the fallback (see
      * [capturesContainers]), its fallback output already describes it ([hasFallbackOutput]) unless
-     * an image draws above that, it is a bare [View] with nothing to draw, or it is a composition
+     * an image draws above that, it is an empty leaf with nothing to paint, or it is a composition
      * host, whose content is described by its decomposition and which a raster would duplicate
      * while bypassing the privacy modifiers inside it.
      */
@@ -125,21 +127,29 @@ internal class CapturedPixelFallbackMapper(
     ): Boolean = mappingContext.isCompositionHost ||
         view.willNotDraw() ||
         (view is ViewGroup && !capturesContainers) ||
-        isBareView(view) ||
+        isEmptyLeaf(view) ||
         (hasFallbackOutput && !hasImageContent(view))
 
     @UiThread
     private fun hasImageContent(view: View): Boolean = view is ImageView && view.drawable != null
 
     /**
-     * Unlike a [ViewGroup], a plain [View] reports `willNotDraw() == false` even though it draws
-     * nothing without a background or foreground, so a transparent touch overlay or spacer would
-     * otherwise end as a placeholder hiding the content captured underneath it. A subclass may
-     * draw in `onDraw()`, so only the exact class qualifies.
+     * Unlike a [ViewGroup], a plain [View] and an [ImageView] without a drawable report
+     * `willNotDraw() == false` even though they draw nothing without a visible background or
+     * foreground, so a transparent touch overlay, a spacer or an empty image slot would otherwise
+     * end as a placeholder hiding the content captured underneath it. A [View] subclass may draw in
+     * `onDraw()`, so only the exact class qualifies; an [ImageView] paints only its drawable, and
+     * is matched by type, like [hasImageContent], since AppCompat inflates it as a subclass.
      */
     @UiThread
-    private fun isBareView(view: View): Boolean =
-        view.javaClass == View::class.java && view.background == null && view.foreground == null
+    private fun isEmptyLeaf(view: View): Boolean {
+        val isPlainView = view.javaClass == View::class.java
+        val isImageWithoutDrawable = view is ImageView && !hasImageContent(view)
+        return (isPlainView || isImageWithoutDrawable) && view.foreground == null && isInvisible(view.background)
+    }
+
+    private fun isInvisible(background: Drawable?): Boolean =
+        background == null || (background is ColorDrawable && background.alpha == 0)
 
     /**
      * `NestedScrollView`/`RecyclerView` are matched by class name rather than type, the same way

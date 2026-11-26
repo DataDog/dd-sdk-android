@@ -236,6 +236,46 @@ internal class CapturedPixelFallbackMapperTest {
         verifyNoInteractions(mockRasterizer)
     }
 
+    private fun emptyLeaf(kind: EmptyLeafKind): View {
+        val mockLeaf: View = when (kind) {
+            EmptyLeafKind.PLAIN_VIEW, EmptyLeafKind.PLAIN_VIEW_TRANSPARENT_BACKGROUND -> mock<View>()
+            EmptyLeafKind.IMAGE_VIEW, EmptyLeafKind.IMAGE_VIEW_TRANSPARENT_BACKGROUND -> mock<ImageView>()
+            EmptyLeafKind.IMAGE_BUTTON -> mock<ImageButton>()
+            // AppCompat inflates an ImageView as a subclass.
+            EmptyLeafKind.IMAGE_VIEW_SUBCLASS -> mock<CustomImageView>()
+        }
+        if (kind == EmptyLeafKind.PLAIN_VIEW_TRANSPARENT_BACKGROUND ||
+            kind == EmptyLeafKind.IMAGE_VIEW_TRANSPARENT_BACKGROUND
+        ) {
+            val stubBackground: ColorDrawable = mock()
+            whenever(stubBackground.alpha).thenReturn(0)
+            whenever(mockLeaf.background).thenReturn(stubBackground)
+        }
+        return eligibleView(mockView = mockLeaf)
+    }
+
+    private fun paintingLeaf(kind: PaintingLeafKind): View {
+        val mockLeaf: View = when (kind) {
+            PaintingLeafKind.IMAGE_VIEW_FOREGROUND -> mock<ImageView>()
+            // A subclass may draw in onDraw().
+            PaintingLeafKind.VIEW_SUBCLASS -> mock<CustomDrawnView>()
+            else -> mock<View>()
+        }
+        when (kind) {
+            // A gradient divider or scrim.
+            PaintingLeafKind.VIEW_DRAWABLE_BACKGROUND -> whenever(mockLeaf.background).thenReturn(mock<Drawable>())
+            PaintingLeafKind.VIEW_VISIBLE_COLOR_BACKGROUND -> {
+                val stubBackground: ColorDrawable = mock()
+                whenever(stubBackground.alpha).thenReturn(0xFF)
+                whenever(mockLeaf.background).thenReturn(stubBackground)
+            }
+            PaintingLeafKind.VIEW_FOREGROUND, PaintingLeafKind.IMAGE_VIEW_FOREGROUND ->
+                whenever(mockLeaf.foreground).thenReturn(mock<Drawable>())
+            PaintingLeafKind.VIEW_SUBCLASS -> Unit
+        }
+        return eligibleView(mockView = mockLeaf)
+    }
+
     private fun imageView(fakeButton: Boolean, fakeBackground: Boolean, fakeSize: Int = 50): ImageView {
         val stubImage = if (fakeButton) mock<ImageButton>() else mock<ImageView>()
         eligibleView(fakeSize, fakeSize, stubImage)
@@ -326,11 +366,14 @@ internal class CapturedPixelFallbackMapperTest {
     }
 
     @ParameterizedTest
-    @EnumSource(ImagePrivacy::class)
-    fun `M delegate to fallback without capturing W map and capture { bare view }`(fakePrivacy: ImagePrivacy) {
-        // Given: a transparent touch overlay or spacer. A plain View reports willNotDraw() == false,
-        // yet with no background or foreground it draws nothing and must not hide what is under it.
-        val mockBareView = eligibleView(mockView = mock<View>())
+    @EnumSource(EmptyLeafKind::class)
+    fun `M delegate to fallback without capturing W map and capture { empty leaf view }`(
+        fakeLeaf: EmptyLeafKind,
+        forge: Forge
+    ) {
+        // Given: a transparent touch overlay, spacer or empty image slot. Such a view reports
+        // willNotDraw() == false, yet it paints nothing and must not hide what is under it.
+        val mockEmptyLeaf = emptyLeaf(fakeLeaf)
         val mockRasterizer: ViewRasterizer = mock()
         val testedMapperWithMockRasterizer = CapturedPixelFallbackMapper(
             fallbackMapper = mockFallbackMapper,
@@ -342,11 +385,11 @@ internal class CapturedPixelFallbackMapperTest {
         val fakeFallbackData = CapturedViewData.Mapped(CapturedViewMapperResult.None)
         whenever(mockFallbackMapper.map(any(), any())).thenReturn(CapturedViewMapperResult.None)
         whenever(mockFallbackMapper.capture(any(), any())).thenReturn(fakeFallbackData)
-        val mappingContext = mappingContext(fakePrivacy)
+        val mappingContext = mappingContext(forge.aValueFrom(ImagePrivacy::class.java))
 
         // When
-        val mapped = testedMapperWithMockRasterizer.map(mockBareView, mappingContext)
-        val captured = testedMapperWithMockRasterizer.capture(mockBareView, mappingContext)
+        val mapped = testedMapperWithMockRasterizer.map(mockEmptyLeaf, mappingContext)
+        val captured = testedMapperWithMockRasterizer.capture(mockEmptyLeaf, mappingContext)
 
         // Then
         assertThat(mapped).isSameAs(CapturedViewMapperResult.None)
@@ -355,17 +398,11 @@ internal class CapturedPixelFallbackMapperTest {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = [false, true])
-    fun `M still capture W map { view of the exact class has a background or foreground }`(fakeBackground: Boolean) {
-        // Given: a divider or scrim drawn by a gradient, or a foreground drawn on top.
-        val mockPlainView = eligibleView(mockView = mock<View>())
-        val mockDrawable: Drawable = mock()
-        if (fakeBackground) {
-            whenever(mockPlainView.background).thenReturn(mockDrawable)
-        } else {
-            whenever(mockPlainView.foreground).thenReturn(mockDrawable)
-        }
-        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockPlainView, 1f))
+    @EnumSource(PaintingLeafKind::class)
+    fun `M still capture W map { leaf view that may paint }`(fakeLeaf: PaintingLeafKind) {
+        // Given
+        val mockPaintingLeaf = paintingLeaf(fakeLeaf)
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockPaintingLeaf, 1f))
             .thenReturn(GlobalBounds(0, 0, 100, 100))
         val registered = mutableListOf<PendingPixelCapture>()
         val mappingContext = mappingContext(
@@ -374,26 +411,11 @@ internal class CapturedPixelFallbackMapperTest {
         )
 
         // When
-        val result = testedMapper.map(mockPlainView, mappingContext) as CapturedViewMapperResult.Wireframes
+        val result = testedMapper.map(mockPaintingLeaf, mappingContext) as CapturedViewMapperResult.Wireframes
 
         // Then
         assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
         assertThat(registered).hasSize(1)
-    }
-
-    @Test
-    fun `M still capture W map { view subclass with no background or foreground }`() {
-        // Given: a subclass may draw in onDraw(), so it is not assumed to be empty.
-        val mockCustomView = eligibleView()
-        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockCustomView, 1f))
-            .thenReturn(GlobalBounds(0, 0, 100, 100))
-        val mappingContext = mappingContext(ImagePrivacy.MASK_NONE)
-
-        // When
-        val result = testedMapper.map(mockCustomView, mappingContext) as CapturedViewMapperResult.Wireframes
-
-        // Then
-        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
     }
 
     @Test
@@ -914,3 +936,22 @@ internal class CapturedPixelFallbackMapperTest {
 private open class CustomRecyclerView(context: Context) : RecyclerView(context)
 
 private open class CustomDrawnView(context: Context) : View(context)
+
+private open class CustomImageView(context: Context) : ImageView(context)
+
+internal enum class EmptyLeafKind {
+    PLAIN_VIEW,
+    PLAIN_VIEW_TRANSPARENT_BACKGROUND,
+    IMAGE_VIEW,
+    IMAGE_VIEW_TRANSPARENT_BACKGROUND,
+    IMAGE_BUTTON,
+    IMAGE_VIEW_SUBCLASS
+}
+
+internal enum class PaintingLeafKind {
+    VIEW_DRAWABLE_BACKGROUND,
+    VIEW_VISIBLE_COLOR_BACKGROUND,
+    VIEW_FOREGROUND,
+    IMAGE_VIEW_FOREGROUND,
+    VIEW_SUBCLASS
+}
