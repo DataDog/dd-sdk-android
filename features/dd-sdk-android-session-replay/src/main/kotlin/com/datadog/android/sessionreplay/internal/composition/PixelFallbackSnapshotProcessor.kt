@@ -7,10 +7,10 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
@@ -21,7 +21,9 @@ import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceRes
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolverCallback
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetectionOutcome
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
+import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -29,14 +31,20 @@ import java.util.concurrent.atomic.AtomicInteger
  * masking (fails closed to a placeholder when text presence can't be verified), then hash/encode/
  * dedup/register via the existing [ResourceResolver] pipeline. Only ever replaces the exact
  * wireframes/child-references its own pending captures produced - everything else in the snapshot
- * passes through untouched. [cancel] is intentionally a no-op: once a generation expires or is
- * accepted, [CaptureGenerationContext] itself invalidates every [CaptureWorkToken] this processor
- * created, and this processor checks [CaptureWorkToken.isValid] before writing any result back -
- * cancellation is enforced by the token, not by this class needing to interrupt in-flight work.
+ * passes through untouched.
+ *
+ * The [TextDetector] is optional third-party code, so nothing it does can upload unmasked pixels: a
+ * detector that throws resolves that capture to a placeholder, and the rest of the snapshot still
+ * completes. Only the first result a detector reports counts. Cancellation is not handled here: once
+ * a generation expires or is accepted, [CaptureGenerationContext] itself invalidates every
+ * [CaptureWorkToken] this processor created, and this processor checks [CaptureWorkToken.isValid]
+ * before writing any result back.
  */
 internal class PixelFallbackSnapshotProcessor(
     private val resourceResolver: ResourceResolver,
-    private val textDetector: TextDetector?
+    private val textDetector: TextDetector?,
+    private val internalLogger: InternalLogger,
+    private val canvasWrapper: CanvasWrapper = CanvasWrapper(internalLogger)
 ) : CapturedSnapshotProcessor {
 
     override fun process(
@@ -55,80 +63,25 @@ internal class PixelFallbackSnapshotProcessor(
         val outcomes = ConcurrentHashMap<Long, PixelOutcome>()
         val remaining = AtomicInteger(pending.size)
 
-        pending.forEach { capture ->
+        val onCaptureDone: () -> Unit = {
+            if (remaining.decrementAndGet() == 0) finish(request, outcomes, callback)
+        }
+
+        val resolutions = pending.mapNotNull { capture ->
             val token = request.generation.createWorkToken()
             if (token == null) {
-                if (remaining.decrementAndGet() == 0) finish(request, outcomes, callback)
-                return@forEach
+                onCaptureDone()
+                return@mapNotNull null
             }
-            resolveOne(capture, identityFactory) { outcome ->
+            CaptureResolution(capture, identityFactory, token) { outcome ->
                 if (token.isValid()) outcomes[capture.wireframeIdentity.wireId] = outcome
                 token.complete()
-                if (remaining.decrementAndGet() == 0) finish(request, outcomes, callback)
+                onCaptureDone()
             }
         }
+        resolutions.forEach { it.start() }
 
         return CancellableCaptureWork { }
-    }
-
-    private fun resolveOne(
-        capture: PendingPixelCapture,
-        identityFactory: CompositionIdentityFactory,
-        onResolved: (PixelOutcome) -> Unit
-    ) {
-        if (capture.skipsTextDetection) {
-            resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity, onResolved)
-            return
-        }
-
-        val detector = textDetector
-        if (detector == null) {
-            onResolved(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
-            return
-        }
-        detector.detectTextRegions(capture.bitmap) { detection ->
-            when (detection) {
-                is TextDetectionOutcome.Unavailable ->
-                    onResolved(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
-
-                is TextDetectionOutcome.Detected -> {
-                    maskRegions(capture.bitmap, detection.regions)
-                    resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity, onResolved)
-                }
-            }
-        }
-    }
-
-    private fun resolveBitmap(
-        bitmap: Bitmap,
-        identityFactory: CompositionIdentityFactory,
-        ownerIdentity: CapturedIdentity,
-        onResolved: (PixelOutcome) -> Unit
-    ) {
-        resourceResolver.resolveResourceIdFromBitmap(
-            bitmap,
-            object : ResourceResolverCallback {
-                override fun onSuccess(resourceId: String) {
-                    onResolved(PixelOutcome.Resolved(resourceId))
-                }
-
-                override fun onFailure() {
-                    onResolved(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(ownerIdentity)))
-                }
-            }
-        )
-    }
-
-    /** Painted directly onto the pixels, pre-upload - never a separate overlay wireframe. */
-    private fun maskRegions(bitmap: Bitmap, regions: List<Rect>) {
-        if (regions.isEmpty()) return
-        // bitmap is always produced by a *Rasterizer via Bitmap.createBitmap(...) (mutable by
-        // default), never decoded from a resource/file, so Canvas() can't hit the "immutable
-        // bitmap" IllegalStateException here.
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val canvas = Canvas(bitmap)
-        val paint = Paint().apply { color = Color.BLACK; style = Paint.Style.FILL }
-        regions.forEach { canvas.drawRect(it, paint) }
     }
 
     private fun finish(
@@ -191,14 +144,137 @@ internal class PixelFallbackSnapshotProcessor(
         )
     }
 
+    /**
+     * Resolves one [PendingPixelCapture] to exactly one [PixelOutcome], whichever of the detector's
+     * callback, a failure or the detection timeout comes first.
+     */
+    private inner class CaptureResolution(
+        private val capture: PendingPixelCapture,
+        private val identityFactory: CompositionIdentityFactory,
+        private val token: CaptureWorkToken,
+        private val onOutcome: (PixelOutcome) -> Unit
+    ) {
+        private val resolved = AtomicBoolean(false)
+        private val awaitingDetection = AtomicBoolean(false)
+
+        fun start() {
+            val detector = textDetector
+            when {
+                capture.skipsTextDetection -> resolveBitmap()
+                detector == null -> failClosed()
+                else -> detect(detector)
+            }
+        }
+
+        fun failClosedIfAwaitingDetection() {
+            if (awaitingDetection.compareAndSet(true, false)) failClosed()
+        }
+
+        private fun detect(detector: TextDetector) {
+            awaitingDetection.set(true)
+            val called = guarded {
+                detector.detectTextRegions(capture.bitmap) { detection -> onDetection(detection) }
+            }
+            if (!called) failClosedIfAwaitingDetection()
+        }
+
+        private fun onDetection(detection: TextDetectionOutcome) {
+            if (!awaitingDetection.compareAndSet(true, false)) {
+                internalLogger.log(
+                    level = InternalLogger.Level.WARN,
+                    target = InternalLogger.Target.MAINTAINER,
+                    messageBuilder = { IGNORED_DETECTION_MESSAGE },
+                    onlyOnce = true
+                )
+                return
+            }
+            resolveDetection(detection)
+        }
+
+        private fun resolveDetection(detection: TextDetectionOutcome) {
+            when (detection) {
+                is TextDetectionOutcome.Unavailable -> failClosed()
+                is TextDetectionOutcome.Detected ->
+                    if (maskRegions(capture.bitmap, detection.regions)) resolveBitmap() else failClosed()
+            }
+        }
+
+        private fun resolveBitmap() {
+            resourceResolver.resolveResourceIdFromBitmap(
+                capture.bitmap,
+                object : ResourceResolverCallback {
+                    override fun onSuccess(resourceId: String) {
+                        resolve(PixelOutcome.Resolved(resourceId))
+                    }
+
+                    override fun onFailure() {
+                        failClosed()
+                    }
+                }
+            )
+        }
+
+        private fun failClosed() {
+            resolve(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
+        }
+
+        private fun resolve(outcome: PixelOutcome) {
+            awaitingDetection.set(false)
+            if (resolved.compareAndSet(false, true)) onOutcome(outcome)
+        }
+    }
+
+    /**
+     * Painted directly onto the pixels, pre-upload - never a separate overlay wireframe. False when
+     * the pixels can't be painted on, in which case the bitmap must not be uploaded.
+     */
+    private fun maskRegions(bitmap: Bitmap, regions: List<Rect>): Boolean {
+        if (regions.isEmpty()) return true
+        val canvas = canvasWrapper.createCanvas(bitmap)
+        return canvas != null && guarded {
+            val paint = Paint().apply { color = Color.BLACK; style = Paint.Style.FILL }
+            regions.forEach { canvas.drawRect(it, paint) }
+        }
+    }
+
+    // Only for the optional detector and the pixels it is given: its failures must fail closed.
+    @Suppress("TooGenericExceptionCaught")
+    private fun guarded(block: () -> Unit): Boolean = try {
+        block()
+        true
+    } catch (e: Exception) {
+        logDetectionFailure(e)
+        false
+    } catch (e: LinkageError) {
+        logDetectionFailure(e)
+        false
+    } catch (e: AssertionError) {
+        logDetectionFailure(e)
+        false
+    }
+
+    private fun logDetectionFailure(error: Throwable) {
+        internalLogger.log(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
+            messageBuilder = { DETECTION_FAILED_MESSAGE },
+            throwable = error,
+            onlyOnce = true
+        )
+    }
+
     private sealed interface PixelOutcome {
         data class Resolved(val resourceId: String) : PixelOutcome
         data class Placeholder(val identity: CapturedIdentity) : PixelOutcome
     }
 
     private companion object {
-        const val MIME_TYPE_WEBP = "image/webp"
-        const val MASK_ALL_CONTENT_LABEL = "Image"
+        private const val MIME_TYPE_WEBP = "image/webp"
+        private const val MASK_ALL_CONTENT_LABEL = "Image"
+        private const val DETECTION_FAILED_MESSAGE =
+            "Text detection failed; the pixel capture is replaced by a placeholder"
+        private const val IGNORED_DETECTION_MESSAGE =
+            "Text detection completed more than once or too late; the extra result is ignored"
     }
 }
 

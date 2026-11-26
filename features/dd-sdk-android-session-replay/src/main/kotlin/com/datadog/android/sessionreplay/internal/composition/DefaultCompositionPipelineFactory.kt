@@ -117,8 +117,9 @@ internal class DefaultCompositionPipelineFactory(
             processor = ChainedCapturedSnapshotProcessor(
                 ExecutorCapturedSnapshotProcessor(constructionExecutor, internalLogger),
                 PixelFallbackSnapshotProcessor(
-                    resourceResolverBundle.resourceResolver,
-                    textDetector
+                    resourceResolver = resourceResolverBundle.resourceResolver,
+                    textDetector = textDetector,
+                    internalLogger = internalLogger
                 )
             ),
             consumer = completionQueue,
