@@ -404,15 +404,18 @@ internal class ProfilingDataWriterTest {
         val fakeSize = PROFILE_SIZE_LIMIT_BYTES + 1
         RandomAccessFile(file, "rw").use { it.setLength(fakeSize) }
         val fakeErrorId = forge.anAlphabeticalString()
+        val mockOnWritten = mock<(Boolean) -> Unit>()
 
         // When
         testedDataWriterTest.writeTriggerProfile(
             perfettoResult = fakeResult.copy(resultFilePath = file.absolutePath),
             rumErrorId = fakeErrorId,
-            rumContext = fakeRumContext
+            rumContext = fakeRumContext,
+            onWritten = mockOnWritten
         )
 
         // Then
+        verify(mockOnWritten)(false)
         assertThat(file.exists()).isFalse()
         val expectedProps = mapOf(
             ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
@@ -481,7 +484,8 @@ internal class ProfilingDataWriterTest {
         testedDataWriterTest.writeTriggerProfile(
             perfettoResult = fakeResult.copy(resultFilePath = file.absolutePath),
             rumErrorId = forge.anAlphabeticalString(),
-            rumContext = fakeRumContext
+            rumContext = fakeRumContext,
+            onWritten = {}
         )
 
         // Then
@@ -511,7 +515,8 @@ internal class ProfilingDataWriterTest {
         testedDataWriterTest.writeTriggerProfile(
             perfettoResult = fakeResult.copy(resultFilePath = file.absolutePath),
             rumErrorId = fakeErrorId,
-            rumContext = fakeRumContext
+            rumContext = fakeRumContext,
+            onWritten = {}
         )
 
         // Then

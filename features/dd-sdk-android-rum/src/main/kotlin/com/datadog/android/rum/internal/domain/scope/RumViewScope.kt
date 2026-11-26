@@ -913,6 +913,8 @@ internal open class RumViewScope(
         // that can't be held is written as any other, with no gating event, so no profile is attached.
         var oomErrorEventSource: (() -> Any)? = null
         val heldErrorEvent = pendingOomErrorStore?.let { store ->
+            // TODO RUM-20496: Guard this eager build: unlike the lazy eventSource of the write operation,
+            //  it runs outside WriteOperation's try/catch.
             val errorEvent = buildErrorEvent()
             oomErrorEventSource = { errorEvent }
             errorEvent.takeIf { store.tryHold(errorEvent) }

@@ -1043,6 +1043,7 @@ public final class com/datadog/android/internal/utils/ThreadStackTracesKt {
 }
 
 public final class com/datadog/android/internal/utils/ThrowableExtKt {
+	public static final fun isOrIsCausedByOutOfMemoryError (Ljava/lang/Throwable;)Z
 	public static final fun loggableMessage (Ljava/lang/Throwable;)Ljava/lang/String;
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
 }

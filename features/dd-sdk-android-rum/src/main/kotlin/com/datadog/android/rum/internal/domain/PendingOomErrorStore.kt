@@ -98,7 +98,7 @@ internal class PendingOomErrorStore(
     }
 
     fun onOomProfileWriteResult(rumErrorId: String, isWritten: Boolean) {
-        val event = take(rumErrorId) ?: return
+        val event = claimHeldError(rumErrorId) ?: return
         val status = if (isWritten) ErrorEvent.ProfilingStatus.RUNNING else ErrorEvent.ProfilingStatus.STOPPED
         write(event, status)
     }
@@ -135,15 +135,18 @@ internal class PendingOomErrorStore(
 
     private fun onTimeout(rumErrorId: String) {
         // Bound to the error the timeout was scheduled for: a stale one after a replacement finds
-        // nothing to take.
-        take(rumErrorId)?.let {
+        // nothing to claim.
+        claimHeldError(rumErrorId)?.let {
             log(LOG_TIMED_OUT)
             write(it, null)
         }
     }
 
-    /** First caller wins: a profile write result after the timeout, or a second one, is ignored. */
-    private fun take(rumErrorId: String): ErrorEvent? {
+    /**
+     * Removes and returns the held error if its id is [rumErrorId], so that only one caller writes it. First
+     * caller wins: a profile write result after the timeout, or a second one, is ignored.
+     */
+    private fun claimHeldError(rumErrorId: String): ErrorEvent? {
         val event = synchronized(lock) {
             heldError?.takeIf { it.error.id == rumErrorId }?.also { heldError = null }
         }

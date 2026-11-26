@@ -744,7 +744,7 @@ internal class ProfilingFeature(
         internal const val LOG_PENDING_OOM_PROFILE_EXPIRED =
             "Out of memory profile from a previous run dropped: too old to upload."
         internal const val LOG_PENDING_OOM_PROFILE_NOT_HELD =
-            "Out Of Memory profile from a previous run dropped: not for the held RUM error."
+            "Out of memory profile from a previous run dropped: not for the held RUM error."
         private const val OPERATION_PROFILER_EXECUTOR_TASK = "profiler_executor_task"
     }
 }

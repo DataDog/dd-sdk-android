@@ -164,16 +164,19 @@ internal class RumFeature(
     },
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val handler: Handler = Handler(Looper.getMainLooper()),
-    internal val pendingOomErrorStoreFactory: (() -> PendingOomErrorStore)? = null
+    pendingOomErrorStoreFactory: (RumFeature) -> PendingOomErrorStore = { feature ->
+        PendingOomErrorStore(
+            sdkCore = sdkCore,
+            executorProvider = { feature.schedulerExecutorService },
+            dataStoreProvider = { sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.dataStore },
+            dataWriterProvider = { feature.dataWriter }
+        )
+    }
 ) : StorageBackedFeature, FeatureEventReceiver, HeatmapIdentifierRegistryProvider {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
 
-    internal val pendingOomErrorStore = if (pendingOomErrorStoreFactory != null) {
-        pendingOomErrorStoreFactory()
-    } else {
-        defaultPendingOomErrorStore()
-    }
+    internal val pendingOomErrorStore = pendingOomErrorStoreFactory(this)
     internal val initialized = AtomicBoolean(false)
 
     internal var sampleRate: Float = 0f
@@ -723,12 +726,6 @@ internal class RumFeature(
         viewTrackingStrategy.register(sdkCore, appContext)
         longTaskTrackingStrategy.register(sdkCore, appContext)
     }
-
-    private fun defaultPendingOomErrorStore() = PendingOomErrorStore(
-        sdkCore,
-        { schedulerExecutorService },
-        { sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.dataStore }
-    ) { dataWriter }
 
     private fun unregisterTrackingStrategies(appContext: Context?) {
         actionTrackingStrategy.unregister(appContext)
