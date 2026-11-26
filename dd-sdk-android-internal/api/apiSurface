@@ -416,6 +416,7 @@ typealias AllStackTracesProvider = (StackTraceErrorHandler) -> Map<Thread, Array
 fun safeGetAllStackTraces(StackTraceErrorHandler): Map<Thread, Array<StackTraceElement>>
 fun Throwable.loggableStackTrace(): String
 fun Throwable.loggableMessage(): String?
+fun Throwable.isOrIsCausedByOutOfMemoryError(): Boolean
 fun formatIsoUtc(Long): String
 class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProvider
   override fun onCreate(): Boolean

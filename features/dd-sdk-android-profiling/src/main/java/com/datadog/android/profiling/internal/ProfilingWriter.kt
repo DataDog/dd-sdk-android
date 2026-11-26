@@ -25,6 +25,6 @@ internal interface ProfilingWriter {
         perfettoResult: PerfettoResult,
         rumErrorId: String,
         rumContext: ProfilingRumContext,
-        onWritten: (Boolean) -> Unit = {}
+        onWritten: (Boolean) -> Unit
     )
 }

@@ -34,6 +34,7 @@ import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
 import com.datadog.android.internal.thread.NamedCallable
+import com.datadog.android.internal.utils.isOrIsCausedByOutOfMemoryError
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
@@ -961,13 +962,13 @@ internal class DatadogRumMonitor(
 
     internal fun handleEvent(event: RumRawEvent) {
         if (event is RumRawEvent.AddError && event.isFatal) {
+            val featureContexts = if (event.throwable?.isOrIsCausedByOutOfMemoryError() == true) {
+                setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.PROFILING_FEATURE_NAME)
+            } else {
+                setOf(Feature.SESSION_REPLAY_FEATURE_NAME)
+            }
             val handled = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-                ?.withWriteContextSync(
-                    withFeatureContexts = setOf(
-                        Feature.SESSION_REPLAY_FEATURE_NAME,
-                        Feature.PROFILING_FEATURE_NAME
-                    )
-                ) { datadogContext, eventWriteScope ->
+                ?.withWriteContextSync(withFeatureContexts = featureContexts) { datadogContext, eventWriteScope ->
                     synchronized(rootScope) {
                         @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
                         rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)

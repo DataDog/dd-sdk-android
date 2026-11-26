@@ -6708,6 +6708,64 @@ internal class RumViewScopeTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = [1, 3])
+    fun `M hold and send RumOomErrorEvent W handleEvent(AddError) {fatal error caused by an OutOfMemoryError}`(
+        wrappingDepth: Int,
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        fakeEvent = fatalError(wrappedOutOfMemoryError(wrappingDepth, fakeMessage), forge)
+        val mockStore = stubPendingOomErrorStore()
+        whenever(mockStore.tryHold(any())) doReturn true
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext.withOomTriggerActive(), mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockStore).tryHold(any())
+        verify(mockProfilingFeatureScope).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
+        verify(mockWriter, never()).write(eq(mockEventBatchWriter), isA<ErrorEvent>(), any())
+    }
+
+    @Test
+    fun `M include quotaReason and not hold W handleEvent(AddError) {fatal error caused by an OOM, quota denied}`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeQuotaReason = forge.aValueFrom(QuotaReason::class.java, exclude = listOf(QuotaReason.QUOTA_OK))
+        fakeEvent = fatalError(wrappedOutOfMemoryError(1, fakeMessage), forge)
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILING_OOM_TRIGGER_REGISTERED to true,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
+                    )
+                )
+            }
+        )
+        val mockStore = stubPendingOomErrorStore()
+        whenever(mockStore.tryHold(any())) doReturn true
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            val errorEvent = firstValue as ErrorEvent
+            assertThat(errorEvent.dd.profiling?.status).isEqualTo(ErrorEvent.ProfilingStatus.STOPPED)
+            assertThat(errorEvent.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason.toErrorQuotaReason())
+        }
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
+        verify(mockStore, never()).tryHold(any())
+    }
+
     @Test
     fun `M include quotaReason in ErrorEvent W handleEvent(AddError) {fatal OOM, OOM trigger active, quota denied}`(
         @StringForgery fakeMessage: String,
@@ -11355,6 +11413,12 @@ internal class RumViewScopeTest {
     )
 
     /** Fatal errors no OOM profile can follow, starting from a context where one could. */
+    private fun wrappedOutOfMemoryError(depth: Int, message: String): Throwable {
+        var throwable: Throwable = OutOfMemoryError(message)
+        repeat(depth) { throwable = RuntimeException(message, throwable) }
+        return throwable
+    }
+
     enum class NotHeldFatalError {
         NOT_OOM,
         OOM_TRIGGER_INACTIVE,
