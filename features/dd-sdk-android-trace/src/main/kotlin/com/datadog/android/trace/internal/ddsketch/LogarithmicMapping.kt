@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace.internal.ddsketch
 
+import java.lang.Double.MIN_NORMAL
 import kotlin.math.exp
 import kotlin.math.ln
 import kotlin.math.ln1p
@@ -42,7 +43,7 @@ internal class LogarithmicMapping(requestedRelativeAccuracy: Double) {
 
         minIndexedValue = max(
             exp(Int.MIN_VALUE / multiplier + 1), // so that index >= Integer.MIN_VALUE
-            java.lang.Double.MIN_NORMAL * gamma
+            MIN_NORMAL * gamma
         )
         maxIndexedValue = min(
             exp(Int.MAX_VALUE / multiplier - 1), // so that index <= Integer.MAX_VALUE

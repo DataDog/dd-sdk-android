@@ -788,6 +788,15 @@ style:
     active: false
   UnnecessaryFilter:
     active: true
+  UnnecessaryFullyQualifiedName:
+    active: true
+    ignoredFullyQualifiedNames:
+      # Android Lint requires fully qualified framework resource references.
+      - 'android.R'
+      - 'android.R.*'
+      # Keep Material resource references qualified for consistency.
+      - 'com.google.android.material.R'
+      - 'com.google.android.material.R.*'
   UnnecessaryInheritance:
     active: true
   UnnecessaryInnerClass:

@@ -11,6 +11,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import java.lang.reflect.Modifier
 
 @ExtendWith(ForgeExtension::class)
 internal class FlagsClientEventTest {
@@ -65,7 +66,7 @@ internal class FlagsClientEventTest {
 
         // Then
         assertThat(fields.map { it.name }).containsExactlyInAnyOrder("type", "flagsChanged")
-        assertThat(fields).allMatch { java.lang.reflect.Modifier.isFinal(it.modifiers) }
+        assertThat(fields).allMatch { Modifier.isFinal(it.modifiers) }
         assertThat(tested.flagsChanged).isNull()
     }
 }
