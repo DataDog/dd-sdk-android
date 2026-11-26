@@ -50,7 +50,6 @@ internal class TimeseriesCollectorEndToEndTest {
         val testedTimeseriesCollector = CsvCollector.create(
             csvContent = loadResource("fixtures/timeseries/input_memory_cpu.csv"),
             sessionType = RumSessionType.USER,
-            totalRamBytes = TOTAL_RAM_BYTES,
             bufferSize = BATCH_SIZE,
             timeProvider = mockTimeProvider,
             forge = forge,
@@ -150,7 +149,6 @@ internal class TimeseriesCollectorEndToEndTest {
 
     private companion object {
         private const val FIXED_DATE_MS: Long = 1_700_000_001_000L
-        private const val TOTAL_RAM_BYTES: Long = 1_000_000_000L
         private const val BATCH_SIZE: Int = 5
         private fun loadExpectedMemoryTimeseries(path: String): TimeseriesMemoryEvent =
             TimeseriesMemoryEvent.fromJson(loadResource(path))

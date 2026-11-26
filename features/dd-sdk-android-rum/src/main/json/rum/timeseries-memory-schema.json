@@ -67,20 +67,20 @@
                 "values": {
                   "type": "object",
                   "description": "Memory measurements, aligned index-for-index with timestamps",
-                  "required": ["memory_footprint", "memory_percent"],
+                  "required": ["memory_footprint"],
                   "properties": {
                     "memory_footprint": {
                       "type": "array",
-                      "description": "Physical memory footprint of the process in kilobytes",
+                      "description": "Memory charged to the process, in kibibytes (1024 bytes). Includes pages the system has compressed or swapped out to reclaim space",
                       "items": {
                         "type": "number",
                         "readOnly": true
                       },
                       "readOnly": true
                     },
-                    "memory_percent": {
+                    "memory_non_resident": {
                       "type": "array",
-                      "description": "Memory footprint as a percentage of total device RAM",
+                      "description": "Portion of memory_footprint that the system has compressed or swapped out, in kibibytes (1024 bytes). Zero means nothing is currently reclaimed, not that the value is unavailable",
                       "items": {
                         "type": "number",
                         "readOnly": true

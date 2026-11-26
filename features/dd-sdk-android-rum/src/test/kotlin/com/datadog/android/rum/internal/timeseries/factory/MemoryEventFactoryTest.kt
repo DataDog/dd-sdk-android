@@ -22,6 +22,7 @@ import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.domain.scope.toTimeseriesMemorySchemaType
 import com.datadog.android.rum.internal.timeseries.DataPoint
+import com.datadog.android.rum.internal.timeseries.MemorySnapshot
 import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.rum.model.TimeseriesMemoryEvent.TimeseriesMemoryEventSessionType
 import com.datadog.android.rum.utils.forge.Configurator
@@ -42,7 +43,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -76,9 +76,6 @@ internal class MemoryEventFactoryTest {
     @StringForgery
     lateinit var fakeApplicationId: String
 
-    @LongForgery(min = 1_000_000_000L, max = 16_000_000_000L)
-    var fakeTotalRamBytes: Long = 0L
-
     @LongForgery(min = 1L)
     var fakeNowMs: Long = 0L
 
@@ -102,10 +99,13 @@ internal class MemoryEventFactoryTest {
     private val fakeSerializedRumContext: RumContext
         get() = fakeRumContext.copy(applicationId = fakeApplicationId, sessionId = fakeSessionId)
 
-    private val oneSample = listOf(DataPoint(1L, 1.0))
+    private lateinit var fakeDataPoints: List<DataPoint<MemorySnapshot>>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeDataPoints = forge.aList(size = forge.anInt(min = 1, max = MAX_DATA_POINTS)) {
+            DataPoint(aPositiveLong(), getForgery<MemorySnapshot>())
+        }
         fakeSource = forge.aNullable { aValueFrom(TimeseriesMemoryEvent.Source::class.java) }
         fakeDatadogContext = fakeDatadogContext.copy(
             source = fakeSource?.toJson()?.asString ?: forge.anAlphabeticalString()
@@ -119,11 +119,9 @@ internal class MemoryEventFactoryTest {
     }
 
     private fun testedFactory(
-        sessionType: RumSessionType = RumSessionType.USER,
-        totalRamBytes: Long = fakeTotalRamBytes
+        sessionType: RumSessionType = RumSessionType.USER
     ) = MemoryEventFactory(
         sessionType = sessionType,
-        totalRamBytes = totalRamBytes,
         timeProvider = mockTimeProvider,
         batteryInfoProvider = stubBatteryInfoProvider,
         displayInfoProvider = stubDisplayInfoProvider,
@@ -139,26 +137,16 @@ internal class MemoryEventFactoryTest {
         assertThat(result).isNull()
     }
 
-    @ParameterizedTest
-    @ValueSource(longs = [0L, -1L, Long.MIN_VALUE])
-    fun `M return null W create() { totalRamBytes is not positive }`(totalRamBytes: Long) {
-        // When
-        val result = testedFactory(totalRamBytes = totalRamBytes)
-            .create(fakeDatadogContext, fakeSerializedRumContext, oneSample)
-
-        // Then
-        assertThat(result).isNull()
-    }
-
     @Test
     fun `M fill timeseries W create() { multiple data points }`(
-        @DoubleForgery(min = 1.0) fakeMemory: Double,
+        @Forgery fakeFirstSnapshot: MemorySnapshot,
+        @Forgery fakeSecondSnapshot: MemorySnapshot,
         @LongForgery(min = 1L) fakeTs: Long
     ) {
         // Given
         val samples = listOf(
-            DataPoint(fakeTs, fakeMemory),
-            DataPoint(fakeTs + 1L, fakeMemory + 1.0)
+            DataPoint(fakeTs, fakeFirstSnapshot),
+            DataPoint(fakeTs + 1L, fakeSecondSnapshot)
         )
 
         // When
@@ -198,14 +186,14 @@ internal class MemoryEventFactoryTest {
 
     @Test
     fun `M fill memory values W create() { one value per data point }`(
-        @DoubleForgery(min = 1.0, max = 16_000_000_000.0) fakeFirstMemory: Double,
-        @DoubleForgery(min = 1.0, max = 16_000_000_000.0) fakeSecondMemory: Double,
+        @Forgery fakeFirstSnapshot: MemorySnapshot,
+        @Forgery fakeSecondSnapshot: MemorySnapshot,
         @LongForgery(min = 1L) fakeTs: Long
     ) {
         // Given
         val samples = listOf(
-            DataPoint(fakeTs, fakeFirstMemory),
-            DataPoint(fakeTs + 1L, fakeSecondMemory)
+            DataPoint(fakeTs, fakeFirstSnapshot),
+            DataPoint(fakeTs + 1L, fakeSecondSnapshot)
         )
 
         // When
@@ -214,18 +202,8 @@ internal class MemoryEventFactoryTest {
         // Then
         TimeseriesMemoryEventAssert.assertThat(event)
             .hasDataPointsCount(2)
-            .hasMemoryFootprint(fakeFirstMemory / BYTES_IN_KB, MEMORY_OFFSET, position = 0)
-            .hasMemoryFootprint(fakeSecondMemory / BYTES_IN_KB, MEMORY_OFFSET, position = 1)
-            .hasMemoryPercent(
-                fakeFirstMemory / fakeTotalRamBytes * PERCENT_FACTOR,
-                MEMORY_OFFSET,
-                position = 0
-            )
-            .hasMemoryPercent(
-                fakeSecondMemory / fakeTotalRamBytes * PERCENT_FACTOR,
-                MEMORY_OFFSET,
-                position = 1
-            )
+            .hasMemoryFootprint(fakeFirstSnapshot.footprintKib, fakeSecondSnapshot.footprintKib)
+            .hasMemoryNonResident(fakeFirstSnapshot.nonResidentKib, fakeSecondSnapshot.nonResidentKib)
             .hasTimestamps(fakeTs, fakeTs + 1L)
     }
 
@@ -479,7 +457,7 @@ internal class MemoryEventFactoryTest {
         datadogContext: DatadogContext = fakeDatadogContext,
         rumContext: RumContext = fakeSerializedRumContext,
         sessionType: RumSessionType = RumSessionType.USER,
-        dataPoints: List<DataPoint<Double>> = oneSample
+        dataPoints: List<DataPoint<MemorySnapshot>> = fakeDataPoints
     ): TimeseriesMemoryEvent = TimeseriesMemoryEvent.fromJson(
         checkNotNull(
             testedFactory(sessionType = sessionType)
@@ -493,13 +471,11 @@ internal class MemoryEventFactoryTest {
         sessionType: RumSessionType = RumSessionType.USER
     ): TimeseriesMemoryEvent = checkNotNull(
         testedFactory(sessionType = sessionType)
-            .create(datadogContext, rumContext, oneSample)
+            .create(datadogContext, rumContext, fakeDataPoints)
     )
 
     companion object {
-        private const val PERCENT_FACTOR: Double = 100.0
-        private const val BYTES_IN_KB: Double = 1000.0
-        private const val MEMORY_OFFSET: Double = 0.0001
+        private const val MAX_DATA_POINTS: Int = 16
 
         private const val VALUE_NAME_MEMORY: String = "memory"
         private const val VALUE_SCHEMA_OBJECT: String = "object-v2"

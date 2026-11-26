@@ -10,7 +10,6 @@ import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.rum.model.TimeseriesMemoryEvent.TimeseriesMemoryEventSessionType
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Offset
 import java.util.UUID
 
 class TimeseriesMemoryEventAssert private constructor(
@@ -111,35 +110,15 @@ class TimeseriesMemoryEventAssert private constructor(
 
     fun hasSameTimeseriesAs(expected: TimeseriesMemoryEvent) = apply {
         val expectedTimeseries = expected.timeseries
-        val expectedMemoryFootprint = expectedTimeseries.data.values.memoryFootprint
-        val actualMemoryFootprint = actual.timeseries.data.values.memoryFootprint
-        val expectedMemoryPercent = expectedTimeseries.data.values.memoryPercent
-        val actualMemoryPercent = actual.timeseries.data.values.memoryPercent
+        val expectedValues = expectedTimeseries.data.values
 
         hasTimeseriesName(expectedTimeseries.name)
             .hasTimeseriesSchema(expectedTimeseries.schema)
             .hasTimeseriesStart(expectedTimeseries.start)
             .hasTimeseriesEnd(expectedTimeseries.end)
             .hasTimestamps(*expectedTimeseries.data.timestamps.toLongArray())
-
-        assertThat(actualMemoryFootprint)
-            .overridingErrorMessage {
-                "Expected memory footprint values count ${expectedMemoryFootprint.size} " +
-                    "but was ${actualMemoryFootprint.size}"
-            }
-            .hasSameSizeAs(expectedMemoryFootprint)
-        assertThat(actualMemoryPercent)
-            .overridingErrorMessage {
-                "Expected memory percent values count ${expectedMemoryPercent.size} " +
-                    "but was ${actualMemoryPercent.size}"
-            }
-            .hasSameSizeAs(expectedMemoryPercent)
-        expectedMemoryFootprint.forEachIndexed { position, expectedValue ->
-            hasMemoryFootprint(expectedValue.toDouble(), NUMBER_COMPARISON_TOLERANCE, position)
-        }
-        expectedMemoryPercent.forEachIndexed { position, expectedValue ->
-            hasMemoryPercent(expectedValue.toDouble(), NUMBER_COMPARISON_TOLERANCE, position)
-        }
+            .hasMemoryFootprintKib(expectedValues.memoryFootprint.map { it.toDouble() })
+            .hasMemoryNonResidentKib(expectedValues.memoryNonResident.orEmpty().map { it.toDouble() })
     }
 
     fun hasDataPointsCount(expected: Int) = apply {
@@ -160,39 +139,31 @@ class TimeseriesMemoryEventAssert private constructor(
             .containsExactlyElementsOf(expected.toList())
     }
 
-    fun hasMemoryFootprint(expected: Double, offset: Double, position: Int = 0) = apply {
-        val memoryFootprint = actual.timeseries.data.values.memoryFootprint.getOrNull(position)?.toDouble()
+    fun hasMemoryFootprint(vararg expectedKib: Long) = hasMemoryFootprintKib(expectedKib.map { it.toDouble() })
 
-        assertThat(memoryFootprint)
+    fun hasMemoryNonResident(vararg expectedKib: Long) = hasMemoryNonResidentKib(expectedKib.map { it.toDouble() })
+
+    private fun hasMemoryFootprintKib(expectedKib: List<Double>) = apply {
+        val actualKib = actual.timeseries.data.values.memoryFootprint.map { it.toDouble() }
+
+        assertThat(actualKib)
             .overridingErrorMessage {
-                "Expected memory footprint data point at position $position to be present"
+                "Expected memory footprint $expectedKib but was $actualKib"
             }
-            .isNotNull()
-        assertThat(checkNotNull(memoryFootprint))
-            .overridingErrorMessage {
-                "Expected memory footprint at position $position to be close to $expected but was $memoryFootprint"
-            }
-            .isCloseTo(expected, Offset.offset(offset))
+            .containsExactlyElementsOf(expectedKib)
     }
 
-    fun hasMemoryPercent(expected: Double, offset: Double, position: Int = 0) = apply {
-        val memoryPercent = actual.timeseries.data.values.memoryPercent.getOrNull(position)?.toDouble()
+    private fun hasMemoryNonResidentKib(expectedKib: List<Double>) = apply {
+        val actualKib = actual.timeseries.data.values.memoryNonResident.orEmpty().map { it.toDouble() }
 
-        assertThat(memoryPercent)
+        assertThat(actualKib)
             .overridingErrorMessage {
-                "Expected memory percent data point at position $position to be present"
+                "Expected memory non-resident $expectedKib but was $actualKib"
             }
-            .isNotNull()
-        assertThat(checkNotNull(memoryPercent))
-            .overridingErrorMessage {
-                "Expected memory percent at position $position to be close to $expected but was $memoryPercent"
-            }
-            .isCloseTo(expected, Offset.offset(offset))
+            .containsExactlyElementsOf(expectedKib)
     }
 
     companion object {
-        private const val NUMBER_COMPARISON_TOLERANCE = 1e-9
-
         fun assertThat(actual: TimeseriesMemoryEvent?): TimeseriesMemoryEventAssert {
             Assertions.assertThat(actual)
                 .overridingErrorMessage { "Expected timeseries event to be present" }

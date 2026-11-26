@@ -2179,7 +2179,7 @@ data class com.datadog.android.rum.model.TimeseriesMemoryEvent
       fun fromJson(jsonString: kotlin.String): Data
       fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Data
   data class Values
-    constructor(memoryFootprint: kotlin.collections.List<kotlin.Number>, memoryPercent: kotlin.collections.List<kotlin.Number>)
+    constructor(memoryFootprint: kotlin.collections.List<kotlin.Number>, memoryNonResident: kotlin.collections.List<kotlin.Number>? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(jsonString: kotlin.String): Values

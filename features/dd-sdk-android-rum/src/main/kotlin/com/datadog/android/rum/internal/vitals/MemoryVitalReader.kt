@@ -6,46 +6,23 @@
 
 package com.datadog.android.rum.internal.vitals
 
-import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.persistence.file.canReadSafe
-import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.persistence.file.readLinesSafe
-import java.io.File
+import androidx.annotation.WorkerThread
 
 /**
  * Reads the device's `VmRSS` based on the `/proc/self/status` file.
  * cf. documentation https://man7.org/linux/man-pages/man5/procfs.5.html
  */
 internal class MemoryVitalReader(
-    internal val statusFile: File = STATUS_FILE,
-    internal val internalLogger: InternalLogger
+    private val procStatusReader: ProcStatusReader
 ) : VitalReader {
 
-    override fun readVitalData(): Double? {
-        if (!(statusFile.existsSafe(internalLogger) && statusFile.canReadSafe(internalLogger))) {
-            return null
-        }
+    @WorkerThread
+    override fun readVitalData(): Double? = procStatusReader.readFieldsKib(FIELDS)[ProcStatusReader.Field.VM_RSS]
+        ?.let { it.toDouble() * BYTES_IN_KB }
 
-        val memorySizeKb = statusFile.readLinesSafe(internalLogger = internalLogger)
-            ?.firstOrNull { it.startsWith("VmRSS:") }
-            ?.removePrefix("VmRSS:")
-            ?.trim()
-            ?.removeSuffix("kB")
-            ?.trim()
-            ?.toDoubleOrNull()
+    private companion object {
+        const val BYTES_IN_KB = 1000
 
-        return if (memorySizeKb == null) {
-            null
-        } else {
-            memorySizeKb * BYTES_IN_KB
-        }
-    }
-
-    companion object {
-
-        private const val BYTES_IN_KB = 1000
-
-        private const val STATUS_PATH = "/proc/self/status"
-        internal val STATUS_FILE = File(STATUS_PATH)
+        val FIELDS = listOf(ProcStatusReader.Field.VM_RSS)
     }
 }

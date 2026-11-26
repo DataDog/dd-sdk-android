@@ -5,7 +5,6 @@
  */
 package com.datadog.android.rum.internal.timeseries
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.rum.RumSessionType
@@ -16,14 +15,13 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.timeseries.factory.CpuEventFactory
 import com.datadog.android.rum.internal.timeseries.factory.MemoryEventFactory
 import com.datadog.android.rum.internal.timeseries.provider.CpuDatapointReader
-import com.datadog.android.rum.internal.timeseries.provider.VitalReaderWrapper
+import com.datadog.android.rum.internal.timeseries.provider.MemoryDatapointReader
 import com.datadog.android.rum.internal.vitals.CpuStatReader
-import com.datadog.android.rum.internal.vitals.MemoryVitalReader
+import com.datadog.android.rum.internal.vitals.ProcStatusReader
 import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.timeseries.TimeseriesType
 
 internal class PipelineFactory(
-    private val totalRamBytes: Long,
     private val sdkCore: FeatureSdkCore,
     private val dataWriter: DataWriter<Any>,
     private val insightsCollector: InsightsCollector,
@@ -41,38 +39,27 @@ internal class PipelineFactory(
         typesFactory[it]?.invoke(sessionType)
     }
 
-    private fun createMemoryPipeline(sessionType: RumSessionType): Pipeline<Double>? {
-        if (totalRamBytes <= 0) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
-                { ERROR_PIPELINE_CREATION_FAILED },
-                onlyOnce = true
-            )
-            return null
-        }
-
-        return Pipeline(
-            sdkCore = sdkCore,
-            reader = VitalReaderWrapper(
-                vitalReader = MemoryVitalReader(internalLogger = sdkCore.internalLogger),
-                timeProvider = sdkCore.timeProvider,
-                intervalMs = configuration.samplingIntervalMs
-            ),
-            buffer = Buffer(configuration.bufferSize),
-            eventFactory = MemoryEventFactory(
-                sessionType = sessionType,
-                totalRamBytes = totalRamBytes,
-                timeProvider = sdkCore.timeProvider,
-                batteryInfoProvider = batteryInfoProvider,
-                displayInfoProvider = displayInfoProvider,
-                internalLogger = sdkCore.internalLogger
-            ),
-            dataWriter = dataWriter,
-            collectedSessionsRegistry = sessionRegistry,
-            insightsCollector = insightsCollector
-        )
-    }
+    private fun createMemoryPipeline(
+        sessionType: RumSessionType
+    ) = Pipeline(
+        sdkCore = sdkCore,
+        reader = MemoryDatapointReader(
+            procStatusReader = ProcStatusReader(internalLogger = sdkCore.internalLogger),
+            timeProvider = sdkCore.timeProvider,
+            intervalMs = configuration.samplingIntervalMs
+        ),
+        buffer = Buffer(configuration.bufferSize),
+        eventFactory = MemoryEventFactory(
+            sessionType = sessionType,
+            timeProvider = sdkCore.timeProvider,
+            batteryInfoProvider = batteryInfoProvider,
+            displayInfoProvider = displayInfoProvider,
+            internalLogger = sdkCore.internalLogger
+        ),
+        dataWriter = dataWriter,
+        collectedSessionsRegistry = sessionRegistry,
+        insightsCollector = insightsCollector
+    )
 
     private fun createCpuPipeline(
         sessionType: RumSessionType
@@ -95,8 +82,4 @@ internal class PipelineFactory(
         collectedSessionsRegistry = sessionRegistry,
         insightsCollector = insightsCollector
     )
-
-    internal companion object {
-        const val ERROR_PIPELINE_CREATION_FAILED = "Pipeline creation failed"
-    }
 }

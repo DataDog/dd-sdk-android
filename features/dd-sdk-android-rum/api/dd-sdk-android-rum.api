@@ -6947,6 +6947,7 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Usr$Compa
 public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Values {
 	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values$Companion;
 	public fun <init> (Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
 	public final fun component2 ()Ljava/util/List;
 	public final fun copy (Ljava/util/List;Ljava/util/List;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;
@@ -6955,7 +6956,7 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Values {
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;
 	public final fun getMemoryFootprint ()Ljava/util/List;
-	public final fun getMemoryPercent ()Ljava/util/List;
+	public final fun getMemoryNonResident ()Ljava/util/List;
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;

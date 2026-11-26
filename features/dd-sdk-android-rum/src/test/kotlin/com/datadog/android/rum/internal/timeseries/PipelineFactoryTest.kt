@@ -18,11 +18,10 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.timeseries.factory.CpuEventFactory
 import com.datadog.android.rum.internal.timeseries.factory.MemoryEventFactory
 import com.datadog.android.rum.internal.timeseries.provider.CpuDatapointReader
-import com.datadog.android.rum.internal.timeseries.provider.VitalReaderWrapper
+import com.datadog.android.rum.internal.timeseries.provider.MemoryDatapointReader
 import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.timeseries.TimeseriesType
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.getFieldValue
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -34,8 +33,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -78,9 +75,6 @@ internal class PipelineFactoryTest {
     @Forgery
     lateinit var fakeSessionType: RumSessionType
 
-    @LongForgery(min = 1L)
-    var fakeTotalRamBytes: Long = 0L
-
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -88,12 +82,10 @@ internal class PipelineFactoryTest {
     }
 
     private fun createTestedFactory(
-        totalRamBytes: Long = fakeTotalRamBytes,
         enabledTypes: Set<TimeseriesType> = setOf(TimeseriesType.CPU, TimeseriesType.MEMORY),
         bufferSize: Int = TimeseriesConfiguration.DEFAULT_BUFFER_SIZE,
         intervalMs: Long = TimeseriesConfiguration.DEFAULT_SAMPLING_INTERVAL_MS
     ) = PipelineFactory(
-        totalRamBytes = totalRamBytes,
         sdkCore = mockSdkCore,
         dataWriter = mockDataWriter,
         insightsCollector = mockInsightsCollector,
@@ -178,60 +170,17 @@ internal class PipelineFactoryTest {
     }
 
     @Test
-    fun `M create a memory pipeline W create() { MEMORY enabled, total ram known }`() {
+    fun `M create a memory pipeline W create() { MEMORY enabled }`() {
         // Given
-        val testedFactory = createTestedFactory(
-            totalRamBytes = fakeTotalRamBytes,
-            enabledTypes = setOf(TimeseriesType.MEMORY)
-        )
+        val testedFactory = createTestedFactory(enabledTypes = setOf(TimeseriesType.MEMORY))
 
         // When
         val pipelines = testedFactory.create(fakeSessionType)
 
         // Then
         assertThat(pipelines).hasSize(1)
-        assertThat(pipelines[0].reader()).isInstanceOf(VitalReaderWrapper::class.java)
+        assertThat(pipelines[0].reader()).isInstanceOf(MemoryDatapointReader::class.java)
         assertThat(pipelines[0].eventFactory()).isInstanceOf(MemoryEventFactory::class.java)
-    }
-
-    @ParameterizedTest
-    @ValueSource(longs = [0L, -1L])
-    fun `M skip memory pipeline and log error W create() { MEMORY enabled, total ram unknown }`(
-        invalidTotalRamBytes: Long
-    ) {
-        // Given
-        val testedFactory = createTestedFactory(
-            totalRamBytes = invalidTotalRamBytes,
-            enabledTypes = setOf(TimeseriesType.MEMORY)
-        )
-
-        // When
-        val pipelines = testedFactory.create(fakeSessionType)
-
-        // Then
-        assertThat(pipelines).isEmpty()
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
-            PipelineFactory.ERROR_PIPELINE_CREATION_FAILED,
-            onlyOnce = true
-        )
-    }
-
-    @Test
-    fun `M create cpu pipeline W create() { memory creation fails, CPU and MEMORY enabled }`() {
-        // Given
-        val testedFactory = createTestedFactory(
-            totalRamBytes = 0L,
-            enabledTypes = setOf(TimeseriesType.CPU, TimeseriesType.MEMORY)
-        )
-
-        // When
-        val pipelines = testedFactory.create(fakeSessionType)
-
-        // Then
-        assertThat(pipelines).hasSize(1)
-        assertThat(pipelines[0].reader()).isInstanceOf(CpuDatapointReader::class.java)
     }
 
     @Test
@@ -247,7 +196,7 @@ internal class PipelineFactoryTest {
         // Then
         assertThat(pipelines).hasSize(2)
         assertThat(pipelines.map { it.reader()::class.java })
-            .containsExactlyInAnyOrder(CpuDatapointReader::class.java, VitalReaderWrapper::class.java)
+            .containsExactlyInAnyOrder(CpuDatapointReader::class.java, MemoryDatapointReader::class.java)
     }
 
     @Test
