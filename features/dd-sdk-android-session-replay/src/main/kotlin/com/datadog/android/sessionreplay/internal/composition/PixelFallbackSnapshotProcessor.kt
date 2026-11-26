@@ -98,7 +98,8 @@ internal class PixelFallbackSnapshotProcessor(
         detectionTimedOut: AtomicBoolean,
         resolutions: List<CaptureResolution>
     ) {
-        val delayNs = generation.remainingBudgetNs() * DETECTION_BUDGET_PERCENT / PERCENT
+        // Divided first: a generation without a practical deadline would overflow the product.
+        val delayNs = generation.remainingBudgetNs() / PERCENT * DETECTION_BUDGET_PERCENT
         detectionTimeoutScheduler.schedule(delayNs) {
             detectionTimedOut.set(true)
             resolutions.forEach { it.failClosedIfAwaitingDetection() }

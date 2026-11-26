@@ -66,10 +66,10 @@ internal class PixelFallbackSnapshotProcessorTest {
         whenever(mockCanvasWrapper.createCanvas(any())).thenReturn(mockCanvas)
     }
 
-    private fun generationContext(): CaptureGenerationContext = CaptureGenerationContext(
+    private fun generationContext(deadlineNs: Long): CaptureGenerationContext = CaptureGenerationContext(
         id = 1L,
         startedAtNs = 0L,
-        deadlineNs = FAKE_DEADLINE_NS,
+        deadlineNs = deadlineNs,
         timeProvider = CaptureTimeProvider { fakeNowNs }
     )
 
@@ -486,6 +486,21 @@ internal class PixelFallbackSnapshotProcessorTest {
     }
 
     @Test
+    fun `M keep half of the time left W process { the generation has no practical deadline }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+
+        // When
+        process(fixture, TextDetector { _, _ -> }, deadlineNs = Long.MAX_VALUE)
+
+        // Then
+        assertThat(fakeScheduler.scheduled.single().first)
+            .isEqualTo(Long.MAX_VALUE / 100 * PixelFallbackSnapshotProcessor.DETECTION_BUDGET_PERCENT)
+    }
+
+    @Test
     fun `M leave the timeout to expire W process { detection completes before process returns }`(
         @StringForgery fakeScope: String
     ) {
@@ -511,17 +526,18 @@ internal class PixelFallbackSnapshotProcessorTest {
         // Given
         val fixture = Fixture(fakeScope)
         var capturedOnComplete: ((TextDetectionOutcome) -> Unit)? = null
+        fakeNowNs = FAKE_NOW_NS
         val processed = process(fixture, TextDetector { _, onComplete -> capturedOnComplete = onComplete })
         assertThat(processed.results).isEmpty()
 
         // When
         val (delayNs, timeoutTask) = fakeScheduler.scheduled.single()
         timeoutTask()
-        capturedOnComplete?.invoke(TextDetectionOutcome.Detected(listOf(Rect(0, 0, 5, 5))))
+        checkNotNull(capturedOnComplete).invoke(TextDetectionOutcome.Detected(listOf(Rect(0, 0, 5, 5))))
 
         // Then
         assertThat(delayNs).isEqualTo(
-            FAKE_DEADLINE_NS * PixelFallbackSnapshotProcessor.DETECTION_BUDGET_PERCENT / 100
+            (FAKE_DEADLINE_NS - FAKE_NOW_NS) * PixelFallbackSnapshotProcessor.DETECTION_BUDGET_PERCENT / 100
         )
         assertPlaceholderWithoutUpload(processed.snapshot)
         verifyNoInteractions(mockCanvasWrapper)
@@ -551,7 +567,7 @@ internal class PixelFallbackSnapshotProcessorTest {
 
         // When
         fakeNowNs = FAKE_DEADLINE_NS + 1
-        capturedOnComplete?.invoke(TextDetectionOutcome.Detected(listOf(Rect(0, 0, 5, 5))))
+        checkNotNull(capturedOnComplete).invoke(TextDetectionOutcome.Detected(listOf(Rect(0, 0, 5, 5))))
 
         // Then
         verifyNoInteractions(mockCanvasWrapper)
@@ -598,7 +614,8 @@ internal class PixelFallbackSnapshotProcessorTest {
         fixture: Fixture,
         textDetector: TextDetector?,
         captures: List<PendingPixelCapture> = listOf(fixture.pending),
-        snapshot: CapturedFullSnapshot = fixture.snapshot
+        snapshot: CapturedFullSnapshot = fixture.snapshot,
+        deadlineNs: Long = FAKE_DEADLINE_NS
     ): Processed {
         val testedProcessor = PixelFallbackSnapshotProcessor(
             resourceResolver = mockResourceResolver,
@@ -609,7 +626,7 @@ internal class PixelFallbackSnapshotProcessorTest {
         )
         val results = mutableListOf<SnapshotProcessingResult>()
         val work = testedProcessor.process(
-            SnapshotProcessingRequest(generationContext(), snapshot, captures, fixture.identityFactory),
+            SnapshotProcessingRequest(generationContext(deadlineNs), snapshot, captures, fixture.identityFactory),
             SnapshotProcessingCallback { results += it }
         )
         return Processed(work, results)
@@ -639,5 +656,6 @@ internal class PixelFallbackSnapshotProcessorTest {
 
     private companion object {
         const val FAKE_DEADLINE_NS = 1_000_000_000L
+        const val FAKE_NOW_NS = 400_000_000L
     }
 }
