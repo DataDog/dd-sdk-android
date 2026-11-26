@@ -438,8 +438,7 @@ internal class RumResourceScope(
                 InternalLogger.Target.TELEMETRY,
                 { INVALID_DELIVERY_TYPE_MESSAGE },
                 e,
-                onlyOnce = true,
-                additionalProperties = mapOf(INVALID_VALUE_PROPERTY to value.toString())
+                onlyOnce = true
             )
             null
         }
@@ -465,8 +464,7 @@ internal class RumResourceScope(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.TELEMETRY,
                 { INVALID_TRANSFER_SIZE_MESSAGE },
-                onlyOnce = true,
-                additionalProperties = mapOf(INVALID_VALUE_PROPERTY to value.toString())
+                onlyOnce = true
             )
             null
         }
@@ -710,10 +708,11 @@ internal class RumResourceScope(
             "resource: %s was 0 or negative. In order to keep the resource event" +
             " we forced it to 1ns."
 
-        // fixed messages, so that onlyOnce reports each kind of invalid value once
+        // fixed messages, so that onlyOnce reports each kind of invalid value once. The rejected
+        // value isn't attached: it comes from app or wrapper attributes, and telemetry bypasses
+        // the event mappers that could redact it
         internal const val INVALID_DELIVERY_TYPE_MESSAGE = "[Cache] Ignoring invalid resource delivery type"
         internal const val INVALID_TRANSFER_SIZE_MESSAGE = "[Cache] Ignoring invalid resource transfer size"
-        internal const val INVALID_VALUE_PROPERTY = "invalid_value"
 
         private val CACHE_DELIVERY_ATTRIBUTES = setOf(
             RumAttributes.RESOURCE_DELIVERY_TYPE,

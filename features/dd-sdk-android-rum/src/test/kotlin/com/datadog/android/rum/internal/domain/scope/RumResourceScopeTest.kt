@@ -4295,16 +4295,14 @@ internal class RumResourceScopeTest {
             RumResourceScope.INVALID_DELIVERY_TYPE_MESSAGE,
             throwableClass = NoSuchElementException::class.java,
             onlyOnce = true,
-            mode = never(),
-            additionalProperties = mapOf(RumResourceScope.INVALID_VALUE_PROPERTY to "null")
+            mode = never()
         )
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.TELEMETRY,
             RumResourceScope.INVALID_TRANSFER_SIZE_MESSAGE,
             onlyOnce = true,
-            mode = never(),
-            additionalProperties = mapOf(RumResourceScope.INVALID_VALUE_PROPERTY to "null")
+            mode = never()
         )
     }
 
@@ -4331,8 +4329,7 @@ internal class RumResourceScopeTest {
             InternalLogger.Target.TELEMETRY,
             RumResourceScope.INVALID_DELIVERY_TYPE_MESSAGE,
             throwableClass = NoSuchElementException::class.java,
-            onlyOnce = true,
-            additionalProperties = mapOf(RumResourceScope.INVALID_VALUE_PROPERTY to fakeDeliveryType)
+            onlyOnce = true
         )
     }
 
@@ -4371,8 +4368,7 @@ internal class RumResourceScopeTest {
             InternalLogger.Level.WARN,
             InternalLogger.Target.TELEMETRY,
             RumResourceScope.INVALID_TRANSFER_SIZE_MESSAGE,
-            onlyOnce = true,
-            additionalProperties = mapOf(RumResourceScope.INVALID_VALUE_PROPERTY to fakeTransferSize.toString())
+            onlyOnce = true
         )
     }
 
