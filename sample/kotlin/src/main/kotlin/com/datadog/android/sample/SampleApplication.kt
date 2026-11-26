@@ -52,7 +52,6 @@ import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.SystemRequirementsConfiguration
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
@@ -77,7 +76,6 @@ import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
 import io.opentelemetry.api.GlobalOpenTelemetry
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -121,7 +119,7 @@ class SampleApplication : Application() {
     private val localServer = LocalServer()
 
     // Coroutine scope for observing OpenFeature events
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val applicationScope = CoroutineScope(SupervisorJob())
 
     override fun onCreate() {
         super.onCreate()
@@ -317,7 +315,7 @@ class SampleApplication : Application() {
     }
 
     private fun initializeSessionReplay() {
-        val shouldUseFgm = SecureRandom().nextInt(100) < USE_FGM_PCT
+        val shouldReportPrivacyAttributes = SecureRandom().nextInt(100) < PRIVACY_ATTRIBUTE_REPORTING_PCT
         val systemRequirementsConfiguration = SystemRequirementsConfiguration.Builder()
             .setMinRAMSizeMb(1024)
             .setMinCPUCoreNumber(1)
@@ -329,10 +327,10 @@ class SampleApplication : Application() {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
                 }
 
-                if (shouldUseFgm) {
-                    useFgmConfiguration(this)
+                if (shouldReportPrivacyAttributes) {
+                    applyPrivacyWithRumAttributes(this)
                 } else {
-                    useLegacyConfiguration(this)
+                    usePrivacyPreset(this)
                 }
             }
             .addExtensionSupport(MaterialExtensionSupport())
@@ -343,7 +341,7 @@ class SampleApplication : Application() {
         SessionReplay.enable(sessionReplayConfig)
     }
 
-    private fun useFgmConfiguration(builder: SessionReplayConfiguration.Builder) {
+    private fun applyPrivacyWithRumAttributes(builder: SessionReplayConfiguration.Builder) {
         val shouldMaskAll = SecureRandom().nextInt(100) < MASK_SESSION_PCT // 25%
 
         val imagePrivacy = if (shouldMaskAll) {
@@ -369,13 +367,13 @@ class SampleApplication : Application() {
         builder.setTextAndInputPrivacy(textAndInputPrivacy)
     }
 
-    @Suppress("Deprecation")
-    private fun useLegacyConfiguration(builder: SessionReplayConfiguration.Builder) {
-        if (SecureRandom().nextInt(100) <= SESSION_REPLAY_PRIVACY_SAMPLING) {
-            builder.setPrivacy(SessionReplayPrivacy.ALLOW)
-        } else {
-            builder.setPrivacy(SessionReplayPrivacy.MASK_USER_INPUT)
-        }
+    private fun usePrivacyPreset(builder: SessionReplayConfiguration.Builder) {
+        val allow = SecureRandom().nextInt(100) <= SESSION_REPLAY_PRIVACY_SAMPLING
+        builder.setImagePrivacy(if (allow) ImagePrivacy.MASK_NONE else ImagePrivacy.MASK_LARGE_ONLY)
+        builder.setTouchPrivacy(if (allow) TouchPrivacy.SHOW else TouchPrivacy.HIDE)
+        builder.setTextAndInputPrivacy(
+            if (allow) TextAndInputPrivacy.MASK_SENSITIVE_INPUTS else TextAndInputPrivacy.MASK_ALL_INPUTS
+        )
     }
 
     @OptIn(ExperimentalRumApi::class)
@@ -454,7 +452,7 @@ class SampleApplication : Application() {
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             Timber.e("Error setting site to ${BuildConfig.DD_SITE_NAME}")
         }
 
@@ -500,7 +498,7 @@ class SampleApplication : Application() {
     }
 
     companion object {
-        private const val USE_FGM_PCT = 10
+        private const val PRIVACY_ATTRIBUTE_REPORTING_PCT = 10
         private const val SAMPLE_IN_ALL_SESSIONS = 100f
         private const val MASK_SESSION_PCT = 25
         private const val SESSION_REPLAY_PRIVACY_SAMPLING = 75

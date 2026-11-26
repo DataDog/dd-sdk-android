@@ -27,7 +27,6 @@ internal class BadView(context: Context, attrs: AttributeSet) : View(context, at
 
     init {
         setWillNotDraw(false)
-        setWillNotCacheDrawing(true)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -83,12 +82,8 @@ internal class BadView(context: Context, attrs: AttributeSet) : View(context, at
         }
     }
 
-    fun isSlow(): Boolean {
-        return slowFrameRate
-    }
-
-    fun setSlow(slowFramerate: Boolean) {
-        slowFrameRate = slowFramerate
+    fun setSlow(slowFrameRate: Boolean) {
+        this@BadView.slowFrameRate = slowFrameRate
         invalidate()
     }
 

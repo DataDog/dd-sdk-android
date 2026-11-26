@@ -42,19 +42,25 @@ internal interface DatadogModule {
             config: BenchmarkConfig
         ): SdkCore {
             // Session Replay (Compose) and Timeseries Baselines need RUM
-            if (config.run == SyntheticsRun.Baseline &&
-                config.scenario != SyntheticsScenario.SessionReplay &&
-                config.scenario != SyntheticsScenario.SessionReplayCompose &&
-                config.scenario != SyntheticsScenario.Timeseries
-            ) {
+            val baselineRequiresRum = when (config.scenario) {
+                SyntheticsScenario.SessionReplay,
+                SyntheticsScenario.SessionReplayCompose,
+                SyntheticsScenario.Timeseries -> true
+                else -> false
+            }
+            if (config.run == SyntheticsRun.Baseline && !baselineRequiresRum) {
                 return Datadog.getInstance() // returns NoOpInternalSdkCore under the hood
             }
 
-            return Datadog.initialize(
-                context,
-                createDatadogConfiguration(),
-                TrackingConsent.GRANTED
-            )!!
+            return checkNotNull(
+                Datadog.initialize(
+                    context,
+                    createDatadogConfiguration(),
+                    TrackingConsent.GRANTED
+                )
+            ) {
+                "Datadog SDK initialization failed for the benchmark"
+            }
         }
 
         @Provides

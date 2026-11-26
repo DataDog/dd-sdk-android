@@ -44,7 +44,7 @@ internal class ViewModelFactory(
                 OtelTracesViewModel(okHttpClient, localServer) as T
             }
             else -> {
-                modelClass.newInstance()
+                modelClass.getDeclaredConstructor().newInstance()
             }
         }
     }

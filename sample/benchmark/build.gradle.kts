@@ -20,6 +20,7 @@ plugins {
     kotlin("plugin.serialization")
     id("kotlin-parcelize")
     id("datadogBuildConfig")
+    id("detekt-common")
     alias(libs.plugins.datadogGradlePlugin)
 }
 
@@ -92,6 +93,7 @@ dependencies {
     // Android dependencies
     implementation(libs.androidXRecyclerView)
     implementation(libs.bundles.androidXNavigation)
+    implementation(libs.androidXCore)
     implementation(libs.androidXAppCompat)
     implementation(libs.androidXConstraintLayout)
     implementation(libs.androidXLifecycleCompose)

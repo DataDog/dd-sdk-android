@@ -38,6 +38,8 @@ internal fun <T, I> LastItemTracker(
             indexOfLastVisible to allItems.lastIndex
         }
 
+        // Keep list observation on the standard computation pool in this benchmark.
+        @Suppress("InjectDispatcher")
         lastItemChanges
             .distinctUntilChangedBy { it.first }
             .debounce(500.milliseconds)

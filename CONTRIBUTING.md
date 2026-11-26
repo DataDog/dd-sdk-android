@@ -250,6 +250,10 @@ To execute Detekt check, run:
 ./gradlew detekt
 ```
 
+Both Detekt convention plugins load the shared `detekt.yml` rules. SDK modules opt in to
+the additional `detekt-sdk.yml` rules with `detekt-conventions`. Sample apps and benchmark
+modules use `detekt-common` to run the shared rules.
+
 ### Code style
 
 Our coding style is ensured by [KtLint](https://ktlint.github.io/), with the

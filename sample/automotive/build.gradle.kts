@@ -17,6 +17,7 @@ plugins {
     // Build
     id("com.android.application")
     id("datadogBuildConfig")
+    id("detekt-common")
     alias(libs.plugins.datadogGradlePlugin)
 }
 

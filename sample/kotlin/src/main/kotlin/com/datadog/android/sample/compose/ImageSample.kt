@@ -188,7 +188,7 @@ private fun CoilCrossfadeImage() {
     val imageRequest = remember(context) {
         ImageRequest2.Builder(context)
             .data(R.drawable.ic_dd_icon_rgb)
-            .crossfade(2_000)
+            .crossfade(CROSSFADE_DURATION_MS)
             .allowHardware(false)
             .memoryCachePolicy(CachePolicy2.DISABLED)
             .build()
@@ -212,7 +212,7 @@ private fun Coil3CrossfadeImage() {
     val imageRequest = remember(context) {
         ImageRequest.Builder(context)
             .data(R.drawable.ic_dd_icon_rgb)
-            .crossfade(2_000)
+            .crossfade(CROSSFADE_DURATION_MS)
             .allowHardware(false)
             .memoryCachePolicy(CachePolicy.DISABLED)
             .build()
@@ -250,3 +250,5 @@ private fun Modifier.imageModifier(): Modifier {
 private fun PreviewImageSample() {
     ImageSample()
 }
+
+private const val CROSSFADE_DURATION_MS = 2_000

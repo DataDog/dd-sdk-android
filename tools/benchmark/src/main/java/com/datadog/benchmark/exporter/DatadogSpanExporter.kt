@@ -36,11 +36,11 @@ internal class DatadogSpanExporter(datadogExporterConfiguration: DatadogExporter
     private val benchmarkSpanToSpanEventMapper = BenchmarkSpanToSpanEventMapper()
 
     override fun export(spans: MutableCollection<SpanData>): CompletableResultCode {
-        spans.map {
+        val spanEvents = spans.map {
             benchmarkSpanToSpanEventMapper.map(benchmarkContext, it)
-        }.apply {
-            httpClient.uploadSpanEvent(this)
         }
+        httpClient.uploadSpanEvent(spanEvents)
+
         return CompletableResultCode.ofSuccess()
     }
 

@@ -21,9 +21,11 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.trace.Trace
@@ -102,11 +104,12 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         return config.isInstrumentedRun() && config.isSessionReplayScenario()
     }
 
-    @Suppress("DEPRECATION")
     private fun enableSessionReplay() {
         val sessionReplayConfig = SessionReplayConfiguration
             .Builder(SAMPLE_IN_ALL_SESSIONS)
-            .setPrivacy(SessionReplayPrivacy.ALLOW)
+            .setImagePrivacy(ImagePrivacy.MASK_NONE)
+            .setTouchPrivacy(TouchPrivacy.SHOW)
+            .setTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
             .addExtensionSupport(MaterialExtensionSupport())
             .addExtensionSupport(ComposeExtensionSupport())
             .build()

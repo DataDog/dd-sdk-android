@@ -9,6 +9,7 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
+import androidx.core.graphics.createBitmap
 import androidx.lifecycle.ViewModel
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
@@ -17,6 +18,7 @@ import com.datadog.android.rum.operations.FailureReason
 import timber.log.Timber
 import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
+import kotlin.math.sqrt
 
 @Suppress("MagicNumber", "TooManyFunctions")
 internal class VitalsViewModel : ViewModel() {
@@ -62,7 +64,7 @@ internal class VitalsViewModel : ViewModel() {
         val endTime = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(1000)
         var result = 0.0
         while (System.nanoTime() < endTime) {
-            result += Math.sqrt(result + 1.0)
+            result += sqrt(result + 1.0)
         }
         Timber.d("runLongTask finished with result=$result")
     }
@@ -112,14 +114,16 @@ internal class VitalsViewModel : ViewModel() {
     @SuppressLint("TimberArgCount")
     private fun fillUpMemory() {
         Thread {
-            loop@ for (i in 0..128) {
+            var allocations = 0
+            while (allocations < MAX_BITMAP_ALLOCATIONS) {
                 try {
-                    val bitmap = Bitmap.createBitmap(3840, 2160, Bitmap.Config.ARGB_8888)
+                    val bitmap = createBitmap(3840, 2160)
                     bitmapList.add(bitmap)
-                } catch (e: OutOfMemoryError) {
+                } catch (_: OutOfMemoryError) {
                     Timber.e("Unable to allocate more bitmaps…")
-                    break@loop
+                    break
                 }
+                allocations++
                 Thread.sleep(10)
             }
             Timber.i("Allocated ${bitmapList.size} bitmaps")
@@ -157,5 +161,9 @@ internal class VitalsViewModel : ViewModel() {
         } else {
             GlobalRumMonitor.get().succeedOperation(name, operationKey)
         }
+    }
+
+    companion object {
+        private const val MAX_BITMAP_ALLOCATIONS = 129
     }
 }

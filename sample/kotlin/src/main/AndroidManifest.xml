@@ -79,7 +79,7 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Logs control" />
         </service>
-        <service android:name=".widget.WidgetIntentService"/>
+        <service android:name=".widget.WidgetRequestService"/>
 
         <provider
             android:authorities="com.datadog.android.provider"

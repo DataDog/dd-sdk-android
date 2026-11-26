@@ -13,6 +13,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("MagicNumber")
 internal class IoWorkload(
@@ -21,6 +22,8 @@ internal class IoWorkload(
     private val payloadBytes: Int = 4 * 1024
 ) : Workload {
     override fun start(scope: CoroutineScope) {
+        // Measure file operations on the standard IO pool.
+        @Suppress("InjectDispatcher")
         scope.launch(Dispatchers.IO) {
             val file = File(cacheDir, "benchmark_workload.tmp")
             val payload = ByteArray(payloadBytes).also { Random.nextBytes(it) }
@@ -28,7 +31,7 @@ internal class IoWorkload(
                 while (isActive) {
                     file.writeBytes(payload)
                     blackHole(file.readBytes().size)
-                    delay(periodMs)
+                    delay(periodMs.milliseconds)
                 }
             } finally {
                 file.delete()
