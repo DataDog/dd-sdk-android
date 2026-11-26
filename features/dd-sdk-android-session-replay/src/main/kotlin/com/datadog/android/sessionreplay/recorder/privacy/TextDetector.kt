@@ -36,8 +36,8 @@ fun interface TextDetector {
      * any thread, and must not block. Detector exceptions, timeouts, and cancellation must resolve
      * to [TextDetectionOutcome.Unavailable] rather than leaving [onComplete] uninvoked - the caller
      * fails closed (placeholder, never uploaded) whenever text presence can't be verified. The caller
-     * does not depend on that: it also gives up on a detection that throws or takes too long, and
-     * ignores any result that arrives after the first or after it gave up.
+     * does not depend on that: it also gives up on a detection that throws before reporting or takes
+     * too long, and ignores any result that arrives after the first or after it gave up.
      */
     @InternalApi
     @AnyThread

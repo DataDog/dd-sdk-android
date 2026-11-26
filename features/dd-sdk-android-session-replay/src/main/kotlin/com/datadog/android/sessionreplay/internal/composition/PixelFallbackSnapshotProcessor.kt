@@ -33,14 +33,16 @@ import java.util.concurrent.atomic.AtomicInteger
  * wireframes/child-references its own pending captures produced - everything else in the snapshot
  * passes through untouched.
  *
- * The [TextDetector] is optional third-party code, so nothing it does can leave a capture unresolved
- * or upload unmasked pixels: a detector that throws, or does not complete within
- * [DETECTION_BUDGET_PERCENT] of the time left when processing starts, resolves that capture to a
- * placeholder, and the rest of the snapshot still completes. Only the first result a detector
- * reports counts. A detection that has no chance of being used is not acted on: once the generation has
- * expired or been accepted, [CaptureGenerationContext] invalidates every [CaptureWorkToken] this
- * processor created, and a result arriving then is neither masked nor encoded. A detection already
- * in flight cannot be interrupted, as [TextDetector] has no cancellation handle.
+ * The [TextDetector] is optional third-party code, so neither its failures nor the data it reports can
+ * leave a capture unresolved or upload unmasked pixels: a detector that throws before reporting a
+ * result, or does not complete within [DETECTION_BUDGET_PERCENT] of the time left when processing
+ * starts, resolves that capture to a placeholder, and the rest of the snapshot still completes. Only
+ * the first result a detector reports counts, even if it throws afterwards. A detection that has no
+ * chance of being used is not acted on: once the generation has expired or been accepted,
+ * [CaptureGenerationContext] invalidates every [CaptureWorkToken] this processor created, and a result
+ * arriving then is neither masked nor encoded. A detection already in flight cannot be interrupted, as
+ * [TextDetector] has no cancellation handle, and a call that blocks is bounded for its own capture only:
+ * it still holds the thread processing the snapshot.
  */
 internal class PixelFallbackSnapshotProcessor(
     private val resourceResolver: ResourceResolver,
@@ -82,7 +84,7 @@ internal class PixelFallbackSnapshotProcessor(
                 onCaptureDone()
             }
         }
-        // Armed before any detector is called, so a detector that blocks in the call is timed out too.
+        // Armed before any detector is called, so a call that blocks still has its capture bounded.
         if (textDetector != null && remaining.get() > 0 && pending.any { !it.skipsTextDetection }) {
             scheduleDetectionTimeout(request.generation, detectionTimedOut, resolutions)
         }
