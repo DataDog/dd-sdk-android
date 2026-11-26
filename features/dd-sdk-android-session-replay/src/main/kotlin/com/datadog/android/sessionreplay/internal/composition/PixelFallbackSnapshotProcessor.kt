@@ -25,7 +25,6 @@ import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Resolves each [PendingPixelCapture] whose wireframe survived construction: text-region
@@ -66,14 +65,8 @@ internal class PixelFallbackSnapshotProcessor(
 
         val outcomes = ConcurrentHashMap<Long, PixelOutcome>()
         val remaining = AtomicInteger(pending.size)
-
-        @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts this non-null input.
-        val detectionTimeout = AtomicReference(CancellableCaptureWork.NONE)
         val onCaptureDone: () -> Unit = {
-            if (remaining.decrementAndGet() == 0) {
-                detectionTimeout.get().cancel()
-                finish(request, outcomes, callback)
-            }
+            if (remaining.decrementAndGet() == 0) finish(request, outcomes, callback)
         }
 
         val resolutions = pending.mapNotNull { capture ->
@@ -90,20 +83,21 @@ internal class PixelFallbackSnapshotProcessor(
         }
         // Armed before any detector is called, so a detector that blocks in the call is timed out too.
         if (textDetector != null && remaining.get() > 0 && pending.any { !it.skipsTextDetection }) {
-            @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts this non-null input.
-            detectionTimeout.set(scheduleDetectionTimeout(request.generation, resolutions))
+            scheduleDetectionTimeout(request.generation, resolutions)
         }
         resolutions.forEach { it.start() }
 
-        return CancellableCaptureWork { detectionTimeout.get().cancel() }
+        return CancellableCaptureWork.NONE
     }
 
+    // Left to run out once the captures are done: cancelling a task on the SDK's scheduled executor is
+    // reported as an uncaught exception to the user and to telemetry. A late run finds nothing waiting.
     private fun scheduleDetectionTimeout(
         generation: CaptureGenerationContext,
         resolutions: List<CaptureResolution>
-    ): CancellableCaptureWork {
+    ) {
         val delayNs = generation.remainingBudgetNs() * DETECTION_BUDGET_PERCENT / PERCENT
-        return detectionTimeoutScheduler.schedule(delayNs) {
+        detectionTimeoutScheduler.schedule(delayNs) {
             resolutions.forEach { it.failClosedIfAwaitingDetection() }
         }
     }

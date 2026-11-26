@@ -293,7 +293,6 @@ internal class PixelFallbackSnapshotProcessorTest {
 
         // Then
         assertPlaceholderWithoutUpload(processed.snapshot)
-        assertThat(fakeScheduler.cancelCount).isEqualTo(1)
     }
 
     @Test
@@ -424,17 +423,22 @@ internal class PixelFallbackSnapshotProcessorTest {
     }
 
     @Test
-    fun `M cancel the timeout W process { detection completes before process returns }`(
+    fun `M leave the timeout to expire W process { detection completes before process returns }`(
         @StringForgery fakeScope: String
     ) {
         // Given
         val fixture = Fixture(fakeScope)
+        val processed = process(
+            fixture,
+            TextDetector { _, onComplete -> onComplete(TextDetectionOutcome.Unavailable) }
+        )
 
         // When
-        process(fixture, TextDetector { _, onComplete -> onComplete(TextDetectionOutcome.Unavailable) })
+        fakeScheduler.scheduled.single().second()
 
         // Then
-        assertThat(fakeScheduler.cancelCount).isEqualTo(1)
+        assertThat(fakeScheduler.cancelCount).isEqualTo(0)
+        assertThat(processed.results).hasSize(1)
     }
 
     @Test
@@ -461,7 +465,7 @@ internal class PixelFallbackSnapshotProcessorTest {
     }
 
     @Test
-    fun `M cancel the timeout W cancel returned work`(@StringForgery fakeScope: String) {
+    fun `M leave the timeout to expire W cancel returned work`(@StringForgery fakeScope: String) {
         // Given
         val fixture = Fixture(fakeScope)
         val processed = process(fixture, TextDetector { _, _ -> })
@@ -470,7 +474,7 @@ internal class PixelFallbackSnapshotProcessorTest {
         processed.work.cancel()
 
         // Then
-        assertThat(fakeScheduler.cancelCount).isEqualTo(1)
+        assertThat(fakeScheduler.cancelCount).isEqualTo(0)
     }
 
     @Test
