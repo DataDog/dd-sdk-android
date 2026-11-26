@@ -419,8 +419,8 @@ prerequisite that contributed to the selected allocation also participates in RU
 the OpenFeature exposure hook; speculative prerequisite evaluations do not.
 
 Cross-platform bridges, including React Native, Flutter, and Unity, do not support prerequisite assignments in this
-phase. The Android host treats those assignments as unavailable to the bridge while continuing to expose independent
-assignments.
+phase. Their requests advertise no capabilities, so the server is responsible for returning a compatible response;
+the Android host does not remove dependency data from a response it receives.
 
 ##### Error codes
 - `FLAG_NOT_FOUND` - The flag could not be found

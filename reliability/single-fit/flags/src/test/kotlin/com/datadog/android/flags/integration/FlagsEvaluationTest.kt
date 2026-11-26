@@ -30,7 +30,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
@@ -153,7 +152,7 @@ class FlagsEvaluationTest {
     }
 
     @Test
-    fun `M omit dependent entries W resolve() {bridge client}`(
+    fun `M ignore extra response fields W resolve() {bridge client}`(
         @BoolForgery fakeValue: Boolean
     ) {
         // Given
@@ -162,41 +161,28 @@ class FlagsEvaluationTest {
             precomputedAssignmentsBody(mapOf(fakeFlagKey to assignment("boolean", fakeValue)))
         )
         val attributes = response.getJSONObject("data").getJSONObject("attributes")
-        val dependencyEvaluation = JSONObject()
-            .put("flagKey", ENCRYPTED_DEPENDENCY_KEY)
-            .put("isPresentInAssignment", true)
+        attributes.put("futureAttribute", JSONObject().put("version", 2))
         attributes.getJSONObject("flags").getJSONObject(fakeFlagKey)
-            .put("dependencyEvaluations", JSONArray().put(dependencyEvaluation))
-        attributes.put(
-            "flagEvaluationErrors",
-            JSONObject().put(
-                "failed-flag",
-                JSONObject()
-                    .put("reason", "ERROR")
-                    .put("errorCode", "GENERAL")
-                    .put("dependencyEvaluations", JSONArray().put(dependencyEvaluation))
-            )
-        )
+            .put("futureAssignmentField", JSONObject().put("enabled", true))
         stubSdkCore.stubNetworkResponses { httpResponse(it, body = response.toString()) }
         val client = enableFlagsAndBuildClient()
         client.setEvaluationContext(EvaluationContext(fakeTargetingKey))
 
         // When
         val details = client.resolve(fakeFlagKey, !fakeValue)
-        val failedDetails = client.resolve("failed-flag", fakeValue)
         stubSdkCore.stopFeatures()
 
         // Then
-        assertThat(details.value).isEqualTo(!fakeValue)
-        assertThat(details.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
-        assertThat(failedDetails.value).isEqualTo(fakeValue)
-        assertThat(failedDetails.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
+        assertThat(details.value).isEqualTo(fakeValue)
+        assertThat(details.errorCode).isNull()
         val exposureEvents = stubSdkCore.eventsWritten(Feature.FLAGS_FEATURE_NAME)
         val evaluationEvents = stubSdkCore.eventsWritten(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)
-        assertThat(exposureEvents).isEmpty()
-        assertThat(evaluationEvents).hasSize(2)
-        assertThat(evaluationEvents.map { JSONObject(it.eventData).getJSONObject("flag").getString("key") })
-            .containsExactlyInAnyOrder(fakeFlagKey, "failed-flag")
+        assertThat(exposureEvents).hasSize(1)
+        assertThat(evaluationEvents).hasSize(1)
+        assertThat(JSONObject(exposureEvents.single().eventData).getJSONObject("flag").getString("key"))
+            .isEqualTo(fakeFlagKey)
+        assertThat(JSONObject(evaluationEvents.single().eventData).getJSONObject("flag").getString("key"))
+            .isEqualTo(fakeFlagKey)
     }
 
     @Test
@@ -527,10 +513,6 @@ class FlagsEvaluationTest {
             variationKey = fakeVariationKey,
             allocationKey = fakeAllocationKey
         )
-    }
-
-    private companion object {
-        const val ENCRYPTED_DEPENDENCY_KEY = "Eb_cST-0-FZKdvcpKLHbDDG_CX2hK4Xfrw7h5o-47Gp6GyFntOGTZO3wmLg"
     }
 
     // endregion

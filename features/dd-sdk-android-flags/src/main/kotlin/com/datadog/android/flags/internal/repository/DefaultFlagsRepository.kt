@@ -101,15 +101,6 @@ internal class DefaultFlagsRepository(
     }
     private val atomicState = AtomicReference<FlagsState?>(null)
     private val obfuscationSupported = (featureSdkCore as? InternalSdkCore)?.source == "android"
-    private val dependentFlagsSupported =
-        (featureSdkCore as? InternalSdkCore)?.source?.let { it == "android" } ?: true
-
-    private fun compatibleFlags(flags: Map<String, PrecomputedFlag>): Map<String, PrecomputedFlag> =
-        if (dependentFlagsSupported) flags else flags.filterValues { it.dependencyEvaluations.isEmpty() }
-
-    private fun legacyCompatibleErrors(
-        errors: Map<String, PrecomputedFlagEvaluationError>
-    ): Map<String, PrecomputedFlagEvaluationError> = if (dependentFlagsSupported) errors else emptyMap()
 
     private val readableState: FlagsState?
         get() = atomicState.get()?.takeIf { it.obfuscation == null || obfuscationSupported }
@@ -130,16 +121,15 @@ internal class DefaultFlagsRepository(
         val persistedState = loadedState?.takeIf { it.flagSelection == flagSelection }
         val cachedState = try {
             persistedState?.let {
-                val compatibleFlags = compatibleFlags(it.flags)
                 FlagsState(
                     it.evaluationContext,
-                    compatibleFlags.mapValues { (_, flag) ->
+                    it.flags.mapValues { (_, flag) ->
                         flag.copy(
                             reason = ResolutionReason.CACHED.name,
                             observeFullEvaluationData = it.observeFullEvaluationData
                         )
                     },
-                    legacyCompatibleErrors(it.flagEvaluationErrors),
+                    it.flagEvaluationErrors,
                     it.obfuscation,
                     it.observeFullEvaluationData
                 ).takeIf { state -> atomicState.compareAndSet(null, state) }
@@ -159,9 +149,7 @@ internal class DefaultFlagsRepository(
         observeFullEvaluationData: Boolean,
         flagEvaluationErrors: Map<String, PrecomputedFlagEvaluationError>
     ): FlagsInstallation {
-        val compatibleFlags = compatibleFlags(flags)
-        val compatibleErrors = legacyCompatibleErrors(flagEvaluationErrors)
-        val newState = FlagsState(context, compatibleFlags, compatibleErrors, obfuscation, observeFullEvaluationData)
+        val newState = FlagsState(context, flags, flagEvaluationErrors, obfuscation, observeFullEvaluationData)
 
         val previousState = atomicState.getAndSet(newState)
         val firstInstallation = previousState == null ||
@@ -169,11 +157,11 @@ internal class DefaultFlagsRepository(
         persistenceLoadedLatch.countDown()
 
         return FlagsInstallation { onInstalled ->
-            persistFlags(context, compatibleFlags, compatibleErrors, obfuscation, observeFullEvaluationData)
+            persistFlags(context, flags, flagEvaluationErrors, obfuscation, observeFullEvaluationData)
             try {
                 onInstalled()
             } finally {
-                if (firstInstallation) publishFirstFlags(newState, compatibleFlags.keys)
+                if (firstInstallation) publishFirstFlags(newState, flags.keys)
             }
         }
     }

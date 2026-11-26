@@ -245,7 +245,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
     }
 
     @Test
-    fun `M omit plaintext dependent roots W installFlagsAndContext() {bridge sources}`() {
+    fun `M retain plaintext dependent roots W installFlagsAndContext() {bridge sources}`() {
         for (source in listOf("react-native", "flutter")) {
             // Given
             val parentKey = "parent-$source"
@@ -273,15 +273,15 @@ internal class DefaultFlagsRepositoryObfuscationTest {
 
             // Then
             assertThat(checkNotNull(testedRepository.getAssignmentsSnapshot()).flags)
-                .containsOnlyKeys(parentKey, independentKey)
-            assertThat(testedRepository.getEvaluationSnapshot(rootKey)?.flag).isNull()
-            assertThat(testedRepository.getEvaluationSnapshot(rootKey)?.dependencyEvaluations).isEmpty()
-            assertThat(testedRepository.getEvaluationSnapshot(errorKey)?.evaluationError).isNull()
+                .containsOnlyKeys(parentKey, independentKey, rootKey)
+            assertThat(testedRepository.getEvaluationSnapshot(rootKey)?.flag).isEqualTo(root)
+            assertThat(testedRepository.getEvaluationSnapshot(rootKey)?.dependencyEvaluations).hasSize(1)
+            assertThat(testedRepository.getEvaluationSnapshot(errorKey)?.evaluationError).isEqualTo(error)
         }
     }
 
     @Test
-    fun `M publish only compatible cached flags W DefaultFlagsRepository() {react-native bridge}`() {
+    fun `M publish all cached flags W DefaultFlagsRepository() {react-native bridge}`() {
         // Given
         val parentKey = "cached-parent"
         val independentKey = "cached-independent"
@@ -318,11 +318,12 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         repository.firstFlags.whenComplete { firstFlags.add(it) }
 
         // Then
-        assertThat(firstFlags).containsExactly(listOf(parentKey, independentKey))
+        assertThat(firstFlags).containsExactly(listOf(parentKey, independentKey, rootKey))
         assertThat(checkNotNull(repository.getAssignmentsSnapshot()).flags)
-            .containsOnlyKeys(parentKey, independentKey)
-        assertThat(repository.getEvaluationSnapshot(rootKey)?.flag).isNull()
-        assertThat(repository.getEvaluationSnapshot(errorKey)?.evaluationError).isNull()
+            .containsOnlyKeys(parentKey, independentKey, rootKey)
+        assertThat(repository.getEvaluationSnapshot(rootKey)?.flag).isEqualTo(root.copy(reason = ResolutionReason.CACHED.name))
+        assertThat(repository.getEvaluationSnapshot(errorKey)?.evaluationError)
+            .isEqualTo(entry.flagEvaluationErrors[errorKey])
     }
 
     @Test
