@@ -20,9 +20,11 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.rum.RumViewType
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
@@ -42,6 +44,7 @@ import com.datadog.android.rum.internal.metric.interactiontonextview.Interaction
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
@@ -681,6 +684,86 @@ internal class RumViewScopeAttributePropagationTest {
         // Verify that memoized parent attributes are used (original parent attributes, not new ones)
         assertThat(customAttributes)
             .containsExactlyInAnyOrderEntriesOf(expectedAttributes)
+    }
+
+    @Test
+    fun `M copy parent custom attributes to memoizedParentAttributes W handleEvent(StopSession)`(
+        forge: Forge
+    ) {
+        // Given
+        val parentAttributes = forge.exhaustiveAttributes(excludedKeys = fakeViewAttributes.keys)
+        val newParentAttributes = forge.exhaustiveAttributes(excludedKeys = parentAttributes.keys)
+        whenever(mockParentScope.getCustomAttributes()) doReturn parentAttributes.toMutableMap()
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        whenever(mockParentScope.getCustomAttributes()) doReturn newParentAttributes.toMutableMap()
+        assertThat(testedScope.getCustomAttributes())
+            .containsExactlyInAnyOrderEntriesOf(parentAttributes + fakeViewAttributes)
+    }
+
+    @Test
+    fun `M send view event with parent attributes W handleEvent(StopSession)`() {
+        // Given
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .containsExactlyContextAttributes(fakeParentAttributes + fakeViewAttributes)
+        }
+    }
+
+    @Test
+    fun `M send pending action event with parent attributes W handleEvent(StartAction+StopSession)`(
+        @Forgery fakeActionType: RumActionType,
+        @StringForgery fakeActionName: String
+    ) {
+        // Given
+        testedScope = newRumViewScope()
+        testedScope.handleEvent(
+            RumRawEvent.StartAction(
+                type = fakeActionType,
+                name = fakeActionName,
+                waitForStop = true,
+                eventTime = fakeEventTime
+            ),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(allValues.filterIsInstance<ActionEvent>().single())
+                .containsExactlyContextAttributes(fakeParentAttributes + fakeViewAttributes)
+        }
     }
 
     // region Helper

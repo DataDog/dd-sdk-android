@@ -36,6 +36,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -1262,6 +1263,66 @@ class ManualTrackingRumTest {
                 hasType("view")
                 doesNotHaveSessionReplaySampleRate()
                 doesNotHaveTraceSampleRate()
+            }
+    }
+
+    // endregion
+
+    // region Global Attributes
+
+    @RepeatedTest(16)
+    fun `M send view event with global attribute W addAttribute() + startView() + stopSession()`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) attributeKey: String,
+        @StringForgery attributeValue: String
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+        rumMonitor.addAttribute(attributeKey, attributeValue)
+
+        // When
+        rumMonitor.startView(viewKey, viewName)
+        stubSdkCore.advanceTimeBy(100)
+        rumMonitor.stopSession()
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(3)
+            .hasRumEvent(index = 2) {
+                hasType("view")
+                hasViewIsActive(false)
+                hasContextAttribute(attributeKey, attributeValue)
+            }
+    }
+
+    @RepeatedTest(16)
+    fun `M send pending action with global attribute W addAttribute() + startAction() + stopSession()`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String,
+        @StringForgery actionName: String,
+        @StringForgery(StringForgeryType.ALPHABETICAL) attributeKey: String,
+        @StringForgery attributeValue: String
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+        rumMonitor.addAttribute(attributeKey, attributeValue)
+        rumMonitor.startView(viewKey, viewName)
+
+        // When
+        rumMonitor.startAction(RumActionType.TAP, actionName, emptyMap())
+        stubSdkCore.advanceTimeBy(100)
+        rumMonitor.stopSession()
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(5)
+            .hasRumEvent(index = 2) {
+                hasType("action")
+                hasActionName(actionName)
+                hasContextAttribute(attributeKey, attributeValue)
             }
     }
 

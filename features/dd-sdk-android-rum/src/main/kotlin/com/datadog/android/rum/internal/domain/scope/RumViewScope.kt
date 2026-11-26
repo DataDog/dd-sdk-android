@@ -598,9 +598,7 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
-        stopScope(event, datadogContext, writeScope, writer) {
-            memoizedParentAttributes = parentScope.getCustomAttributes().toMap()
-        }
+        stopScope(event, datadogContext, writeScope, writer)
     }
 
     @WorkerThread
@@ -615,7 +613,6 @@ internal open class RumViewScope(
         if (shouldStop && !stopped) {
             stopScope(event, datadogContext, writeScope, writer) {
                 viewAttributes.putAll(event.attributes)
-                memoizedParentAttributes = parentScope.getCustomAttributes().toMap()
             }
         }
     }
@@ -1181,6 +1178,7 @@ internal open class RumViewScope(
 
     /**
      * Marks this scope as stopped, and clean up every thing that needs to.
+     * The parent attributes are memoized so that events sent after the stop don't pick up attributes added later.
      * This action and the side effect are only performed if the scope has not already been marked as stopped.
      * @param event the event triggering the stopping
      * @param datadogContext the datadog context
@@ -1199,6 +1197,7 @@ internal open class RumViewScope(
         if (!stopped) {
             sideEffect()
 
+            memoizedParentAttributes = parentScope.getCustomAttributes().toMap()
             stopped = true
             resolveViewDuration(event)
             sendViewUpdate(event, datadogContext, writeScope, writer)
