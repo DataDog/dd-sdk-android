@@ -474,7 +474,7 @@ open class DatadogInterceptor internal constructor(
         internal const val WARN_NETWORK_INTERCEPTOR =
             "DatadogInterceptor is registered with addNetworkInterceptor(). OkHttp runs its cache " +
                 "before network interceptors, so responses served from the cache are not tracked " +
-                "and no cache status is reported, and each redirect is tracked as a separate " +
+                "and no cache status is reported. Each redirect is also tracked as a separate " +
                 "resource. Register DatadogInterceptor with addInterceptor() instead."
 
         internal const val ERROR_NO_RESPONSE =
