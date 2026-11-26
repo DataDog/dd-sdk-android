@@ -423,6 +423,35 @@ internal class PixelFallbackSnapshotProcessorTest {
     }
 
     @Test
+    fun `M downgrade to a placeholder W process { the timeout passes before a capture starts }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        var detectionsStarted = 0
+
+        // When
+        val processed = process(
+            fixture,
+            TextDetector { _, _ ->
+                detectionsStarted++
+                fakeScheduler.scheduled.single().second()
+            },
+            captures = listOf(
+                fixture.pending,
+                PendingPixelCapture(fixture.otherPixel, fixture.otherOwner, fixture.otherBitmap)
+            ),
+            snapshot = fixture.twoPixelSnapshot
+        )
+
+        // Then
+        assertThat(detectionsStarted).isEqualTo(1)
+        assertThat(processed.snapshot.wireframes).hasSize(2)
+        assertThat(processed.snapshot.wireframes).allMatch { it is CapturedWireframe.PrivacyPlaceholder }
+        verify(mockResourceResolver, never()).resolveResourceIdFromBitmap(any(), any())
+    }
+
+    @Test
     fun `M leave the timeout to expire W process { detection completes before process returns }`(
         @StringForgery fakeScope: String
     ) {

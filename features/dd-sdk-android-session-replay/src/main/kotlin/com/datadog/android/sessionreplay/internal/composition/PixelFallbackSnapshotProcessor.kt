@@ -65,6 +65,7 @@ internal class PixelFallbackSnapshotProcessor(
 
         val outcomes = ConcurrentHashMap<Long, PixelOutcome>()
         val remaining = AtomicInteger(pending.size)
+        val detectionTimedOut = AtomicBoolean(false)
         val onCaptureDone: () -> Unit = {
             if (remaining.decrementAndGet() == 0) finish(request, outcomes, callback)
         }
@@ -75,7 +76,7 @@ internal class PixelFallbackSnapshotProcessor(
                 onCaptureDone()
                 return@mapNotNull null
             }
-            CaptureResolution(capture, identityFactory, token) { outcome ->
+            CaptureResolution(capture, identityFactory, token, detectionTimedOut) { outcome ->
                 if (token.isValid()) outcomes[capture.wireframeIdentity.wireId] = outcome
                 token.complete()
                 onCaptureDone()
@@ -83,7 +84,7 @@ internal class PixelFallbackSnapshotProcessor(
         }
         // Armed before any detector is called, so a detector that blocks in the call is timed out too.
         if (textDetector != null && remaining.get() > 0 && pending.any { !it.skipsTextDetection }) {
-            scheduleDetectionTimeout(request.generation, resolutions)
+            scheduleDetectionTimeout(request.generation, detectionTimedOut, resolutions)
         }
         resolutions.forEach { it.start() }
 
@@ -94,10 +95,12 @@ internal class PixelFallbackSnapshotProcessor(
     // reported as an uncaught exception to the user and to telemetry. A late run finds nothing waiting.
     private fun scheduleDetectionTimeout(
         generation: CaptureGenerationContext,
+        detectionTimedOut: AtomicBoolean,
         resolutions: List<CaptureResolution>
     ) {
         val delayNs = generation.remainingBudgetNs() * DETECTION_BUDGET_PERCENT / PERCENT
         detectionTimeoutScheduler.schedule(delayNs) {
+            detectionTimedOut.set(true)
             resolutions.forEach { it.failClosedIfAwaitingDetection() }
         }
     }
@@ -170,6 +173,7 @@ internal class PixelFallbackSnapshotProcessor(
         private val capture: PendingPixelCapture,
         private val identityFactory: CompositionIdentityFactory,
         private val token: CaptureWorkToken,
+        private val detectionTimedOut: AtomicBoolean,
         private val onOutcome: (PixelOutcome) -> Unit
     ) {
         private val resolved = AtomicBoolean(false)
@@ -191,6 +195,11 @@ internal class PixelFallbackSnapshotProcessor(
 
         private fun detect(detector: TextDetector) {
             awaitingDetection.set(true)
+            // The timeout only fails the captures already waiting: one that starts after it ran has no other end.
+            if (detectionTimedOut.get()) {
+                failClosedIfAwaitingDetection()
+                return
+            }
             val called = guarded {
                 detector.detectTextRegions(capture.bitmap) { detection -> onDetection(detection) }
             }
