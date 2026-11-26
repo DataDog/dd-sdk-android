@@ -41,7 +41,9 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 /**
  * Copies masked text and native styling on the UI thread for wireframe construction on the worker.
  * Non-solid backgrounds and compound drawables contribute privacy-gated raster captures during
- * this same copy. Relative alignment follows the rendered paragraph direction for text alignment
+ * this same copy. A drawable can paint text of its own, so with [canMaskText], that is with a text
+ * detector, those rasters go through text detection; without one they are uploaded as images, as the
+ * legacy recorder does. Relative alignment follows the rendered paragraph direction for text alignment
  * and the layout direction for view alignment.
  */
 internal open class CapturedTextViewMapper<T : TextView>(
@@ -51,7 +53,8 @@ internal open class CapturedTextViewMapper<T : TextView>(
     private val internalLogger: InternalLogger,
     private val backgroundRasterizer: ViewBackgroundRasterizer = DefaultViewBackgroundRasterizer(internalLogger),
     private val compoundDrawableRasterizer: CompoundDrawableRasterizer =
-        DefaultCompoundDrawableRasterizer(internalLogger)
+        DefaultCompoundDrawableRasterizer(internalLogger),
+    private val canMaskText: Boolean = false
 ) : CapturedViewMapper<T> {
 
     // The mapper belongs to one recording session and is accessed by UI-thread traversal.
@@ -159,7 +162,7 @@ internal open class CapturedTextViewMapper<T : TextView>(
                 wireframeIdentity = identity,
                 ownerIdentity = mappingContext.ownerIdentity,
                 bitmap = bitmap,
-                isTextFree = true
+                skipsTextDetection = !canMaskText
             )
         )
         return listOf(
@@ -285,7 +288,7 @@ internal open class CapturedTextViewMapper<T : TextView>(
                 wireframeIdentity = identity,
                 ownerIdentity = slotOwner,
                 bitmap = bitmap,
-                isTextFree = true
+                skipsTextDetection = !canMaskText
             )
         )
         return CapturedWireframe.Pixel(

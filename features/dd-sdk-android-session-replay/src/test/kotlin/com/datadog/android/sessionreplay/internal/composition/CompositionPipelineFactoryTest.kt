@@ -8,7 +8,9 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.content.res.Resources
+import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
 import android.util.DisplayMetrics
@@ -19,12 +21,17 @@ import android.widget.AutoCompleteTextView
 import android.widget.EditText
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEditTextMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
@@ -52,6 +59,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -240,7 +248,8 @@ internal class CompositionPipelineFactoryTest {
         val stubEditText = Mockito.mock(fakeEditTextClass)
         val testedRegistry = DefaultCompositionPipelineFactory.builtInCapturedMappers(
             mockSdkCore.internalLogger,
-            emptyList()
+            emptyList(),
+            canMaskText = false
         )
 
         // When
@@ -248,6 +257,74 @@ internal class CompositionPipelineFactoryTest {
 
         // Then
         assertThat(mapper).isInstanceOf(CapturedEditTextMapper::class.java)
+    }
+
+    @Test
+    fun `M not draw the view W capture() { built-in mappers, no text detector }`() {
+        // Given
+        val stubView = eligibleView()
+        val fakeContext = pixelContext()
+        val testedRegistry = DefaultCompositionPipelineFactory.builtInCapturedMappers(
+            mockSdkCore.internalLogger,
+            emptyList(),
+            canMaskText = false
+        )
+
+        // When
+        val result = testedRegistry.resolve(stubView).capture(stubView, fakeContext).map(fakeContext)
+            as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+        verify(stubView, never()).draw(any())
+    }
+
+    @Test
+    fun `M draw the view W capture() { built-in mappers, text detector }`() {
+        // Given
+        val stubView = eligibleView()
+        val fakeContext = pixelContext()
+        val testedRegistry = DefaultCompositionPipelineFactory.builtInCapturedMappers(
+            mockSdkCore.internalLogger,
+            emptyList(),
+            canMaskText = true
+        )
+
+        // When
+        testedRegistry.resolve(stubView).capture(stubView, fakeContext)
+
+        // Then
+        verify(stubView).draw(any())
+    }
+
+    // A custom view stands for one drawing in onDraw(), unlike a bare View that has nothing to draw.
+    private fun eligibleView(): View {
+        val stubView: View = mock<CustomDrawnView>()
+        val stubResources: Resources = mock()
+        val fakeMetrics = DisplayMetrics().apply {
+            widthPixels = 1000
+            heightPixels = 1000
+        }
+        whenever(stubResources.displayMetrics).thenReturn(fakeMetrics)
+        whenever(stubView.resources).thenReturn(stubResources)
+        whenever(stubView.width).thenReturn(100)
+        whenever(stubView.height).thenReturn(50)
+        whenever(stubView.getGlobalVisibleRect(any())).thenAnswer {
+            it.getArgument<Rect>(0).set(0, 0, 100, 50)
+            true
+        }
+        return stubView
+    }
+
+    private fun pixelContext(): CapturedMappingContext {
+        val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope("scope"))
+        return CapturedMappingContext(
+            fakeFactory,
+            fakeFactory.view(fakeFactory.window("window"), "owner"),
+            1f,
+            bounds = CapturedBounds(0, 0, 100, 50),
+            imagePrivacy = ImagePrivacy.MASK_NONE
+        )
     }
 
     @Test
@@ -469,3 +546,5 @@ internal class CompositionPipelineFactoryTest {
         recordingTimeBankFactory = recordingTimeBankFactory
     )
 }
+
+private open class CustomDrawnView(context: Context) : View(context)

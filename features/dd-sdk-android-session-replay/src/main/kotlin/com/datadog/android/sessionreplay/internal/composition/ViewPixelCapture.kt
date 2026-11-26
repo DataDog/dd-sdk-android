@@ -12,6 +12,7 @@ import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
+import android.widget.ImageView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
@@ -59,7 +60,7 @@ internal class ViewPixelCapture(
         rasterize: () -> Bitmap?
     ): CapturedViewMapperResult? {
         val imageBounds = GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
-        val label = PixelCaptureEligibility.placeholderLabelFor(context.imagePrivacy, imageBounds)
+        val label = placeholderLabelFor(view, context.imagePrivacy, imageBounds, context.screenDensity)
         // A placeholder is terminal: over a container it would hide children that are captured on their own.
         if (label != null) return if (view is ViewGroup) null else placeholder(context, bounds, label)
         if (containsRestrictedContent(view, context, bounds)) return null
@@ -79,10 +80,10 @@ internal class ViewPixelCapture(
         if (!canMaskText) return placeholderWireframe(context, bounds)
         val bitmap = rasterize() ?: return null
         val identity = context.identityFactory.imageWireframe(context.ownerIdentity)
-        // Never text-free: the raster of an arbitrary view may contain readable text, so the snapshot
-        // processor has to treat it as sensitive rather than resolve it as is.
+        // Never skips detection: the raster of an arbitrary view may contain readable text, so the
+        // snapshot processor has to treat it as sensitive rather than resolve it as is.
         context.pendingPixelCaptureSink.register(
-            PendingPixelCapture(identity, context.ownerIdentity, bitmap, isTextFree = false)
+            PendingPixelCapture(identity, context.ownerIdentity, bitmap, skipsTextDetection = false)
         )
         return CapturedWireframe.Pixel(identity, bounds, resource = PixelResource.Unresolved)
     }
@@ -143,12 +144,30 @@ internal class ViewPixelCapture(
             ImagePrivacy.MASK_NONE -> false
             ImagePrivacy.MASK_LARGE_ONLY -> {
                 val bounds = copiedBounds ?: viewBoundsResolver.resolveViewGlobalBounds(view, density).toCaptured()
-                PixelCaptureEligibility.placeholderLabelFor(
-                    privacy.imagePrivacy,
-                    GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
-                ) != null
+                val boundsDp = GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
+                placeholderLabelFor(view, privacy.imagePrivacy, boundsDp, density) != null ||
+                    isBackgroundMasked(view, privacy.imagePrivacy, density)
             }
         }
+    }
+
+    @UiThread
+    private fun isBackgroundMasked(view: View, imagePrivacy: ImagePrivacy, density: Float): Boolean {
+        val background = view.background ?: return false
+        return PixelCaptureEligibility.isBackgroundMasked(imagePrivacy, background, density)
+    }
+
+    // An image is judged by its own size too, however small the view showing it, as legacy does.
+    @UiThread
+    private fun placeholderLabelFor(
+        view: View,
+        imagePrivacy: ImagePrivacy,
+        boundsDp: GlobalBounds,
+        density: Float
+    ): String? {
+        val drawable = (view as? ImageView)?.drawable
+            ?: return PixelCaptureEligibility.placeholderLabelFor(imagePrivacy, boundsDp)
+        return PixelCaptureEligibility.placeholderLabelFor(imagePrivacy, boundsDp, drawable, density)
     }
 
     @UiThread

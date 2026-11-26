@@ -204,6 +204,10 @@ public abstract interface class com/datadog/android/sessionreplay/internal/compo
 	public abstract fun getCompositionHostDecomposer ()Lcom/datadog/android/sessionreplay/internal/composition/CompositionHostDecomposer;
 }
 
+public abstract interface class com/datadog/android/sessionreplay/internal/composition/TextDetectorProvider : com/datadog/android/sessionreplay/ExtensionSupport {
+	public abstract fun getTextDetector ()Lcom/datadog/android/sessionreplay/recorder/privacy/TextDetector;
+}
+
 public abstract interface class com/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator {
 	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator$Companion;
 	public abstract fun obfuscate (Ljava/lang/String;)Ljava/lang/String;
@@ -2180,6 +2184,22 @@ public abstract interface class com/datadog/android/sessionreplay/recorder/mappe
 
 public abstract interface class com/datadog/android/sessionreplay/recorder/mapper/WireframeMapper {
 	public abstract fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/api/InternalLogger;)Ljava/util/List;
+}
+
+public abstract interface class com/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome {
+}
+
+public final class com/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome$Detected : com/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome {
+	public fun <init> (Ljava/util/List;)V
+	public final fun getRegions ()Ljava/util/List;
+}
+
+public final class com/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome$Unavailable : com/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome {
+	public static final field INSTANCE Lcom/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome$Unavailable;
+}
+
+public abstract interface class com/datadog/android/sessionreplay/recorder/privacy/TextDetector {
+	public abstract fun detectTextRegions (Landroid/graphics/Bitmap;Lkotlin/jvm/functions/Function1;)V
 }
 
 public final class com/datadog/android/sessionreplay/recorder/resources/DefaultDrawableCopier : com/datadog/android/sessionreplay/recorder/resources/DrawableCopier {

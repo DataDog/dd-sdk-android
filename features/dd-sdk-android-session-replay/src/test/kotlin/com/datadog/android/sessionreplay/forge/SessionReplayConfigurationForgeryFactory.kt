@@ -41,6 +41,7 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
         ).also {
             it.adaptiveCaptureSchedulingEnabled = forge.aBool()
             it.compositionHostDecomposer = forge.aNullable { mock() }
+            it.textDetector = forge.aNullable { mock() }
         }
     }
 }

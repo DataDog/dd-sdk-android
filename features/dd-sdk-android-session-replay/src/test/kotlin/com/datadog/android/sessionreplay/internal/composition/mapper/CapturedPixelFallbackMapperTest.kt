@@ -177,7 +177,7 @@ internal class CapturedPixelFallbackMapperTest {
                 fakePixel.identity,
                 fakeContext.ownerIdentity,
                 mockBitmap,
-                isTextFree = false
+                skipsTextDetection = false
             )
         )
         verify(mockRasterizer).rasterize(stubImage)

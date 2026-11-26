@@ -34,16 +34,17 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
  * Image privacy is checked before any drawing happens, using the exact semantics
  * [DefaultImageWireframeHelper] already applies to ordinary images: `MASK_ALL` always
  * placeholders, `MASK_LARGE_ONLY` placeholders only regions at or above
- * [IMAGE_DIMEN_CONSIDERED_PII_IN_DP] in either dimension. Whatever *is* captured may contain
- * text, so `PixelFallbackSnapshotProcessor` resolves it separately and fails closed to a
- * placeholder regardless of the image privacy level that let capture proceed at all.
+ * [IMAGE_DIMEN_CONSIDERED_PII_IN_DP] in either dimension. Text-region masking of whatever *is*
+ * captured is a separate, later concern (`PixelFallbackSnapshotProcessor`) - it applies regardless
+ * of the image privacy level that let capture proceed at all.
  *
- * A pixel capture is terminal, so [capturesContainers] is off until text can be masked: a
- * container's capture would resolve to a placeholder that hides children which are captured on
- * their own. It would also lose children drawn outside the container's bounds and composition
- * hosts nested inside it, which are decomposed rather than drawn.
+ * A pixel capture is terminal, so containers stay on [fallbackMapper] unless [capturesContainers]
+ * is set: a container's capture would stand in for children that are captured on their own. It
+ * would also lose children drawn outside the container's bounds and composition hosts nested
+ * inside it, which are decomposed rather than drawn.
  *
- * Without [canMaskText] a capture is a placeholder from the start, so the view is never drawn.
+ * Without [canMaskText], that is with no text detector, a capture is a placeholder from the start,
+ * so the view is never drawn.
  */
 internal class CapturedPixelFallbackMapper(
     private val fallbackMapper: CapturedViewMapper<View>,

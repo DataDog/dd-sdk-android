@@ -97,6 +97,20 @@ internal class CapturedTextViewMapperTest {
         internalLogger = mockInternalLogger
     )
 
+    private val testedMaskingMapper = CapturedTextViewMapper<TextView>(
+        viewBoundsResolver = mockViewBoundsResolver,
+        colorStringFormatter = mockColorStringFormatter,
+        backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(
+            mockInternalLogger,
+            mockColorStringFormatter,
+            mockDrawableToColorMapper
+        ),
+        backgroundRasterizer = ViewBackgroundRasterizer { mockBitmap },
+        compoundDrawableRasterizer = CompoundDrawableRasterizer { _, _, _ -> mockIconBitmap },
+        internalLogger = mockInternalLogger,
+        canMaskText = true
+    )
+
     @BeforeEach
     fun setUp(
         @StringForgery fakeScopeValue: String,
@@ -792,10 +806,49 @@ internal class CapturedTextViewMapperTest {
         assertThat(registered.single().wireframeIdentity).isEqualTo(pixelWireframe.identity)
         assertThat(registered.single().bitmap).isSameAs(mockBitmap)
         // Only the background drawable is rasterized here, never the view's text (captured
-        // separately as its own CapturedWireframe.Text) - so this capture is structurally
-        // guaranteed not to contain text and is registered as text-free.
-        assertThat(registered.single().isTextFree).isTrue()
+        // separately as its own CapturedWireframe.Text), and with no detector to mask text in it the
+        // raster is resolved as an image, so detection is skipped.
+        assertThat(registered.single().skipsTextDetection).isTrue()
         assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Shape>()).isEmpty()
+    }
+
+    @Test
+    fun `M register the background capture for text detection W map { non-solid background, text can be masked }`(
+        @StringForgery fakeScope: String,
+        @StringForgery fakeText: String,
+        @IntForgery(min = 0, max = 0xFFFFFF) fakeTextColor: Int,
+        @StringForgery(regex = "#[0-9A-F]{8}") fakeTextColorHexString: String,
+        @FloatForgery(min = 0f, max = 4f) fakeDensity: Float,
+        @Forgery fakeBounds: GlobalBounds
+    ) {
+        // Given
+        val mockTextView = stubTextView(
+            fakeText,
+            fakeTextColor,
+            fakeTextColorHexString,
+            fakeDensity,
+            fakeBounds,
+            width = 100,
+            height = 100
+        )
+        val mockDrawable: Drawable = mock()
+        whenever(mockTextView.background).thenReturn(mockDrawable)
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockDrawable, mockInternalLogger)).thenReturn(null)
+        stubDisplayMetrics(mockTextView, screenWidth = 1000, screenHeight = 1000)
+        val registered = mutableListOf<PendingPixelCapture>()
+        val mappingContext = mappingContext(
+            fakeScope,
+            fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            sink = PendingPixelCaptureSink { registered += it }
+        )
+
+        // When
+        testedMaskingMapper.map(mockTextView, mappingContext)
+
+        // Then
+        assertThat(registered.single().bitmap).isSameAs(mockBitmap)
+        assertThat(registered.single().skipsTextDetection).isFalse()
     }
 
     @Test
@@ -1011,7 +1064,35 @@ internal class CapturedTextViewMapperTest {
         assertThat(registered).hasSize(1)
         assertThat(registered.single().wireframeIdentity).isEqualTo(pixelWireframe.identity)
         assertThat(registered.single().bitmap).isSameAs(mockIconBitmap)
-        assertThat(registered.single().isTextFree).isTrue()
+        assertThat(registered.single().skipsTextDetection).isTrue()
+    }
+
+    @Test
+    fun `M register the icon capture for text detection W map { compound drawable icon, text can be masked }`(
+        @StringForgery fakeScope: String,
+        @StringForgery fakeText: String,
+        @IntForgery(min = 0, max = 0xFFFFFF) fakeTextColor: Int,
+        @StringForgery(regex = "#[0-9A-F]{8}") fakeTextColorHexString: String
+    ) {
+        // Given
+        val fakeBounds = GlobalBounds(x = 100, y = 200, width = 300, height = 50)
+        val mockTextView = stubTextView(fakeText, fakeTextColor, fakeTextColorHexString, fakeDensity = 1f, fakeBounds)
+        stubCompoundDrawable(mockTextView, index = 0, widthPx = 20, heightPx = 20)
+        stubDisplayMetrics(mockTextView, screenWidth = 1000, screenHeight = 1000)
+        val registered = mutableListOf<PendingPixelCapture>()
+        val mappingContext = mappingContext(
+            fakeScope,
+            fakeDensity = 1f,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            sink = PendingPixelCaptureSink { registered += it }
+        )
+
+        // When
+        testedMaskingMapper.map(mockTextView, mappingContext)
+
+        // Then
+        assertThat(registered.single().bitmap).isSameAs(mockIconBitmap)
+        assertThat(registered.single().skipsTextDetection).isFalse()
     }
 
     @Test
