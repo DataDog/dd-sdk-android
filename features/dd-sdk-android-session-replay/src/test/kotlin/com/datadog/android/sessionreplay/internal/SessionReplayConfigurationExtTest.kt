@@ -14,6 +14,7 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposer
+import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -83,6 +84,23 @@ internal class SessionReplayConfigurationExtTest {
         assertThat(result).isNotSameAs(testedConfiguration)
         assertThat(result.compositionHostDecomposer).isSameAs(mockDecomposer)
         assertThat(testedConfiguration.compositionHostDecomposer).isSameAs(mockDecomposer)
+    }
+
+    @Test
+    fun `M preserve text detector W applyRemoteConfiguration()`(
+        @Mock mockDetector: TextDetector
+    ) {
+        // Given
+        testedConfiguration.textDetector = mockDetector
+        val fakeRc = RemoteConfiguration(sessionReplay = RemoteConfiguration.SessionReplay())
+
+        // When
+        val result = testedConfiguration.applyRemoteConfiguration(fakeRc)
+
+        // Then
+        assertThat(result).isNotSameAs(testedConfiguration)
+        assertThat(result.textDetector).isSameAs(mockDetector)
+        assertThat(testedConfiguration.textDetector).isSameAs(mockDetector)
     }
 
     // region null RC

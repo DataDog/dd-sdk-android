@@ -355,6 +355,8 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         private fun textDetector(): TextDetector? {
+            if (!compositionTreeRecordingEnabled) return null
+
             val detectors = extensionSupportSet.mapNotNull { (it as? TextDetectorProvider)?.getTextDetector() }
             if (detectors.size > 1) {
                 logger.log(

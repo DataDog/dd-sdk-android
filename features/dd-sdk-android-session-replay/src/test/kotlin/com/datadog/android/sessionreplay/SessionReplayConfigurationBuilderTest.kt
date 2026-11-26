@@ -13,12 +13,15 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_COMPOSITION_HOST_DECOMPOSER_DETECTED
 import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_EXTENSION_DETECTED
 import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_MAPPER_DETECTED
+import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_TEXT_DETECTOR_DETECTED
 import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.SAMPLE_IN_ALL_SESSIONS
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposerProvider
+import com.datadog.android.sessionreplay.internal.composition.TextDetectorProvider
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -87,6 +90,7 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.heatmapsEnabled).isFalse()
         assertThat(sessionReplayConfiguration.compositionTreeRecordingEnabled).isFalse()
         assertThat(sessionReplayConfiguration.compositionHostDecomposer).isNull()
+        assertThat(sessionReplayConfiguration.textDetector).isNull()
     }
 
     @Test
@@ -537,6 +541,93 @@ internal class SessionReplayConfigurationBuilderTest {
             target = InternalLogger.Target.MAINTAINER,
             level = InternalLogger.Level.WARN,
             message = DUPLICATE_COMPOSITION_HOST_DECOMPOSER_DETECTED
+        )
+    }
+
+    @Test
+    fun `M skip text detector hook W build() { legacy pipeline }`(
+        @Mock mockExtension: TextDetectorProvider
+    ) {
+        // Given
+        testedBuilder.addExtensionSupport(mockExtension)
+
+        // When
+        val config = assertDoesNotThrow<SessionReplayConfiguration> { testedBuilder.build() }
+
+        // Then
+        assertThat(config.textDetector).isNull()
+        verify(mockExtension, never()).getTextDetector()
+    }
+
+    @Test
+    @OptIn(ExperimentalSessionReplayApi::class)
+    fun `M use it W addExtensionSupport() and build() { text detector }`(
+        @Mock mockExtension: TextDetectorProvider,
+        @Mock mockDetector: TextDetector
+    ) {
+        // Given
+        testedBuilder.setCompositionTreeRecordingEnabled(true)
+        whenever(mockExtension.getTextDetector()).thenReturn(mockDetector)
+
+        // When
+        testedBuilder.addExtensionSupport(mockExtension)
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.textDetector).isSameAs(mockDetector)
+    }
+
+    @Test
+    @OptIn(ExperimentalSessionReplayApi::class)
+    fun `M take first value W addExtensionSupport() and build() { duplicate text detectors }`(
+        @Mock mockFirstExtension: TextDetectorProvider,
+        @Mock mockSecondExtension: TextDetectorProvider,
+        @Mock mockFirstDetector: TextDetector,
+        @Mock mockSecondDetector: TextDetector
+    ) {
+        // Given
+        testedBuilder.setCompositionTreeRecordingEnabled(true)
+        whenever(mockFirstExtension.name()).thenReturn("firstExtension")
+        whenever(mockSecondExtension.name()).thenReturn("secondExtension")
+        whenever(mockFirstExtension.getTextDetector()).thenReturn(mockFirstDetector)
+        whenever(mockSecondExtension.getTextDetector()).thenReturn(mockSecondDetector)
+
+        // When
+        testedBuilder.addExtensionSupport(mockFirstExtension)
+        testedBuilder.addExtensionSupport(mockSecondExtension)
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.textDetector).isSameAs(mockFirstDetector)
+    }
+
+    @Test
+    @OptIn(ExperimentalSessionReplayApi::class)
+    fun `M warn W addExtensionSupport() and build() { duplicate text detectors }`(
+        @Mock mockFirstExtension: TextDetectorProvider,
+        @Mock mockSecondExtension: TextDetectorProvider,
+        @Mock mockFirstDetector: TextDetector,
+        @Mock mockSecondDetector: TextDetector,
+        @Mock mockLogger: InternalLogger
+    ) {
+        // Given
+        testedBuilder = SessionReplayConfiguration.Builder(100f, mockLogger)
+        testedBuilder.setCompositionTreeRecordingEnabled(true)
+        whenever(mockFirstExtension.name()).thenReturn("firstExtension")
+        whenever(mockSecondExtension.name()).thenReturn("secondExtension")
+        whenever(mockFirstExtension.getTextDetector()).thenReturn(mockFirstDetector)
+        whenever(mockSecondExtension.getTextDetector()).thenReturn(mockSecondDetector)
+
+        // When
+        testedBuilder.addExtensionSupport(mockFirstExtension)
+        testedBuilder.addExtensionSupport(mockSecondExtension)
+        testedBuilder.build()
+
+        // Then
+        mockLogger.verifyLog(
+            target = InternalLogger.Target.MAINTAINER,
+            level = InternalLogger.Level.WARN,
+            message = DUPLICATE_TEXT_DETECTOR_DETECTED
         )
     }
 
