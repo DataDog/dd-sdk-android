@@ -6,4 +6,12 @@
 
 package com.datadog.android.rum.internal.timeseries
 
-internal data class DataPoint<out T : Any>(val timestampNs: Long, val value: T)
+/**
+ * A sample of a timeseries.
+ *
+ * @param T the type of the sampled value.
+ * @param deviceTimestampNs the device epoch time of the sample, in nanoseconds. The server time
+ * offset is applied when the event is built.
+ * @param value the sampled value.
+ */
+internal data class DataPoint<out T : Any>(val deviceTimestampNs: Long, val value: T)

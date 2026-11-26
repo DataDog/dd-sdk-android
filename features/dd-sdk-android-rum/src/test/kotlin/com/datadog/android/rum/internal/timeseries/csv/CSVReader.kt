@@ -48,7 +48,7 @@ internal class CSVReader<T : Any>(
                 if (cols[METRIC_INDEX] != metric) return@mapNotNull null
                 val ts = cols[TIMESTAMP_INDEX].toLongOrNull() ?: return@mapNotNull null
                 val v = parseValue(cols.drop(VALUES_START_INDEX)) ?: return@mapNotNull null
-                DataPoint(timestampNs = ts, value = v)
+                DataPoint(deviceTimestampNs = ts, value = v)
             }
             .toList()
     }

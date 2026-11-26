@@ -62,7 +62,7 @@ internal class MemoryDatapointReaderTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn fakeTimestampMs
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestampMs
         testedReader = MemoryDatapointReader(
             procStatusReader = mockProcStatusReader,
             timeProvider = mockTimeProvider,
@@ -80,7 +80,7 @@ internal class MemoryDatapointReaderTest {
 
         // Then
         checkNotNull(result)
-        assertThat(result.timestampNs).isEqualTo(TimeUnit.MILLISECONDS.toNanos(fakeTimestampMs))
+        assertThat(result.deviceTimestampNs).isEqualTo(TimeUnit.MILLISECONDS.toNanos(fakeTimestampMs))
         assertThat(result.value).isEqualTo(
             MemorySnapshot(footprintKib = fakeRssAnonKib + fakeVmSwapKib, nonResidentKib = fakeVmSwapKib)
         )

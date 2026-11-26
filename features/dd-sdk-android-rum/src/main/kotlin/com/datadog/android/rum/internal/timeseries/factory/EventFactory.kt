@@ -19,3 +19,12 @@ internal interface EventFactory<in T : Any, out E : Any> {
         dataPoints: List<DataPoint<T>>
     ): E?
 }
+
+/**
+ * Returns the timestamps of the [dataPoints] in server time, using the server time offset of
+ * this context, in nanoseconds.
+ */
+internal fun DatadogContext.toServerTimestampsNs(dataPoints: List<DataPoint<*>>): List<Long> {
+    val serverTimeOffsetNs = time.serverTimeOffsetNs
+    return dataPoints.map { it.deviceTimestampNs + serverTimeOffsetNs }
+}

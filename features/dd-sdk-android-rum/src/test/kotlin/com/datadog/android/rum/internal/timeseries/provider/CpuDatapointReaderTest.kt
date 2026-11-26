@@ -50,7 +50,7 @@ internal class CpuDatapointReaderTest {
     val mockCpuStatReader: CpuStatReader = mock()
 
     val mockTimeProvider: TimeProvider = mock<TimeProvider> {
-        on { getServerTimestampMillis() } doAnswer { fakeStartTimestampMs }
+        on { getDeviceTimestampMillis() } doAnswer { fakeStartTimestampMs }
         on { getDeviceElapsedTimeNanos() } doAnswer { fakeStartTimestampMs * NS_PER_MS }
     }
 
@@ -82,7 +82,7 @@ internal class CpuDatapointReaderTest {
             fakeStartTimestampMs * NS_PER_MS,
             (fakeStartTimestampMs + elapsedMs) * NS_PER_MS
         )
-        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn (fakeStartTimestampMs + elapsedMs)
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn (fakeStartTimestampMs + elapsedMs)
         whenever(mockCpuStatReader.readActiveTime())
             .doReturnConsecutively(listOf(fakeBaselineTicks.toDouble(), secondTicks))
         val safeIntervalMs = fakeIntervalMs.coerceAtLeast(elapsedMs / CpuDatapointReader.MAX_GAP_FACTOR + 1)
@@ -179,7 +179,9 @@ internal class CpuDatapointReaderTest {
         checkNotNull(result)
         val expectedPercent = deltaTicks * 1000.0 / fakeElapsedMs
         assertThat(result.value).isCloseTo(expectedPercent, Offset.offset(0.1))
-        assertThat(result.timestampNs).isEqualTo(TimeUnit.MILLISECONDS.toNanos(fakeStartTimestampMs + fakeElapsedMs))
+        assertThat(
+            result.deviceTimestampNs
+        ).isEqualTo(TimeUnit.MILLISECONDS.toNanos(fakeStartTimestampMs + fakeElapsedMs))
     }
 
     @Test
