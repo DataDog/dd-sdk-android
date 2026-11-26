@@ -2,7 +2,7 @@
 
 ## Getting Started 
 
-This integration supports SQLDelight 1.x (`com.squareup.sqldelight`).
+This integration supports SQLDelight 2.x (`app.cash.sqldelight`).
 
 To include the Datadog integration for [SQLDelight][1] in your project, simply add the
 following to your application's `build.gradle.kts` file.
@@ -26,6 +26,9 @@ Doing this detects whenever a database is corrupted and sends a relevant
 RUM error event for it.
 
 ```kotlin
+    import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+    import com.datadog.android.sqldelight.DatadogSqliteCallback
+
     val database = YourDatabase(
                 AndroidSqliteDriver(
                     YourDatabase.Schema,
@@ -63,6 +66,6 @@ would like to change. For more information, read the
 
 [Apache License, v2.0](../../LICENSE)
 
-[1]: https://cashapp.github.io/sqldelight/android_sqlite/
+[1]: https://sqldelight.github.io/sqldelight/2.0.2/android_sqlite/
 [2]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=kotlin
 [3]: https://docs.datadoghq.com/tracing/trace_collection/dd_libraries/android/?tab=kotlin

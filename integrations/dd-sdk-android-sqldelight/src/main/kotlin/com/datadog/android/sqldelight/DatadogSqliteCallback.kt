@@ -7,13 +7,14 @@
 package com.datadog.android.sqldelight
 
 import androidx.sqlite.db.SupportSQLiteDatabase
+import app.cash.sqldelight.db.QueryResult
+import app.cash.sqldelight.db.SqlSchema
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
-import com.squareup.sqldelight.android.AndroidSqliteDriver
-import com.squareup.sqldelight.db.SqlDriver
 import java.util.Locale
 
 /**
@@ -28,7 +29,7 @@ import java.util.Locale
 class DatadogSqliteCallback
 @JvmOverloads
 constructor(
-    schema: SqlDriver.Schema,
+    schema: SqlSchema<QueryResult.Value<Unit>>,
     private val sdkCore: SdkCore = Datadog.getInstance()
 ) : AndroidSqliteDriver.Callback(schema) {
 

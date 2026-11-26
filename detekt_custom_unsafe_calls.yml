@@ -295,6 +295,6 @@ datadog:
       - "com.lyft.kronos.KronosClock.syncInBackground():java.lang.IllegalStateException"
       # endregion
       # region SQLDelight
-      - "com.squareup.sqldelight.transaction(kotlin.Boolean, kotlin.Function1):java.lang.IllegalStateException"
-      - "com.squareup.sqldelight.transactionWithResult(kotlin.Boolean, kotlin.Function1):java.lang.IllegalStateException"
+      - "app.cash.sqldelight.transaction(kotlin.Boolean, kotlin.Function1):java.lang.IllegalStateException"
+      - "app.cash.sqldelight.transactionWithResult(kotlin.Boolean, kotlin.Function1):java.lang.IllegalStateException"
       # endregion

@@ -1251,5 +1251,5 @@ datadog:
       - "io.reactivex.rxjava3.core.Single.doOnError(io.reactivex.rxjava3.functions.Consumer)"
       # endregion
       # region SQLDelight
-      - "com.squareup.sqldelight.android.AndroidSqliteDriver.Callback.onCorruption(androidx.sqlite.db.SupportSQLiteDatabase)"
+      - "app.cash.sqldelight.driver.android.AndroidSqliteDriver.Callback.onCorruption(androidx.sqlite.db.SupportSQLiteDatabase)"
       # endregion
