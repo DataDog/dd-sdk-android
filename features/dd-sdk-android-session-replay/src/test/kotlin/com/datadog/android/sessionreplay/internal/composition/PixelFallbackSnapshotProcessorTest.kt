@@ -24,6 +24,7 @@ import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceRes
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetectionOutcome
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -281,6 +282,32 @@ internal class PixelFallbackSnapshotProcessorTest {
 
         // Then
         assertPlaceholderWithoutUpload(processed.snapshot)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            PixelFallbackSnapshotProcessor.MASKING_FAILED_MESSAGE,
+            IllegalStateException::class.java,
+            onlyOnce = true
+        )
+    }
+
+    @Test
+    fun `M downgrade to a placeholder and never upload W process { reported regions cannot be read }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        val fakeRegions: List<Rect> = mock()
+        whenever(fakeRegions.isEmpty()).thenThrow(IllegalStateException())
+
+        // When
+        val processed = process(
+            fixture,
+            TextDetector { _, onComplete -> onComplete(TextDetectionOutcome.Detected(fakeRegions)) }
+        )
+
+        // Then
+        assertPlaceholderWithoutUpload(processed.snapshot)
     }
 
     @Test
@@ -293,6 +320,13 @@ internal class PixelFallbackSnapshotProcessorTest {
 
         // Then
         assertPlaceholderWithoutUpload(processed.snapshot)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            PixelFallbackSnapshotProcessor.DETECTION_FAILED_MESSAGE,
+            IllegalArgumentException::class.java,
+            onlyOnce = true
+        )
     }
 
     @Test

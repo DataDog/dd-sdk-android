@@ -200,10 +200,10 @@ internal class PixelFallbackSnapshotProcessor(
                 failClosedIfAwaitingDetection()
                 return
             }
-            val called = guarded {
+            val called = guarded(DETECTION_FAILED_MESSAGE) {
                 detector.detectTextRegions(capture.bitmap) { detection -> onDetection(detection) }
             }
-            if (!called) failClosedIfAwaitingDetection()
+            if (called == null) failClosedIfAwaitingDetection()
         }
 
         private fun onDetection(detection: TextDetectionOutcome) {
@@ -258,38 +258,42 @@ internal class PixelFallbackSnapshotProcessor(
 
     /**
      * Painted directly onto the pixels, pre-upload - never a separate overlay wireframe. False when
-     * the pixels can't be painted on, in which case the bitmap must not be uploaded.
+     * the pixels can't be painted on, in which case the bitmap must not be uploaded. The regions come
+     * from the detector, so they are only read inside the guard.
      */
-    private fun maskRegions(bitmap: Bitmap, regions: List<Rect>): Boolean {
+    private fun maskRegions(bitmap: Bitmap, regions: List<Rect>): Boolean =
+        guarded(MASKING_FAILED_MESSAGE) { paintRegions(bitmap, regions) } == true
+
+    private fun paintRegions(bitmap: Bitmap, regions: List<Rect>): Boolean {
         if (regions.isEmpty()) return true
         val canvas = canvasWrapper.createCanvas(bitmap)
-        return canvas != null && guarded {
+        if (canvas != null) {
             val paint = Paint().apply { color = Color.BLACK; style = Paint.Style.FILL }
             regions.forEach { canvas.drawRect(it, paint) }
         }
+        return canvas != null
     }
 
-    // Only for the optional detector and the pixels it is given: its failures must fail closed.
+    // Only for the optional detector and the data it hands over: its failures must fail closed.
     @Suppress("TooGenericExceptionCaught")
-    private fun guarded(block: () -> Unit): Boolean = try {
+    private fun <T : Any> guarded(failureMessage: String, block: () -> T): T? = try {
         block()
-        true
     } catch (e: Exception) {
-        logDetectionFailure(e)
-        false
+        logGuardedFailure(failureMessage, e)
+        null
     } catch (e: LinkageError) {
-        logDetectionFailure(e)
-        false
+        logGuardedFailure(failureMessage, e)
+        null
     } catch (e: AssertionError) {
-        logDetectionFailure(e)
-        false
+        logGuardedFailure(failureMessage, e)
+        null
     }
 
-    private fun logDetectionFailure(error: Throwable) {
+    private fun logGuardedFailure(failureMessage: String, error: Throwable) {
         internalLogger.log(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = { DETECTION_FAILED_MESSAGE },
+            messageBuilder = { failureMessage },
             throwable = error,
             onlyOnce = true
         )
@@ -307,8 +311,10 @@ internal class PixelFallbackSnapshotProcessor(
         private const val PERCENT = 100L
         private const val MIME_TYPE_WEBP = "image/webp"
         private const val MASK_ALL_CONTENT_LABEL = "Image"
-        private const val DETECTION_FAILED_MESSAGE =
+        internal const val DETECTION_FAILED_MESSAGE =
             "Text detection failed; the pixel capture is replaced by a placeholder"
+        internal const val MASKING_FAILED_MESSAGE =
+            "Painting the detected text regions failed; the pixel capture is replaced by a placeholder"
         private const val IGNORED_DETECTION_MESSAGE =
             "Text detection completed more than once or too late; the extra result is ignored"
     }
