@@ -20,6 +20,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedClip
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -269,6 +270,88 @@ internal class AndroidWindowTraversalTest : AndroidWindowTraversalTestFixture() 
         assertThat(checkNotNull(fakeContexts[mockGroup]).imagePrivacy).isEqualTo(ImagePrivacy.MASK_NONE)
         assertThat(checkNotNull(fakeContexts[mockChild]).imagePrivacy).isEqualTo(ImagePrivacy.MASK_LARGE_ONLY)
         assertThat(checkNotNull(fakeContexts[mockSibling]).imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
+    }
+
+    @Test
+    fun `M not recurse into native children W traverseWindow() { fallback mapper returns a pixel wireframe }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakePixelGroupBounds: GlobalBounds,
+        @Forgery fakeGrandChildBounds: GlobalBounds
+    ) {
+        // Given: [View.draw] already bakes the grandchild into the bitmap this mapper rasterized -
+        // walking it again as a separate native child would only double-describe it.
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockPixelGroup = mockViewGroup(fakePixelGroupBounds)
+        val mockGrandChild = mockView(fakeGrandChildBounds)
+        mockPixelGroup.withChildren(mockGrandChild)
+        mockRoot.withChildren(mockPixelGroup)
+        val fakePixelMapper = CapturedViewMapper<View> { view, mappingContext ->
+            if (view === mockPixelGroup) {
+                CapturedViewMapperResult.Wireframes(
+                    listOf(
+                        CapturedWireframe.Pixel(
+                            identity = mappingContext.identityFactory.imageWireframe(mappingContext.ownerIdentity),
+                            bounds = CapturedBounds(0, 0, 10, 10),
+                            resource = PixelResource.Unresolved
+                        )
+                    )
+                )
+            } else {
+                CapturedViewMapperResult.None
+            }
+        }
+        val fakeWindowIdentity = identityFactory.window("window")
+
+        // When
+        val result = traversal(fallback = fakePixelMapper)
+            .traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
+
+        // Then
+        val present = result.doneValue() as WindowWalkResult.Present
+        val pixelGroupLayer = present.layers.first { it.identity != present.rootLayer.identity }
+        assertThat(pixelGroupLayer.children).hasSize(1) // the pixel wireframe only, no native child layer
+        assertThat(present.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+        // No layer was created for the grandchild since a terminal pixel wireframe skips recursion.
+        assertThat(present.layers).hasSize(2) // root + pixel group only
+    }
+
+    @Test
+    fun `M keep descendant touch overrides W traverseWindow() { fallback mapper returns a pixel wireframe }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakePixelGroupBounds: GlobalBounds,
+        @Forgery fakeGrandChildBounds: GlobalBounds
+    ) {
+        // Given
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockPixelGroup = mockViewGroup(fakePixelGroupBounds)
+        val mockGrandChild = mockView(fakeGrandChildBounds)
+        whenever(mockGrandChild.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
+        mockPixelGroup.withChildren(mockGrandChild)
+        mockRoot.withChildren(mockPixelGroup)
+        val stubPixelMapper = CapturedViewMapper<View> { view, mappingContext ->
+            if (view === mockPixelGroup) {
+                CapturedViewMapperResult.Wireframes(
+                    listOf(
+                        CapturedWireframe.Pixel(
+                            identity = mappingContext.identityFactory.imageWireframe(mappingContext.ownerIdentity),
+                            bounds = CapturedBounds(0, 0, 10, 10),
+                            resource = PixelResource.Unresolved
+                        )
+                    )
+                )
+            } else {
+                CapturedViewMapperResult.None
+            }
+        }
+
+        // When
+        val result = traversal(fallback = stubPixelMapper)
+            .traverseWindow(mockRoot, identityFactory.window("window"), identityFactory, fakeContext)
+
+        // Then
+        val present = result.doneValue() as WindowWalkResult.Present
+        assertThat(present.layers).hasSize(2)
+        assertThat(present.touchOverrideAreas).containsValue(TouchPrivacy.HIDE)
     }
 
     @Test

@@ -6,8 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import android.graphics.Bitmap
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
+import android.view.View
+import android.view.ViewGroup
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
@@ -15,9 +19,11 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundShapeStyleResolver
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedPixelFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -27,6 +33,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -165,5 +172,73 @@ internal class AndroidWindowTraversalHostBackgroundTest : AndroidWindowTraversal
             assertThat(identities).contains(fakeBackWireframe)
         }
         assertThat(DefaultCapturedTreeValidator().validate(snapshot)).isEqualTo(CaptureValidationResult.Valid)
+    }
+
+    @Test
+    fun `M not raster the host W traverseWindow() { pixel fallback, host is decomposed }`() {
+        // Given
+        val fakeRasterized = mutableListOf<View>()
+
+        // When
+        val (mockHost, copy) = traverseUnderPixelFallback(isHost = true, fakeRasterized)
+
+        // Then
+        assertThat(fakeRasterized).doesNotContain(mockHost)
+        assertThat(copy.window.pendingPixelCaptures).isEmpty()
+    }
+
+    @Test
+    fun `M raster the view W traverseWindow() { pixel fallback, view is not a host }`() {
+        // Given
+        val fakeRasterized = mutableListOf<View>()
+
+        // When
+        val (mockHost, copy) = traverseUnderPixelFallback(isHost = false, fakeRasterized)
+
+        // Then
+        assertThat(fakeRasterized).containsExactly(mockHost)
+        assertThat(copy.window.pendingPixelCaptures).hasSize(1)
+    }
+
+    private fun traverseUnderPixelFallback(
+        isHost: Boolean,
+        rasterized: MutableList<View>
+    ): Pair<ViewGroup, WindowCopyResult.Present> {
+        val fakeBounds = GlobalBounds(0, 0, 100, 100)
+        val mockRoot = mockViewGroup(fakeBounds)
+        val mockHost = mockViewGroup(fakeBounds)
+        mockRoot.withChildren(mockHost)
+        listOf(mockRoot, mockHost).forEach { whenever(it.alpha).thenReturn(1f) }
+        whenever(mockHost.getGlobalVisibleRect(any())).thenAnswer {
+            it.getArgument<Rect>(0).set(0, 0, 100, 100)
+            true
+        }
+        val mockDecomposer: CompositionHostDecomposer = mock()
+        whenever(mockDecomposer.canDecompose(mockHost)).thenReturn(isHost)
+        whenever(mockDecomposer.decompose(eq(mockHost), any())).thenReturn(
+            CompositionHostDecomposeResult(emptyList(), emptyList(), emptyList(), emptyMap())
+        )
+        val testedTraversal = traversal(
+            fallback = CapturedPixelFallbackMapper(
+                fallbackMapper = noOpFallback,
+                internalLogger = mock(),
+                viewBoundsResolver = mockViewBoundsResolver,
+                viewRasterizer = { view ->
+                    rasterized += view
+                    mock<Bitmap>()
+                },
+                canMaskText = true,
+                capturesContainers = true
+            ),
+            compositionHostDecomposer = mockDecomposer,
+            rootImagePrivacy = ImagePrivacy.MASK_NONE
+        )
+        val copy = testedTraversal.traverseWindow(
+            mockRoot,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        ) as WindowCopyResult.Present
+        return mockHost to copy
     }
 }

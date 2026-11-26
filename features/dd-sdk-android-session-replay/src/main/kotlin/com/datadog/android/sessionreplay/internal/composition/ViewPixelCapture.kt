@@ -1,0 +1,166 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.sessionreplay.internal.composition
+
+import android.graphics.Bitmap
+import android.view.SurfaceView
+import android.view.TextureView
+import android.view.View
+import android.view.ViewGroup
+import android.webkit.WebView
+import androidx.annotation.UiThread
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.PixelResource
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.internal.composition.mapper.DefaultViewRasterizer
+import com.datadog.android.sessionreplay.internal.composition.mapper.PixelCaptureEligibility
+import com.datadog.android.sessionreplay.internal.composition.mapper.ViewRasterizer
+import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import java.util.IdentityHashMap
+
+/**
+ * Shared privacy, allocation limits and resource registration for native pixel captures.
+ *
+ * A view's raster may contain readable text, so it only survives when [canMaskText]. Otherwise it
+ * always ends as a placeholder, and is not drawn at all rather than drawn on the UI thread to be discarded.
+ */
+@Suppress("ReturnCount") // Privacy and size guards must exit before allocating or reading pixels.
+internal class ViewPixelCapture(
+    private val internalLogger: InternalLogger,
+    private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
+    private val rasterizer: ViewRasterizer = DefaultViewRasterizer(internalLogger),
+    private val canMaskText: Boolean = false
+) {
+    /** Null lets the ordinary fallback retain semantic output and continue traversing children. */
+    @UiThread
+    fun capture(view: View, context: CapturedMappingContext): CapturedViewMapperResult? {
+        val bounds =
+            context.bounds ?: viewBoundsResolver.resolveViewGlobalBounds(view, context.screenDensity).toCaptured()
+        return captureSubtree(view, context, bounds, view.pixelSize()) { rasterizer.rasterize(view) }
+    }
+
+    @UiThread
+    private fun captureSubtree(
+        view: View,
+        context: CapturedMappingContext,
+        bounds: CapturedBounds,
+        pixels: GlobalBounds,
+        rasterize: () -> Bitmap?
+    ): CapturedViewMapperResult? {
+        val imageBounds = GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
+        val label = PixelCaptureEligibility.placeholderLabelFor(context.imagePrivacy, imageBounds)
+        // A placeholder is terminal: over a container it would hide children that are captured on their own.
+        if (label != null) return if (view is ViewGroup) null else placeholder(context, bounds, label)
+        if (containsRestrictedContent(view, context, bounds)) return null
+        val wireframe = captureBitmap(view, context, bounds, pixels, rasterize) ?: return null
+        return CapturedViewMapperResult.Wireframes(wireframe, isTerminal = true)
+    }
+
+    @UiThread
+    private fun captureBitmap(
+        view: View,
+        context: CapturedMappingContext,
+        bounds: CapturedBounds,
+        pixels: GlobalBounds,
+        rasterize: () -> Bitmap?
+    ): CapturedWireframe? {
+        if (!isCapturable(pixels, view)) return null
+        if (!canMaskText) return placeholderWireframe(context, bounds)
+        val bitmap = rasterize() ?: return null
+        val identity = context.identityFactory.imageWireframe(context.ownerIdentity)
+        // Never text-free: the raster of an arbitrary view may contain readable text, so the snapshot
+        // processor has to treat it as sensitive rather than resolve it as is.
+        context.pendingPixelCaptureSink.register(
+            PendingPixelCapture(identity, context.ownerIdentity, bitmap, isTextFree = false)
+        )
+        return CapturedWireframe.Pixel(identity, bounds, resource = PixelResource.Unresolved)
+    }
+
+    private fun placeholder(
+        context: CapturedMappingContext,
+        bounds: CapturedBounds,
+        label: String = "Image"
+    ): CapturedViewMapperResult = CapturedViewMapperResult.Wireframes(
+        placeholderWireframe(context, bounds, label),
+        isTerminal = true
+    )
+
+    private fun placeholderWireframe(
+        context: CapturedMappingContext,
+        bounds: CapturedBounds,
+        label: String = "Image"
+    ) = CapturedWireframe.PrivacyPlaceholder(
+        context.identityFactory.placeholderWireframe(context.ownerIdentity),
+        bounds,
+        label = label
+    )
+
+    // Whole-view captures must respect stronger descendant overrides and hidden/hardware content.
+    @Suppress("UnsafeThirdPartyFunctionCall") // UI-owned work stack and valid child indices.
+    @UiThread
+    private fun containsRestrictedContent(
+        view: View,
+        context: CapturedMappingContext,
+        bounds: CapturedBounds
+    ): Boolean {
+        val stack = ArrayDeque<Pair<View, EffectivePrivacy>>()
+        stack.addLast(view to EffectivePrivacy(context.imagePrivacy, context.textAndInputPrivacy))
+        val visited = IdentityHashMap<View, Boolean>()
+        while (stack.isNotEmpty()) {
+            val (current, parentPrivacy) = stack.removeLast()
+            if (visited.put(current, true) != null || current.visibility != View.VISIBLE) continue
+            val privacy = resolveEffectivePrivacy(current, parentPrivacy, internalLogger)
+            if (isRestricted(current, privacy, context.screenDensity, bounds.takeIf { current === view })) return true
+            if (current is ViewGroup) {
+                for (index in 0 until current.childCount) stack.addLast(current.getChildAt(index) to privacy)
+            }
+        }
+        return false
+    }
+
+    @UiThread
+    private fun isRestricted(
+        view: View,
+        privacy: EffectivePrivacy,
+        density: Float,
+        copiedBounds: CapturedBounds?
+    ): Boolean {
+        val unsupported = view is SurfaceView || view is TextureView || view is WebView
+        if (unsupported || view.getTag(R.id.datadog_hidden) == true) return true
+        return when (privacy.imagePrivacy) {
+            ImagePrivacy.MASK_ALL -> true
+            ImagePrivacy.MASK_NONE -> false
+            ImagePrivacy.MASK_LARGE_ONLY -> {
+                val bounds = copiedBounds ?: viewBoundsResolver.resolveViewGlobalBounds(view, density).toCaptured()
+                PixelCaptureEligibility.placeholderLabelFor(
+                    privacy.imagePrivacy,
+                    GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
+                ) != null
+            }
+        }
+    }
+
+    @UiThread
+    private fun isCapturable(bounds: GlobalBounds, view: View): Boolean {
+        if (bounds.width !in 1..Int.MAX_VALUE || bounds.height !in 1..Int.MAX_VALUE) return false
+        val metrics = view.resources.displayMetrics
+        return !PixelCaptureEligibility.isTooLargeToCapture(
+            bounds.width * bounds.height,
+            metrics.widthPixels.toLong() * metrics.heightPixels
+        )
+    }
+}
+
+@UiThread
+private fun View.pixelSize() = GlobalBounds(0, 0, width.toLong(), height.toLong())
