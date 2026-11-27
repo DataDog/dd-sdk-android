@@ -134,6 +134,36 @@ public final class Baggage {
         return hasContent ? kept.toString() : null;
     }
 
+    /**
+     * Merges two raw baggage header values. The members of {@code newHeader} replace the members of
+     * {@code oldHeader} with the same key, while the other members of {@code oldHeader} are kept
+     * byte-for-byte, so that application baggage the parser can't read is never dropped or decoded.
+     *
+     * @param oldHeader the existing raw baggage header value, which may be null.
+     * @param newHeader the raw baggage header value to add.
+     * @return the merged raw baggage header value.
+     */
+    @NonNull
+    public static String mergeRaw(@Nullable final String oldHeader, @NonNull final String newHeader) {
+        String kept = oldHeader;
+        for (final String member : newHeader.split(String.valueOf(PAIR_SEPARATOR), -1)) {
+            if (kept == null) {
+                break;
+            }
+            final String key = memberKey(member);
+            if (!key.isEmpty()) {
+                kept = removeKey(kept, key);
+            }
+        }
+        if (kept == null || kept.trim().isEmpty()) {
+            return newHeader;
+        }
+        if (newHeader.trim().isEmpty()) {
+            return kept;
+        }
+        return kept + PAIR_SEPARATOR + newHeader;
+    }
+
     @NonNull
     private static String memberKey(@NonNull final String member) {
         String key = member;

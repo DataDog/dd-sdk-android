@@ -11,6 +11,7 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.trace.core.propagation.Baggage
 import com.datadog.trace.core.propagation.HttpCodec
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -148,6 +149,32 @@ internal class TraceInternalProxyTest {
 
         // Then
         assertThat(result).containsExactly("not a member,,=x,k=%zz")
+    }
+
+    @Test
+    fun `M keep existing raw members W mergeBaggage() {empty value in existing baggage}`() {
+        // When
+        val result = _TraceInternalProxy.mergeBaggage("custom=,feature=on", "user.anonymous_id=abc")
+
+        // Then
+        assertThat(result).isEqualTo("custom=,feature=on,user.anonymous_id=abc")
+    }
+
+    @Test
+    fun `M not restore anonymous id key W mergeBaggage() {double-encoded key retained, merged twice}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+        val retained = "user%252Eanonymous_id=old,custom=a"
+        val cleaned = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, listOf(retained))
+            ?.single() ?: retained
+
+        // When
+        val once = _TraceInternalProxy.mergeBaggage(cleaned, "session.id=s")
+        val twice = _TraceInternalProxy.mergeBaggage(once, "session.id=s")
+
+        // Then
+        assertThat(Baggage.from(twice).asMap()).doesNotContainKey(HttpCodec.BAGGAGE_USER_ANONYMOUS_ID)
+        assertThat(twice).isEqualTo("user%252Eanonymous_id=old,custom=a,session.id=s")
     }
 
     @Test

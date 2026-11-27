@@ -57,8 +57,28 @@ internal class BaggageTest {
         assertThat(Baggage.removeKey(headerValue, REMOVED_KEY)).isSameAs(headerValue)
     }
 
+    @ParameterizedTest
+    @MethodSource("mergeRawSamples")
+    fun `M keep old raw members W mergeRaw`(
+        oldHeader: String?,
+        newHeader: String,
+        expected: String
+    ) {
+        assertThat(Baggage.mergeRaw(oldHeader, newHeader)).isEqualTo(expected)
+    }
+
     private companion object {
         const val REMOVED_KEY = "user.anonymous_id"
+
+        @JvmStatic
+        fun mergeRawSamples() = listOf(
+            Arguments.of(null, "user.id=a", "user.id=a"),
+            Arguments.of("", "user.id=a", "user.id=a"),
+            Arguments.of("custom=,feature=on", "user.id=a", "custom=,feature=on,user.id=a"),
+            Arguments.of("user.id=old;p=v,k=a+b", "user.id=new", "k=a+b,user.id=new"),
+            Arguments.of("user%2Eid=old,k=%zz", "user.id=new,session.id=s", "k=%zz,user.id=new,session.id=s"),
+            Arguments.of("user.id=old", "user.id=new", "user.id=new")
+        )
 
         @JvmStatic
         fun removeKeySamples() = listOf(

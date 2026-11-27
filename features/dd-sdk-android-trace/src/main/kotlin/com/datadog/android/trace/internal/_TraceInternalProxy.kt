@@ -111,9 +111,7 @@ object _TraceInternalProxy {
      * @return A string representation of the merged baggage.
      */
     fun mergeBaggage(oldHeader: String?, newHeader: String): String {
-        return Baggage.from(oldHeader)
-            .mergeWith(Baggage.from(newHeader))
-            .toString()
+        return Baggage.mergeRaw(oldHeader, newHeader)
     }
 
     /**
