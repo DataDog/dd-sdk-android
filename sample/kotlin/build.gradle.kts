@@ -33,7 +33,9 @@ detekt {
 
 @Suppress("StringLiteralDuplication")
 android {
-    compileSdk = AndroidConfig.TARGET_SDK
+    compileSdk = providers.gradleProperty("sampleCompileSdk")
+        .map { it.toInt() }
+        .getOrElse(AndroidConfig.TARGET_SDK)
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {

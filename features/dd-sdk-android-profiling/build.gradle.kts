@@ -122,7 +122,8 @@ createJsonModelsGenerationTask("generateProfilingModelsFromJson") {
 
 datadogBuild {
     applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-    applyAndroidLibraryConfig()
+    // R8 resolves ProfilingTrigger against the consumer's Android SDK.
+    applyAndroidLibraryConfig(minCompileSdk = 36)
     applyJunitConfig()
     applyJavadocConfig()
     applyPublishingConfig(
