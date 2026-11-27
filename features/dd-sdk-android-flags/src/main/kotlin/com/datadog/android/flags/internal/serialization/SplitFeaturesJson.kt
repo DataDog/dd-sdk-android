@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.serialization
 
 import com.datadog.android.flags.internal.model.Assignment
+import com.datadog.android.flags.model.FlagSnapshotFeature.Value
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -29,17 +30,17 @@ internal object SplitFeaturesJson {
     }
 
     /** Returns the [String], [Double] or [Boolean] that a split feature holds. */
-    fun value(value: Assignment.Value): Any = when (value) {
-        is Assignment.Value.String -> value.item
-        is Assignment.Value.Number -> value.item.toDouble()
-        is Assignment.Value.Boolean -> value.item
+    fun value(value: Assignment.Value): Value = when (value) {
+        is Assignment.Value.String -> Value.Text(value.item)
+        is Assignment.Value.Number -> Value.Numeric(value.item.toDouble())
+        is Assignment.Value.Boolean -> Value.Bool(value.item)
     }
 
     /** Returns the generated value for a split feature [value], a [String], [Double] or [Boolean]. */
-    fun modelValue(value: Any): Assignment.Value = when (value) {
-        is Boolean -> Assignment.Value.Boolean(value)
-        is Number -> Assignment.Value.Number(value)
-        else -> Assignment.Value.String(value.toString())
+    fun modelValue(value: Value): Assignment.Value = when (value) {
+        is Value.Bool -> Assignment.Value.Boolean(value.boolean)
+        is Value.Numeric -> Assignment.Value.Number(value.number)
+        is Value.Text -> Assignment.Value.String(value.text)
     }
 
     private fun normalizeFeature(json: JsonObject): Pair<String, JsonObject>? {

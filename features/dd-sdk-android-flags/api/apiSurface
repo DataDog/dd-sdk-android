@@ -57,6 +57,12 @@ interface com.datadog.android.flags.StateObservable
 class com.datadog.android.flags._FlagsInternalProxy
   constructor(client: FlagsClient)
   fun getInternalLogger(): com.datadog.android.api.InternalLogger
+  enum SnapshotExposureDecision
+    - ADMITTED
+    - DUPLICATE
+    - INELIGIBLE
+    - UNAVAILABLE
+  fun admitSnapshotExposure(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext?, Boolean): SnapshotExposureDecision
   fun isExperimentationOptOutEnabled(): Boolean
   fun setEvaluationContextWithOutcome(context: com.datadog.android.flags.model.EvaluationContext, telemetryOptedOut: Boolean?, completion: (com.datadog.android.flags.model.FlagsClientState, Throwable?) -> Unit)
   fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean
@@ -116,3 +122,18 @@ interface com.datadog.android.flags.model.UnparsedFlag
   val serialId: Long?
 interface com.datadog.android.flags.model.UnparsedFlagWithConsent : UnparsedFlag
   val observeFullEvaluationData: Boolean
+interface com.datadog.android.flags.model.UnparsedFlagWithFeatures : UnparsedFlag
+  val features: List<FlagSnapshotFeature>
+data class com.datadog.android.flags.model.FlagSnapshotFeature
+  constructor(String, Value, List<String>)
+  sealed class Value
+    constructor(Any)
+    data class Text : Value
+      constructor(String)
+    data class Bool : Value
+      constructor(Boolean)
+    data class Numeric : Value
+      constructor(Double)
+  constructor(String, String, List<String>)
+  constructor(String, Boolean, List<String>)
+  constructor(String, Double, List<String>)

@@ -8,12 +8,12 @@ package com.datadog.android.flags.internal
 
 import androidx.collection.LruCache
 import com.datadog.android.flags.internal.model.ExposureEvent
-import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.SplitFeature
 import com.datadog.android.flags.internal.model.forDestination
 import com.datadog.android.flags.internal.storage.RecordWriter
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.UnparsedFlag
+import com.datadog.android.flags.model.UnparsedFlagWithFeatures
 import com.datadog.android.internal.time.TimeProvider
 
 /**
@@ -41,14 +41,22 @@ internal class ExposureEventsProcessor(
     @Suppress("UnsafeThirdPartyFunctionCall") // maxSize > 0
     private val exposuresSentCache = LruCache<CacheKey, CacheValue>(MAX_CACHE_ENTRIES)
 
-    override fun processEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag): Boolean {
+    override fun processEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag): Boolean =
+        recordExposure(flagKey, context, data, sendToDatadog = true)
+
+    fun recordExposure(
+        flagKey: String,
+        context: EvaluationContext,
+        data: UnparsedFlag,
+        sendToDatadog: Boolean
+    ): Boolean {
         val cacheKey = CacheKey(targetingKey = context.targetingKey, flagKey = flagKey)
         val cacheValue = data.toCacheValue()
 
         synchronized(exposuresSentCache) {
             val isRecorded = exposuresSentCache[cacheKey] == cacheValue
             if (!isRecorded) {
-                if (writeEvents) writeExposureEvent(buildExposureEvent(flagKey, context, data))
+                if (writeEvents && sendToDatadog) writeExposureEvent(buildExposureEvent(flagKey, context, data))
                 @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null key and value
                 exposuresSentCache.put(cacheKey, cacheValue)
             }
@@ -76,7 +84,7 @@ internal class ExposureEventsProcessor(
                 )
             ),
             serialId = data.serialId,
-            features = (data as? PrecomputedFlag)?.features
+            features = (data as? UnparsedFlagWithFeatures)?.features
                 ?.forDestination(SplitFeature.DESTINATION_EXPOSURE)
                 ?.takeIf { it.isNotEmpty() }
                 ?.let { ExposureEvent.Features(it.toMutableMap<String, Any?>()) }

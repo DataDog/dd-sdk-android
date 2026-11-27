@@ -65,6 +65,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Internal implementation of the [SdkCore] interface.
@@ -87,6 +88,11 @@ internal class DatadogCore(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val remoteConfigServiceFactory: RemoteConfigService.Factory = DEFAULT_REMOTE_CONFIG_SERVICE_FACTORY
 ) : InternalSdkCore {
+
+    private val consentSubmissionLock = Any()
+
+    // Only the latest request may release the barrier. A rejected task leaves admission closed.
+    private val consentGrantBarrier = AtomicReference<Any?>()
 
     internal lateinit var coreFeature: CoreFeature
 
@@ -166,8 +172,15 @@ internal class DatadogCore(
     /** @inheritDoc */
     @AnyThread
     override fun setTrackingConsent(consent: TrackingConsent) {
-        coreFeature.contextExecutorService.executeSafe("DatadogCore.setTrackingConsent", internalLogger) {
-            coreFeature.trackingConsentProvider.setConsent(consent)
+        synchronized(consentSubmissionLock) {
+            val request = closeConsentGrantBarrier()
+            coreFeature.contextExecutorService.executeSafe("DatadogCore.setTrackingConsent", internalLogger) {
+                coreFeature.trackingConsentProvider.setConsent(consent)
+                if (consent == TrackingConsent.GRANTED) {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts null and compares by identity.
+                    consentGrantBarrier.compareAndSet(request, null)
+                }
+            }
         }
     }
 
@@ -375,6 +388,14 @@ internal class DatadogCore(
 
     override val networkInfo: NetworkInfo
         get() = coreFeature.networkInfoProvider.getLatestNetworkInfo()
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts any request token.
+    private fun closeConsentGrantBarrier(): Any = Any().also { consentGrantBarrier.set(it) }
+
+    override val hasAppliedTrackingConsent: Boolean
+        get() = ::coreFeature.isInitialized && isActive &&
+            coreFeature.trackingConsentProvider.getConsent() == TrackingConsent.GRANTED &&
+            consentGrantBarrier.get() == null
 
     override val trackingConsent: TrackingConsent
         get() {
@@ -715,6 +736,7 @@ internal class DatadogCore(
      * Stops all process for this instance of the Datadog SDK.
      */
     internal fun stop() {
+        closeConsentGrantBarrier()
         features.keys.forEach {
             features.remove(it)?.stop()
         }

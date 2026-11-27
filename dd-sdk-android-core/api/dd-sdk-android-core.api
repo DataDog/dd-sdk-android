@@ -713,6 +713,7 @@ public abstract interface class com/datadog/android/core/InternalSdkCore : com/d
 	public abstract fun getDatadogContext (Ljava/util/Set;)Lcom/datadog/android/api/context/DatadogContext;
 	public abstract fun getDatadogContextFuture (Ljava/util/Set;)Ljava/util/concurrent/Future;
 	public abstract fun getFirstPartyHostResolver ()Lcom/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver;
+	public abstract fun getHasAppliedTrackingConsent ()Z
 	public abstract fun getLastFatalAnrSent ()Ljava/lang/Long;
 	public abstract fun getLastViewEvent ()Lcom/google/gson/JsonObject;
 	public abstract fun getNetworkInfo ()Lcom/datadog/android/api/context/NetworkInfo;
@@ -730,6 +731,7 @@ public abstract interface class com/datadog/android/core/InternalSdkCore : com/d
 public final class com/datadog/android/core/InternalSdkCore$DefaultImpls {
 	public static synthetic fun getDatadogContext$default (Lcom/datadog/android/core/InternalSdkCore;Ljava/util/Set;ILjava/lang/Object;)Lcom/datadog/android/api/context/DatadogContext;
 	public static synthetic fun getDatadogContextFuture$default (Lcom/datadog/android/core/InternalSdkCore;Ljava/util/Set;ILjava/lang/Object;)Ljava/util/concurrent/Future;
+	public static fun getHasAppliedTrackingConsent (Lcom/datadog/android/core/InternalSdkCore;)Z
 }
 
 public final class com/datadog/android/core/SdkReference {

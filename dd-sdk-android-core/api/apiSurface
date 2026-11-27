@@ -242,6 +242,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   val source: String
   val networkInfo: com.datadog.android.api.context.NetworkInfo
   val trackingConsent: com.datadog.android.privacy.TrackingConsent
+  val hasAppliedTrackingConsent: Boolean
   val rootStorageDir: java.io.File?
   val isDeveloperModeEnabled: Boolean
   val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver

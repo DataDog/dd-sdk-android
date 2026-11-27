@@ -8,6 +8,7 @@ package com.datadog.android.core
 
 import android.app.Application
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.Feature
@@ -70,6 +71,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -86,6 +88,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -173,6 +176,102 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockConsentProvider).setConsent(fakeConsent)
+    }
+
+    @Test
+    fun `M close admission across queued grants and revocation W setTrackingConsent()`() {
+        // Given
+        testedCore.coreFeature.trackingConsentProvider.setConsent(TrackingConsent.GRANTED)
+        val queue = ArrayDeque<Runnable>()
+        whenever(mockContextExecutorService.execute(any())) doAnswer { queue.addLast(it.getArgument(0)) }
+        assertThat(testedCore.hasAppliedTrackingConsent).isTrue()
+
+        // When
+        testedCore.setTrackingConsent(TrackingConsent.GRANTED)
+        testedCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+        val queued = testedCore.hasAppliedTrackingConsent
+        queue.removeFirst().run()
+        val olderGrantApplied = testedCore.hasAppliedTrackingConsent
+        queue.removeFirst().run()
+        val revoked = testedCore.hasAppliedTrackingConsent
+        testedCore.setTrackingConsent(TrackingConsent.GRANTED)
+        val queuedRegrant = testedCore.hasAppliedTrackingConsent
+        queue.removeFirst().run()
+
+        // Then
+        assertThat(listOf(queued, olderGrantApplied, revoked, queuedRegrant)).containsOnly(false)
+        assertThat(testedCore.hasAppliedTrackingConsent).isTrue()
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TrackingConsent::class, names = ["GRANTED", "NOT_GRANTED"])
+    @Timeout(10)
+    fun `M match the applied consent after competing submissions W setTrackingConsent()`(last: TrackingConsent) {
+        // Given
+        val first = if (last == TrackingConsent.GRANTED) TrackingConsent.NOT_GRANTED else TrackingConsent.GRANTED
+        val queue = LinkedBlockingQueue<Runnable>()
+        val competitor = Thread { testedCore.setTrackingConsent(last) }
+        whenever(mockContextExecutorService.execute(any())) doAnswer { invocation ->
+            if (competitor.state == Thread.State.NEW) {
+                competitor.start()
+                // Let the second setter either contend for submission or finish enqueueing before accepting the first.
+                while (competitor.isAlive) {
+                    if (competitor.state == Thread.State.BLOCKED &&
+                        competitor.stackTrace.firstOrNull()?.methodName == "setTrackingConsent"
+                    ) {
+                        break
+                    }
+                    competitor.join(1)
+                }
+            }
+            queue.put(invocation.getArgument(0))
+        }
+
+        // When
+        testedCore.setTrackingConsent(first)
+        competitor.join()
+        assertThat(queue).hasSize(2)
+        repeat(2) { queue.remove().run() }
+        val applied = testedCore.coreFeature.trackingConsentProvider.getConsent()
+
+        // Then
+        assertThat(testedCore.hasAppliedTrackingConsent).isEqualTo(applied == TrackingConsent.GRANTED)
+        assertThat(applied).isEqualTo(last)
+    }
+
+    @Test
+    fun `M close admission on rejected update W setTrackingConsent()`() {
+        // Given
+        testedCore.setTrackingConsent(TrackingConsent.GRANTED)
+        whenever(mockContextExecutorService.execute(any())) doThrow RejectedExecutionException()
+
+        // When
+        testedCore.setTrackingConsent(TrackingConsent.NOT_GRANTED)
+
+        // Then
+        assertThat(testedCore.hasAppliedTrackingConsent).isFalse()
+    }
+
+    @Test
+    fun `M read applied consent in a feature callback W hasAppliedTrackingConsent()`(
+        @Mock feature: Feature,
+        @Forgery context: DatadogContext
+    ) {
+        // Given
+        testedCore.contextProvider = mock { on { getContext(any()) } doReturn context }
+        whenever(feature.name) doReturn "test-feature"
+        testedCore.registerFeature(feature)
+        testedCore.setTrackingConsent(TrackingConsent.GRANTED)
+        var observed: Boolean? = null
+
+        // When
+        checkNotNull(testedCore.getFeature(feature.name)).withContext {
+            observed = testedCore.hasAppliedTrackingConsent
+        }
+
+        // Then
+        assertThat(observed).isTrue()
+        verify(mockContextExecutorService, never()).submit(any<Callable<*>>())
     }
 
     @Test
