@@ -450,6 +450,136 @@ internal class RumSessionScopeTest {
         assertThat(secondResult).isNull()
     }
 
+    @Test
+    fun `M not renew session W handleEvent() {stopped, StartView after inactivity timeout}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val stoppedSessionId = testedScope.sessionId
+        testedScope.handleEvent(stopSessionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        advanceTimeByMs(TEST_INACTIVITY_MS + TEST_SLEEP_MS)
+        clearInvocations(mockSessionListener, mockSessionEndedMetricDispatcher, mockChildScope)
+
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertSessionNotRenewed(stoppedSessionId)
+    }
+
+    @Test
+    fun `M not renew session W handleEvent() {stopped, StartAction after max duration}`(
+        forge: Forge
+    ) {
+        // Given
+        startSessionAndKeepItActiveUntilCloseToMaxDuration(forge)
+        val stoppedSessionId = testedScope.sessionId
+        testedScope.handleEvent(stopSessionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        advanceTimeByMs(TEST_SLEEP_MS * 2)
+        clearInvocations(mockSessionListener, mockSessionEndedMetricDispatcher, mockChildScope)
+
+        // When
+        testedScope.handleEvent(
+            forge.startActionEvent(eventTime = currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        assertSessionNotRenewed(stoppedSessionId)
+    }
+
+    @Test
+    fun `M not renew session W handleEvent() {stopped, non-interaction event after max duration}`(
+        forge: Forge
+    ) {
+        // Given
+        startSessionAndKeepItActiveUntilCloseToMaxDuration(forge)
+        val stoppedSessionId = testedScope.sessionId
+        testedScope.handleEvent(stopSessionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        advanceTimeByMs(TEST_SLEEP_MS * 2)
+        clearInvocations(mockSessionListener, mockSessionEndedMetricDispatcher, mockChildScope)
+        val fakeEvent = forge.anyRumEvent(
+            excluding = listOf(RumRawEvent.StartView::class, RumRawEvent.StartAction::class)
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertSessionNotRenewed(stoppedSessionId)
+    }
+
+    @Test
+    fun `M not renew session W handleEvent(StopSession) {after max duration}`(
+        forge: Forge
+    ) {
+        // Given
+        startSessionAndKeepItActiveUntilCloseToMaxDuration(forge)
+        val stoppedSessionId = testedScope.sessionId
+        advanceTimeByMs(TEST_SLEEP_MS * 2)
+        clearInvocations(mockSessionListener, mockSessionEndedMetricDispatcher, mockChildScope)
+
+        // When
+        testedScope.handleEvent(stopSessionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertSessionNotRenewed(stoppedSessionId)
+    }
+
+    @Test
+    fun `M expire session without renewal W handleEvent() {stopped, background event, background tracking}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = true)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val stoppedSessionId = testedScope.sessionId
+        testedScope.handleEvent(stopSessionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        advanceTimeByMs(TEST_INACTIVITY_MS + TEST_SLEEP_MS)
+        clearInvocations(mockSessionListener, mockSessionEndedMetricDispatcher, mockChildScope)
+        val fakeBackgroundEvent = forge.anElementFrom(forge.addErrorEvent(), forge.startResourceEvent())
+
+        // When
+        testedScope.handleEvent(fakeBackgroundEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertSessionNotRenewed(stoppedSessionId)
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionState.EXPIRED)
+    }
+
+    @Test
+    fun `M not start session W handleEvent() {stopped before first session, StartView}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(stopSessionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertSessionNotRenewed(RumContext.NULL_UUID)
+    }
+
+    @Test
+    fun `M not notify Session Replay W handleEvent(StopSession) + handleEvent()`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        clearInvocations(mockSessionReplayFeatureScope)
+
+        // When
+        testedScope.handleEvent(stopSessionEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(forge.interactiveRumRawEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockSessionReplayFeatureScope, never()).sendEvent(any())
+    }
+
     // endregion
 
     // region getRumContext()
@@ -2264,6 +2394,31 @@ internal class RumSessionScopeTest {
         stubTimeProvider.elapsedRealtimeNs += TimeUnit.MILLISECONDS.toNanos(ms)
         stubTimeProvider.deviceTimestampMs += ms
         // elapsedTimeNs intentionally NOT advanced — mirrors CLOCK_MONOTONIC during sleep
+    }
+
+    private fun stopSessionEvent(): RumRawEvent.StopSession {
+        return RumRawEvent.StopSession(eventTime = currentFakeTime())
+    }
+
+    // Interactions stay below the inactivity timeout, and the last one happens just before the max duration
+    private fun startSessionAndKeepItActiveUntilCloseToMaxDuration(forge: Forge) {
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        repeat((TEST_MAX_DURATION_MS / TEST_SLEEP_MS).toInt() - 1) {
+            advanceTimeByMs(TEST_SLEEP_MS)
+            testedScope.handleEvent(
+                forge.startActionEvent(continuous = false, eventTime = currentFakeTime()),
+                fakeDatadogContext,
+                mockEventWriteScope,
+                mockWriter
+            )
+        }
+    }
+
+    private fun assertSessionNotRenewed(expectedSessionId: String) {
+        assertThat(testedScope.sessionId).isEqualTo(expectedSessionId)
+        verify(mockSessionListener, never()).onSessionStarted(any(), any())
+        verify(mockSessionEndedMetricDispatcher, never()).startMetric(any(), any(), any(), any())
+        verify(mockChildScope, never()).stopViewsForSessionRenewal(any(), any(), any(), any())
     }
 
     private fun currentFakeTime(): Time {

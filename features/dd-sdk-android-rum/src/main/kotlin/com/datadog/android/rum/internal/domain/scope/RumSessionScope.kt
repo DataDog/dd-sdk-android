@@ -260,13 +260,17 @@ internal class RumSessionScope(
 
         val isAppStart = event is RumRawEvent.AppStartEvent
 
+        // A stopped session only drains its views: the next session is started by the parent scope
+        val canRenew = isActive
+
         // When the session is expired, time-out or stopSession API is called, session ended metric should be sent
         if (isExpired || isTimedOut || isActive.not()) {
             sessionEndedMetricDispatcher.endMetric(sessionId, sdkCore.time.serverTimeOffsetMs)
         }
 
         if (isInteraction || isSdkInitInForeground || isAppStart) {
-            if (isNewSession || isExpired || isTimedOut) {
+            val needsNewSession = isNewSession || isExpired || isTimedOut
+            if (canRenew && needsNewSession) {
                 val reason = if (isNewSession) {
                     RumSessionStartReason.USER_APP_LAUNCH
                 } else if (isExpired) {
@@ -278,7 +282,8 @@ internal class RumSessionScope(
             }
             lastUserInteractionNs.set(nanoTime)
         } else if (isExpired) {
-            if (backgroundTrackingEnabled && (isBackgroundEvent || isSdkInitInBackground)) {
+            val isTrackedBackgroundEvent = backgroundTrackingEnabled && (isBackgroundEvent || isSdkInitInBackground)
+            if (canRenew && isTrackedBackgroundEvent) {
                 renewSession(
                     event.eventTime,
                     RumSessionStartReason.BACKGROUND_LAUNCH,
@@ -291,11 +296,14 @@ internal class RumSessionScope(
                 stopTimeseries()
                 sessionState = RumSessionState.EXPIRED
             }
-        } else if (isTimedOut) {
+        } else if (canRenew && isTimedOut) {
             renewSession(event.eventTime, RumSessionStartReason.MAX_DURATION, datadogContext, writeScope, writer)
         }
 
-        updateSessionStateForSessionReplay(sessionId)
+        // Session Replay follows the active session only, so it doesn't alternate between the two sessions' ids
+        if (isActive) {
+            updateSessionStateForSessionReplay(sessionId)
+        }
     }
 
     @WorkerThread

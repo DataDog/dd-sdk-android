@@ -348,7 +348,6 @@ internal class RumSessionRenewalAlwaysFullViewTest {
         assertThat(viewId(restartedView)).isNotEqualTo(viewId(oldView))
     }
 
-    @Disabled("RUM-19967: a stopped session that still has pending events renews itself on the next interaction")
     @Test
     fun `M start a single new session W stopSession() + addAction() {pending resource, after inactivity timeout}`(
         @StringForgery fakeResourceKey: String,
@@ -368,6 +367,53 @@ internal class RumSessionRenewalAlwaysFullViewTest {
         val (_, newSessionId) = trackedSessionIds(expectedCount = 2)
         RumEventAssert.assertThat(singleEvent(type = "action", sessionId = newSessionId))
             .hasActionName(fakeActionName)
+    }
+
+    @Test
+    fun `M record the action only in the new session W stopSession() + addAction() {background tracking}`(
+        @StringForgery fakeResourceKey: String,
+        @StringForgery(regex = "https://[a-z]+\\.com/[a-z]+") fakeResourceUrl: String
+    ) {
+        // Given
+        val rumMonitor = enableRum { trackBackgroundEvents(true) }
+        rumMonitor.startView(fakeViewKey, fakeViewName)
+        rumMonitor.startResource(fakeResourceKey, RumResourceMethod.GET, fakeResourceUrl)
+
+        // When
+        rumMonitor.stopSession()
+        rumMonitor.addAction(RumActionType.CUSTOM, fakeActionName)
+
+        // Then
+        val (oldSessionId, newSessionId) = trackedSessionIds(expectedCount = 2)
+        assertThat(eventsOfType("action")).hasSize(1)
+        RumEventAssert.assertThat(singleEvent(type = "action", sessionId = newSessionId))
+            .hasActionName(fakeActionName)
+        assertThat(eventsInSession(oldSessionId).map { it.getString("view.url") }).doesNotContain(BACKGROUND_VIEW_URL)
+    }
+
+    @Test
+    fun `M notify Session Replay of the new session only W stopSession() + addAction() + addError()`(
+        @StringForgery fakeResourceKey: String,
+        @StringForgery(regex = "https://[a-z]+\\.com/[a-z]+") fakeResourceUrl: String,
+        @StringForgery fakeErrorMessage: String
+    ) {
+        // Given
+        stubSdkCore.stubFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
+        val rumMonitor = enableRum()
+        rumMonitor.startView(fakeViewKey, fakeViewName)
+        rumMonitor.startResource(fakeResourceKey, RumResourceMethod.GET, fakeResourceUrl)
+
+        // When
+        rumMonitor.stopSession()
+        rumMonitor.addAction(RumActionType.CUSTOM, fakeActionName)
+        rumMonitor.addError(fakeErrorMessage, RumErrorSource.SOURCE, null)
+
+        // Then
+        val (oldSessionId, newSessionId) = trackedSessionIds(expectedCount = 2)
+        val notifiedSessionIds = stubSdkCore.eventsReceived(Feature.SESSION_REPLAY_FEATURE_NAME)
+            .mapNotNull { (it as? Map<*, *>)?.get(SESSION_REPLAY_SESSION_ID_KEY) }
+        assertThat(notifiedSessionIds).contains(oldSessionId)
+        assertThat(notifiedSessionIds.dropWhile { it != newSessionId }).containsOnly(newSessionId)
     }
 
     // endregion
@@ -448,6 +494,10 @@ internal class RumSessionRenewalAlwaysFullViewTest {
         private val ACTION_INTERVAL_MS = TimeUnit.MINUTES.toMillis(10)
 
         private const val HTTP_OK = 200
+
+        // Mirror internal constants of the RUM module, which aren't visible from this module
+        private const val SESSION_REPLAY_SESSION_ID_KEY = "sessionId"
+        private const val BACKGROUND_VIEW_URL = "com/datadog/background/view"
 
         private val mainLooper = MainLooperTestConfiguration()
 
