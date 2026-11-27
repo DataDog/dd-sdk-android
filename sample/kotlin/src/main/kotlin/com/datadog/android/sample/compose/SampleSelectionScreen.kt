@@ -55,31 +55,31 @@ internal fun SampleSelectionScreen(
     )
     // PoC Phase 3 — tag the screen body so it appears as a child span under "firstRendered".
     DatadogTrace(tag = "buttons_page") {
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            modifier = Modifier.padding(DefaultPadding),
-            text = "Jetpack Compose Sample",
-            style = MaterialTheme.typography.h6
-        )
-        DatadogTrace(tag = "button_home_screen") {
-            StyledButton(
-                text = "Home Screen Demo (Vitals PoC)",
-                onClick = onHomeClicked
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                modifier = Modifier.padding(DefaultPadding),
+                text = "Jetpack Compose Sample",
+                style = MaterialTheme.typography.h6
             )
+            DatadogTrace(tag = "button_home_screen") {
+                StyledButton(
+                    text = "Home Screen Demo (Vitals PoC)",
+                    onClick = onHomeClicked
+                )
+            }
+            DatadogTrace(tag = "button_typography") {
+                StyledButton(
+                    text = "Typography Sample",
+                    onClick = onTypographyClicked
+                )
+            }
+            samples.forEach { (text, onClick) ->
+                StyledButton(text = text, onClick = onClick)
+            }
         }
-        DatadogTrace(tag = "button_typography") {
-            StyledButton(
-                text = "Typography Sample",
-                onClick = onTypographyClicked
-            )
-        }
-        samples.forEach { (text, onClick) ->
-            StyledButton(text = text, onClick = onClick)
-        }
-    }
     }
 }
 

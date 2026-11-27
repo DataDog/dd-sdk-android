@@ -7,6 +7,7 @@
 package com.datadog.android.sample.compose
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
@@ -16,11 +17,13 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.sessionreplay.compose.datadogComposeTag
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
@@ -123,8 +126,8 @@ internal class FirstRenderController(
         Log.i(
             TAG,
             "First render complete for screen '$screenName' in " +
-                    "${(endNanos - startNanos) / NANOS_PER_MILLI}ms — " +
-                    "${compositions.size} composition / ${renders.size} render spans"
+                "${(endNanos - startNanos) / NANOS_PER_MILLI}ms — " +
+                "${compositions.size} composition / ${renders.size} render spans"
         )
     }
 
@@ -149,6 +152,7 @@ internal class FirstRenderController(
                 .withResourceName(interval.tag)
                 .withParentSpan(parent)
                 .withStartTimestamp(toMicros(interval.startNanos))
+                .withTag(TAG_PERMANENT_ID, composePermanentId(interval.tag))
                 .start()
                 .finish(toMicros(interval.endNanos))
         }
@@ -205,6 +209,12 @@ internal class FirstRenderController(
         const val OP_RENDER = "ui.render"
         const val COMPOSITION_RESOURCE = "Jetpack Compose Initial Composition"
         const val RENDERING_RESOURCE = "Jetpack Compose Initial Render"
+
+        const val TAG_PERMANENT_ID = "ui.compose.permanent_id"
+        private const val PERMANENT_ID_PREFIX = "compose:"
+
+        /** Mirrors `composePermanentIdFor` in the Session Replay Compose recorder. */
+        fun composePermanentId(tag: String): String = "$PERMANENT_ID_PREFIX$tag"
     }
 }
 
@@ -261,14 +271,26 @@ internal fun DatadogTrace(
     val compositionStartNs = System.nanoTime()
 
     Box(
-        modifier = modifier.drawWithContent {
-            val renderStartNs = if (!firstRendered.item) System.nanoTime() else 0L
-            drawContent()
-            if (!firstRendered.item) {
-                firstRendered.item = true
-                controller?.recordRender(tag, renderStartNs, System.nanoTime())
-            }
-        },
+        modifier = modifier
+            .datadogComposeTag(tag)
+            // A tagged Box that draws nothing of its own (no background, no border)
+            // produces zero wireframes from the Compose Session Replay recorder, which
+            // means `stampComposeTagIfPresent` in `RootSemanticsNodeMapper` has nothing
+            // to attach `permanentId` to and silently no-ops. A fully transparent
+            // background still registers as a `BackgroundElement` in the modifier chain
+            // (`BackgroundResolver.resolveBackgroundInfo` adds an entry regardless of
+            // color; the color only resolves to "invisible" downstream in
+            // `AbstractSemanticsNodeMapper.convertColor`), so this guarantees exactly
+            // one stampable wireframe without drawing anything visible.
+            .background(Color.Transparent)
+            .drawWithContent {
+                val renderStartNs = if (!firstRendered.item) System.nanoTime() else 0L
+                drawContent()
+                if (!firstRendered.item) {
+                    firstRendered.item = true
+                    controller?.recordRender(tag, renderStartNs, System.nanoTime())
+                }
+            },
         propagateMinConstraints = true
     ) {
         content()

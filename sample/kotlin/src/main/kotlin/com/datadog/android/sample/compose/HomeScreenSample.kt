@@ -6,7 +6,10 @@
 
 package com.datadog.android.sample.compose
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +32,9 @@ import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
+import androidx.compose.material.SnackbarHost
+import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -39,6 +45,11 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +58,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 /**
  * A realistic monitoring-dashboard home screen used to exercise the DatadogVital span PoC.
@@ -76,23 +88,63 @@ import androidx.compose.ui.unit.sp
  */
 @Composable
 internal fun HomeScreenSample() {
+    val alerts = remember { recentAlerts.toMutableStateList() }
+    val actionTapCounts = remember { mutableStateMapOf<QuickAction, Int>() }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     DatadogFirstRenderRoot(screenName = "HomeScreen") {
-        DatadogTrace(tag = "home_root") {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp)
-            ) {
-                item { HomeHeader() }
-                item { Spacer(modifier = Modifier.height(12.dp)) }
-                item { SystemStatusBanner() }
-                item { Spacer(modifier = Modifier.height(16.dp)) }
-                item { StatsRow() }
-                item { Spacer(modifier = Modifier.height(16.dp)) }
-                item { QuickActionsGrid() }
-                item { Spacer(modifier = Modifier.height(16.dp)) }
-                item { RecentAlertsSection() }
-                item { Spacer(modifier = Modifier.height(16.dp)) }
-                item { FeaturedDashboardsSection() }
+        Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        ) { padding ->
+            DatadogTrace(tag = "home_root") {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    item { HomeHeader() }
+                    item { Spacer(modifier = Modifier.height(12.dp)) }
+                    item { SystemStatusBanner() }
+                    item { Spacer(modifier = Modifier.height(16.dp)) }
+                    item { StatsRow() }
+                    item { Spacer(modifier = Modifier.height(16.dp)) }
+                    item {
+                        QuickActionsGrid(
+                            tapCounts = actionTapCounts,
+                            onActionTapped = { action ->
+                                actionTapCounts[action] = (actionTapCounts[action] ?: 0) + 1
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Opening ${action.label}…")
+                                }
+                            }
+                        )
+                    }
+                    item { Spacer(modifier = Modifier.height(16.dp)) }
+                    item {
+                        RecentAlertsSection(
+                            alerts = alerts,
+                            onAcknowledge = { alert ->
+                                val index = alerts.indexOf(alert)
+                                if (index >= 0) {
+                                    alerts.removeAt(index)
+                                    scope.launch {
+                                        val result = snackbarHostState.showSnackbar(
+                                            message = "Acknowledged: ${alert.title}",
+                                            actionLabel = "Undo"
+                                        )
+                                        if (result == androidx.compose.material.SnackbarResult.ActionPerformed) {
+                                            alerts.add(index.coerceAtMost(alerts.size), alert)
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    }
+                    item { Spacer(modifier = Modifier.height(16.dp)) }
+                    item { FeaturedDashboardsSection() }
+                }
             }
         }
     }
@@ -290,7 +342,10 @@ private val quickActions = listOf(
 )
 
 @Composable
-private fun QuickActionsGrid() {
+private fun QuickActionsGrid(
+    tapCounts: MutableMap<QuickAction, Int>,
+    onActionTapped: (QuickAction) -> Unit
+) {
     DatadogTrace(tag = "quick_actions") {
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Text(
@@ -308,7 +363,11 @@ private fun QuickActionsGrid() {
                         tag = action.tag,
                         modifier = Modifier.weight(1f)
                     ) {
-                        QuickActionTile(action = action)
+                        QuickActionTile(
+                            action = action,
+                            tapCount = tapCounts[action] ?: 0,
+                            onTapped = { onActionTapped(action) }
+                        )
                     }
                 }
             }
@@ -317,11 +376,22 @@ private fun QuickActionsGrid() {
 }
 
 @Composable
-private fun QuickActionTile(action: QuickAction) {
+private fun QuickActionTile(
+    action: QuickAction,
+    tapCount: Int,
+    onTapped: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
     Card(
         shape = RoundedCornerShape(12.dp),
         elevation = 2.dp,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onTapped
+            )
     ) {
         Column(
             modifier = Modifier.padding(vertical = 14.dp, horizontal = 8.dp),
@@ -340,6 +410,24 @@ private fun QuickActionTile(action: QuickAction) {
                     tint = action.color,
                     modifier = Modifier.size(20.dp)
                 )
+                if (tapCount > 0) {
+                    Surface(
+                        shape = CircleShape,
+                        color = action.color,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(16.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = tapCount.coerceAtMost(9).toString(),
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
@@ -368,7 +456,10 @@ private val recentAlerts = listOf(
 )
 
 @Composable
-private fun RecentAlertsSection() {
+private fun RecentAlertsSection(
+    alerts: SnapshotStateList<AlertItem>,
+    onAcknowledge: (AlertItem) -> Unit
+) {
     DatadogTrace(tag = "recent_alerts") {
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Row(
@@ -392,13 +483,31 @@ private fun RecentAlertsSection() {
                 shape = RoundedCornerShape(12.dp),
                 elevation = 2.dp
             ) {
-                Column {
-                    recentAlerts.forEachIndexed { index, alert ->
-                        DatadogTrace(tag = "alert_item_$index") {
-                            AlertRow(alert = alert)
-                        }
-                        if (index < recentAlerts.lastIndex) {
-                            Divider(modifier = Modifier.padding(horizontal = 16.dp))
+                if (alerts.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No active alerts",
+                            style = MaterialTheme.typography.body2,
+                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                } else {
+                    Column {
+                        alerts.forEachIndexed { index, alert ->
+                            DatadogTrace(tag = "alert_item_$index") {
+                                AlertRow(
+                                    alert = alert,
+                                    onAcknowledge = { onAcknowledge(alert) }
+                                )
+                            }
+                            if (index < alerts.lastIndex) {
+                                Divider(modifier = Modifier.padding(horizontal = 16.dp))
+                            }
                         }
                     }
                 }
@@ -408,10 +517,19 @@ private fun RecentAlertsSection() {
 }
 
 @Composable
-private fun AlertRow(alert: AlertItem) {
+private fun AlertRow(
+    alert: AlertItem,
+    onAcknowledge: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onAcknowledge
+            )
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

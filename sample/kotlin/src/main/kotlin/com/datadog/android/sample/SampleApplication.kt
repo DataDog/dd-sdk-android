@@ -317,7 +317,6 @@ class SampleApplication : Application() {
     }
 
     private fun initializeSessionReplay() {
-        val shouldUseFgm = SecureRandom().nextInt(100) < USE_FGM_PCT
         val systemRequirementsConfiguration = SystemRequirementsConfiguration.Builder()
             .setMinRAMSizeMb(1024)
             .setMinCPUCoreNumber(1)
@@ -329,11 +328,12 @@ class SampleApplication : Application() {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
                 }
 
-                if (shouldUseFgm) {
-                    useFgmConfiguration(this)
-                } else {
-                    useLegacyConfiguration(this)
-                }
+                // Compose Render Trace POC: the screenshot pane is unusable when text is
+                // masked, so privacy is pinned rather than sampled. Restore the
+                // shouldUseFgm branch when the POC is done.
+                setImagePrivacy(ImagePrivacy.MASK_NONE)
+                setTouchPrivacy(TouchPrivacy.SHOW)
+                setTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
             }
             .addExtensionSupport(MaterialExtensionSupport())
             .addExtensionSupport(ComposeExtensionSupport())
@@ -343,6 +343,9 @@ class SampleApplication : Application() {
         SessionReplay.enable(sessionReplayConfig)
     }
 
+    // Unused while the Compose Render Trace POC pins privacy; kept so restoring the sampled
+    // behaviour is a one-line change in initializeSessionReplay().
+    @Suppress("UnusedPrivateMember")
     private fun useFgmConfiguration(builder: SessionReplayConfiguration.Builder) {
         val shouldMaskAll = SecureRandom().nextInt(100) < MASK_SESSION_PCT // 25%
 
@@ -369,7 +372,8 @@ class SampleApplication : Application() {
         builder.setTextAndInputPrivacy(textAndInputPrivacy)
     }
 
-    @Suppress("Deprecation")
+    // Unused while the Compose Render Trace POC pins privacy; see useFgmConfiguration.
+    @Suppress("Deprecation", "UnusedPrivateMember")
     private fun useLegacyConfiguration(builder: SessionReplayConfiguration.Builder) {
         if (SecureRandom().nextInt(100) <= SESSION_REPLAY_PRIVACY_SAMPLING) {
             builder.setPrivacy(SessionReplayPrivacy.ALLOW)
@@ -500,6 +504,8 @@ class SampleApplication : Application() {
     }
 
     companion object {
+        // Unused while the Compose Render Trace POC pins privacy; see useFgmConfiguration.
+        @Suppress("UnusedPrivateProperty")
         private const val USE_FGM_PCT = 10
         private const val SAMPLE_IN_ALL_SESSIONS = 100f
         private const val MASK_SESSION_PCT = 25
