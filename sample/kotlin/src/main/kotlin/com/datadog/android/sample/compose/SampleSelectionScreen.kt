@@ -37,10 +37,10 @@ internal fun SampleSelectionScreen(
     onInteropViewClicked: () -> Unit,
     onNav3Clicked: () -> Unit,
     onBackgroundClicked: () -> Unit,
-    onNestedDialogsClicked: () -> Unit
+    onNestedDialogsClicked: () -> Unit,
+    onHomeClicked: () -> Unit = {}
 ) {
     val samples = listOf(
-        "Typography Sample" to onTypographyClicked,
         "Image Sample" to onImageClicked,
         "Input Sample" to onInputClicked,
         "Toggle Buttons Sample" to onToggleClicked,
@@ -53,6 +53,8 @@ internal fun SampleSelectionScreen(
         "Backgrounds" to onBackgroundClicked,
         "Nested Dialogs Sample" to onNestedDialogsClicked
     )
+    // PoC Phase 3 — tag the screen body so it appears as a child span under "firstRendered".
+    DatadogTrace(tag = "buttons_page") {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -62,9 +64,22 @@ internal fun SampleSelectionScreen(
             text = "Jetpack Compose Sample",
             style = MaterialTheme.typography.h6
         )
+        DatadogTrace(tag = "button_home_screen") {
+            StyledButton(
+                text = "Home Screen Demo (Vitals PoC)",
+                onClick = onHomeClicked
+            )
+        }
+        DatadogTrace(tag = "button_typography") {
+            StyledButton(
+                text = "Typography Sample",
+                onClick = onTypographyClicked
+            )
+        }
         samples.forEach { (text, onClick) ->
             StyledButton(text = text, onClick = onClick)
         }
+    }
     }
 }
 
@@ -87,6 +102,9 @@ private fun StyledButton(
 internal fun NavGraphBuilder.selectionNavigation(navController: NavHostController) {
     composable(SampleScreen.Root.navigationRoute) {
         SampleSelectionScreen(
+            onHomeClicked = {
+                navController.navigate(SampleScreen.Home.navigationRoute)
+            },
             onTypographyClicked = {
                 navController.navigate(SampleScreen.Typography.navigationRoute)
             },
@@ -124,6 +142,10 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
                 navController.navigate(SampleScreen.NestedDialogs.navigationRoute)
             }
         )
+    }
+
+    composable(SampleScreen.Home.navigationRoute) {
+        HomeScreenSample()
     }
 
     composable(SampleScreen.Typography.navigationRoute) {
@@ -180,6 +202,7 @@ internal sealed class SampleScreen(
 ) {
 
     object Root : SampleScreen(COMPOSE_ROOT)
+    object Home : SampleScreen("$COMPOSE_ROOT/home")
     object Typography : SampleScreen("$COMPOSE_ROOT/typography")
     object Image : SampleScreen("$COMPOSE_ROOT/image")
     object Input : SampleScreen("$COMPOSE_ROOT/input")
