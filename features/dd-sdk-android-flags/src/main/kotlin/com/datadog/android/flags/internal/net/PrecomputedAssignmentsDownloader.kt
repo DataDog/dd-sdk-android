@@ -96,7 +96,8 @@ internal class PrecomputedAssignmentsDownloader(
                         ?.let { if (credentialUsed) REDACTED_REASON else FlagSelectionIgnoredReason.sanitize(it) }
                 } else {
                     null
-                }
+                },
+                etag = response.header(HEADER_ETAG)?.takeIf(String::isNotEmpty)
             )
         }
     } else {
@@ -140,6 +141,7 @@ internal class PrecomputedAssignmentsDownloader(
 
     private companion object {
         const val HEADER_FLAG_SELECTION_IGNORED = "DD-Flag-Selection-Ignored"
+        const val HEADER_ETAG = "ETag"
         const val HTTP_UNAUTHORIZED = 401
         const val MAX_ERROR_BODY_BYTES = 64L * 1024L
         const val REDACTED_REASON = "redacted"
