@@ -7,9 +7,11 @@ add_library(
         datadog-ndk-test
         SHARED
         integration-tests.cpp
+        test-backtrace-limits.cpp
         test-crash-log.cpp
         test-datetime-utils.cpp
         test-format-utils.cpp
+        test-fp-unwinder.cpp
         test-generate-backtrace.cpp
         test-signal-monitor.cpp
         test-utils.cpp

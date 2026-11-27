@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "android/log.h"
+#include "backtrace-handler.h"
 #include "datetime-utils.h"
 #include "file-utils.h"
 #include "signal-monitor.h"
@@ -35,6 +36,11 @@ static const uint8_t tracking_consent_granted = 1;
 static uint8_t tracking_consent = tracking_consent_pending; // 0 - PENDING, 1 - GRANTED, 2 - NOT-GRANTED
 static uint64_t global_app_start_time_millis = 0;
 
+// The serialized crash report is built here rather than on the stack: it is written from the
+// signal handler, which runs on a small alternate signal stack, and the report (mostly the stack
+// trace, up to max_stack_size) can be tens of kilobytes. Only used while holding handler_mutex.
+static char serialized_report[max_serialized_report_size];
+
 #ifndef NDEBUG
 
 void lockMutex() {
@@ -47,17 +53,33 @@ void unlockMutex() {
 
 #endif
 
-std::string serialize_crash_report(int signum, uint64_t timestamp, const char* signal_name, const char* error_message, const char* error_stacktrace) {
-    static const char* json_formatter = R"({"signal":%s,"timestamp":%s,"time_since_app_start_ms":%s,"signal_name":"%s","message":"%s","stacktrace":"%s"})";
+/**
+ * Writes the crash report as JSON into the given buffer.
+ * @return the length of the report, or 0 if it does not fit in the buffer (the buffer's content
+ * must then not be used).
+ */
+size_t serialize_crash_report(char *buffer,
+                              size_t buffer_size,
+                              int signum,
+                              uint64_t timestamp,
+                              const char *signal_name,
+                              const char *error_message,
+                              const char *error_stacktrace) {
+    static const char *json_formatter = R"({"signal":%d,"timestamp":%llu,"time_since_app_start_ms":%llu,"signal_name":"%s","message":"%s","stacktrace":"%s"})";
     const uint64_t time_since_app_start = timestamp - global_app_start_time_millis;
-    std::string serialized_log = stringutils::format(json_formatter,
-                                                     std::to_string(signum).c_str(),
-                                                     std::to_string(timestamp).c_str(),
-                                                     std::to_string(time_since_app_start).c_str(),
-                                                     signal_name,
-                                                     error_message,
-                                                     error_stacktrace);
-    return serialized_log;
+    const int length = snprintf(buffer,
+                                buffer_size,
+                                json_formatter,
+                                signum,
+                                static_cast<unsigned long long>(timestamp),
+                                static_cast<unsigned long long>(time_since_app_start),
+                                signal_name,
+                                error_message,
+                                error_stacktrace);
+    if (length < 0 || static_cast<size_t>(length) >= buffer_size) {
+        return 0;
+    }
+    return static_cast<size_t>(length);
 }
 
 void write_crash_report(int signum,
@@ -98,15 +120,27 @@ void write_crash_report(int signum,
     // serialize the log
     const string file_path = main_context.storage_dir + "/" + crash_log_filename;
     const uint64_t timestamp = time_since_epoch();
-    const std::string serialized_log = serialize_crash_report(signum, timestamp, signal_name, error_message, error_stacktrace);
+    const size_t serialized_length = serialize_crash_report(serialized_report,
+                                                            sizeof(serialized_report),
+                                                            signum,
+                                                            timestamp,
+                                                            signal_name,
+                                                            error_message,
+                                                            error_stacktrace);
+    if (serialized_length == 0) {
+        __android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
+                            "The crash report does not fit in its buffer");
+        pthread_mutex_unlock(&handler_mutex);
+        return;
+    }
 
     // Atomic write+fsync via temp file: avoids torn/zero-filled crash logs when the
     // process dies between buffer flush and disk flush.
     const std::string tmp_path = file_path + ".tmp";
     const int fd = ::open(tmp_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd >= 0) {
-        const char *data = serialized_log.data();
-        size_t remaining = serialized_log.size();
+        const char *data = serialized_report;
+        size_t remaining = serialized_length;
         bool write_ok = true;
         while (remaining > 0) {
             const ssize_t written = ::write(fd, data, remaining);
