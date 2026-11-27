@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+results_*.csv
+bench_*.log
+*.pftrace
+.venv/
