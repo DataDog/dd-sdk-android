@@ -88,11 +88,14 @@ internal class CsvCollector(
             sessionType: RumSessionType,
             bufferSize: Int,
             timeProvider: TimeProvider,
+            serverTimeOffsetNs: Long,
             forge: Forge,
             internalLogger: InternalLogger
         ): CsvCollector {
             val rumContext = forge.getForgery<RumContext>()
-            val datadogContext = forge.getForgery<DatadogContext>()
+            val datadogContext = forge.getForgery<DatadogContext>().let {
+                it.copy(time = it.time.copy(serverTimeOffsetNs = serverTimeOffsetNs))
+            }
             val batteryInfo = forge.getForgery<BatteryInfo>()
             val displayInfo = forge.getForgery<DisplayInfo>()
 
@@ -106,7 +109,6 @@ internal class CsvCollector(
                         Buffer(bufferSize),
                         MemoryEventFactory(
                             sessionType = sessionType,
-                            timeProvider = timeProvider,
                             batteryInfoProvider = FixedInfoProvider(batteryInfo),
                             displayInfoProvider = FixedInfoProvider(displayInfo),
                             internalLogger = internalLogger
@@ -117,7 +119,6 @@ internal class CsvCollector(
                         Buffer(bufferSize),
                         CpuEventFactory(
                             sessionType = sessionType,
-                            timeProvider = timeProvider,
                             batteryInfoProvider = FixedInfoProvider(batteryInfo),
                             displayInfoProvider = FixedInfoProvider(displayInfo),
                             internalLogger = internalLogger

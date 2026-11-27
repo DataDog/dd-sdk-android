@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.rum.RumContext
-import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -26,11 +25,11 @@ import com.datadog.android.rum.internal.timeseries.DataPoint
 import com.datadog.android.rum.internal.toTimeseriesCpuSessionType
 import com.datadog.android.rum.model.TimeseriesCpuEvent
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 internal class CpuEventFactory(
     private val sessionType: RumSessionType,
-    private val timeProvider: TimeProvider,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val internalLogger: InternalLogger,
@@ -48,6 +47,9 @@ internal class CpuEventFactory(
         if (dataPoints.isEmpty()) return null
 
         val deviceInfo = datadogContext.deviceInfo
+        val timestampsNs = datadogContext.toServerTimestampsNs(dataPoints)
+        val startNs = timestampsNs.firstOrNull() ?: 0L
+        val endNs = timestampsNs.lastOrNull() ?: 0L
         val syntheticsTestId = rumContext.syntheticsTestId
         val syntheticsResultId = rumContext.syntheticsResultId
         val syntheticsAttribute = if (
@@ -89,7 +91,7 @@ internal class CpuEventFactory(
             ),
             synthetics = syntheticsAttribute,
             source = TimeseriesCpuEvent.Source.tryFromSource(datadogContext.source, internalLogger),
-            date = timeProvider.getServerTimestampMillis(),
+            date = TimeUnit.NANOSECONDS.toMillis(startNs),
             version = datadogContext.version,
             service = datadogContext.service,
             buildVersion = datadogContext.versionCode.toString(),
@@ -102,10 +104,10 @@ internal class CpuEventFactory(
             ),
             timeseries = TimeseriesCpuEvent.Timeseries(
                 id = UUID.randomUUID().toString(),
-                start = dataPoints.firstOrNull()?.timestampNs ?: 0L,
-                end = dataPoints.lastOrNull()?.timestampNs ?: 0L,
+                start = startNs,
+                end = endNs,
                 data = TimeseriesCpuEvent.Data(
-                    timestamps = dataPoints.map { it.timestampNs },
+                    timestamps = timestampsNs,
                     values = TimeseriesCpuEvent.Values(dataPoints.map { it.value })
                 )
             )

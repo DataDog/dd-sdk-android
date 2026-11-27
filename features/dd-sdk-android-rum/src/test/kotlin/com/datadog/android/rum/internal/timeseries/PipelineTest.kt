@@ -500,7 +500,7 @@ internal class PipelineTest {
         assertThat(batchesBeforeFlush.map { it.size })
             .describedAs("batches drained by execute() are always exactly one buffer worth")
             .containsOnly(fakeBufferSize)
-        assertThat(batches.flatten().map { it.timestampNs }.sorted())
+        assertThat(batches.flatten().map { it.deviceTimestampNs }.sorted())
             .isEqualTo((1L..counter.get()).toList())
     }
 
@@ -523,7 +523,7 @@ internal class PipelineTest {
         testedPipeline.flush(fakeRumContext)
 
         // Then
-        assertThat(batches.flatten().map { it.timestampNs }.sorted())
+        assertThat(batches.flatten().map { it.deviceTimestampNs }.sorted())
             .isEqualTo((1L..counter.get()).toList())
     }
 

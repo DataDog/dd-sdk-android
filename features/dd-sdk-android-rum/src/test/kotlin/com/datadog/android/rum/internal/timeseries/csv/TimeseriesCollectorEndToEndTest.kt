@@ -24,9 +24,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -45,13 +43,12 @@ internal class TimeseriesCollectorEndToEndTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn FIXED_DATE_MS
-
         val testedTimeseriesCollector = CsvCollector.create(
             csvContent = loadResource("fixtures/timeseries/input_memory_cpu.csv"),
             sessionType = RumSessionType.USER,
             bufferSize = BATCH_SIZE,
             timeProvider = mockTimeProvider,
+            serverTimeOffsetNs = SERVER_TIME_OFFSET_NS,
             forge = forge,
             internalLogger = mock()
         )
@@ -148,8 +145,8 @@ internal class TimeseriesCollectorEndToEndTest {
     }
 
     private companion object {
-        private const val FIXED_DATE_MS: Long = 1_700_000_001_000L
         private const val BATCH_SIZE: Int = 5
+        private const val SERVER_TIME_OFFSET_NS: Long = 250_000_000L
         private fun loadExpectedMemoryTimeseries(path: String): TimeseriesMemoryEvent =
             TimeseriesMemoryEvent.fromJson(loadResource(path))
 

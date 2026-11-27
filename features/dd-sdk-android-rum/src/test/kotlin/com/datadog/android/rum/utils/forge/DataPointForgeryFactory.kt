@@ -12,7 +12,7 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class DataPointForgeryFactory : ForgeryFactory<DataPoint<Double>> {
     override fun getForgery(forge: Forge): DataPoint<Double> = DataPoint(
-        timestampNs = forge.aPositiveLong(),
+        deviceTimestampNs = forge.aPositiveLong(),
         value = forge.aDouble()
     )
 }

@@ -12,7 +12,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.rum.RumSessionStartReason
-import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.TimeseriesMemoryEventAssert
 import com.datadog.android.rum.internal.FeaturesContextResolver
@@ -49,6 +48,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -57,9 +57,6 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class MemoryEventFactoryTest {
-
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -76,8 +73,8 @@ internal class MemoryEventFactoryTest {
     @StringForgery
     lateinit var fakeApplicationId: String
 
-    @LongForgery(min = 1L)
-    var fakeNowMs: Long = 0L
+    @LongForgery(min = -MAX_SERVER_TIME_OFFSET_NS, max = MAX_SERVER_TIME_OFFSET_NS)
+    var fakeServerTimeOffsetNs: Long = 0L
 
     @FloatForgery(min = 0f, max = 1f)
     var fakeBatteryLevel: Float = 0f
@@ -104,13 +101,13 @@ internal class MemoryEventFactoryTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeDataPoints = forge.aList(size = forge.anInt(min = 1, max = MAX_DATA_POINTS)) {
-            DataPoint(aPositiveLong(), getForgery<MemorySnapshot>())
+            DataPoint(aLong(min = MIN_TIMESTAMP_NS, max = MAX_TIMESTAMP_NS), getForgery<MemorySnapshot>())
         }
         fakeSource = forge.aNullable { aValueFrom(TimeseriesMemoryEvent.Source::class.java) }
         fakeDatadogContext = fakeDatadogContext.copy(
-            source = fakeSource?.toJson()?.asString ?: forge.anAlphabeticalString()
+            source = fakeSource?.toJson()?.asString ?: forge.anAlphabeticalString(),
+            time = fakeDatadogContext.time.copy(serverTimeOffsetNs = fakeServerTimeOffsetNs)
         )
-        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn fakeNowMs
         whenever(stubBatteryInfoProvider.getState()) doReturn BatteryInfo(
             batteryLevel = fakeBatteryLevel,
             lowPowerMode = fakeLowPowerMode
@@ -122,7 +119,6 @@ internal class MemoryEventFactoryTest {
         sessionType: RumSessionType = RumSessionType.USER
     ) = MemoryEventFactory(
         sessionType = sessionType,
-        timeProvider = mockTimeProvider,
         batteryInfoProvider = stubBatteryInfoProvider,
         displayInfoProvider = stubDisplayInfoProvider,
         internalLogger = mockInternalLogger
@@ -141,7 +137,7 @@ internal class MemoryEventFactoryTest {
     fun `M fill timeseries W create() { multiple data points }`(
         @Forgery fakeFirstSnapshot: MemorySnapshot,
         @Forgery fakeSecondSnapshot: MemorySnapshot,
-        @LongForgery(min = 1L) fakeTs: Long
+        @LongForgery(min = MIN_TIMESTAMP_NS, max = MAX_TIMESTAMP_NS) fakeTs: Long
     ) {
         // Given
         val samples = listOf(
@@ -156,16 +152,34 @@ internal class MemoryEventFactoryTest {
         TimeseriesMemoryEventAssert.assertThat(event)
             .hasTimeseriesName(VALUE_NAME_MEMORY)
             .hasTimeseriesSchema(VALUE_SCHEMA_OBJECT)
-            .hasDate(fakeNowMs)
+            .hasDate(TimeUnit.NANOSECONDS.toMillis(fakeTs + fakeServerTimeOffsetNs))
             .hasValidTimeseriesId()
             .hasDataPointsCount(2)
-            .hasTimeseriesStart(fakeTs)
-            .hasTimeseriesEnd(fakeTs + 1L)
+            .hasTimeseriesStart(fakeTs + fakeServerTimeOffsetNs)
+            .hasTimeseriesEnd(fakeTs + 1L + fakeServerTimeOffsetNs)
             .hasApplicationId(fakeApplicationId)
             .hasSessionId(fakeSessionId)
             .hasSessionType(TimeseriesMemoryEventSessionType.USER)
             .hasService(fakeDatadogContext.service)
             .hasVersion(fakeDatadogContext.version)
+    }
+
+    @Test
+    fun `M use the first sample as date W create() { samples one second apart }`(
+        @Forgery fakeSnapshot: MemorySnapshot,
+        @LongForgery(min = MIN_TIMESTAMP_NS, max = MAX_TIMESTAMP_NS) fakeTs: Long
+    ) {
+        // Given
+        val samples = listOf(
+            DataPoint(fakeTs, fakeSnapshot),
+            DataPoint(fakeTs + TimeUnit.SECONDS.toNanos(1), fakeSnapshot)
+        )
+
+        // When
+        val event = createSerializedEvent(dataPoints = samples)
+
+        // Then
+        assertThat(event.date).isEqualTo(TimeUnit.NANOSECONDS.toMillis(fakeTs + fakeServerTimeOffsetNs))
     }
 
     @Test
@@ -188,7 +202,7 @@ internal class MemoryEventFactoryTest {
     fun `M fill memory values W create() { one value per data point }`(
         @Forgery fakeFirstSnapshot: MemorySnapshot,
         @Forgery fakeSecondSnapshot: MemorySnapshot,
-        @LongForgery(min = 1L) fakeTs: Long
+        @LongForgery(min = MIN_TIMESTAMP_NS, max = MAX_TIMESTAMP_NS) fakeTs: Long
     ) {
         // Given
         val samples = listOf(
@@ -204,7 +218,7 @@ internal class MemoryEventFactoryTest {
             .hasDataPointsCount(2)
             .hasMemoryFootprint(fakeFirstSnapshot.footprintKib, fakeSecondSnapshot.footprintKib)
             .hasMemoryNonResident(fakeFirstSnapshot.nonResidentKib, fakeSecondSnapshot.nonResidentKib)
-            .hasTimestamps(fakeTs, fakeTs + 1L)
+            .hasTimestamps(fakeTs + fakeServerTimeOffsetNs, fakeTs + 1L + fakeServerTimeOffsetNs)
     }
 
     @Test
@@ -476,6 +490,9 @@ internal class MemoryEventFactoryTest {
 
     companion object {
         private const val MAX_DATA_POINTS: Int = 16
+        private const val MIN_TIMESTAMP_NS: Long = 1_000_000_000_000_000_000L
+        private const val MAX_TIMESTAMP_NS: Long = 4_000_000_000_000_000_000L
+        private const val MAX_SERVER_TIME_OFFSET_NS: Long = 3_600_000_000_000L
 
         private const val VALUE_NAME_MEMORY: String = "memory"
         private const val VALUE_SCHEMA_OBJECT: String = "object-v2"

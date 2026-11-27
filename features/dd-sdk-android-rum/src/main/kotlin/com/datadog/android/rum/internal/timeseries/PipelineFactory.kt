@@ -51,7 +51,6 @@ internal class PipelineFactory(
         buffer = Buffer(configuration.bufferSize),
         eventFactory = MemoryEventFactory(
             sessionType = sessionType,
-            timeProvider = sdkCore.timeProvider,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             internalLogger = sdkCore.internalLogger
@@ -73,7 +72,6 @@ internal class PipelineFactory(
         buffer = Buffer(configuration.bufferSize),
         eventFactory = CpuEventFactory(
             sessionType = sessionType,
-            timeProvider = sdkCore.timeProvider,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             internalLogger = sdkCore.internalLogger

@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.rum.RumContext
-import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -27,11 +26,11 @@ import com.datadog.android.rum.internal.timeseries.MemorySnapshot
 import com.datadog.android.rum.internal.toTimeseriesMemorySessionType
 import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 internal class MemoryEventFactory(
     private val sessionType: RumSessionType,
-    private val timeProvider: TimeProvider,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val internalLogger: InternalLogger,
@@ -49,6 +48,9 @@ internal class MemoryEventFactory(
         if (dataPoints.isEmpty()) return null
 
         val deviceInfo = datadogContext.deviceInfo
+        val timestampsNs = datadogContext.toServerTimestampsNs(dataPoints)
+        val startNs = timestampsNs.firstOrNull() ?: 0L
+        val endNs = timestampsNs.lastOrNull() ?: 0L
         val syntheticsTestId = rumContext.syntheticsTestId
         val syntheticsResultId = rumContext.syntheticsResultId
         val syntheticsAttribute = if (
@@ -90,7 +92,7 @@ internal class MemoryEventFactory(
             ),
             synthetics = syntheticsAttribute,
             source = TimeseriesMemoryEvent.Source.tryFromSource(datadogContext.source, internalLogger),
-            date = timeProvider.getServerTimestampMillis(),
+            date = TimeUnit.NANOSECONDS.toMillis(startNs),
             version = datadogContext.version,
             service = datadogContext.service,
             buildVersion = datadogContext.versionCode.toString(),
@@ -103,10 +105,10 @@ internal class MemoryEventFactory(
             ),
             timeseries = TimeseriesMemoryEvent.Timeseries(
                 id = UUID.randomUUID().toString(),
-                start = dataPoints.firstOrNull()?.timestampNs ?: 0L,
-                end = dataPoints.lastOrNull()?.timestampNs ?: 0L,
+                start = startNs,
+                end = endNs,
                 data = TimeseriesMemoryEvent.Data(
-                    timestamps = dataPoints.map { it.timestampNs },
+                    timestamps = timestampsNs,
                     values = TimeseriesMemoryEvent.Values(
                         memoryFootprint = dataPoints.map { it.value.footprintKib },
                         memoryNonResident = dataPoints.map { it.value.nonResidentKib }
