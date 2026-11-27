@@ -160,7 +160,7 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
     private val JsonObject.isViewUpdateEventRelatedToApplicationLaunch
         get() = get("type")?.asString == "view_update" &&
             has("view") &&
-            getAsJsonObject("view")["name"]?.asString == "ApplicationLaunch"
+            getAsJsonObject("view")["url"]?.asString == "com/datadog/application-launch/view"
 
     private val JsonObject.isViewEvent
         get() = get("type")?.asString == "view"

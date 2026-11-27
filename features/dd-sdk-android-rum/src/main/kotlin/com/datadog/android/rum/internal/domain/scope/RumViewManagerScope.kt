@@ -111,6 +111,7 @@ internal class RumViewManagerScope(
             !stopped
         ) {
             startApplicationLaunchView(event, datadogContext, writeScope, writer)
+            sendViewUpdateToChildren(event, datadogContext, writeScope, writer)
             return this
         }
 
@@ -198,7 +199,7 @@ internal class RumViewManagerScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
-        val viewScope = createAppLaunchViewScope(event.eventTime)
+        val viewScope = createAppLaunchViewScope(event.applicationStartTime)
         applicationDisplayed = true
         viewScope.handleEvent(event, datadogContext, writeScope, writer)
         childrenScopes.add(viewScope)

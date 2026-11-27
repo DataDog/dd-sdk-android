@@ -19,6 +19,7 @@ import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import java.net.URL
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
 
 internal fun Forge.interactiveRumRawEvent(): RumRawEvent {
@@ -162,9 +163,13 @@ internal fun Forge.addLongTaskEvent(): RumRawEvent.AddLongTask {
 
 internal fun Forge.applicationStartedEvent(): RumRawEvent.ApplicationStarted {
     val time = getForgery<Time>()
+    val startupNanos = aLong(min = 1L, max = time.nanoTime)
     return RumRawEvent.ApplicationStarted(
         eventTime = time,
-        applicationStartupNanos = aLong(min = 0L, max = time.nanoTime)
+        applicationStartTime = Time(
+            timestamp = time.timestamp - TimeUnit.NANOSECONDS.toMillis(startupNanos),
+            nanoTime = time.nanoTime - startupNanos
+        )
     )
 }
 

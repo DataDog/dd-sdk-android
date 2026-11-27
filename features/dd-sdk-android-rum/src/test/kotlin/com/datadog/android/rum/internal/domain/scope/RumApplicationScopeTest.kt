@@ -525,13 +525,11 @@ internal class RumApplicationScopeTest {
                 eq(mockWriter)
             )
             assertThat(firstValue).isInstanceOf(RumRawEvent.ApplicationStarted::class.java)
-            val appStartEventTime = (firstValue as RumRawEvent.ApplicationStarted).eventTime
+            val appStartedEvent = firstValue as RumRawEvent.ApplicationStarted
+            assertThat(appStartedEvent.eventTime).isEqualTo(firstEvent.eventTime)
+            val appStartEventTime = appStartedEvent.applicationStartTime
             assertThat(appStartEventTime.timestamp).isEqualTo(expectedEventTimestamp)
             assertThat(appStartEventTime.nanoTime).isEqualTo(appStartTimeNs)
-
-            val processStartTimeNs =
-                (firstValue as RumRawEvent.ApplicationStarted).applicationStartupNanos
-            assertThat(processStartTimeNs).isEqualTo(firstEvent.eventTime.nanoTime - appStartTimeNs)
 
             assertThat(allValues.filterIsInstance<RumRawEvent.ApplicationStarted>()).hasSize(1)
         }
@@ -618,14 +616,47 @@ internal class RumApplicationScopeTest {
             )
             assertThat(allValues[0]).isSameAs(fakeExpiryCheck)
             val appStartedEvent = allValues[1] as RumRawEvent.ApplicationStarted
-            assertThat(appStartedEvent.applicationStartupNanos)
-                .isEqualTo(fakeEvent.eventTime.nanoTime - appStartTimeNs)
+            assertThat(appStartedEvent.applicationStartTime.nanoTime).isEqualTo(appStartTimeNs)
+            assertThat(appStartedEvent.eventTime).isEqualTo(fakeEvent.eventTime)
             assertThat(allValues[2]).isSameAs(fakeEvent)
         }
     }
 
     @Test
-    fun `M not send ApplicationStarted event W handleEvent { SdkInit event }`(
+    fun `M send ApplicationStarted after SdkInit W handleEvent { foreground }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeSdkInitEvent = RumRawEvent.SdkInit(true, fakeEventTime)
+        val appStartTimeNs = forge.aLong(min = 0, max = fakeEventTime.nanoTime)
+        whenever(mockSdkCore.appStartTimeNs) doReturn appStartTimeNs
+        DdRumContentProvider.processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        whenever(mockChildScope.handleEvent(any(), any(), any(), any())) doReturn mockChildScope
+        testedScope.childScopes.clear()
+        testedScope.childScopes += mockChildScope
+
+        // When
+        testedScope.handleEvent(fakeSdkInitEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<RumRawEvent> {
+            verify(mockChildScope, times(3)).handleEvent(
+                capture(),
+                eq(fakeDatadogContext),
+                eq(mockEventWriteScope),
+                eq(mockWriter)
+            )
+            assertThat(allValues[0]).isSameAs(fakeSdkInitEvent)
+            val appStartedEvent = allValues[1] as RumRawEvent.ApplicationStarted
+            assertThat(appStartedEvent.applicationStartTime.nanoTime).isEqualTo(appStartTimeNs)
+            assertThat(appStartedEvent.eventTime).isEqualTo(fakeEventTime)
+            assertThat(allValues[2]).isSameAs(mockEvent)
+        }
+    }
+
+    @Test
+    fun `M not send ApplicationStarted event W handleEvent { SdkInit in background }`(
         forge: Forge
     ) {
         // Given
@@ -633,7 +664,6 @@ internal class RumApplicationScopeTest {
         val appStartTimeNs = forge.aLong(min = 0, max = fakeSdkInitEvent.eventTime.nanoTime)
         whenever(mockSdkCore.appStartTimeNs) doReturn appStartTimeNs
         DdRumContentProvider.processImportance = forge.anElementFrom(
-            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND,
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
             @Suppress("DEPRECATION")
@@ -661,7 +691,7 @@ internal class RumApplicationScopeTest {
                 eq(mockEventWriteScope),
                 eq(mockWriter)
             )
-            assertThat(allValues).doesNotHaveSameClassAs(RumRawEvent.ApplicationStarted::class.java)
+            assertThat(allValues).containsExactly(fakeSdkInitEvent)
         }
     }
 }
