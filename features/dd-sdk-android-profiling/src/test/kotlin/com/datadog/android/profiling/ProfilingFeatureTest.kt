@@ -786,6 +786,41 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M publish whole state W onProfilingStatusChange()+onOomTriggerRegisteredChanged()+propagateQuotaResult()`(
+        @BoolForgery fakeIsRunning: Boolean,
+        @BoolForgery fakeIsRegistered: Boolean
+    ) {
+        // Given
+        var lastPublishedContext = emptyMap<String, Any?>()
+        whenever(mockSdkCore.updateFeatureContext(eq(Feature.PROFILING_FEATURE_NAME), any(), any())) doAnswer {
+            val context = mutableMapOf<String, Any?>()
+            it.getArgument<(MutableMap<String, Any?>) -> Unit>(2).invoke(context)
+            lastPublishedContext = context
+        }
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
+
+        // When
+        testedFeature.onProfilingStatusChange(fakeIsRunning)
+        testedFeature.onOomTriggerRegisteredChanged(fakeIsRegistered)
+        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+
+        // Then
+        assertThat(lastPublishedContext).isEqualTo(
+            mapOf(
+                FeatureContextKeys.PROFILING_SAMPLE_RATE to fakeConfiguration.continuousSampleRate,
+                FeatureContextKeys.PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE to
+                    fakeConfiguration.applicationLaunchSampleRate,
+                FeatureContextKeys.PROFILING_ANR_ENABLED to fakeConfiguration.anrTriggerEnabled,
+                FeatureContextKeys.PROFILER_IS_RUNNING to fakeIsRunning,
+                FeatureContextKeys.PROFILING_OOM_TRIGGER_REGISTERED to fakeIsRegistered,
+                FeatureContextKeys.PROFILING_QUOTA_REASON to QuotaResult.QUOTA_EXCEEDED.reason,
+                FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeSessionId
+            )
+        )
+    }
+
+    @Test
     fun `M retry enabling triggers W onContextUpdate {previous registration failed}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
