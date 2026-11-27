@@ -40,12 +40,14 @@ import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.internal.time.composeTimeInfo
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
+import com.datadog.android.core.internal.utils.safeOnContextUpdate
 import com.datadog.android.core.internal.utils.safeTryWithLock
 import com.datadog.android.core.internal.utils.safeWithLock
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -182,6 +184,7 @@ internal class DatadogCore(
         val extraInfoSnapshot = extraInfo.toMap()
         coreFeature.contextExecutorService.executeSafe("DatadogCore.setUserInfo", internalLogger) {
             coreFeature.userInfoProvider.setUserInfo(id, name, email, extraInfoSnapshot)
+            notifyCoreContextUpdate()
         }
     }
 
@@ -199,6 +202,7 @@ internal class DatadogCore(
     override fun clearUserInfo() {
         coreFeature.contextExecutorService.executeSafe("DatadogCore.clearUserInfo", internalLogger) {
             coreFeature.userInfoProvider.clearUserInfo()
+            notifyCoreContextUpdate()
         }
     }
 
@@ -224,6 +228,7 @@ internal class DatadogCore(
         val extraInfoSnapshot = extraInfo.toMap()
         coreFeature.contextExecutorService.executeSafe("DatadogCore.setAccountInfo", internalLogger) {
             coreFeature.accountInfoProvider.setAccountInfo(id, name, extraInfoSnapshot)
+            notifyCoreContextUpdate()
         }
     }
 
@@ -239,6 +244,7 @@ internal class DatadogCore(
     override fun clearAccountInfo() {
         coreFeature.contextExecutorService.executeSafe("DatadogCore.clearAccountInfo", internalLogger) {
             coreFeature.accountInfoProvider.clearAccountInfo()
+            notifyCoreContextUpdate()
         }
     }
 
@@ -254,7 +260,7 @@ internal class DatadogCore(
                 val currentContext = feature.featureContext
                 updateCallback(currentContext)
                 featureContextUpdateReceivers.forEach {
-                    it.onContextUpdate(featureName, currentContext)
+                    it.safeOnContextUpdate(featureName, currentContext, internalLogger)
                 }
             }
         }
@@ -331,10 +337,39 @@ internal class DatadogCore(
         features.forEach {
             val currentContext = getFeatureContext(it.key, false)
             if (currentContext.isNotEmpty()) {
-                listener.onContextUpdate(it.key, currentContext)
+                listener.safeOnContextUpdate(it.key, currentContext, internalLogger)
             }
         }
         featureContextUpdateReceivers.add(listener)
+        // The core context is replayed on the context thread, in order with the identity mutations that
+        // notify receivers. The snapshot is taken when the replay runs, so it is never older than a
+        // notification the listener has already received.
+        coreFeature.contextExecutorService.executeSafe(
+            "DatadogCore.replayCoreContext",
+            internalLogger
+        ) {
+            val currentCoreContext = buildCoreContext()
+            if (currentCoreContext.isNotEmpty() && listener in featureContextUpdateReceivers) {
+                listener.safeOnContextUpdate(FeatureContextKeys.CORE_CONTEXT, currentCoreContext, internalLogger)
+            }
+        }
+    }
+
+    // Must be called on the context thread, after the user or account info provider has been mutated.
+    private fun notifyCoreContextUpdate() {
+        val coreContext = buildCoreContext()
+        featureContextUpdateReceivers.forEach {
+            it.safeOnContextUpdate(FeatureContextKeys.CORE_CONTEXT, coreContext, internalLogger)
+        }
+    }
+
+    private fun buildCoreContext(): Map<String, Any?> {
+        val userId = coreFeature.userInfoProvider.getUserInfo().id
+        val accountId = coreFeature.accountInfoProvider.getAccountInfo()?.id
+        return buildMap {
+            if (userId != null) put(FeatureContextKeys.CORE_USER_ID, userId)
+            if (accountId != null) put(FeatureContextKeys.CORE_ACCOUNT_ID, accountId)
+        }
     }
 
     override fun removeContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {

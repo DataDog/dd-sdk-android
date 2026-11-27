@@ -72,4 +72,17 @@ object FeatureContextKeys {
      * in flight.
      */
     const val PROFILING_QUOTA_SESSION_ID: String = "profiling_quota_session_id"
+
+    /**
+     * Name under which core publishes the user and account ids to
+     * [com.datadog.android.api.feature.FeatureContextUpdateReceiver]s. It is not a registered
+     * feature. The context holds [CORE_USER_ID] and [CORE_ACCOUNT_ID], each absent when not set.
+     */
+    const val CORE_CONTEXT: String = "core"
+
+    /** Id of the current user, in the [CORE_CONTEXT] update. Absent when no user id is set. */
+    const val CORE_USER_ID: String = "user_id"
+
+    /** Id of the current account, in the [CORE_CONTEXT] update. Absent when no account id is set. */
+    const val CORE_ACCOUNT_ID: String = "account_id"
 }

@@ -14,6 +14,9 @@ object com.datadog.android.internal.FeatureContextKeys
   const val RUM_SESSION_STATE: String
   const val PROFILING_QUOTA_REASON: String
   const val PROFILING_QUOTA_SESSION_ID: String
+  const val CORE_CONTEXT: String
+  const val CORE_USER_ID: String
+  const val CORE_ACCOUNT_ID: String
 interface com.datadog.android.internal.attributes.LocalAttribute
   enum Key
     - CREATION_SAMPLING_RATE

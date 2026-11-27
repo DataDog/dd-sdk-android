@@ -28,6 +28,9 @@ public final class com/datadog/android/heatmaps/HeatmapViewKeyKt {
 }
 
 public final class com/datadog/android/internal/FeatureContextKeys {
+	public static final field CORE_ACCOUNT_ID Ljava/lang/String;
+	public static final field CORE_CONTEXT Ljava/lang/String;
+	public static final field CORE_USER_ID Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/internal/FeatureContextKeys;
 	public static final field PROFILER_IS_RUNNING Ljava/lang/String;
 	public static final field PROFILING_ANR_ENABLED Ljava/lang/String;

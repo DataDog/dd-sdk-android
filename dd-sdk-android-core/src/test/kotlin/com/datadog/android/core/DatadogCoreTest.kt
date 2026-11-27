@@ -10,6 +10,7 @@ import android.app.Application
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
@@ -18,13 +19,17 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.NoOpContextProvider
 import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.account.DatadogAccountInfoProvider
 import com.datadog.android.core.internal.account.MutableAccountInfoProvider
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
+import com.datadog.android.core.internal.utils.CONTEXT_UPDATE_RECEIVER_FAILED
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.tests.stub.StubTimeProvider
@@ -70,6 +75,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -235,6 +241,7 @@ internal class DatadogCoreTest {
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn UserInfo()
         testedCore.coreFeature.userInfoProvider = mockUserInfoProvider
 
         // When
@@ -289,7 +296,9 @@ internal class DatadogCoreTest {
         testedCore.coreFeature = mock()
         whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean(true))
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn UserInfo()
         whenever(testedCore.coreFeature.userInfoProvider) doReturn mockUserInfoProvider
+        whenever(testedCore.coreFeature.accountInfoProvider) doReturn mock<MutableAccountInfoProvider>()
         whenever(testedCore.coreFeature.contextExecutorService) doReturn mockContextExecutorService
 
         // When
@@ -322,7 +331,9 @@ internal class DatadogCoreTest {
         testedCore.coreFeature = mock()
         whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean(true))
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn UserInfo()
         whenever(testedCore.coreFeature.userInfoProvider) doReturn mockUserInfoProvider
+        whenever(testedCore.coreFeature.accountInfoProvider) doReturn mock<MutableAccountInfoProvider>()
         whenever(testedCore.coreFeature.contextExecutorService) doReturn mockContextExecutorService
 
         // When
@@ -383,6 +394,9 @@ internal class DatadogCoreTest {
         whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean(true))
         val mockAccountInfoProvider = mock<MutableAccountInfoProvider>()
         whenever(testedCore.coreFeature.accountInfoProvider) doReturn mockAccountInfoProvider
+        val mockUserInfoProvider = mock<MutableUserInfoProvider>()
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn UserInfo()
+        whenever(testedCore.coreFeature.userInfoProvider) doReturn mockUserInfoProvider
         whenever(testedCore.coreFeature.contextExecutorService) doReturn mockContextExecutorService
 
         // When
@@ -958,6 +972,237 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `M notify listener W setUserInfo() { user id set }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String
+    ) {
+        // Given
+        testedCore.coreFeature.userInfoProvider = DatadogUserInfoProvider()
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+        testedCore.featureContextUpdateReceivers += mockContextUpdateListener
+
+        // When
+        testedCore.setUserInfo(id, null, null)
+
+        // Then
+        verify(mockContextUpdateListener).onContextUpdate(
+            FeatureContextKeys.CORE_CONTEXT,
+            mapOf(FeatureContextKeys.CORE_USER_ID to id)
+        )
+    }
+
+    @Test
+    fun `M notify listener with empty context W clearUserInfo()`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String
+    ) {
+        // Given
+        testedCore.coreFeature.userInfoProvider = DatadogUserInfoProvider()
+        testedCore.setUserInfo(id, null, null)
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+        testedCore.featureContextUpdateReceivers += mockContextUpdateListener
+
+        // When
+        testedCore.clearUserInfo()
+
+        // Then
+        verify(mockContextUpdateListener).onContextUpdate(FeatureContextKeys.CORE_CONTEXT, emptyMap())
+    }
+
+    @Test
+    fun `M notify listener W setAccountInfo() { account id set }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String
+    ) {
+        // Given
+        testedCore.coreFeature.accountInfoProvider = DatadogAccountInfoProvider(mockInternalLogger)
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+        testedCore.featureContextUpdateReceivers += mockContextUpdateListener
+
+        // When
+        testedCore.setAccountInfo(id, null, emptyMap())
+
+        // Then
+        verify(mockContextUpdateListener).onContextUpdate(
+            FeatureContextKeys.CORE_CONTEXT,
+            mapOf(FeatureContextKeys.CORE_ACCOUNT_ID to id)
+        )
+    }
+
+    @Test
+    fun `M notify listener with empty context W clearAccountInfo()`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String
+    ) {
+        // Given
+        testedCore.coreFeature.accountInfoProvider = DatadogAccountInfoProvider(mockInternalLogger)
+        testedCore.setAccountInfo(id, null, emptyMap())
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+        testedCore.featureContextUpdateReceivers += mockContextUpdateListener
+
+        // When
+        testedCore.clearAccountInfo()
+
+        // Then
+        verify(mockContextUpdateListener).onContextUpdate(FeatureContextKeys.CORE_CONTEXT, emptyMap())
+    }
+
+    @Test
+    fun `M invoke listener with user and account ids W setContextUpdateReceiver() { ids already set }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) userId: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) accountId: String
+    ) {
+        // Given
+        testedCore.coreFeature.userInfoProvider = DatadogUserInfoProvider()
+        testedCore.coreFeature.accountInfoProvider = DatadogAccountInfoProvider(mockInternalLogger)
+        testedCore.setUserInfo(userId, null, null)
+        testedCore.setAccountInfo(accountId, null, emptyMap())
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+
+        // When
+        testedCore.setContextUpdateReceiver(mockContextUpdateListener)
+
+        // Then
+        verify(mockContextUpdateListener).onContextUpdate(
+            FeatureContextKeys.CORE_CONTEXT,
+            mapOf(
+                FeatureContextKeys.CORE_USER_ID to userId,
+                FeatureContextKeys.CORE_ACCOUNT_ID to accountId
+            )
+        )
+    }
+
+    @Test
+    fun `M not deliver stale ids to listener W clearUserInfo() + setContextUpdateReceiver() { clear queued first }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) userId: String
+    ) {
+        // Given
+        val realContextExecutor = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, LinkedBlockingQueue())
+        testedCore.coreFeature.contextExecutorService = realContextExecutor
+        testedCore.coreFeature.userInfoProvider = DatadogUserInfoProvider()
+        testedCore.setUserInfo(userId, null, null)
+        val executorBlocked = CountDownLatch(1)
+        val releaseExecutor = CountDownLatch(1)
+        realContextExecutor.execute {
+            executorBlocked.countDown()
+            releaseExecutor.await(LATCH_TIMEOUT_S, TimeUnit.SECONDS)
+        }
+        assertThat(executorBlocked.await(LATCH_TIMEOUT_S, TimeUnit.SECONDS)).isTrue()
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+
+        // When
+        try {
+            testedCore.clearUserInfo()
+            testedCore.setContextUpdateReceiver(mockContextUpdateListener)
+            releaseExecutor.countDown()
+            realContextExecutor.submit {}.get(LATCH_TIMEOUT_S, TimeUnit.SECONDS)
+        } finally {
+            releaseExecutor.countDown()
+            realContextExecutor.shutdown()
+        }
+
+        // Then
+        verify(mockContextUpdateListener).onContextUpdate(FeatureContextKeys.CORE_CONTEXT, emptyMap())
+        verify(mockContextUpdateListener, never()).onContextUpdate(
+            FeatureContextKeys.CORE_CONTEXT,
+            mapOf(FeatureContextKeys.CORE_USER_ID to userId)
+        )
+    }
+
+    @Test
+    fun `M not invoke removed listener W removeContextUpdateReceiver() { replay still queued }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) userId: String
+    ) {
+        // Given
+        val realContextExecutor = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, LinkedBlockingQueue())
+        testedCore.coreFeature.contextExecutorService = realContextExecutor
+        testedCore.coreFeature.userInfoProvider = DatadogUserInfoProvider()
+        testedCore.setUserInfo(userId, null, null)
+        val executorBlocked = CountDownLatch(1)
+        val releaseExecutor = CountDownLatch(1)
+        realContextExecutor.execute {
+            executorBlocked.countDown()
+            releaseExecutor.await(LATCH_TIMEOUT_S, TimeUnit.SECONDS)
+        }
+        assertThat(executorBlocked.await(LATCH_TIMEOUT_S, TimeUnit.SECONDS)).isTrue()
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+
+        // When
+        try {
+            testedCore.setContextUpdateReceiver(mockContextUpdateListener)
+            testedCore.removeContextUpdateReceiver(mockContextUpdateListener)
+            releaseExecutor.countDown()
+            realContextExecutor.submit {}.get(LATCH_TIMEOUT_S, TimeUnit.SECONDS)
+        } finally {
+            releaseExecutor.countDown()
+            realContextExecutor.shutdown()
+        }
+
+        // Then
+        verifyNoInteractions(mockContextUpdateListener)
+    }
+
+    @Test
+    fun `M notify remaining listeners and log W setUserInfo() { a listener throws }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery message: String
+    ) {
+        // Given
+        testedCore.coreFeature.userInfoProvider = DatadogUserInfoProvider()
+        val fakeException = IllegalStateException(message)
+        val throwingListener = mock<FeatureContextUpdateReceiver>()
+        whenever(throwingListener.onContextUpdate(any(), any())) doThrow fakeException
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+        testedCore.featureContextUpdateReceivers += throwingListener
+        testedCore.featureContextUpdateReceivers += mockContextUpdateListener
+
+        // When
+        testedCore.setUserInfo(id, null, null)
+
+        // Then
+        verify(mockContextUpdateListener).onContextUpdate(
+            FeatureContextKeys.CORE_CONTEXT,
+            mapOf(FeatureContextKeys.CORE_USER_ID to id)
+        )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            CONTEXT_UPDATE_RECEIVER_FAILED.format(
+                Locale.US,
+                throwingListener,
+                FeatureContextKeys.CORE_CONTEXT
+            ),
+            fakeException,
+            onlyOnce = true
+        )
+    }
+
+    @Test
+    fun `M log W setContextUpdateReceiver() { listener throws during replay }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery message: String
+    ) {
+        // Given
+        testedCore.coreFeature.userInfoProvider = DatadogUserInfoProvider()
+        testedCore.setUserInfo(id, null, null)
+        val fakeException = IllegalStateException(message)
+        val throwingListener = mock<FeatureContextUpdateReceiver>()
+        whenever(throwingListener.onContextUpdate(any(), any())) doThrow fakeException
+
+        // When
+        testedCore.setContextUpdateReceiver(throwingListener)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            CONTEXT_UPDATE_RECEIVER_FAILED.format(
+                Locale.US,
+                throwingListener,
+                FeatureContextKeys.CORE_CONTEXT
+            ),
+            fakeException,
+            onlyOnce = true
+        )
+    }
+
+    @Test
     fun `M remove context update listener W removeContextUpdateReceiver()`() {
         // Given
         val mockContextUpdateListener: FeatureContextUpdateReceiver = mock<FeatureContextUpdateReceiver>()
@@ -1509,6 +1754,8 @@ internal class DatadogCoreTest {
     }
 
     companion object {
+
+        private const val LATCH_TIMEOUT_S = 10L
 
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 
