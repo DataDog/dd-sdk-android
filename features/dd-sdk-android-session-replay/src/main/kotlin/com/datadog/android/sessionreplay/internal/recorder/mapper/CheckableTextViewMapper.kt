@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.res.ColorStateList
 import android.graphics.drawable.Drawable
 import android.widget.Checkable
 import android.widget.TextView
@@ -22,6 +23,7 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
+import java.lang.ref.WeakReference
 
 internal abstract class CheckableTextViewMapper<in T>(
     private val textWireframeMapper: TextViewMapper<T>,
@@ -110,7 +112,19 @@ internal abstract class CheckableTextViewMapper<in T>(
                 view,
                 mappingContext.systemInformation.screenDensity
             )
-            val drawableCopier = DrawableCopier { _, _ -> cloneCheckableDrawable(view, it) }
+            // The copier runs later, on another thread, and is kept until then, so it keeps what it needs from the view
+            // instead of the view, and holds the drawable weakly. The drawable the resolver passes to it can be one
+            // inside this one, so it copies this one.
+            val checkableDrawable = WeakReference(it)
+            val checkableState = view.drawableState.copyOf()
+            val checkableTint = resolveCheckableTint(view)
+            val drawableCopier = DrawableCopier { _, resources ->
+                checkableDrawable.get()?.constantState?.newDrawable(resources)?.apply {
+                    // Set state to make the drawable have correct tint.
+                    setState(checkableState)
+                    checkableTint?.let { tint -> setTintList(tint) }
+                }
+            }
             mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
@@ -131,7 +145,9 @@ internal abstract class CheckableTextViewMapper<in T>(
         }
     }
 
-    abstract fun cloneCheckableDrawable(view: T, drawable: Drawable): Drawable?
+    // The tint list the view declares for its checkable drawable, if any.
+    @UiThread
+    abstract fun resolveCheckableTint(view: T): ColorStateList?
 
     @UiThread
     abstract fun getCheckableDrawable(view: T): Drawable?

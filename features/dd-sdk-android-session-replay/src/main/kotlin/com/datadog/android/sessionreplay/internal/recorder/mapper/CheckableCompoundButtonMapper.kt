@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.res.ColorStateList
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.DrawableContainer
 import android.widget.CompoundButton
@@ -81,16 +82,8 @@ internal abstract class CheckableCompoundButtonMapper<in T : CompoundButton>(
         return originCheckableDrawable
     }
 
-    override fun cloneCheckableDrawable(view: T, drawable: Drawable): Drawable? {
-        return drawable.constantState?.newDrawable(view.resources)?.apply {
-            // Set state to make the drawable have correct tint.
-            setState(view.drawableState)
-            // Set tint list to drawable if the button has declared `buttonTint` attribute.
-            view.buttonTintList?.let {
-                setTintList(it)
-            }
-        }
-    }
+    // The button declares its tint with the `buttonTint` attribute.
+    override fun resolveCheckableTint(view: T): ColorStateList? = view.buttonTintList
 
     // endregion
 

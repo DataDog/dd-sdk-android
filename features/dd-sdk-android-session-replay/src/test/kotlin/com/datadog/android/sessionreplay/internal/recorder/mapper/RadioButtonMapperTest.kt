@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.res.ColorStateList
 import android.widget.RadioButton
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -46,5 +47,9 @@ internal class RadioButtonMapperTest : BaseCheckableTextViewMapperTest<RadioButt
             whenever(it.buttonDrawable) doReturn mockButtonDrawable
             whenever(it.resources) doReturn mockResources
         }
+    }
+
+    override fun stubCheckableTint(view: RadioButton, tintList: ColorStateList?) {
+        whenever(view.buttonTintList) doReturn tintList
     }
 }

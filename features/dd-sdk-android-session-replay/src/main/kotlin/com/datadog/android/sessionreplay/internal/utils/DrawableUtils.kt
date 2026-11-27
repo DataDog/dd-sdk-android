@@ -12,21 +12,17 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
-import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
-import java.util.concurrent.ExecutorService
 import kotlin.math.sqrt
 
 internal class DrawableUtils(
     private val internalLogger: InternalLogger,
     private val bitmapCachesManager: BitmapCachesManager,
-    private val executorService: ExecutorService,
     private val bitmapWrapper: BitmapWrapper = BitmapWrapper(internalLogger),
     private val canvasWrapper: CanvasWrapper = CanvasWrapper(internalLogger)
 ) {
@@ -55,13 +51,7 @@ internal class DrawableUtils(
             resizeBitmapCallback = object : ResizeBitmapCallback {
                 @WorkerThread
                 override fun onSuccess(bitmap: Bitmap) {
-                    executorService.executeSafe("drawOnCanvas", internalLogger) {
-                        drawOnCanvas(
-                            bitmap,
-                            drawable,
-                            bitmapCreationCallback
-                        )
-                    }
+                    drawOnCanvas(bitmap, drawable, bitmapCreationCallback)
                 }
 
                 @WorkerThread
@@ -205,7 +195,6 @@ internal class DrawableUtils(
             )
 
     internal companion object {
-        @VisibleForTesting
         internal const val MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT = 10 * 1024 * 1024 // 10mb
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
         internal const val FAILED_TO_CREATE_SCALED_BITMAP_ERROR =

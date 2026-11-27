@@ -6,6 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.res.ColorStateList
+import android.graphics.Rect
+import android.graphics.drawable.Drawable
 import androidx.annotation.UiThread
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.InternalLogger
@@ -73,15 +76,7 @@ internal open class SwitchCompatMapper(
         )
         return trackBounds?.let {
             val trackDrawable = view.trackDrawable
-            val drawableCopier = DrawableCopier { originalDrawable, resources ->
-                originalDrawable.constantState?.newDrawable(resources)?.apply {
-                    setState(view.trackDrawable.state)
-                    bounds = view.trackDrawable.bounds
-                    view.trackTintList?.let { tintList ->
-                        setTintList(tintList)
-                    }
-                }
-            }
+            val drawableCopier = createDrawableCopier(trackDrawable, view.trackTintList)
             return mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
@@ -115,17 +110,8 @@ internal open class SwitchCompatMapper(
         )
 
         val thumbDrawable = view.thumbDrawable
-        val drawableCopier =
-            DrawableCopier { originalDrawable, resources ->
-                originalDrawable.constantState?.newDrawable(resources)?.apply {
-                    setState(view.thumbDrawable.state)
-                    bounds = view.thumbDrawable.bounds
-                    view.thumbTintList?.let {
-                        setTintList(it)
-                    }
-                }
-            }
         return thumbBounds?.let {
+            val drawableCopier = createDrawableCopier(thumbDrawable, view.thumbTintList)
             mappingContext.imageWireframeHelper.createImageWireframeByDrawable(
                 view = view,
                 imagePrivacy = mapInputPrivacyToImagePrivacy(mappingContext.textAndInputPrivacy),
@@ -145,6 +131,20 @@ internal open class SwitchCompatMapper(
                 customResourceIdCacheKey = null,
                 asyncJobStatusCallback = asyncJobStatusCallback
             )
+        }
+    }
+
+    // The copier runs later, on another thread, so it keeps the bounds and tint of the drawable as they are now instead
+    // of the view. It takes the state from the drawable it is given when it runs, since the copy is cached under a key
+    // generated from that state.
+    private fun createDrawableCopier(drawable: Drawable, tintList: ColorStateList?): DrawableCopier {
+        val drawableBounds = Rect(drawable.bounds)
+        return DrawableCopier { originalDrawable, resources ->
+            originalDrawable.constantState?.newDrawable(resources)?.apply {
+                setState(originalDrawable.state)
+                bounds = drawableBounds
+                tintList?.let { tint -> setTintList(tint) }
+            }
         }
     }
 

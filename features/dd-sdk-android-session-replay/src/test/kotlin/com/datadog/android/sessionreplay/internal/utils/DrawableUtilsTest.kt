@@ -30,6 +30,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -40,14 +41,14 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
 import java.util.stream.Stream
 
 @Extensions(
@@ -88,9 +89,6 @@ internal class DrawableUtilsTest {
     private lateinit var mockConfig: Bitmap.Config
 
     @Mock
-    private lateinit var mockExecutorService: ExecutorService
-
-    @Mock
     private lateinit var mockBitmapCreationCallback: ResourceResolver.BitmapCreationCallback
 
     @Mock
@@ -118,18 +116,7 @@ internal class DrawableUtilsTest {
         whenever(mockBitmap.config).thenReturn(mockConfig)
         whenever(mockBitmapCachesManager.getBitmapByProperties(any(), any(), any())).thenReturn(null)
 
-        whenever(mockExecutorService.execute(any())) doAnswer {
-            val runnable = it.getArgument<Runnable>(0)
-            runnable.run()
-        }
-
-        testedDrawableUtils = DrawableUtils(
-            bitmapWrapper = mockBitmapWrapper,
-            canvasWrapper = mockCanvasWrapper,
-            bitmapCachesManager = mockBitmapCachesManager,
-            executorService = mockExecutorService,
-            internalLogger = mockLogger
-        )
+        testedDrawableUtils = createDrawableUtils()
     }
 
     // region createBitmap
@@ -478,6 +465,38 @@ internal class DrawableUtilsTest {
 
         // Then
         verify(mockCanvas).drawColor(eq(Color.TRANSPARENT), eq(PorterDuff.Mode.CLEAR))
+    }
+
+    @Test
+    fun `M propagate without completing W createBitmapOfApproxSizeFromDrawable() { setBounds throws error }`() {
+        // Given
+        val fakeError = StackOverflowError()
+        doThrow(fakeError).whenever(mockDrawable).setBounds(any(), any(), any(), any())
+
+        // When
+        val actualError = assertThrows<StackOverflowError> { drawBitmap() }
+
+        // Then
+        assertThat(actualError).isSameAs(fakeError)
+        verifyNoInteractions(mockBitmapCreationCallback)
+    }
+
+    private fun createDrawableUtils(): DrawableUtils = DrawableUtils(
+        bitmapWrapper = mockBitmapWrapper,
+        canvasWrapper = mockCanvasWrapper,
+        bitmapCachesManager = mockBitmapCachesManager,
+        internalLogger = mockLogger
+    )
+
+    private fun drawBitmap() {
+        testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            drawable = mockDrawable,
+            drawableWidth = 1,
+            drawableHeight = 1,
+            displayMetrics = mockDisplayMetrics,
+            config = mockConfig,
+            bitmapCreationCallback = mockBitmapCreationCallback
+        )
     }
 
     companion object {

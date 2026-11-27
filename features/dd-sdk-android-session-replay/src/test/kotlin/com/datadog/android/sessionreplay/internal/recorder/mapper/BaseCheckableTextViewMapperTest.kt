@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.DrawableContainer
@@ -21,6 +22,7 @@ import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -35,16 +37,20 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.ArgumentMatchers.anyInt
+import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -105,6 +111,20 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     @Mock
     lateinit var mockDrawableCopier: DrawableCopier
 
+    @Mock
+    lateinit var mockCheckedConstantState: Drawable.ConstantState
+
+    @Mock
+    lateinit var mockCopiedDrawable: Drawable
+
+    @Mock
+    lateinit var mockInnerDrawable: Drawable
+
+    @Mock
+    lateinit var mockTintList: ColorStateList
+
+    private lateinit var fakeDrawableState: IntArray
+
     @IntForgery
     var fakeDrawableIntrinsicHeight: Int = 0
 
@@ -115,7 +135,8 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     lateinit var fakeImagePrivacy: ImagePrivacy
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeDrawableState = IntArray(forge.anInt(min = 1, max = 8)) { forge.anInt() }
         mockCheckedDrawable = mock {
             whenever(it.intrinsicHeight) doReturn fakeDrawableIntrinsicHeight
             whenever(it.intrinsicWidth) doReturn fakeDrawableIntrinsicWidth
@@ -133,6 +154,7 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
         }
 
         mockCheckableTextView = mockCheckableTextView()
+        whenever(mockCheckableTextView.drawableState) doReturn fakeDrawableState
         whenever(
             mockViewIdentifierResolver.resolveChildUniqueIdentifier(
                 mockCheckableTextView,
@@ -167,6 +189,8 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     internal abstract fun setupTestedMapper(): CheckableTextViewMapper<T>
 
     internal abstract fun mockCheckableTextView(): T
+
+    internal abstract fun stubCheckableTint(view: T, tintList: ColorStateList?)
 
     internal open fun expectedCheckedShapeStyle(checkBoxColor: String): MobileSegment.ShapeStyle? {
         return if (fakeMappingContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) {
@@ -270,6 +294,63 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     }
 
     @Test
+    fun `M copy its drawable with the state and tint of mapping time W map() + copy() { view changes }`() {
+        // Given
+        val fakeMappedState = fakeDrawableState.copyOf()
+        stubCheckableTint(mockCheckableTextView, mockTintList)
+        whenever(mockCheckableTextView.isChecked).thenReturn(true)
+        whenever(mockCheckedDrawable.constantState) doReturn mockCheckedConstantState
+        whenever(mockCheckedConstantState.newDrawable(mockResources)) doReturn mockCopiedDrawable
+        val drawableCopierCaptor = argumentCaptor<DrawableCopier>()
+        testedCheckableTextViewMapper.map(
+            mockCheckableTextView,
+            fakeMappingContext.copy(
+                textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+                imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
+            ),
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+        verifyCheckableDrawableRequested(drawableCopierCaptor)
+        fakeDrawableState[0] = fakeDrawableState[0] + 1
+        stubCheckableTint(mockCheckableTextView, null)
+
+        // When
+        val copy = drawableCopierCaptor.firstValue.copy(mockInnerDrawable, mockResources)
+
+        // Then
+        assertThat(copy).isSameAs(mockCopiedDrawable)
+        verify(mockCopiedDrawable).setState(fakeMappedState)
+        verify(mockCopiedDrawable).setTintList(mockTintList)
+    }
+
+    @Test
+    fun `M copy without a tint W map() + copy() { no tint declared }`() {
+        // Given
+        stubCheckableTint(mockCheckableTextView, null)
+        whenever(mockCheckableTextView.isChecked).thenReturn(true)
+        whenever(mockCheckedDrawable.constantState) doReturn mockCheckedConstantState
+        whenever(mockCheckedConstantState.newDrawable(mockResources)) doReturn mockCopiedDrawable
+        val drawableCopierCaptor = argumentCaptor<DrawableCopier>()
+        testedCheckableTextViewMapper.map(
+            mockCheckableTextView,
+            fakeMappingContext.copy(
+                textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+                imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY
+            ),
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+        verifyCheckableDrawableRequested(drawableCopierCaptor)
+
+        // When
+        drawableCopierCaptor.firstValue.copy(mockCheckedDrawable, mockResources)
+
+        // Then
+        verify(mockCopiedDrawable, never()).setTintList(any())
+    }
+
+    @Test
     fun `M ignore the checkbox W map() { unique id could not be generated }`() {
         // Given
         whenever(
@@ -292,4 +373,25 @@ internal abstract class BaseCheckableTextViewMapperTest<T> :
     }
 
     // endregion
+
+    private fun verifyCheckableDrawableRequested(drawableCopierCaptor: KArgumentCaptor<DrawableCopier>) {
+        verify(fakeMappingContext.imageWireframeHelper).createImageWireframeByDrawable(
+            view = any(),
+            imagePrivacy = any(),
+            currentWireframeIndex = anyInt(),
+            x = anyLong(),
+            y = anyLong(),
+            width = anyInt(),
+            height = anyInt(),
+            usePIIPlaceholder = anyBoolean(),
+            drawable = any(),
+            drawableCopier = drawableCopierCaptor.capture(),
+            asyncJobStatusCallback = any(),
+            clipping = anyOrNull(),
+            shapeStyle = anyOrNull(),
+            border = anyOrNull(),
+            prefix = anyOrNull(),
+            customResourceIdCacheKey = anyOrNull()
+        )
+    }
 }

@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import android.content.res.ColorStateList
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.DrawableContainer
 import android.widget.CheckedTextView
@@ -78,15 +79,7 @@ internal open class CheckedTextViewMapper(
         )
     }
 
-    override fun cloneCheckableDrawable(view: CheckedTextView, drawable: Drawable): Drawable? {
-        return drawable.constantState?.newDrawable(view.resources)?.apply {
-            // Set state to make the drawable have correct tint according to the state.
-            setState(view.drawableState)
-            // Set tint list to drawable if the button has declared `checkMarkTint` attribute.
-            view.checkMarkTintList?.let {
-                setTintList(view.checkMarkTintList)
-            }
-        }
-    }
+    // The view declares its tint with the `checkMarkTint` attribute.
+    override fun resolveCheckableTint(view: CheckedTextView): ColorStateList? = view.checkMarkTintList
     // endregion
 }

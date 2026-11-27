@@ -11,6 +11,9 @@ import android.graphics.drawable.Drawable
 
 /**
  * Interface of copying drawable to a new one.
+ *
+ * The copier is called later, on another thread, and is kept until then, so it should keep what it needs from the view
+ * instead of the view. Captures of a drawable made with the same copier instance before then share a single copy.
  */
 fun interface DrawableCopier {
 

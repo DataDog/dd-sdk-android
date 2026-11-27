@@ -13,16 +13,20 @@ import android.graphics.Path
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
+import android.view.View
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
+import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -43,26 +47,96 @@ internal class ResourceResolver(
     ),
     private val resourceItemCreationHandler: ResourceItemCreationHandler = ResourceItemCreationHandler(
         recordedDataQueueHandler = recordedDataQueueHandler
-    )
+    ),
+    private val pendingImageRequests: PendingImageRequests = PendingImageRequests(logger),
+    private val drawableReferenceFactory: (Drawable) -> WeakReference<Drawable> = { WeakReference(it) },
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) {
 
     internal fun registerCallbacks() {
         applicationContext.registerComponentCallbacks(alpha8ResourceCache)
+        bitmapCachesManager.registerCallbacks(applicationContext)
     }
 
     internal fun unregisterCallbacks() {
         applicationContext.unregisterComponentCallbacks(alpha8ResourceCache)
+        bitmapCachesManager.unregisterCallbacks(applicationContext)
     }
 
     // region internal
 
     @MainThread
+    @Suppress("ReturnCount")
     internal fun resolveResourceIdFromBitmap(
         bitmap: Bitmap,
         resourceResolverCallback: ResourceResolverCallback
     ) {
-        threadPoolExecutor.executeSafe(RESOURCE_RESOLVER_ALIAS, logger) {
-            getResourceIdFromBitmap(bitmap, resourceResolverCallback)
+        if (bitmap.isRecycled) {
+            resourceResolverCallback.onFailure()
+            return
+        }
+        // An unchanged bitmap is recognized before any copy, so it costs no pixels or compression.
+        val resourceKey = generateBitmapKey(bitmap)
+        val resourceId = bitmapCachesManager.getFromResourceCache(resourceKey)
+        if (resourceId != null) {
+            resourceResolverCallback.onSuccess(resourceId)
+            return
+        }
+
+        val isAlpha8 = bitmap.config == Bitmap.Config.ALPHA_8
+        val pixelCount = bitmap.width.toLong() * bitmap.height
+        val argbByteCount = pixelCount * ARGB_8888_PIXEL_SIZE_BYTES
+        // Every bitmap is processed as ARGB_8888. An ALPHA_8 one is copied in its own format and converted on the
+        // worker, which holds both, so until then the capture holds only its copy.
+        val copyByteCount = if (isAlpha8) pixelCount else argbByteCount
+        val processedByteCount = if (isAlpha8) copyByteCount + argbByteCount else copyByteCount
+        // A capture with nothing else pending is admitted whatever its size, but one whose copy and conversion alone
+        // would exceed the budget is not attempted, so that it cannot run the application out of memory.
+        if (processedByteCount > pendingImageRequests.maxPendingBytes) {
+            resourceResolverCallback.onFailure()
+            return
+        }
+        val request = pendingImageRequests.start(
+            key = CaptureKey.OfBitmap(resourceKey),
+            byteCount = copyByteCount,
+            callback = resourceResolverCallback
+        ) ?: return
+        // The application can change or recycle its bitmap once this returns, compressing a hardware bitmap fails,
+        // and a queued task must not keep the application's bitmap alive, so the worker always gets a copy.
+        var copy: Bitmap? = null
+        try {
+            copy = copyBitmap(bitmap, if (isAlpha8) Bitmap.Config.ALPHA_8 else Bitmap.Config.ARGB_8888)
+        } finally {
+            // A copy that fails or throws must not leave the captures waiting forever; a throwable still propagates.
+            if (copy == null) request.onFailure()
+        }
+        val capturedBitmap = copy ?: return
+
+        executeImageTask(request) {
+            // The copy is recycled before the request completes, so its pixels stay reserved until they are freed.
+            var resolvedResourceId: String? = null
+            try {
+                @Suppress("ThreadSafety") // This task runs on the resource executor.
+                getResourceIdFromBitmap(
+                    capturedBitmap,
+                    object : ResourceResolverCallback {
+                        override fun onSuccess(resourceId: String) {
+                            resolvedResourceId = resourceId
+                        }
+
+                        override fun onFailure() {}
+                    }
+                )
+            } finally {
+                capturedBitmap.recycle()
+            }
+            val resourceId = resolvedResourceId
+            if (resourceId == null) {
+                request.onFailure()
+            } else {
+                bitmapCachesManager.putInResourceCache(resourceKey, resourceId)
+                request.onSuccess(resourceId)
+            }
         }
     }
 
@@ -129,7 +203,6 @@ internal class ResourceResolver(
     @MainThread
     internal fun resolveResourceIdFromDrawable(
         resources: Resources,
-        applicationContext: Context,
         displayMetrics: DisplayMetrics,
         originalDrawable: Drawable,
         drawableCopier: DrawableCopier,
@@ -138,10 +211,9 @@ internal class ResourceResolver(
         customResourceIdCacheKey: String?,
         resourceResolverCallback: ResourceResolverCallback
     ) {
-        bitmapCachesManager.registerCallbacks(applicationContext)
-
-        val resourceId =
-            tryToGetResourceFromCache(drawable = originalDrawable, customResourceIdCacheKey = customResourceIdCacheKey)
+        val resourceKey =
+            customResourceIdCacheKey ?: bitmapCachesManager.generateResourceKeyFromDrawable(originalDrawable)
+        val resourceId = bitmapCachesManager.getFromResourceCache(resourceKey)
 
         if (resourceId != null) {
             // if we got here it means we saw the bitmap before,
@@ -150,40 +222,69 @@ internal class ResourceResolver(
             return
         }
 
+        // Queued work holds a drawable attached to a view weakly, so work for a drawable the application has since
+        // replaced is skipped, unless the copier itself holds the drawable or its view. A detached drawable, such as one
+        // a custom mapper creates for the capture, or the child of one, has nothing else holding it, so it is held
+        // strongly, and the number of those held is limited.
+        val isAttached = isAttachedToView(originalDrawable)
+        // The worker reads the drawable when it starts, so a capture joins queued work only until then, and only when
+        // the work holds and copies the same drawable the same way, at the same size.
+        val request = pendingImageRequests.start(
+            key = CaptureKey.OfDrawable(
+                drawable = originalDrawable,
+                copier = drawableCopier,
+                resources = resources,
+                displayMetrics = displayMetrics,
+                width = drawableWidth,
+                height = drawableHeight,
+                customResourceIdCacheKey = customResourceIdCacheKey,
+                holdsDrawableStrongly = !isAttached
+            ),
+            byteCount = 0L,
+            callback = resourceResolverCallback
+        ) ?: return
+        val drawableReference = if (isAttached) {
+            drawableReferenceFactory(originalDrawable)
+        } else {
+            null
+        }
+        val detachedDrawable = if (drawableReference == null) originalDrawable else null
+
         // do in the background
-        threadPoolExecutor.executeSafe(RESOURCE_RESOLVER_ALIAS, logger) {
+        executeImageTask(request) {
+            request.begin()
+            val capturedDrawable = drawableReference?.get() ?: detachedDrawable
+            if (capturedDrawable == null) {
+                request.onFailure()
+                return@executeImageTask
+            }
+
             // Copy the drawable on work thread in order to avoid the new MaterialShapeDrawable
             // instance to reuse the singleton of `ShapeAppearancePathProvider` from main thread,
             // causing UI thread drawing crash.
-            val copiedDrawable = drawableCopier.copy(originalDrawable, resources)
+            val copiedDrawable = copyDrawable(drawableCopier, capturedDrawable, resources)
             if (copiedDrawable == null) {
-                resourceResolverCallback.onFailure()
-                return@executeSafe
+                request.onFailure()
+                return@executeImageTask
             }
 
-            val bitmapFromDrawable =
-                if (copiedDrawable is BitmapDrawable && shouldUseDrawableBitmap(copiedDrawable)) {
-                    copiedDrawable.bitmap // cannot be null - we already checked in shouldUseDrawableBitmap
-                } else {
-                    null
-                }
-
+            @Suppress("ThreadSafety") // This task runs on the resource executor.
             createBitmapFromDrawable(
-                drawable = originalDrawable,
+                drawable = capturedDrawable,
                 copiedDrawable = copiedDrawable,
                 drawableWidth = drawableWidth,
                 drawableHeight = drawableHeight,
                 displayMetrics = displayMetrics,
-                bitmapFromDrawable = bitmapFromDrawable,
+                bitmapFromDrawable = usableBitmapOf(copiedDrawable),
                 customResourceIdCacheKey = customResourceIdCacheKey,
                 resolveResourceCallback = object : ResolveResourceCallback {
                     override fun onResolved(resourceId: String, resourceData: ByteArray) {
                         resourceItemCreationHandler.queueItem(resourceId, resourceData)
-                        resourceResolverCallback.onSuccess(resourceId)
+                        request.onSuccess(resourceId)
                     }
 
                     override fun onFailed() {
-                        resourceResolverCallback.onFailure()
+                        request.onFailure()
                     }
                 }
             )
@@ -512,11 +613,113 @@ internal class ResourceResolver(
         }
     }
 
+    private fun executeImageTask(request: ResourceResolverCallback, action: () -> Unit) {
+        val task = Runnable {
+            var isHandedOff = false
+            try {
+                action()
+                isHandedOff = true
+            } finally {
+                // An escaping throwable must not leave the captures waiting forever; it still propagates.
+                if (!isHandedOff) request.onFailure()
+            }
+        }
+        // What executeSafe does for this plain executor, whose tasks it does not name, and the rejected capture fails.
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here; rejection is handled below.
+            threadPoolExecutor.execute(task)
+        } catch (e: RejectedExecutionException) {
+            logger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { RESOURCE_TASK_REJECTED },
+                e
+            )
+            request.onFailure()
+        }
+    }
+
+    // A copier can be application code, whose exceptions are unknown, so one that throws fails the capture.
+    @Suppress("TooGenericExceptionCaught")
+    private fun copyDrawable(drawableCopier: DrawableCopier, drawable: Drawable, resources: Resources): Drawable? {
+        return try {
+            drawableCopier.copy(drawable, resources)
+        } catch (e: Exception) {
+            logger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { DRAWABLE_COPY_FAILED },
+                e,
+                onlyOnce = true
+            )
+            null
+        }
+    }
+
+    private fun copyBitmap(bitmap: Bitmap, config: Bitmap.Config): Bitmap? {
+        return try {
+            bitmap.copy(config, false)
+        } catch (e: IllegalArgumentException) {
+            logCopyFailure(e)
+            null
+        } catch (e: IllegalStateException) {
+            // The application can recycle its bitmap from another thread.
+            logCopyFailure(e)
+            null
+        }
+    }
+
+    private fun logCopyFailure(error: RuntimeException) {
+        logger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            { BITMAP_COPY_FAILED },
+            error,
+            onlyOnce = true
+        )
+    }
+
+    // Changing the pixels of a bitmap changes its generation, but changing its alpha flags or color space, which affect
+    // how it is drawn and encoded, does not, so the key holds them too to identify this exact image.
+    private fun generateBitmapKey(bitmap: Bitmap): String =
+        "$BITMAP_KEY_PREFIX${System.identityHashCode(bitmap)}-${bitmap.generationId}-" +
+            "${bitmap.width}x${bitmap.height}-${bitmap.config}-${bitmap.hasAlpha()}-${bitmap.isPremultiplied}-" +
+            "${colorSpaceKey(bitmap)}"
+
+    // Every custom color space has the same id, so the color space is compared by value. Reading it throws when the
+    // application recycles its bitmap from another thread meanwhile, which the copy then reports.
+    @Suppress("SwallowedException")
+    private fun colorSpaceKey(bitmap: Bitmap): Int? {
+        if (!buildSdkVersionProvider.isAtLeastO) return null
+        return try {
+            bitmap.colorSpace?.hashCode()
+        } catch (e: IllegalStateException) {
+            null
+        }
+    }
+
+    // The bitmap of a bitmap drawable that has pixels to use.
+    private fun usableBitmapOf(drawable: Drawable): Bitmap? =
+        if (drawable is BitmapDrawable && shouldUseDrawableBitmap(drawable)) drawable.bitmap else null
+
     private fun shouldUseDrawableBitmap(drawable: BitmapDrawable): Boolean {
         return drawable.bitmap != null &&
             !drawable.bitmap.isRecycled &&
             drawable.bitmap.width > 0 &&
             drawable.bitmap.height > 0
+    }
+
+    // A wrapper such as a LayerDrawable or an InsetDrawable is the callback of the drawables it holds, and the drawable
+    // captured can be one of those, so a drawable is attached to a view only when its callbacks, followed through the
+    // drawables holding it, end at a view.
+    private fun isAttachedToView(drawable: Drawable): Boolean {
+        var callback = drawable.callback
+        var depth = 0
+        while (callback is Drawable && depth < MAX_WRAPPER_DEPTH) {
+            callback = callback.callback
+            depth++
+        }
+        return callback is View
     }
 
     // endregion
@@ -537,7 +740,19 @@ internal class ResourceResolver(
         private const val CORE_DEFAULT_POOL_SIZE = 1
         private const val MAX_THREAD_COUNT = 10
         private const val RESOURCE_RESOLVER_ALIAS = "resolveResourceId"
+        private const val RESOURCE_TASK_REJECTED = "Unable to schedule $RESOURCE_RESOLVER_ALIAS task on the executor"
+        private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
+        private const val BITMAP_COPY_FAILED = "Unable to copy a bitmap for Session Replay"
+        private const val DRAWABLE_COPY_FAILED = "Unable to copy a drawable for Session Replay"
 
+        // Deeper wrapper chains, or a cycle of callbacks, are treated as detached, which holds the drawable strongly.
+        private const val MAX_WRAPPER_DEPTH = 16
+
+        // Drawable keys hold only digits, dashes and drawable states, so they never start with this prefix.
+        private const val BITMAP_KEY_PREFIX = "bitmap-"
+
+        // With an unbounded queue only the core thread ever runs, so captures are processed one at a time, which the
+        // reservations in PendingImageRequests rely on.
         @Suppress("UnsafeThirdPartyFunctionCall") // all parameters are non-negative and queue is not null
         private val THREADPOOL_EXECUTOR = ThreadPoolExecutor(
             CORE_DEFAULT_POOL_SIZE,
