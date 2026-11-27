@@ -23,6 +23,8 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.okhttp.internal.removeRetainedUserAnonymousIdBaggage
+import com.datadog.android.okhttp.internal.resolveExistingBaggageHeaderValue
 import com.datadog.android.okhttp.internal.trace.toTelemetryTracingHeaderType
 import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.DeterministicTraceSampler
@@ -665,6 +667,7 @@ internal constructor(
                     sdkCore.firstPartyHostResolver.headerTypesForUrl(request.url)
                 }
 
+        tracedRequestBuilder.removeRetainedUserAnonymousIdBaggage(span)
         if (!isSampled) {
             setSampledOutHeaders(tracedRequestBuilder, tracingHeaderTypes, span, tracer)
         } else {
@@ -700,7 +703,7 @@ internal constructor(
                     W3C_BAGGAGE_KEY -> carrier.replaceHeader(
                         key,
                         _TraceInternalProxy.mergeBaggage(
-                            resolveExistingBaggageHeaderValue(carrier),
+                            carrier.resolveExistingBaggageHeaderValue(),
                             value
                         )
                     )
@@ -718,14 +721,6 @@ internal constructor(
         }
 
         return tracedRequestBuilder
-    }
-
-    private fun resolveExistingBaggageHeaderValue(carrier: Request.Builder): String? {
-        return try {
-            carrier.build().headers[W3C_BAGGAGE_KEY]
-        } catch (_: IllegalStateException) {
-            null
-        }
     }
 
     private fun handleResponse(

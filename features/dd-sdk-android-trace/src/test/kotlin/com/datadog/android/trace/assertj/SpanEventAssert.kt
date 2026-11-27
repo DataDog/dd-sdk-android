@@ -334,6 +334,13 @@ internal class SpanEventAssert(actual: SpanEvent) :
                     "instead was: ${actual.meta.usr.id}"
             )
             .isEqualTo(userInfo.id)
+        assertThat(actual.meta.usr.anonymousId)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have user anonymous id: " +
+                    "${userInfo.anonymousId} but " +
+                    "instead was: ${actual.meta.usr.anonymousId}"
+            )
+            .isEqualTo(userInfo.anonymousId)
         assertThat(actual.meta.usr.additionalProperties)
             .hasSameSizeAs(userInfo.additionalProperties)
             .containsAllEntriesOf(userInfo.additionalProperties)

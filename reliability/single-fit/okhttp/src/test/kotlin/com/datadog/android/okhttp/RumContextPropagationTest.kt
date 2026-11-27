@@ -20,6 +20,7 @@ import com.datadog.android.okhttp.RumContextPropagationTest.Companion.SAMPLING_T
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.okhttp.tests.utils.unregisterGlobalRumMonitor
 import com.datadog.android.okhttp.trace.TracingInterceptor
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
@@ -108,6 +109,9 @@ class RumContextPropagationTest {
                 listOfNotNull(
                     "account.id=${accountInfo.id}",
                     userInfo.id?.let { "user.id=$it" },
+                    userInfo.anonymousId
+                        ?.takeIf { datadogContext.trackingConsent == TrackingConsent.GRANTED }
+                        ?.let { "user.anonymous_id=$it" },
                     "session.id=${rumContext.sessionId}"
                 )
             )

@@ -178,6 +178,7 @@ public final class com/datadog/android/trace/internal/_TraceInternalProxy {
 	public final fun getPropagationHelper ()Lcom/datadog/android/trace/internal/DatadogPropagationHelper;
 	public final fun isDefaultTracer (Lcom/datadog/android/trace/api/tracer/DatadogTracer;)Z
 	public final fun mergeBaggage (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public final fun removeRetainedUserAnonymousIdBaggage (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/util/List;)Ljava/util/List;
 	public final fun setSdkV2Compatible (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public final fun setTraceId128BitGenerationEnabled (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
@@ -655,18 +656,20 @@ public final class com/datadog/android/trace/model/SpanEvent$Type$Companion {
 public final class com/datadog/android/trace/model/SpanEvent$Usr {
 	public static final field Companion Lcom/datadog/android/trace/model/SpanEvent$Usr$Companion;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/trace/model/SpanEvent$Usr;
-	public static synthetic fun copy$default (Lcom/datadog/android/trace/model/SpanEvent$Usr;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/trace/model/SpanEvent$Usr;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/trace/model/SpanEvent$Usr;
+	public static synthetic fun copy$default (Lcom/datadog/android/trace/model/SpanEvent$Usr;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/trace/model/SpanEvent$Usr;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/trace/model/SpanEvent$Usr;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/trace/model/SpanEvent$Usr;
 	public final fun getAdditionalProperties ()Ljava/util/Map;
+	public final fun getAnonymousId ()Ljava/lang/String;
 	public final fun getEmail ()Ljava/lang/String;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;

@@ -1172,6 +1172,7 @@ datadog:
       - "okhttp3.Request.body()"
       - "okhttp3.Request.header(kotlin.String)"
       - "okhttp3.Request.headers()"
+      - "okhttp3.Request.headers(kotlin.String)"
       - "okhttp3.Request.method()"
       - "okhttp3.Request.newBuilder()"
       - "okhttp3.Request.tag(java.lang.Class)"

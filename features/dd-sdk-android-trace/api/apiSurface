@@ -96,6 +96,7 @@ object com.datadog.android.trace.internal._TraceInternalProxy
   fun activateSpan(tracer: com.datadog.android.trace.api.tracer.DatadogTracer, span: com.datadog.android.trace.api.span.DatadogSpan, asyncPropagating: Boolean): com.datadog.android.trace.api.scope.DatadogScope?
   fun isDefaultTracer(tracer: com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
   fun mergeBaggage(oldHeader: String?, newHeader: String): String
+  fun removeRetainedUserAnonymousIdBaggage(span: com.datadog.android.trace.api.span.DatadogSpan, headerValues: List<String>): List<String>?
   fun createApmNetworkInstrumentation(name: String, configuration: com.datadog.android.trace.ApmNetworkInstrumentationConfiguration)
 fun com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>.effectiveSampleRate(span: com.datadog.android.trace.api.span.DatadogSpan): Float?
 fun com.datadog.android.trace.api.span.DatadogSpan.finishRumAware(isSampled: Boolean, canSendSpan: Boolean, isDefaultTracer: Boolean)
@@ -153,7 +154,7 @@ data class com.datadog.android.trace.model.SpanEvent
       fun fromJson(jsonString: kotlin.String): Tracer
       fun fromJsonObject(jsonObject: com.google.gson.JsonObject): Tracer
   data class Usr
-    constructor(id: kotlin.String? = null, name: kotlin.String? = null, email: kotlin.String? = null, additionalProperties: kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    constructor(id: kotlin.String? = null, name: kotlin.String? = null, email: kotlin.String? = null, anonymousId: kotlin.String? = null, additionalProperties: kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(jsonString: kotlin.String): Usr

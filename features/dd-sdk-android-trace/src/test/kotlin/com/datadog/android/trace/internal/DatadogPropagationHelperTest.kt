@@ -22,6 +22,7 @@ import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.core.propagation.B3HttpCodec
 import com.datadog.trace.core.propagation.DatadogHttpCodec
 import com.datadog.trace.core.propagation.ExtractedContext
+import com.datadog.trace.core.propagation.HttpCodec
 import com.datadog.trace.core.propagation.W3CHttpCodec
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -975,6 +976,117 @@ internal class DatadogPropagationHelperTest {
             on { tag(DatadogSpan::class.java) } doReturn datadogSpan
             on { tag(TraceContext::class.java) } doReturn traceContext
         }
+    }
+
+    @Test
+    fun `M remove retained anonymous id baggage W propagateSampledHeaders() {retry, no anonymous id tag}`() {
+        // Given
+        givenRetainedBaggage(mapOf(W3CHttpCodec.BAGGAGE_KEY to listOf("user.id=user+id;p=v,user.anonymous_id=old")))
+
+        // When
+        testedHelper.propagateSampledHeaders(
+            mockRequestModifier,
+            mockTracer,
+            mockSpan,
+            setOf(TracingHeaderType.TRACECONTEXT)
+        )
+
+        // Then
+        verify(mockRequestModifier).removeHeader(W3CHttpCodec.BAGGAGE_KEY)
+        verify(mockRequestModifier).addHeader(W3CHttpCodec.BAGGAGE_KEY, "user.id=user+id;p=v")
+    }
+
+    @Test
+    fun `M remove baggage header W propagateNotSampledHeaders() {retry, only anonymous id retained}`() {
+        // Given
+        givenRetainedBaggage(mapOf(W3CHttpCodec.BAGGAGE_KEY to listOf("user.anonymous_id=old")))
+
+        // When
+        testedHelper.propagateNotSampledHeaders(
+            mockRequestModifier,
+            mockTracer,
+            mockSpan,
+            setOf(TracingHeaderType.DATADOG),
+            TraceContextInjection.SAMPLED,
+            null
+        )
+
+        // Then
+        verify(mockRequestModifier).removeHeader(W3CHttpCodec.BAGGAGE_KEY)
+        verify(mockRequestModifier, never()).addHeader(eq(W3CHttpCodec.BAGGAGE_KEY), any())
+    }
+
+    @Test
+    fun `M scrub every baggage field W propagateNotSampledHeaders() {retry, TRACECONTEXT, mixed-case names}`() {
+        // Given
+        givenRetainedBaggage(
+            linkedMapOf(
+                "Baggage" to listOf("custom=,user.anonymous_id=old"),
+                "BAGGAGE" to listOf("second=two")
+            )
+        )
+
+        // When
+        testedHelper.propagateNotSampledHeaders(
+            mockRequestModifier,
+            mockTracer,
+            mockSpan,
+            setOf(TracingHeaderType.TRACECONTEXT),
+            TraceContextInjection.SAMPLED,
+            null
+        )
+
+        // Then
+        verify(mockRequestModifier).removeHeader("Baggage")
+        verify(mockRequestModifier).removeHeader("BAGGAGE")
+        verify(mockRequestModifier).addHeader(W3CHttpCodec.BAGGAGE_KEY, "custom=")
+        verify(mockRequestModifier).addHeader(W3CHttpCodec.BAGGAGE_KEY, "second=two")
+    }
+
+    @Test
+    fun `M keep retained anonymous id baggage W propagateSampledHeaders() {retry, anonymous id tag set}`(
+        @StringForgery fakeAnonymousId: String
+    ) {
+        // Given
+        givenRetainedBaggage(mapOf(W3CHttpCodec.BAGGAGE_KEY to listOf("user.anonymous_id=old")))
+        whenever(mockSpan.getTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID)) doReturn fakeAnonymousId
+
+        // When
+        testedHelper.propagateSampledHeaders(
+            mockRequestModifier,
+            mockTracer,
+            mockSpan,
+            setOf(TracingHeaderType.TRACECONTEXT)
+        )
+
+        // Then
+        verify(mockRequestModifier, never()).removeHeader(W3CHttpCodec.BAGGAGE_KEY)
+        verify(mockRequestModifier, never()).replaceHeader(eq(W3CHttpCodec.BAGGAGE_KEY), any())
+    }
+
+    @Test
+    fun `M keep valid baggage W propagateSampledHeaders() {several fields, later malformed member, injection}`() {
+        // Given
+        givenRetainedBaggage(mapOf(W3CHttpCodec.BAGGAGE_KEY to listOf("custom=one", "custom")))
+        setupInjectorCallback(W3CHttpCodec.BAGGAGE_KEY, "user.id=new")
+
+        // When
+        testedHelper.propagateSampledHeaders(
+            mockRequestModifier,
+            mockTracer,
+            mockSpan,
+            setOf(TracingHeaderType.TRACECONTEXT)
+        )
+
+        // Then
+        verify(mockRequestModifier).replaceHeader(W3CHttpCodec.BAGGAGE_KEY, "custom=one,custom,user.id=new")
+    }
+
+    private fun givenRetainedBaggage(headers: Map<String, List<String>>) {
+        val request = mock<HttpRequestInfo> {
+            on { this.headers } doReturn headers
+        }
+        whenever(mockRequestModifier.build()) doReturn request
     }
 
     private fun setupInjectorCallback(expectedKey: String, expectedValue: String) {
