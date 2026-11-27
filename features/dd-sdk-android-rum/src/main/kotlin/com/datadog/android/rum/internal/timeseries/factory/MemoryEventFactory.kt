@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.domain.scope.toTimeseriesMemoryOs
 import com.datadog.android.rum.internal.domain.scope.toTimeseriesMemorySessionPrecondition
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
 import com.datadog.android.rum.internal.timeseries.DataPoint
+import com.datadog.android.rum.internal.timeseries.MemorySnapshot
 import com.datadog.android.rum.internal.toTimeseriesMemorySessionType
 import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import java.util.UUID
@@ -30,13 +31,12 @@ import java.util.UUID
 @Suppress("LongParameterList")
 internal class MemoryEventFactory(
     private val sessionType: RumSessionType,
-    private val totalRamBytes: Long,
     private val timeProvider: TimeProvider,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val internalLogger: InternalLogger,
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver()
-) : EventFactory<Double, TimeseriesMemoryEvent> {
+) : EventFactory<MemorySnapshot, TimeseriesMemoryEvent> {
 
     override val eventName: String = "memory"
 
@@ -44,9 +44,9 @@ internal class MemoryEventFactory(
     override fun create(
         datadogContext: DatadogContext,
         rumContext: RumContext,
-        dataPoints: List<DataPoint<Double>>
+        dataPoints: List<DataPoint<MemorySnapshot>>
     ): TimeseriesMemoryEvent? {
-        if (totalRamBytes <= 0L || dataPoints.isEmpty()) return null
+        if (dataPoints.isEmpty()) return null
 
         val deviceInfo = datadogContext.deviceInfo
         val syntheticsTestId = rumContext.syntheticsTestId
@@ -108,20 +108,11 @@ internal class MemoryEventFactory(
                 data = TimeseriesMemoryEvent.Data(
                     timestamps = dataPoints.map { it.timestampNs },
                     values = TimeseriesMemoryEvent.Values(
-                        memoryPercent = dataPoints.map { it.value / totalRamBytes * PERCENT_FACTOR },
-                        memoryFootprint = dataPoints.map { it.value / BYTES_IN_KB }
+                        memoryFootprint = dataPoints.map { it.value.footprintKib },
+                        memoryNonResident = dataPoints.map { it.value.nonResidentKib }
                     )
                 )
             )
         )
-    }
-
-    private companion object {
-        const val PERCENT_FACTOR = 100.0
-
-        // Must match the factor used in MemoryVitalReader when converting VmRSS kB to bytes.
-        // Datadog memory vitals use decimal (SI) units, so 1000 (not 1024) keeps the emitted
-        // memory_footprint consistent with the collected value and with memory_percent.
-        const val BYTES_IN_KB = 1000
     }
 }

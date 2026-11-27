@@ -2486,7 +2486,7 @@ internal class RumEventSerializerTest {
                         timestamps = emptyList(),
                         values = TimeseriesMemoryEvent.Values(
                             memoryFootprint = emptyList(),
-                            memoryPercent = emptyList()
+                            memoryNonResident = emptyList()
                         )
                     )
                 )

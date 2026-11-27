@@ -115,6 +115,7 @@ import com.datadog.android.rum.internal.vitals.FrameStateListener
 import com.datadog.android.rum.internal.vitals.FrameStatesAggregator
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
+import com.datadog.android.rum.internal.vitals.ProcStatusReader
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalObserver
 import com.datadog.android.rum.internal.vitals.VitalReader
@@ -315,7 +316,7 @@ internal class RumFeature(
 
         configuration.timeseriesConfiguration?.let {
             if (appContext is Application) {
-                initializeTimeseriesCollection(appContext, it)
+                initializeTimeseriesCollection(it)
             } else {
                 sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
                     "Rum feature should have been initialized with android.app.Application context, " +
@@ -333,10 +334,7 @@ internal class RumFeature(
         initialized.set(true)
     }
 
-    private fun initializeTimeseriesCollection(
-        appContext: Application,
-        timeseriesConfiguration: TimeseriesConfiguration
-    ) {
+    private fun initializeTimeseriesCollection(timeseriesConfiguration: TimeseriesConfiguration) {
         val sessionRegistry = CollectedTimeseriesSessionRegistry()
 
         val pipelinesFactory = PipelineFactory(
@@ -346,8 +344,7 @@ internal class RumFeature(
             configuration = timeseriesConfiguration,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            sessionRegistry = sessionRegistry,
-            totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L
+            sessionRegistry = sessionRegistry
         )
 
         timeseriesCollector = DefaultTimeseriesCollector(
@@ -733,7 +730,7 @@ internal class RumFeature(
 
         memoryVitalMonitor = AggregatingVitalMonitor()
         initializeVitalMonitor(
-            MemoryVitalReader(internalLogger = sdkCore.internalLogger),
+            MemoryVitalReader(ProcStatusReader(internalLogger = sdkCore.internalLogger)),
             memoryVitalMonitor,
             frequency.periodInMs
         )
@@ -1074,24 +1071,6 @@ internal class RumFeature(
                 " SDK instance by calling SdkCore#registerFeature method."
         internal const val FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY =
             "Manually enabling JankStats tracking threw an exception."
-
-        internal fun Context.readTotalRamBytes(internalLogger: InternalLogger): Long? = try {
-            getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
-                ?.run {
-                    // UnsafeThirdPartyFunctionCall: MemoryInfo() and getMemoryInfo() can throw
-                    // RuntimeException on broken Android implementations; fall back to 0.
-                    @Suppress("UnsafeThirdPartyFunctionCall")
-                    ActivityManager.MemoryInfo().also { getMemoryInfo(it) }.totalMem
-                }
-        } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "Failed to read total RAM via ActivityManager" },
-                e
-            )
-            null
-        }
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

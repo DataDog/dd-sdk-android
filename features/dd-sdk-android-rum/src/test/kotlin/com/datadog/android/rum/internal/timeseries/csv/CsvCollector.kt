@@ -17,6 +17,7 @@ import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.timeseries.Buffer
+import com.datadog.android.rum.internal.timeseries.MemorySnapshot
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.factory.CpuEventFactory
 import com.datadog.android.rum.internal.timeseries.factory.EventFactory
@@ -27,11 +28,11 @@ import fr.xgouchet.elmyr.Forge
 
 /**
  * A test-only [TimeseriesCollector] that mirrors the wiring done by `DefaultTimeseriesCollector`,
- * but pulls samples from CSV-backed readers instead of `VitalReaderWrapper` and drives the
+ * but pulls samples from CSV-backed readers instead of the `/proc` readers and drives the
  * pipelines synchronously (no executor) so callers can assert on every emitted JSON.
  */
 internal class CsvCollector(
-    private val pipelines: List<Triple<CSVReader, Buffer<Double>, EventFactory<Double, *>>>,
+    private val pipelines: List<CsvPipeline<*>>,
     private val datadogContext: DatadogContext,
     private val rumContext: RumContext,
     private val eventSerializer: RumEventSerializer
@@ -47,18 +48,20 @@ internal class CsvCollector(
      * exhausted, flushing whenever the buffer is full, then emitting any final remainder.
      */
     override fun onSessionStart(sessionId: String, sessionType: RumSessionType) {
-        for ((reader, buffer, eventFactory) in pipelines) {
-            while (reader.hasNext()) {
-                buffer.add(reader.read())
-                if (buffer.isFull()) flush(buffer, eventFactory)
-            }
-            flush(buffer, eventFactory)
-        }
+        pipelines.forEach { it.run() }
     }
 
     override fun isTimeseriesCollected(sessionId: String): Boolean = emitted.isNotEmpty()
 
-    private fun flush(buffer: Buffer<Double>, eventFactory: EventFactory<Double, *>) = buffer.drain()
+    private fun <T : Any> CsvPipeline<T>.run() {
+        while (reader.hasNext()) {
+            buffer.add(reader.read())
+            if (buffer.isFull()) flush(buffer, eventFactory)
+        }
+        flush(buffer, eventFactory)
+    }
+
+    private fun <T : Any> flush(buffer: Buffer<T>, eventFactory: EventFactory<T, *>) = buffer.drain()
         .takeIf { it.isNotEmpty() }
         ?.let { eventFactory.create(datadogContext, rumContext, it) }
         ?.let(eventSerializer::serialize)
@@ -83,7 +86,6 @@ internal class CsvCollector(
         fun create(
             csvContent: String,
             sessionType: RumSessionType,
-            totalRamBytes: Long,
             bufferSize: Int,
             timeProvider: TimeProvider,
             forge: Forge,
@@ -99,20 +101,19 @@ internal class CsvCollector(
                 rumContext = rumContext,
                 eventSerializer = RumEventSerializer(internalLogger),
                 pipelines = listOf(
-                    Triple(
-                        CSVReader(csvContent, METRIC_MEMORY_USAGE, timeProvider),
+                    CsvPipeline(
+                        CSVReader(csvContent, METRIC_MEMORY, timeProvider) { parseMemorySnapshot(it) },
                         Buffer(bufferSize),
                         MemoryEventFactory(
                             sessionType = sessionType,
-                            totalRamBytes = totalRamBytes,
                             timeProvider = timeProvider,
                             batteryInfoProvider = FixedInfoProvider(batteryInfo),
                             displayInfoProvider = FixedInfoProvider(displayInfo),
                             internalLogger = internalLogger
                         )
                     ),
-                    Triple(
-                        CSVReader(csvContent, METRIC_CPU_USAGE, timeProvider),
+                    CsvPipeline(
+                        CSVReader(csvContent, METRIC_CPU_USAGE, timeProvider) { parseCpuUsage(it) },
                         Buffer(bufferSize),
                         CpuEventFactory(
                             sessionType = sessionType,
@@ -126,12 +127,31 @@ internal class CsvCollector(
             )
         }
 
+        private fun parseMemorySnapshot(values: List<String>): MemorySnapshot? {
+            val valuesKib = values.mapNotNull { it.toLongOrNull() }
+            return if (values.size == MEMORY_VALUES_COUNT && valuesKib.size == MEMORY_VALUES_COUNT) {
+                MemorySnapshot(footprintKib = valuesKib[0], nonResidentKib = valuesKib[1])
+            } else {
+                null
+            }
+        }
+
+        private fun parseCpuUsage(values: List<String>): Double? = values.singleOrNull()?.toDoubleOrNull()
+
         private class FixedInfoProvider<T : InfoData>(private val state: T) : InfoProvider<T> {
             override fun getState(): T = state
             override fun cleanup() = Unit
         }
 
-        const val METRIC_MEMORY_USAGE: String = "memory_usage"
+        private const val MEMORY_VALUES_COUNT = 2
+
+        const val METRIC_MEMORY: String = "memory"
         const val METRIC_CPU_USAGE: String = "cpu_usage"
     }
 }
+
+internal class CsvPipeline<T : Any>(
+    val reader: CSVReader<T>,
+    val buffer: Buffer<T>,
+    val eventFactory: EventFactory<T, *>
+)

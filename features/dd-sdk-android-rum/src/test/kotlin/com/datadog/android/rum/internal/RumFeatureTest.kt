@@ -881,7 +881,6 @@ internal class RumFeatureTest {
 
     @Test
     fun `M wire timeseries factory W initialize { timeseries enabled }`(
-        @LongForgery(min = 1L) fakeTotalRamBytes: Long,
         @IntForgery(min = 2, max = 128) fakeBufferSize: Int,
         @LongForgery(min = 1L, max = 1000L) fakeIntervalMs: Long
     ) {
@@ -900,14 +899,6 @@ internal class RumFeatureTest {
             fakeConfiguration,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
-        val stubActivityManager = mock<ActivityManager>()
-        doAnswer { invocation ->
-            invocation.getArgument<ActivityManager.MemoryInfo>(0).totalMem = fakeTotalRamBytes
-            null
-        }.whenever(stubActivityManager).getMemoryInfo(any())
-        whenever(
-            appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)
-        ) doReturn stubActivityManager
 
         // When
         testedFeature.onInitialize(appContext.mockInstance)
@@ -933,8 +924,6 @@ internal class RumFeatureTest {
             .isSameAs(testedFeature.insightsCollector)
         assertThat(pipelinesFactory.getFieldValue<DataWriter<*>, PipelineFactory>("dataWriter"))
             .isSameAs(testedFeature.dataWriter)
-        assertThat(pipelinesFactory.getFieldValue<Long, PipelineFactory>("totalRamBytes"))
-            .isEqualTo(fakeTotalRamBytes)
         assertThat(pipelinesFactory.getFieldValue<TimeseriesConfiguration, PipelineFactory>("configuration"))
             .isSameAs(fakeConfiguration.timeseriesConfiguration)
         assertThat(

@@ -42,6 +42,7 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(RumEventMapperFactory())
         forge.addFactory(RumContextForgeryFactory())
         forge.addFactory(VitalInfoForgeryFactory())
+        forge.addFactory(MemorySnapshotForgeryFactory())
         forge.addFactory(RumEventMetaForgeryFactory())
         forge.addFactory(ViewEventMetaForgeryFactory())
         forge.addFactory(ViewUpdateMetaForgeryFactory())

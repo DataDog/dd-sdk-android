@@ -799,6 +799,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.core.feature.event.ThreadDump)"
       - "kotlin.collections.listOf(com.datadog.android.profiling.internal.perfetto.ProfileType)"
       - "kotlin.collections.listOf(com.datadog.android.rum.internal.vitals.FPSVitalListener)"
+      - "kotlin.collections.listOf(com.datadog.android.rum.internal.vitals.ProcStatusReader.Field)"
       - "kotlin.collections.listOf(com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation)"
       - "kotlin.collections.listOf(com.datadog.android.flags.openfeature.internal.exposure.ExposureAdmissionHook)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ActionEvent.Interface)"
