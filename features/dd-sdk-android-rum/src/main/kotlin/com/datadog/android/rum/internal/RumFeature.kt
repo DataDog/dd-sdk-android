@@ -40,6 +40,7 @@ import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingThreadDump
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -61,6 +62,7 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.PendingOomErrorStore
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
@@ -161,10 +163,20 @@ internal class RumFeature(
         DatadogLateCrashReporter(it)
     },
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
-    private val handler: Handler = Handler(Looper.getMainLooper())
+    private val handler: Handler = Handler(Looper.getMainLooper()),
+    pendingOomErrorStoreFactory: (RumFeature) -> PendingOomErrorStore = { feature ->
+        PendingOomErrorStore(
+            sdkCore = sdkCore,
+            executorProvider = { feature.schedulerExecutorService },
+            dataStoreProvider = { sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.dataStore },
+            dataWriterProvider = { feature.dataWriter }
+        )
+    }
 ) : StorageBackedFeature, FeatureEventReceiver, HeatmapIdentifierRegistryProvider {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
+
+    internal val pendingOomErrorStore = pendingOomErrorStoreFactory(this)
     internal val initialized = AtomicBoolean(false)
 
     internal var sampleRate: Float = 0f
@@ -284,8 +296,10 @@ internal class RumFeature(
         val frequency = configuration.vitalsMonitorUpdateFrequency
         val vitalsUpdatesRequired = frequency != VitalsUpdateFrequency.NEVER
 
-        // The scheduler executor backs both the CPU/memory vital monitors and timeseries sampling.
-        if (vitalsUpdatesRequired || configuration.timeseriesConfiguration != null) initializeSchedulerExecutorService()
+        // The scheduler executor backs the CPU/memory vital monitors, timeseries sampling and the held OOM
+        // error timeout. It is always created: a loaded held error is removed from disk, so without its
+        // timeout it would be lost if profiling never answers. Its thread only starts with the first task.
+        initializeSchedulerExecutorService()
 
         if (vitalsUpdatesRequired) {
             // CPU/memory monitors schedule on the scheduler executor, so they are only set up when vitals
@@ -523,6 +537,13 @@ internal class RumFeature(
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             is ProfilingAnrDetectedEvent -> handleProfilingAnrDetectedEvent(event)
+
+            is ProfilerEvent.OomProfileWriteResult -> pendingOomErrorStore.onOomProfileWriteResult(
+                event.rumErrorId,
+                event.isWritten
+            )
+
+            is ProfilerEvent.OomProfilingReady -> pendingOomErrorStore.onProfilingReady()
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,

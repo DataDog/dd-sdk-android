@@ -292,7 +292,7 @@ internal class DatadogRumMonitorTest {
         }
         whenever(
             mockRumFeatureScope.withWriteContextSync(
-                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                any(),
                 any()
             )
         ) doAnswer {
@@ -1439,7 +1439,7 @@ internal class DatadogRumMonitorTest {
         // Given
         whenever(
             mockRumFeatureScope.withWriteContextSync(
-                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                any(),
                 any()
             )
         ) doReturn false
@@ -1457,6 +1457,56 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M request the profiling context W addCrash() { OutOfMemoryError }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery fakeErrorMessage: String
+    ) {
+        // When
+        testedMonitor.addCrash(message, source, OutOfMemoryError(fakeErrorMessage), threads = emptyList())
+
+        // Then
+        assertThat(capturedFatalFeatureContexts())
+            .containsExactlyInAnyOrder(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.PROFILING_FEATURE_NAME)
+    }
+
+    @Test
+    fun `M request the profiling context W addCrash() { OutOfMemoryError deep in the cause chain }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery fakeErrorMessage: String
+    ) {
+        // Given
+        val throwable = RuntimeException(
+            fakeErrorMessage,
+            IllegalStateException(fakeErrorMessage, OutOfMemoryError(fakeErrorMessage))
+        )
+
+        // When
+        testedMonitor.addCrash(message, source, throwable, threads = emptyList())
+
+        // Then
+        assertThat(capturedFatalFeatureContexts())
+            .containsExactlyInAnyOrder(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.PROFILING_FEATURE_NAME)
+    }
+
+    @Test
+    fun `M not request the profiling context W addCrash() { no OutOfMemoryError }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery fakeErrorMessage: String
+    ) {
+        // Given
+        val throwable = RuntimeException(fakeErrorMessage, IllegalStateException(fakeErrorMessage))
+
+        // When
+        testedMonitor.addCrash(message, source, throwable, threads = emptyList())
+
+        // Then
+        assertThat(capturedFatalFeatureContexts()).containsExactly(Feature.SESSION_REPLAY_FEATURE_NAME)
+    }
+
+    @Test
     fun `M not hold rootScope lock W addCrash() { fatal error }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -1466,7 +1516,7 @@ internal class DatadogRumMonitorTest {
         var rootScopeHeldWhileWaiting = true
         whenever(
             mockRumFeatureScope.withWriteContextSync(
-                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                any(),
                 any()
             )
         ) doAnswer {
@@ -3746,6 +3796,12 @@ internal class DatadogRumMonitorTest {
         }
 
         verifyNoMoreInteractions(mockWriter)
+    }
+
+    private fun capturedFatalFeatureContexts(): Set<String> {
+        val captor = argumentCaptor<Set<String>>()
+        verify(mockRumFeatureScope).withWriteContextSync(captor.capture(), any())
+        return captor.firstValue
     }
 
     companion object {

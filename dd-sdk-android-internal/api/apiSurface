@@ -190,6 +190,11 @@ sealed class com.datadog.android.internal.profiling.ProfilerEvent
     constructor(String, Long, Long, ProfilingRumContext)
   data class RumOomErrorEvent : ProfilerEvent
     constructor(String, Long, ProfilingRumContext)
+  data class RumHeldOomErrorEvent : ProfilerEvent
+    constructor(String)
+  object OomProfilingReady : ProfilerEvent
+  data class OomProfileWriteResult : ProfilerEvent
+    constructor(String, Boolean)
   data class RumLongTaskEvent : ProfilerEvent
     constructor(String, Long, Long, ProfilingRumContext)
   data class RumVitalEvent : ProfilerEvent
@@ -411,6 +416,7 @@ typealias AllStackTracesProvider = (StackTraceErrorHandler) -> Map<Thread, Array
 fun safeGetAllStackTraces(StackTraceErrorHandler): Map<Thread, Array<StackTraceElement>>
 fun Throwable.loggableStackTrace(): String
 fun Throwable.loggableMessage(): String?
+fun Throwable.isOrIsCausedByOutOfMemoryError(): Boolean
 fun formatIsoUtc(Long): String
 class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProvider
   override fun onCreate(): Boolean

@@ -150,4 +150,67 @@ internal class ThrowableExtTest {
         // Then
         assertThat(result).isNull()
     }
+
+    @Test
+    fun `M return true W isOrIsCausedByOutOfMemoryError() { OutOfMemoryError }`(
+        @StringForgery fakeMessage: String
+    ) {
+        // When
+        val result = OutOfMemoryError(fakeMessage).isOrIsCausedByOutOfMemoryError()
+
+        // Then
+        assertThat(result).isTrue
+    }
+
+    @Test
+    fun `M return true W isOrIsCausedByOutOfMemoryError() { OutOfMemoryError deep in the cause chain }`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val throwable = RuntimeException(fakeMessage, IllegalStateException(fakeMessage, OutOfMemoryError(fakeMessage)))
+
+        // When
+        val result = throwable.isOrIsCausedByOutOfMemoryError()
+
+        // Then
+        assertThat(result).isTrue
+    }
+
+    @Test
+    fun `M return false W isOrIsCausedByOutOfMemoryError() { no OutOfMemoryError }`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val throwable = RuntimeException(fakeMessage, IllegalStateException(fakeMessage))
+
+        // When
+        val result = throwable.isOrIsCausedByOutOfMemoryError()
+
+        // Then
+        assertThat(result).isFalse
+    }
+
+    @Test
+    fun `M return false W isOrIsCausedByOutOfMemoryError() { cyclic cause chain }`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val first = CyclicThrowable(fakeMessage)
+        val second = CyclicThrowable(fakeMessage)
+        first.nextCause = second
+        second.nextCause = first
+
+        // When
+        val result = first.isOrIsCausedByOutOfMemoryError()
+
+        // Then
+        assertThat(result).isFalse
+    }
+
+    private class CyclicThrowable(message: String) : RuntimeException(message) {
+        var nextCause: Throwable? = null
+
+        override val cause: Throwable?
+            get() = nextCause
+    }
 }
