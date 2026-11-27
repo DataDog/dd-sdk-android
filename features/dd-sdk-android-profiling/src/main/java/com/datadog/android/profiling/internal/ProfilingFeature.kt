@@ -19,7 +19,6 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
@@ -111,6 +110,12 @@ internal class ProfilingFeature(
     // that depend on it being the current session.
     private val quotaSessionLock = Any()
 
+    private var contextState = ProfilingContextState(
+        continuousSampleRate = configuration.continuousSampleRate,
+        applicationLaunchSampleRate = configuration.applicationLaunchSampleRate,
+        isAnrEnabled = configuration.anrTriggerEnabled
+    )
+
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
         customEndpointUrl = configuration.customEndpointUrl,
         internalLogger = sdkCore.internalLogger
@@ -146,12 +151,7 @@ internal class ProfilingFeature(
         ProfilingStorage.addProfilingFlag(appContext)
         isLaunchProfilingActive = profiler.isRunning()
         sdkCore.setEventReceiver(name, this)
-        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILING_SAMPLE_RATE] = configuration.continuousSampleRate
-            context[FeatureContextKeys.PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE] =
-                configuration.applicationLaunchSampleRate
-            context[FeatureContextKeys.PROFILING_ANR_ENABLED] = configuration.anrTriggerEnabled
-        }
+        publishContextState()
 
         val quotaCallFactory = sdkCore.createOkHttpCallFactory {
             callTimeout(QUOTA_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
@@ -293,9 +293,7 @@ internal class ProfilingFeature(
     }
 
     override fun onOomTriggerRegisteredChanged(isRegistered: Boolean) {
-        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILING_OOM_TRIGGER_REGISTERED] = isRegistered
-        }
+        updateContextState { it.copy(isOomTriggerRegistered = isRegistered) }
     }
 
     override fun onOutOfMemoryDetected(result: PerfettoResult) {
@@ -372,9 +370,7 @@ internal class ProfilingFeature(
     }
 
     override fun onProfilingStatusChange(isRunning: Boolean) {
-        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = isRunning
-        }
+        updateContextState { it.copy(isProfilerRunning = isRunning) }
     }
 
     @Suppress("ReturnCount")
@@ -622,14 +618,12 @@ internal class ProfilingFeature(
             }
             drainTriggerProfilesAwaitingQuota()
         }
-        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            if (result.decision == QuotaResult.Decision.DENIED) {
-                context[FeatureContextKeys.PROFILING_QUOTA_REASON] = result.reason
-                context[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID] = sessionId
-            } else {
-                context.remove(FeatureContextKeys.PROFILING_QUOTA_REASON)
-                context.remove(FeatureContextKeys.PROFILING_QUOTA_SESSION_ID)
-            }
+        val isDenied = result.decision == QuotaResult.Decision.DENIED
+        updateContextState {
+            it.copy(
+                quotaDeniedReason = result.reason.takeIf { isDenied },
+                quotaDeniedSessionId = sessionId.takeIf { isDenied }
+            )
         }
         tryWritePendingLaunchProfile()
         triggerProfiles.forEach { writeOrDropTriggerProfile(it, result) }
@@ -707,6 +701,17 @@ internal class ProfilingFeature(
     private fun dropTriggerProfile(triggerProfile: TriggerProfile, message: String) {
         logToUser(message)
         fileDeleteSafe(triggerProfile.result.resultFilePath, sdkCore.internalLogger)
+    }
+
+    private fun publishContextState() {
+        updateContextState { it }
+    }
+
+    private fun updateContextState(update: (ProfilingContextState) -> ProfilingContextState) {
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            contextState = update(contextState)
+            contextState.writeTo(context)
+        }
     }
 
     private fun isRecordingProfile(): Boolean {
