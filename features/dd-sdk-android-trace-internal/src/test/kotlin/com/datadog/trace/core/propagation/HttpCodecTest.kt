@@ -5,6 +5,7 @@
  */
 package com.datadog.trace.core.propagation
 
+import com.datadog.android.log.LogAttributes
 import com.datadog.trace.core.DDSpanContext
 import com.datadog.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -46,7 +47,7 @@ internal class HttpCodecTest {
 
         whenever(mockContext.tags).thenReturn(
             mapOf<String, Any>(
-                HttpCodec.RUM_KEY_SESSION_ID to fakeSessionId,
+                LogAttributes.RUM_SESSION_ID to fakeSessionId,
                 HttpCodec.RUM_KEY_USER_ID to fakeUserId,
                 HttpCodec.RUM_KEY_ACCOUNT_ID to fakeAccountId
             )

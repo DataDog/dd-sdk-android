@@ -15,6 +15,9 @@ import androidx.test.runner.lifecycle.Stage
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.model.TimeseriesCpuEvent
 import com.datadog.android.rum.model.TimeseriesMemoryEvent
@@ -116,19 +119,19 @@ internal class TimeseriesCollectionTest {
     @Test
     fun verifySessionExpiresAndTimeseriesStopWithoutUserInteraction() {
         // Given
-        ConditionWatcher { currentRumContext()[SESSION_STATE_KEY] == "TRACKED" }
+        ConditionWatcher { currentRumContext()?.sessionState == RumSessionState.TRACKED }
             .doWait(timeoutMs = RumTest.FINAL_WAIT_MS)
         Thread.sleep(FOREGROUND_COLLECTION_DURATION_MS)
-        val sessionId = currentRumContext()[SESSION_ID_KEY]
+        val sessionId = checkNotNull(currentRumContext()).sessionId
         assertThat(timeseriesEvents()).isEmpty()
 
         // When
-        ConditionWatcher { currentRumContext()[SESSION_STATE_KEY] == "EXPIRED" }
+        ConditionWatcher { currentRumContext()?.sessionState == RumSessionState.EXPIRED }
             .doWait(timeoutMs = SESSION_EXPIRY_WAIT_MS)
         val finalSessionEvents = waitForTimeseriesEvents(expectedCount = TIMESERIES_PIPELINE_COUNT)
 
         // Then
-        assertThat(currentRumContext()[SESSION_ID_KEY]).isEqualTo(sessionId)
+        assertThat(currentRumContext()?.sessionId).isEqualTo(sessionId)
         assertThat(finalSessionEvents).hasSize(TIMESERIES_PIPELINE_COUNT)
         assertThat(finalSessionEvents.cpuEvents()).hasSize(1)
         assertThat(finalSessionEvents.memoryEvents()).hasSize(1)
@@ -140,8 +143,8 @@ internal class TimeseriesCollectionTest {
         Thread.sleep(FULL_BUFFER_COLLECTION_DURATION_MS + UPLOAD_OBSERVATION_DURATION_MS)
 
         // Then
-        assertThat(currentRumContext()[SESSION_STATE_KEY]).isEqualTo("EXPIRED")
-        assertThat(currentRumContext()[SESSION_ID_KEY]).isEqualTo(sessionId)
+        assertThat(currentRumContext()?.sessionState).isEqualTo(RumSessionState.EXPIRED)
+        assertThat(currentRumContext()?.sessionId).isEqualTo(sessionId)
         assertThat(timeseriesEvents()).containsExactlyElementsOf(finalSessionEvents)
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             assertThat(ActivityLifecycleMonitorRegistry.getInstance().getLifecycleStageOf(mockServerRule.activity))
@@ -149,8 +152,8 @@ internal class TimeseriesCollectionTest {
         }
     }
 
-    private fun currentRumContext(): Map<String, Any?> =
-        (Datadog.getInstance() as FeatureSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
+    private fun currentRumContext(): RumContext? =
+        (Datadog.getInstance() as FeatureSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME).rumContext()
 
     private fun moveActivityToBackground() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -197,8 +200,6 @@ internal class TimeseriesCollectionTest {
         private const val TYPE_KEY = "type"
         private const val TIMESERIES_KEY = "timeseries"
         private const val NAME_KEY = "name"
-        private const val SESSION_STATE_KEY = "session_state"
-        private const val SESSION_ID_KEY = "session_id"
 
         // One independent pipeline for each timeseries source: CPU and memory.
         private const val TIMESERIES_PIPELINE_COUNT = 2

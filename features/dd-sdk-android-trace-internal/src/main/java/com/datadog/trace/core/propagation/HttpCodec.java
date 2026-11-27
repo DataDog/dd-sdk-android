@@ -1,5 +1,6 @@
 package com.datadog.trace.core.propagation;
 
+import static com.datadog.android.log.LogAttributes.RUM_SESSION_ID;
 import static com.datadog.trace.api.TracePropagationStyle.TRACECONTEXT;
 
 import androidx.annotation.NonNull;
@@ -55,7 +56,6 @@ public class HttpCodec {
   static final String BAGGAGE_USER_ID = "user.id";
   static final String BAGGAGE_ACCOUNT_ID = "account.id";
 
-  static final String RUM_KEY_SESSION_ID = "session_id";
   public static final String RUM_KEY_USER_ID = "user_id";
   public static final String RUM_KEY_ACCOUNT_ID = "account_id";
 
@@ -197,7 +197,7 @@ public class HttpCodec {
         final DDSpanContext context, final C carrier, final AgentPropagation.Setter<C> setter) {
       log.debug("Inject context {}", context);
       // Update session ide before injecting propagation tags
-      final String sessionId = (String) context.getTags().get(RUM_KEY_SESSION_ID);
+      final String sessionId = (String) context.getTags().get(RUM_SESSION_ID);
       if (sessionId != null) {
         context.getPropagationTags().updateRumSessionId(sessionId);
       }
@@ -375,7 +375,7 @@ public class HttpCodec {
   static Baggage composeBaggage(@NonNull DDSpanContext context) {
     Baggage baggage = new Baggage();
 
-    final String sessionId = (String) context.getTags().get(RUM_KEY_SESSION_ID);
+    final String sessionId = (String) context.getTags().get(RUM_SESSION_ID);
     if (sessionId != null) {
       baggage.put(BAGGAGE_SESSION_ID, sessionId);
     }

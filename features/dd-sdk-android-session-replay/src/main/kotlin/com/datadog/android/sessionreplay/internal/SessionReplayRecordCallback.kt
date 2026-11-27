@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal
 
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 
 internal class SessionReplayRecordCallback(
@@ -31,7 +32,7 @@ internal class SessionReplayRecordCallback(
         // Update immediately so native and embedded record counts cannot be observed between writes.
         featureSdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, useContextThread = false) {
             val viewMetadata = (it[viewId] as? MutableMap<String, Any?>) ?: mutableMapOf()
-            viewMetadata[HAS_REPLAY_KEY] = true
+            viewMetadata[FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY] = true
             updateRecordsCount(viewMetadata, recordsCount)
             it[viewId] = viewMetadata
         }
@@ -41,13 +42,8 @@ internal class SessionReplayRecordCallback(
         viewMetadata: MutableMap<String, Any?>,
         recordsCount: Int
     ) {
-        val currentRecords = viewMetadata[VIEW_RECORDS_COUNT_KEY] as? Long ?: 0
+        val currentRecords = viewMetadata[FeatureContextKeys.SESSION_REPLAY_VIEW_RECORDS_COUNT] as? Long ?: 0
         val newRecords = currentRecords + recordsCount
-        viewMetadata[VIEW_RECORDS_COUNT_KEY] = newRecords
-    }
-
-    companion object {
-        internal const val HAS_REPLAY_KEY = "has_replay"
-        internal const val VIEW_RECORDS_COUNT_KEY = "records_count"
+        viewMetadata[FeatureContextKeys.SESSION_REPLAY_VIEW_RECORDS_COUNT] = newRecords
     }
 }

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal
 
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import fr.xgouchet.elmyr.Forge
@@ -66,10 +67,10 @@ internal class SessionReplayRecordCallbackTest {
 
             val viewMetadata = featureContext[fakeEnrichedRecord.viewId] as? Map<String, Any?>
             assertThat(viewMetadata).isNotNull
-            val hasReplay = viewMetadata?.get(SessionReplayRecordCallback.HAS_REPLAY_KEY)
+            val hasReplay = viewMetadata?.get(FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY)
                 as? Boolean
             assertThat(hasReplay).isTrue
-            val recordsCount = viewMetadata?.get(SessionReplayRecordCallback.VIEW_RECORDS_COUNT_KEY)
+            val recordsCount = viewMetadata?.get(FeatureContextKeys.SESSION_REPLAY_VIEW_RECORDS_COUNT)
                 as? Long
             assertThat(recordsCount).isEqualTo(fakeEnrichedRecord.records.size.toLong())
         }
@@ -103,17 +104,17 @@ internal class SessionReplayRecordCallbackTest {
             )
 
             val featureContext = mutableMapOf<String, Any?>(
-                SessionReplayRecordCallback.HAS_REPLAY_KEY to forge.aString(),
-                SessionReplayRecordCallback.VIEW_RECORDS_COUNT_KEY to forge.aString()
+                FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY to forge.aString(),
+                FeatureContextKeys.SESSION_REPLAY_VIEW_RECORDS_COUNT to forge.aString()
             )
             lastValue.invoke(featureContext)
 
             val viewMetadata = featureContext[fakeEnrichedRecord.viewId] as? Map<String, Any?>
             assertThat(viewMetadata).isNotNull
-            val hasReplay = viewMetadata?.get(SessionReplayRecordCallback.HAS_REPLAY_KEY)
+            val hasReplay = viewMetadata?.get(FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY)
                 as? Boolean
             assertThat(hasReplay).isTrue
-            val recordsCount = viewMetadata?.get(SessionReplayRecordCallback.VIEW_RECORDS_COUNT_KEY)
+            val recordsCount = viewMetadata?.get(FeatureContextKeys.SESSION_REPLAY_VIEW_RECORDS_COUNT)
                 as? Long
             assertThat(recordsCount).isEqualTo(fakeEnrichedRecord.records.size.toLong())
         }
@@ -147,10 +148,10 @@ internal class SessionReplayRecordCallbackTest {
             }
             val viewMetadata = featureContext[fakeViewId] as? Map<String, Any?>
             assertThat(viewMetadata).isNotNull
-            val hasReplay = viewMetadata?.get(SessionReplayRecordCallback.HAS_REPLAY_KEY)
+            val hasReplay = viewMetadata?.get(FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY)
                 as? Boolean
             assertThat(hasReplay).isTrue
-            val recordsCount = viewMetadata?.get(SessionReplayRecordCallback.VIEW_RECORDS_COUNT_KEY)
+            val recordsCount = viewMetadata?.get(FeatureContextKeys.SESSION_REPLAY_VIEW_RECORDS_COUNT)
                 as? Long
             assertThat(recordsCount)
                 .isEqualTo(fakeEnrichedRecords.sumOf { it.records.size.toLong() })
@@ -181,9 +182,9 @@ internal class SessionReplayRecordCallbackTest {
             val featureContext = mutableMapOf<String, Any?>()
             allValues.forEach { it.invoke(featureContext) }
             val viewMetadata = featureContext[fakeEnrichedRecord.viewId] as? Map<String, Any?>
-            assertThat(viewMetadata?.get(SessionReplayRecordCallback.HAS_REPLAY_KEY))
+            assertThat(viewMetadata?.get(FeatureContextKeys.SESSION_REPLAY_VIEW_HAS_REPLAY))
                 .isEqualTo(true)
-            assertThat(viewMetadata?.get(SessionReplayRecordCallback.VIEW_RECORDS_COUNT_KEY))
+            assertThat(viewMetadata?.get(FeatureContextKeys.SESSION_REPLAY_VIEW_RECORDS_COUNT))
                 .isEqualTo(fakeEnrichedRecord.records.size.toLong() + fakeEmbeddedRecordsCount)
         }
     }

@@ -10,6 +10,10 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.JsonSerializer
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.collections.EvictingQueue
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord.Companion.APPLICATION_ID_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord.Companion.RECORDS_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord.Companion.SESSION_ID_KEY
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord.Companion.VIEW_ID_KEY
 import com.datadog.android.sessionreplay.internal.processor.ResourceProcessor
 import com.datadog.android.sessionreplay.internal.storage.EmbeddedContentRecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
@@ -129,10 +133,10 @@ internal class EmbeddedContentReceiver(
      * Writes out the batches of slots that will never get a placeholder, given a snapshot carrying
      * [drawnSlotIds].
      *
-     * A slot missing from that set is not necessarily gone — it may be laying out, or scrolled off
-     * screen with its placeholder still to come — so absence alone is not the test. A slot that is
-     * also no longer registered has been torn down, and nothing will draw it again; holding its
-     * batches until the bounds happen to displace them only delays the same unshifted write.
+     * A slot missing from that set is not necessarily gone — it may be laying out, or scrolled
+     * off-screen with its placeholder still to come — so absence alone is not the test. A slot
+     * that is also no longer registered has been torn down, and nothing will draw it again; holding
+     * its batches until the bounds happen to displace them only delays the same unshifted write.
      */
     private fun flushAbandonedSlots(drawnSlotIds: Set<String>) {
         val activeSlotIds = embeddedContentSlotRegistry.activeSlotIds()
@@ -222,12 +226,6 @@ internal class EmbeddedContentReceiver(
     }
 
     companion object {
-        // Enriched record envelope keys use the storage schema naming convention.
-        internal const val APPLICATION_ID_KEY = "application_id"
-        internal const val SESSION_ID_KEY = "session_id"
-        internal const val VIEW_ID_KEY = "view_id"
-        internal const val RECORDS_KEY = "records"
-
         // Embedded records use the Session Replay record schema naming convention.
         internal const val RECORD_SLOT_ID_KEY = "slotId"
         internal const val MAX_PENDING_BATCHES = 20

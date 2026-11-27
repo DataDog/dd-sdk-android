@@ -28,6 +28,7 @@ import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
@@ -349,9 +350,9 @@ internal class SessionReplayFeatureTest {
                 eventType = eq(EventType.DEFAULT)
             )
             val json = JsonParser.parseString(firstValue.data.toString(Charsets.UTF_8)).asJsonObject
-            assertThat(json[EmbeddedContentReceiver.VIEW_ID_KEY].asString)
+            assertThat(json[EnrichedRecord.VIEW_ID_KEY].asString)
                 .isEqualTo(FAKE_EMBEDDED_VIEW_ID)
-            val records = json[EmbeddedContentReceiver.RECORDS_KEY].asJsonArray
+            val records = json[EnrichedRecord.RECORDS_KEY].asJsonArray
             assertThat(records[0].asJsonObject[EmbeddedContentReceiver.RECORD_SLOT_ID_KEY].asString)
                 .isEqualTo(FAKE_EMBEDDED_SLOT_ID)
         }
@@ -451,7 +452,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `M unregister the feature conttext listener W onStop()`() {
+    fun `M unregister the feature context listener W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
@@ -567,7 +568,7 @@ internal class SessionReplayFeatureTest {
         SessionReplay.stopRecording(mockSdkCore)
         fakeLabel = "after stop"
         fakeTimeNs = TimeUnit.SECONDS.toNanos(2)
-        // Budget exhaustion must not hide a capture that was not cancelled by stopRecording().
+        // Budget exhaustion must not hide a capture that was not canceled by stopRecording().
         whenever(mockTimeBank.updateAndCheck(any())).thenReturn(true)
         fakeDispatchedRetry.run()
 

@@ -14,24 +14,4 @@ internal fun MutableMap<String, Any?>.setRumContext(context: RumContext?) {
     if (context == null) return
 
     this[FeatureContextKeys.RUM_CONTEXT] = context
-
-    // Keep the flat fields for cross-platform consumers such as Flutter Session Replay.
-    // TODO RUM-19153: Remove after all supported consumers have migrated to the typed snapshot.
-    this["application_id"] = context.applicationId
-    this["session_id"] = context.sessionId
-    this["session_active"] = context.isSessionActive
-    this["session_state"] = context.sessionState.asString
-    this["session_start_reason"] = context.sessionStartReason.asString
-    this["view_id"] = context.viewId
-    this["view_name"] = context.viewName
-    this["view_url"] = context.viewUrl
-    this["view_type"] = context.viewType.asString
-    this["action_id"] = context.actionId
-    this["synthetics_test_id"] = context.syntheticsTestId
-    this["synthetics_result_id"] = context.syntheticsResultId
-    this["view_timestamp"] = context.viewTimestamp
-    this["view_has_replay"] = context.hasReplay
-    this["session_has_timeseries"] = context.hasTimeseries
-    this["view_timestamp_offset"] = context.viewTimestampOffset
-    this["session_sample_rate"] = context.sessionSampleRate
 }

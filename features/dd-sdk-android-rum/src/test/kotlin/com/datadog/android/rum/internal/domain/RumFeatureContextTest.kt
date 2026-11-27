@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.domain
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.utils.forge.Configurator
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -22,49 +21,22 @@ import org.junit.jupiter.api.extension.ExtendWith
 internal class RumFeatureContextTest {
 
     @Test
-    fun `M publish typed snapshot and preserve legacy fields W setRumContext()`(
-        @Forgery fakeRumContext: RumContext,
-        forge: Forge
+    fun `M publish only the typed snapshot W setRumContext()`(
+        @Forgery fakeRumContext: RumContext
     ) {
         // Given
-        val context = fakeRumContext.copy(
-            viewTimestamp = forge.aLong(),
-            viewTimestampOffset = forge.aLong(),
-            hasReplay = forge.aBool()
-        )
+        val featureContext = mutableMapOf<String, Any?>()
 
         // When
-        val featureContext = mutableMapOf<String, Any?>()
-        featureContext.setRumContext(context)
+        featureContext.setRumContext(fakeRumContext)
 
         // Then
-        assertThat(featureContext[FeatureContextKeys.RUM_CONTEXT]).isSameAs(context)
-        assertThat(featureContext).isEqualTo(
-            mapOf(
-                FeatureContextKeys.RUM_CONTEXT to context,
-                "application_id" to context.applicationId,
-                "session_id" to context.sessionId,
-                "session_active" to context.isSessionActive,
-                "session_state" to context.sessionState.asString,
-                "session_start_reason" to context.sessionStartReason.asString,
-                "view_id" to context.viewId,
-                "view_name" to context.viewName,
-                "view_url" to context.viewUrl,
-                "view_type" to context.viewType.asString,
-                "action_id" to context.actionId,
-                "synthetics_test_id" to context.syntheticsTestId,
-                "synthetics_result_id" to context.syntheticsResultId,
-                "view_timestamp" to context.viewTimestamp,
-                "view_timestamp_offset" to context.viewTimestampOffset,
-                "view_has_replay" to context.hasReplay,
-                "session_has_timeseries" to context.hasTimeseries,
-                "session_sample_rate" to context.sessionSampleRate
-            )
-        )
+        assertThat(featureContext[FeatureContextKeys.RUM_CONTEXT]).isSameAs(fakeRumContext)
+        assertThat(featureContext).isEqualTo(mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext))
     }
 
     @Test
-    fun `M clear the previous snapshot and legacy fields W setRumContext() {no context}`(
+    fun `M clear the previous snapshot W setRumContext() {no context}`(
         @Forgery fakeRumContext: RumContext
     ) {
         // Given

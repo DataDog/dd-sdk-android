@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.embedded
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.processor.ResourceProcessor
 import com.datadog.android.sessionreplay.internal.storage.EmbeddedContentRecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
@@ -100,13 +101,13 @@ internal class EmbeddedContentReceiverTest {
         argumentCaptor<ByteArray> {
             verify(mockRecordWriter).writeRaw(capture(), eq(FAKE_EMBEDDED_VIEW_ID), eq(2))
             val json = JsonParser.parseString(firstValue.toString(Charsets.UTF_8)).asJsonObject
-            assertThat(json[EmbeddedContentReceiver.APPLICATION_ID_KEY].asString)
+            assertThat(json[EnrichedRecord.APPLICATION_ID_KEY].asString)
                 .isEqualTo(FAKE_NATIVE_APPLICATION_ID)
-            assertThat(json[EmbeddedContentReceiver.SESSION_ID_KEY].asString)
+            assertThat(json[EnrichedRecord.SESSION_ID_KEY].asString)
                 .isEqualTo(FAKE_NATIVE_SESSION_ID)
-            assertThat(json[EmbeddedContentReceiver.VIEW_ID_KEY].asString)
+            assertThat(json[EnrichedRecord.VIEW_ID_KEY].asString)
                 .isEqualTo(FAKE_EMBEDDED_VIEW_ID)
-            val records = json[EmbeddedContentReceiver.RECORDS_KEY].asJsonArray
+            val records = json[EnrichedRecord.RECORDS_KEY].asJsonArray
             assertThat(records).hasSize(2)
             assertThat(records[0].asJsonObject[EmbeddedContentReceiver.RECORD_SLOT_ID_KEY].asString)
                 .isEqualTo(FAKE_NATIVE_SLOT_ID)
@@ -637,7 +638,7 @@ internal class EmbeddedContentReceiverTest {
         verify(mockRecordWriter, atLeastOnce()).writeRaw(captor.capture(), any(), any())
         return captor.allValues.flatMap { bytes ->
             JsonParser.parseString(bytes.toString(Charsets.UTF_8))
-                .asJsonObject[EmbeddedContentReceiver.RECORDS_KEY]
+                .asJsonObject[EnrichedRecord.RECORDS_KEY]
                 .asJsonArray
                 .map { it.asJsonObject[EmbeddedRecordTimeline.RECORD_TIMESTAMP_KEY].asLong }
         }

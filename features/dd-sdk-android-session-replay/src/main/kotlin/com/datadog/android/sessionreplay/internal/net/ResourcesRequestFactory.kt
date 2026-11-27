@@ -96,7 +96,6 @@ internal class ResourcesRequestFactory(
     }
 
     companion object {
-        internal const val APPLICATION_ID = "application_id"
         internal const val UPLOAD_DESCRIPTION = "Session Replay Resource Upload Request"
         internal const val ERROR_CONVERTING_BODY_TO_BYTEARRAY = "Error converting request body to bytearray"
     }

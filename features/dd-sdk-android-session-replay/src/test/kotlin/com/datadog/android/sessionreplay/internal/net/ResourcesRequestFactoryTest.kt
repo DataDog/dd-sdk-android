@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal.net
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
@@ -18,7 +17,6 @@ import com.datadog.android.api.net.RequestFactory.Companion.HEADER_EVP_ORIGIN
 import com.datadog.android.api.net.RequestFactory.Companion.HEADER_EVP_ORIGIN_VERSION
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.net.ResourcesRequestFactory.Companion.APPLICATION_ID
 import com.datadog.android.sessionreplay.internal.net.ResourcesRequestFactory.Companion.UPLOAD_DESCRIPTION
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -65,9 +63,6 @@ internal class ResourcesRequestFactoryTest {
     @Mock
     lateinit var mockDatadogSite: DatadogSite
 
-    @StringForgery
-    lateinit var fakeApplicationId: String
-
     @Mock
     lateinit var fakeDatadogContext: DatadogContext
 
@@ -76,11 +71,8 @@ internal class ResourcesRequestFactoryTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        val fakeRumFeature = mapOf(APPLICATION_ID to fakeApplicationId)
         whenever(mockDatadogSite.intakeEndpoint).thenReturn(DatadogSite.US1.toString())
         whenever(fakeDatadogContext.site).thenReturn(mockDatadogSite)
-        val fakeFeaturesContext = mapOf(Feature.RUM_FEATURE_NAME to fakeRumFeature)
-        whenever(fakeDatadogContext.featuresContext).thenReturn(fakeFeaturesContext)
 
         fakeRawBatchEvents = forge.aList { forge.getForgery() }
         whenever(mockResourceRequestBodyFactory.create(fakeRawBatchEvents))

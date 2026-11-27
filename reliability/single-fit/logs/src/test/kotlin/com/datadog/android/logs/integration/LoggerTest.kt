@@ -22,6 +22,7 @@ import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.logs.integration.tests.elmyr.LogsIntegrationForgeConfigurator
+import com.datadog.android.tests.ktx.getAtPath
 import com.datadog.android.tests.ktx.getString
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.google.gson.JsonObject
@@ -620,22 +621,14 @@ class LoggerTest {
 
     @RepeatedTest(16)
     fun `M send log with rum context W Logger#Builder#setBundleWithRumEnabled(true) + Logger#log()`(
-        @StringForgery fakeRumApplicationId: String,
-        @StringForgery fakeRumSessionId: String,
-        @StringForgery fakeRumViewId: String,
-        @StringForgery fakeRumActionId: String,
+        @Forgery fakeRumContext: RumContext,
         @StringForgery fakeMessage: String,
         @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
     ) {
         // Given
         val testedLogger = Logger.Builder(stubSdkCore).setBundleWithRumEnabled(true).build()
         stubSdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-            it[FeatureContextKeys.RUM_CONTEXT] = RumContext(
-                applicationId = fakeRumApplicationId,
-                sessionId = fakeRumSessionId,
-                viewId = fakeRumViewId,
-                actionId = fakeRumActionId
-            )
+            it[FeatureContextKeys.RUM_CONTEXT] = fakeRumContext
         }
 
         // When
@@ -652,10 +645,12 @@ class LoggerTest {
         assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("message")).isEqualTo(fakeMessage)
         assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
-        assertThat(event0.getString("application_id")).isEqualTo(fakeRumApplicationId)
-        assertThat(event0.getString("session_id")).isEqualTo(fakeRumSessionId)
-        assertThat(event0.getString("view.id")).isEqualTo(fakeRumViewId)
-        assertThat(event0.getString("user_action.id")).isEqualTo(fakeRumActionId)
+        assertThat(event0.getString("application_id")).isEqualTo(fakeRumContext.applicationId)
+        assertThat(event0.getString("session_id")).isEqualTo(fakeRumContext.sessionId)
+        assertThat(event0.getAtPath("view.id")?.takeUnless { it.isJsonNull }?.asString)
+            .isEqualTo(fakeRumContext.viewId)
+        assertThat(event0.getAtPath("user_action.id")?.takeUnless { it.isJsonNull }?.asString)
+            .isEqualTo(fakeRumContext.actionId)
     }
 
     @RepeatedTest(16)

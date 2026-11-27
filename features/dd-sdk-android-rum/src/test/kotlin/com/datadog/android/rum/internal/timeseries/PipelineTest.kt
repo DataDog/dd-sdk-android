@@ -36,8 +36,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -279,7 +277,7 @@ internal class PipelineTest {
     fun `M drain buffer before write context callback W flush()`(forge: Forge) {
         // Given
         val fakePoint = forge.getForgery<DataPoint<Double>>()
-        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer { Unit }
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer { }
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeTimeseriesJson("view.cpu")
         whenever(mockReader.read()) doReturn fakePoint
         testedPipeline.execute(fakeRumContext)
@@ -302,7 +300,7 @@ internal class PipelineTest {
         val fakePoint = forge.getForgery<DataPoint<Double>>()
         val fakeNextPoint = forge.getForgery<DataPoint<Double>>()
         val callbackCaptor = argumentCaptor<(DatadogContext, EventWriteScope) -> Unit>()
-        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer { Unit }
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer { }
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeTimeseriesJson("view.cpu")
         whenever(mockReader.read()) doReturn fakePoint
         testedPipeline.execute(fakeRumContext)
@@ -362,13 +360,12 @@ internal class PipelineTest {
         verifyNoInteractions(mockInsightsCollector)
     }
 
-    @ParameterizedTest
-    @EnumSource(RumSessionState::class, names = ["TRACKED"], mode = EnumSource.Mode.EXCLUDE)
+    @Test
     fun `M write buffered samples W flush() { RUM session no longer tracked before async write }`(
-        fakeSessionState: RumSessionState,
         forge: Forge
     ) {
         // Given
+        val fakeSessionState = forge.anElementFrom(RumSessionState.entries - RumSessionState.TRACKED)
         lateinit var fakePendingWrite: (DatadogContext, EventWriteScope) -> Unit
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             fakePendingWrite = it.getArgument(it.arguments.lastIndex)
@@ -444,7 +441,7 @@ internal class PipelineTest {
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeJson
         whenever(mockDataWriter.write(any(), any(), any())) doThrow fakeThrowable
-        whenever(mockEventWriteScope.invoke(any())) doAnswer { Unit }
+        whenever(mockEventWriteScope.invoke(any())) doAnswer { }
         testedPipeline.execute(fakeRumContext)
 
         // When
@@ -597,7 +594,11 @@ internal class PipelineTest {
     }
 
     private fun rumFeatureContextOf(sessionState: RumSessionState): Map<String, Map<String, Any?>> =
-        mapOf(Feature.RUM_FEATURE_NAME to mapOf(FeatureContextKeys.RUM_SESSION_STATE to sessionState.asString))
+        mapOf(
+            Feature.RUM_FEATURE_NAME to mapOf(
+                FeatureContextKeys.RUM_CONTEXT to fakeRumContext.copy(sessionState = sessionState)
+            )
+        )
 
     private companion object {
         const val CONCURRENT_FLUSH_TIMEOUT_MS = 2000L
