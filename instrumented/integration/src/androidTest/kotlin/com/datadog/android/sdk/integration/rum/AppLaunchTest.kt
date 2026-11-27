@@ -34,7 +34,7 @@ internal class AppLaunchTest : RumTest<AppLaunchPlaygroundActivity, AppLaunchAct
 
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
+                docVersion = 3
             )
         )
 
