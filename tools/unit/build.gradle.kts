@@ -16,6 +16,7 @@ plugins {
     id("com.android.library")
     id("de.mobilej.unmock")
     id("datadogBuildConfig")
+    id("detekt-common")
 }
 
 android {

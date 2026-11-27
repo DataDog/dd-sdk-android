@@ -14,6 +14,7 @@ plugins {
     // Build
     id("com.android.library")
     id("datadogBuildConfig")
+    id("detekt-common")
 
     // Analysis tools
     id("test-pyramid-api-usage")
@@ -92,6 +93,7 @@ val pullFeatureFlagsFixturesTask = tasks.register<Exec>("pullFeatureFlagsFixture
     workingDir = rootDir
     commandLine("python3", "ci/sync-feature-flags-precomputed-fixtures.py")
     // The script also bounds each fetch attempt; this bounds the whole task, including retries.
+    @Suppress("MagicNumber")
     timeout.set(Duration.ofMinutes(10))
 }
 

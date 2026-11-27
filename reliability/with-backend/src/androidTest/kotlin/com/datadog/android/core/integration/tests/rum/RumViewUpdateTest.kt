@@ -36,42 +36,42 @@ class RumViewUpdateTest : BaseRumViewTest() {
 
             // When
             rumMonitor.startView(key = viewKey, name = VIEW_NAME) // view index 0
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
 
             rumMonitor.addAttribute("custom_attr_1", "attr_value_1") // no view update triggered
 
             rumMonitor.addAction(RumActionType.CUSTOM, "click1", emptyMap())
-            delay(ACTION_FINALIZE_DELAY_MS) // wait for action to be finalized → view index 1
+            delay(ACTION_FINALIZE_DELAY_MS.milliseconds) // wait for action to be finalized → view index 1
 
             rumMonitor.addFeatureFlagEvaluation("flag_bool", true) // view index 2
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
             rumMonitor.addFeatureFlagEvaluation("flag_int", 42) // view index 3
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
 
             val resource1Key = UUID.randomUUID().toString()
             rumMonitor.startResource(resource1Key, RumResourceMethod.GET, "https://httpbin.org/get")
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
             rumMonitor.stopResource(resource1Key, 200, null, RumResourceKind.FETCH) // view index 4
-            delay(ACTION_FINALIZE_DELAY_MS)
+            delay(ACTION_FINALIZE_DELAY_MS.milliseconds)
 
             rumMonitor.addFeatureFlagEvaluation("flag_bool", false) // view index 5
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
             rumMonitor.addFeatureFlagEvaluation("flag_int", 100) // view index 6
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
 
             rumMonitor.addAttribute("custom_attr_2", "attr_value_2") // no view update triggered
 
             rumMonitor.addAction(RumActionType.CUSTOM, "click2", emptyMap())
-            delay(ACTION_FINALIZE_DELAY_MS) // wait for action to be finalized → view index 7
+            delay(ACTION_FINALIZE_DELAY_MS.milliseconds) // wait for action to be finalized → view index 7
 
             rumMonitor.addError("test error 1", RumErrorSource.SOURCE, null) // view index 8
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
             rumMonitor.addError("test error 2", RumErrorSource.SOURCE, RuntimeException("boom")) // view index 9
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
 
             val resource2Key = UUID.randomUUID().toString()
             rumMonitor.startResource(resource2Key, RumResourceMethod.GET, "https://httpbin.org/get")
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
             rumMonitor.stopResourceWithError( // view index 10
                 resource2Key,
                 statusCode = 500,
@@ -79,20 +79,23 @@ class RumViewUpdateTest : BaseRumViewTest() {
                 source = RumErrorSource.NETWORK,
                 throwable = RuntimeException("500")
             )
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
 
-            withContext(Dispatchers.Main) { Thread.sleep(300) } // blocks main thread → long task detected
-            delay(EVENT_PROCESS_DELAY_MS) // wait for long task event → view index 11
+            withContext(Dispatchers.Main) {
+                @Suppress("SleepInsteadOfDelay")
+                Thread.sleep(300) // blocks main thread → long task detected
+            }
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds) // wait for long task event → view index 11
 
             rumMonitor.addTiming("screen_loaded") // view index 12
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
 
             @OptIn(ExperimentalRumApi::class)
             rumMonitor.addViewLoadingTime(overwrite = false) // view index 13
-            delay(EVENT_PROCESS_DELAY_MS)
+            delay(EVENT_PROCESS_DELAY_MS.milliseconds)
 
             rumMonitor.stopView(viewKey) // view index 14
-            delay(ACTION_FINALIZE_DELAY_MS)
+            delay(ACTION_FINALIZE_DELAY_MS.milliseconds)
 
             val (localLastViewEvent, viewId) = synchronized(viewEventsList) {
                 val event =
@@ -121,7 +124,7 @@ class RumViewUpdateTest : BaseRumViewTest() {
                         }
                     }
                 },
-                predicate = { it.optionalResult?.data?.firstOrNull() != null },
+                predicate = { !it.optionalResult?.data.isNullOrEmpty() },
                 interval = POLLING_INTERVAL_MS.milliseconds,
                 timeout = POLLING_TIMEOUT_MS.milliseconds
             )

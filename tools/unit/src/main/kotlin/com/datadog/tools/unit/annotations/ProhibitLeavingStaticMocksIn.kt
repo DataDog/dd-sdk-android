@@ -6,7 +6,6 @@
 
 package com.datadog.tools.unit.annotations
 
-import java.lang.annotation.Inherited
 import kotlin.reflect.KClass
 
 /**
@@ -14,12 +13,13 @@ import kotlin.reflect.KClass
  * instruct extension to check that no object starting from the roots specified has a mock left
  * in a static field (Java) or in a property of object class/companion object (Kotlin).
  *
+ * When the test class is not annotated, the extension uses the nearest annotated superclass.
+ *
  * NB: Lateinit properties will be just reported to console, because it is not possible to
  * reset them to the original state.
  */
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-@Inherited
 annotation class ProhibitLeavingStaticMocksIn(
     /**
      * Classes to watch.

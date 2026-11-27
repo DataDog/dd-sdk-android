@@ -189,7 +189,7 @@ internal class ExposureHookTest {
                 details: FlagEvaluationDetails<Boolean>,
                 hints: Map<String, Any>
             ) {
-                throw IllegalStateException(fakeFailureMessage)
+                error(fakeFailureMessage)
             }
         }
 
@@ -485,7 +485,7 @@ internal class ExposureHookTest {
                 details: FlagEvaluationDetails<Boolean>,
                 hints: Map<String, Any>
             ) {
-                throw IllegalStateException(fakeFailureMessage)
+                error(fakeFailureMessage)
             }
         }
         val client = OpenFeatureAPI.getClient()

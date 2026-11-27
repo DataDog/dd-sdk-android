@@ -51,8 +51,11 @@ internal fun KtCallExpression.explicitReceiverExpression(): KtExpression? {
 }
 
 /**
+ * @param expression the call whose explicit receiver is resolved
  * @param calleeSymbol the called function, used to pick the relevant type when the receiver has several
  * (e.g. a smart cast or `super`)
+ * @param treatGenericAsSuper whether type parameters are represented by their upper bound instead of their name
+ * @param includeTypeArguments whether the receiver type name includes generic type arguments
  */
 internal fun KaSession.explicitReceiver(
     expression: KtCallExpression,
@@ -92,21 +95,22 @@ internal fun KaSession.receiverTypeName(
 ): String? {
     val calleeSymbol = call.signature.symbol
     val explicitReceiver = explicitReceiver(expression, calleeSymbol, treatGenericAsSuper, includeTypeArguments)
-    if (explicitReceiver != null) {
-        return explicitReceiver.typeName
-    }
+    return when {
+        explicitReceiver != null -> explicitReceiver.typeName
+        (calleeSymbol as? KaNamedFunctionSymbol)?.isStatic == true -> {
+            // A static member called without qualifier (e.g. statically imported or inherited) belongs to its class
+            calleeSymbol.callableId?.classId?.asSingleFqName()?.asString()
+        }
 
-    if ((calleeSymbol as? KaNamedFunctionSymbol)?.isStatic == true) {
-        // A static member called without qualifier (e.g. statically imported or inherited) belongs to its class
-        return calleeSymbol.callableId?.classId?.asSingleFqName()?.asString()
+        else -> {
+            val implicitReceiver = listOf(call.extensionReceiver, call.dispatchReceiver)
+                .map { if (it is KaSmartCastedReceiverValue) it.original else it }
+                .firstOrNull { it is KaImplicitReceiverValue }
+            implicitReceiver?.type?.let {
+                fqTypeName(it.lowerBoundIfFlexible().withNullability(false), treatGenericAsSuper, includeTypeArguments)
+            } ?: calleeSymbol.callableId?.classId?.asSingleFqName()?.asString()
+        }
     }
-
-    val implicitReceiver = listOf(call.extensionReceiver, call.dispatchReceiver)
-        .map { if (it is KaSmartCastedReceiverValue) it.original else it }
-        .firstOrNull { it is KaImplicitReceiverValue }
-    return implicitReceiver?.type?.let {
-        fqTypeName(it.lowerBoundIfFlexible().withNullability(false), treatGenericAsSuper, includeTypeArguments)
-    } ?: calleeSymbol.callableId?.classId?.asSingleFqName()?.asString()
 }
 
 /**
@@ -129,9 +133,9 @@ private fun KaSession.qualifierName(receiverExpression: KtExpression): String? {
         is KtNameReferenceExpression -> receiverExpression
         is KtDotQualifiedExpression -> receiverExpression.selectorExpression as? KtNameReferenceExpression
         else -> null
-    } ?: return null
+    }
 
-    val reference = nameExpression.references.filterIsInstance<KtReference>().firstOrNull() ?: return null
+    val reference = nameExpression?.references?.filterIsInstance<KtReference>()?.firstOrNull() ?: return null
     return when (val symbol = reference.resolveToSymbol()) {
         is KaClassLikeSymbol -> {
             val classId = symbol.classId

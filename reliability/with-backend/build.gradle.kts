@@ -15,6 +15,7 @@ plugins {
     id("com.android.application")
     kotlin("plugin.serialization")
     id("datadogBuildConfig")
+    id("detekt-common")
 }
 
 android {

@@ -36,7 +36,7 @@ internal object CanonicalFixtureMatcher {
                 matcher.entrySet().filterNot { it.key.startsWith("_") }.forEach { add(it.key, it.value) }
             }
             repeat(count(matcher)) {
-                val index = remaining.indexOfFirst { matches(it, fields) }
+                val index = remaining.indexOfFirst { event -> matches(event, fields) }
                 assertThat(index).describedAs("Missing event for $matcher; remaining $remaining")
                     .isGreaterThanOrEqualTo(0)
                 remaining.removeAt(index)

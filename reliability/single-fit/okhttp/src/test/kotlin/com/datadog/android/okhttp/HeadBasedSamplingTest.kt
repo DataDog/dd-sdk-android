@@ -1127,8 +1127,11 @@ class HeadBasedSamplingTest {
 
     // endregion
 
-    private fun String.toTags(): Map<String, String> = split(",")
-        .associate { it.split("=").let { it[0] to it[1] } }
+    private fun String.toTags(): Map<String, String> =
+        split(",").associate { tag ->
+            val (key, value) = tag.split("=")
+            key to value
+        }
 
     private fun String.toHexPaddedFromHexString(): String = with(_TraceInternalProxy.spanIdConverter) {
         toHexStringPadded(fromHex(this@toHexPaddedFromHexString))

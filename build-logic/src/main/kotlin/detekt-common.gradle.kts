@@ -5,6 +5,7 @@
  */
 
 import com.android.build.api.variant.AndroidComponentsExtension
+import com.android.build.api.variant.DeviceTest
 import com.datadog.gradle.config.configureDetekt
 import dev.detekt.gradle.Detekt
 import org.gradle.api.tasks.compile.JavaCompile
@@ -18,14 +19,23 @@ plugins {
 configureDetekt()
 
 detekt {
-    // The sample and benchmark modules share Kotlin sources between debug and release.
+    // Debug covers shared production and unit test sources.
     ignoredBuildTypes.add("release")
 }
 
 listOf("com.android.application", "com.android.library").forEach { pluginId ->
     pluginManager.withPlugin(pluginId) {
         extensions.getByType(AndroidComponentsExtension::class.java).onVariants { variant ->
-            variant.components.forEach { configureDetektClasspath(it.name) }
+            variant.components.forEach { component ->
+                configureDetektClasspath(component.name)
+                // Device tests can belong exclusively to the release variant.
+                if (variant.buildType == "release" && component is DeviceTest) {
+                    val taskName = "detekt${component.name.replaceFirstChar { it.uppercaseChar() }}"
+                    tasks.named("detektTest") {
+                        dependsOn(tasks.withType<Detekt>().named { it == taskName })
+                    }
+                }
+            }
         }
     }
 }
