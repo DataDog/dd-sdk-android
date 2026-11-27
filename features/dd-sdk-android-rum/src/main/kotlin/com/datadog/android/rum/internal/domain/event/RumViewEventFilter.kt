@@ -34,7 +34,7 @@ internal class RumViewEventFilter(
                     }
                 }
                 is RumEventMeta.ViewUpdate -> viewUpdateMetaByEvent += it to eventMeta
-                else -> {}
+                null -> Unit
             }
         }
 

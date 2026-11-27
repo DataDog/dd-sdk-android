@@ -105,7 +105,8 @@ internal class RumAutoCharactersViewModel(
                 prev
             }
 
-            else -> prev.copy(
+            is RumAutoCharactersScreenAction.PageLoadingFinished,
+            RumAutoCharactersScreenAction.EndReached -> prev.copy(
                 pages = processPages(prev, action),
                 task = processTask(prev, action)
             )
@@ -137,7 +138,7 @@ internal class RumAutoCharactersViewModel(
                 action.task to PageLoadingTaskResult.Result(action.response)
             }
 
-            else -> prev.task
+            is RumAutoCharactersScreenAction.CharacterItemClicked -> prev.task
         }
     }
 
@@ -159,7 +160,8 @@ internal class RumAutoCharactersViewModel(
                 }
             }
 
-            else -> prev.pages
+            is RumAutoCharactersScreenAction.CharacterItemClicked,
+            RumAutoCharactersScreenAction.EndReached -> prev.pages
         }
     }
 

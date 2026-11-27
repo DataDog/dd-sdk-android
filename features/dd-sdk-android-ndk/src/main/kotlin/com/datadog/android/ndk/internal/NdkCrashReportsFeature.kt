@@ -97,7 +97,7 @@ internal class NdkCrashReportsFeature(
         return when (newConsent) {
             TrackingConsent.PENDING -> TRACKING_CONSENT_PENDING
             TrackingConsent.GRANTED -> TRACKING_CONSENT_GRANTED
-            else -> TRACKING_CONSENT_NOT_GRANTED
+            TrackingConsent.NOT_GRANTED -> TRACKING_CONSENT_NOT_GRANTED
         }
     }
 

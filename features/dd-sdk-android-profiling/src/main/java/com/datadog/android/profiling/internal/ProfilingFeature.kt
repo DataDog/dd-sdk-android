@@ -360,9 +360,7 @@ internal class ProfilingFeature(
                 }
             }
 
-            else -> {
-                // do nothing for the moment
-            }
+            ProfilingStartReason.RUM_OPERATION, ProfilingStartReason.ANR, ProfilingStartReason.UNKNOWN -> Unit
         }
     }
 
@@ -435,9 +433,9 @@ internal class ProfilingFeature(
                         TriggerProfile(perfettoResult, profilerEvent)
                     )
 
-                    else -> {
-                        // Not a currently supported trigger-match type: nothing to write.
-                    }
+                    ProfilerEvent.TTIDNotTracked,
+                    is ProfilerEvent.RumLongTaskEvent,
+                    is ProfilerEvent.RumVitalEvent -> Unit
                 }
             }
         )

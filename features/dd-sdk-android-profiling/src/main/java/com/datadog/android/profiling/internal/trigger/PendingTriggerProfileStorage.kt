@@ -154,12 +154,12 @@ internal class PendingTriggerProfileStorage(
 
     private fun ProfilerEvent.triggerType(): ProfilingStartReason? = when (this) {
         is RumAnrEvent -> ProfilingStartReason.ANR
-        else -> null
+        ProfilerEvent.TTIDNotTracked, is ProfilerEvent.RumLongTaskEvent, is ProfilerEvent.RumVitalEvent -> null
     }
 
     private fun ProfilerEvent.timestampMs(): Long = when (this) {
         is RumAnrEvent -> startMs
-        else -> 0L
+        ProfilerEvent.TTIDNotTracked, is ProfilerEvent.RumLongTaskEvent, is ProfilerEvent.RumVitalEvent -> 0L
     }
 
     companion object {

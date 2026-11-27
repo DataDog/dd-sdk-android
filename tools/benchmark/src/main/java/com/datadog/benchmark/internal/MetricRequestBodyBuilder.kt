@@ -51,7 +51,9 @@ internal class MetricRequestBodyBuilder(private val benchmarkContext: BenchmarkC
         return when (type) {
             MetricDataType.LONG_GAUGE, MetricDataType.DOUBLE_GAUGE -> MetricType.GAUGE
             MetricDataType.LONG_SUM, MetricDataType.DOUBLE_SUM -> MetricType.COUNT
-            else -> MetricType.UNSPECIFIED
+            MetricDataType.SUMMARY,
+            MetricDataType.HISTOGRAM,
+            MetricDataType.EXPONENTIAL_HISTOGRAM -> MetricType.UNSPECIFIED
         }
     }
 

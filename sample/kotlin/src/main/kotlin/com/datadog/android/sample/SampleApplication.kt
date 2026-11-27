@@ -285,21 +285,13 @@ class SampleApplication : Application() {
                     )
                 }
                 .collect { event ->
-                    // Track provider errors in RUM
-                    when (event) {
-                        is OpenFeatureProviderEvents.ProviderError -> {
-                            GlobalRumMonitor.get().addError(
-                                "OpenFeature provider error",
-                                RumErrorSource.SOURCE,
-                                event.error,
-                                mapOf(
-                                    "component" to "openfeature-provider"
-                                )
-                            )
-                        }
-                        else -> {
-                            // Ignore other events (UI handles state display)
-                        }
+                    if (event is OpenFeatureProviderEvents.ProviderError) {
+                        GlobalRumMonitor.get().addError(
+                            "OpenFeature provider error",
+                            RumErrorSource.SOURCE,
+                            event.error,
+                            mapOf("component" to "openfeature-provider")
+                        )
                     }
                 }
         }

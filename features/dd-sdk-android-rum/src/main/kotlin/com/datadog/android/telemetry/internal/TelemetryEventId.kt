@@ -19,7 +19,11 @@ internal val InternalTelemetryEvent.identity: TelemetryEventId
         return when (this) {
             is InternalTelemetryEvent.Log.Error -> TelemetryEventId(type(), message, resolveKind())
             is InternalTelemetryEvent.Log.Debug -> TelemetryEventId(type(), message, null)
-            else -> TelemetryEventId(type(), "", null)
+            is InternalTelemetryEvent.Configuration,
+            is InternalTelemetryEvent.Metric,
+            is InternalTelemetryEvent.ApiUsage,
+            InternalTelemetryEvent.InterceptorInstantiated,
+            is InternalTelemetryEvent.ResourceHeadersTrackingConfigured -> TelemetryEventId(type(), "", null)
         }
     }
 

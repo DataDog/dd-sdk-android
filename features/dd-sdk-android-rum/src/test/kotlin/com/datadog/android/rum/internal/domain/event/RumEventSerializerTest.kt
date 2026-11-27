@@ -39,7 +39,6 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.api.fail
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -1181,18 +1180,12 @@ internal class RumEventSerializerTest {
             .hasField("version", event.version)
             .hasField("telemetry") {
                 hasField("usage") {
-                    when (event.telemetry.usage) {
-                        is TelemetryUsageEvent.Usage.AddViewLoadingTime -> {
-                            val usage = event.telemetry.usage
+                    assertThat(event.telemetry.usage)
+                        .isInstanceOfSatisfying(TelemetryUsageEvent.Usage.AddViewLoadingTime::class.java) { usage ->
                             hasField("no_view", usage.noView)
                             hasField("no_active_view", usage.noActiveView)
                             hasField("overwritten", usage.overwritten)
                         }
-
-                        else -> {
-                            fail("Usage type not covered in assertions")
-                        }
-                    }
                 }
                 if (event.telemetry.device != null) {
                     hasField("device") {

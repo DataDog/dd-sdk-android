@@ -48,7 +48,7 @@ import javax.inject.Singleton
 
 /**
  * The general recommendation is to initialize all the components at the Application.onCreate
- * to have all the observability as early as possible. However in the Benchmark app we know what features
+ * to have all the observability as early as possible. However, in the Benchmark app we know what features
  * we need only in [MainActivity.onCreate], it depends on the [SyntheticsScenario] which is derived from intent extras.
  */
 @Singleton
@@ -181,7 +181,16 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     private fun rumViewTrackingStrategy(config: BenchmarkConfig): ViewTrackingStrategy? {
         return when (config.scenario) {
             SyntheticsScenario.RumManual -> null
-            else -> NavigationViewTrackingStrategy(
+            SyntheticsScenario.Profiling,
+            SyntheticsScenario.SessionReplay,
+            SyntheticsScenario.SessionReplayCompose,
+            SyntheticsScenario.RumAuto,
+            SyntheticsScenario.Trace,
+            SyntheticsScenario.LogsCustom,
+            SyntheticsScenario.LogsHeavyTraffic,
+            SyntheticsScenario.Upload,
+            SyntheticsScenario.Timeseries,
+            null -> NavigationViewTrackingStrategy(
                 R.id.nav_host_fragment,
                 true,
                 BenchmarkNavigationPredicate()

@@ -386,7 +386,7 @@ internal class DDCoreStateHolderTest {
                 // thread is the one that ends up delivering Third...
                 TestState.Second -> worker.releaseAndAwaitUpdateQueued()
                 TestState.Third -> throw listenerFailure
-                else -> Unit
+                TestState.Initial, TestState.Fourth -> Unit
             }
         }
 
@@ -410,7 +410,7 @@ internal class DDCoreStateHolderTest {
             when (newState) {
                 TestState.Second -> testedHolder.updateState(TestState.Third)
                 TestState.Third -> throw listenerFailure
-                else -> Unit
+                TestState.Initial, TestState.Fourth -> Unit
             }
         }
 

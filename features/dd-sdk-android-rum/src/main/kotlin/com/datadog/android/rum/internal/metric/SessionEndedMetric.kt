@@ -341,7 +341,43 @@ internal class SessionEndedMetric(
                     is RumRawEvent.StartAction -> ACTION
                     is RumRawEvent.StartResource -> RESOURCE
                     is RumRawEvent.AddLongTask -> LONG_TASK
-                    else -> null
+                    is RumRawEvent.StartView,
+                    is RumRawEvent.StopView,
+                    is RumRawEvent.StopAction,
+                    is RumRawEvent.WaitForResourceTiming,
+                    is RumRawEvent.AddResourceTiming,
+                    is RumRawEvent.StopResource,
+                    is RumRawEvent.StopResourceWithStackTrace,
+                    is RumRawEvent.ResourceSent,
+                    is RumRawEvent.ActionSent,
+                    is RumRawEvent.ErrorSent,
+                    is RumRawEvent.LongTaskSent,
+                    is RumRawEvent.ResourceDropped,
+                    is RumRawEvent.ActionDropped,
+                    is RumRawEvent.ErrorDropped,
+                    is RumRawEvent.LongTaskDropped,
+                    is RumRawEvent.ApplicationStarted,
+                    is RumRawEvent.AddCustomTiming,
+                    is RumRawEvent.AddViewLoadingTime,
+                    is RumRawEvent.AddViewAttributes,
+                    is RumRawEvent.RemoveViewAttributes,
+                    is RumRawEvent.SendCustomActionNow,
+                    is RumRawEvent.AddFeatureFlagEvaluation,
+                    is RumRawEvent.AddFeatureFlagEvaluations,
+                    is RumRawEvent.StopSession,
+                    is RumRawEvent.UpdatePerformanceMetric,
+                    is RumRawEvent.UpdateExternalRefreshRate,
+                    is RumRawEvent.SetInternalViewAttribute,
+                    is RumRawEvent.SetSyntheticsTestAttribute,
+                    is RumRawEvent.WebViewEvent,
+                    is RumRawEvent.SessionExpiryCheck,
+                    is RumRawEvent.TelemetryEventWrapper,
+                    is RumRawEvent.SdkInit,
+                    is RumRawEvent.StartOperation,
+                    is RumRawEvent.StopOperation,
+                    is RumRawEvent.AppStartEvent,
+                    is RumRawEvent.AppStartTTIDEvent,
+                    is RumRawEvent.AppStartTTFDEvent -> null
                 }
             }
         }

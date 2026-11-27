@@ -306,15 +306,15 @@ internal class RumSessionScopeTest {
     fun `M delegate events to child scope W handleViewEvent() {NOT TRACKED}`() {
         // Given
         testedScope.sessionState = RumSessionState.NOT_TRACKED
-        val mockEvent: RumRawEvent = mock()
+        val event = RumRawEvent.WebViewEvent(currentFakeTime())
 
         // When
-        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val result = testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         assertThat(result).isSameAs(testedScope)
         verify(mockChildScope).handleEvent(
-            same(mockEvent),
+            same(event),
             same(fakeDatadogContext),
             same(mockEventWriteScope),
             isA<NoOpDataWriter<Any>>()
@@ -325,15 +325,15 @@ internal class RumSessionScopeTest {
     fun `M delegate events to child scope W handleViewEvent() {EXPIRED}`() {
         // Given
         testedScope.sessionState = RumSessionState.EXPIRED
-        val mockEvent = mock<RumRawEvent>()
+        val event = RumRawEvent.WebViewEvent(currentFakeTime())
 
         // When
-        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val result = testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         assertThat(result).isSameAs(testedScope)
         verify(mockChildScope).handleEvent(
-            same(mockEvent),
+            same(event),
             same(fakeDatadogContext),
             same(mockEventWriteScope),
             isA<NoOpDataWriter<Any>>()
@@ -423,7 +423,7 @@ internal class RumSessionScopeTest {
     fun `M return null from handleEvent W stopped { completed child scopes }`() {
         // Given
         val stopEvent = RumRawEvent.StopSession(eventTime = currentFakeTime())
-        val fakeEvent: RumRawEvent = mock()
+        val fakeEvent = RumRawEvent.WebViewEvent(currentFakeTime())
         whenever(
             mockChildScope.handleEvent(
                 eq(stopEvent),
@@ -663,7 +663,12 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        val result = testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val result = testedScope.handleEvent(
+            RumRawEvent.WebViewEvent(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val context = testedScope.getRumContext()
 
         // Then
@@ -724,7 +729,12 @@ internal class RumSessionScopeTest {
 
         // When
         advanceTimeByMs(TEST_INACTIVITY_MS)
-        val result = testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val result = testedScope.handleEvent(
+            RumRawEvent.WebViewEvent(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val context = testedScope.getRumContext()
 
         // Then
@@ -745,7 +755,12 @@ internal class RumSessionScopeTest {
 
         // When
         advanceTimeByMs(TEST_INACTIVITY_MS)
-        val result = testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val result = testedScope.handleEvent(
+            RumRawEvent.WebViewEvent(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val context = testedScope.getRumContext()
 
         // Then
@@ -916,7 +931,12 @@ internal class RumSessionScopeTest {
 
         // When
         advanceTimeByMs(TEST_SLEEP_MS)
-        val result = testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val result = testedScope.handleEvent(
+            RumRawEvent.WebViewEvent(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val context = testedScope.getRumContext()
 
         // Then
@@ -2029,7 +2049,12 @@ internal class RumSessionScopeTest {
 
         // When
         advanceTimeByMs(TEST_INACTIVITY_MS)
-        testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.WebViewEvent(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         assertThat(testedScope.sessionState).isEqualTo(RumSessionState.EXPIRED)

@@ -80,7 +80,7 @@ internal class RumAutoLocationDetailsViewModel @Inject constructor(
                 prev
             }
 
-            else -> prev.copy(
+            is RumAutoLocationDetailsAction.ResidentsLoadingFinished -> prev.copy(
                 residentsLoadingTask = processTask(prev, action)
             )
         }
@@ -95,7 +95,7 @@ internal class RumAutoLocationDetailsViewModel @Inject constructor(
                 BenchmarkAsyncTask.Result(action.response, action.task)
             }
 
-            else -> prev.residentsLoadingTask
+            is RumAutoLocationDetailsAction.OnCharacterClicked -> prev.residentsLoadingTask
         }
     }
 

@@ -449,16 +449,7 @@ internal class DatadogFlagsClient(
     ): InternalResolution.Error<T> {
         val ready = snapshot.context != null
         val error = snapshot.errorCode ?: if (ready) ErrorCode.FLAG_NOT_FOUND else ErrorCode.PROVIDER_NOT_READY
-        val message = when (error) {
-            ErrorCode.GENERAL -> AssignmentAuthorization.AUTHORIZATION_FAILED
-            ErrorCode.INVALID_CONTEXT -> ExperimentationOptOut.INVALID_CONTEXT_MESSAGE
-            ErrorCode.FLAG_NOT_FOUND -> "Flag not found"
-            else -> if (experimentationOptOut.enabled) {
-                "Assignments for the current evaluation context are not available."
-            } else {
-                "Provider not ready - call setEvaluationContext() before resolving flags"
-            }
-        }
+        val message = unavailableResolutionMessage(error, experimentationOptOut.enabled)
         return InternalResolution.Error(
             flagKey,
             defaultValue,
@@ -905,3 +896,17 @@ internal class DatadogFlagsClient(
         const val HOOK_FEATURE_METADATA_PREFIX = "__dd_feature."
     }
 }
+
+private fun unavailableResolutionMessage(error: ErrorCode, experimentationOptOutEnabled: Boolean): String =
+    when (error) {
+        ErrorCode.GENERAL -> AssignmentAuthorization.AUTHORIZATION_FAILED
+        ErrorCode.INVALID_CONTEXT -> ExperimentationOptOut.INVALID_CONTEXT_MESSAGE
+        ErrorCode.FLAG_NOT_FOUND -> "Flag not found"
+        ErrorCode.PARSE_ERROR,
+        ErrorCode.TYPE_MISMATCH,
+        ErrorCode.PROVIDER_NOT_READY -> if (experimentationOptOutEnabled) {
+            "Assignments for the current evaluation context are not available."
+        } else {
+            "Provider not ready - call setEvaluationContext() before resolving flags"
+        }
+    }
