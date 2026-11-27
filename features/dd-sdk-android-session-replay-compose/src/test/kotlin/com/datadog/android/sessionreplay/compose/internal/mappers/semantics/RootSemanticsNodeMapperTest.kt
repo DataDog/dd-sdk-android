@@ -29,6 +29,7 @@ import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -512,6 +513,83 @@ class RootSemanticsNodeMapperTest {
         assertThat(areaCaptor.firstValue.top).isEqualTo(expectedArea.top)
         assertThat(areaCaptor.firstValue.right).isEqualTo(expectedArea.right)
         assertThat(areaCaptor.firstValue.bottom).isEqualTo(expectedArea.bottom)
+    }
+
+    @Test
+    fun `M stamp permanentId on first wireframe W createComposeWireframes() { node tagged }`(
+        @StringForgery fakeTag: String,
+        @Forgery fakeFirstWireframe: MobileSegment.Wireframe.ShapeWireframe,
+        @Forgery fakeSecondWireframe: MobileSegment.Wireframe.TextWireframe
+    ) {
+        // Given
+        val mockSemanticsNode = mockSemanticsNode(null)
+        whenever(mockSemanticsUtils.getDatadogComposeTag(mockSemanticsNode)) doReturn fakeTag
+        whenever(mockContainerSemanticsNodeMapper.map(any(), any(), any(), any())) doReturn
+            SemanticsWireframe(
+                wireframes = listOf(fakeFirstWireframe, fakeSecondWireframe),
+                uiContext = null
+            )
+
+        // When
+        val result = testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(result).hasSize(2)
+        assertThat((result[0] as MobileSegment.Wireframe.ShapeWireframe).permanentId)
+            .isEqualTo("compose:$fakeTag")
+        assertThat(result[1]).isEqualTo(fakeSecondWireframe)
+    }
+
+    @Test
+    fun `M leave wireframes untouched W createComposeWireframes() { node not tagged }`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.ShapeWireframe
+    ) {
+        // Given
+        val mockSemanticsNode = mockSemanticsNode(null)
+        whenever(mockSemanticsUtils.getDatadogComposeTag(mockSemanticsNode)) doReturn null
+        whenever(mockContainerSemanticsNodeMapper.map(any(), any(), any(), any())) doReturn
+            SemanticsWireframe(wireframes = listOf(fakeWireframe), uiContext = null)
+
+        // When
+        val result = testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(result).containsExactly(fakeWireframe)
+    }
+
+    @Test
+    fun `M leave wireframes untouched W createComposeWireframes() { tag is blank }`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.ShapeWireframe
+    ) {
+        // Given
+        val mockSemanticsNode = mockSemanticsNode(null)
+        whenever(mockSemanticsUtils.getDatadogComposeTag(mockSemanticsNode)) doReturn ""
+        whenever(mockContainerSemanticsNodeMapper.map(any(), any(), any(), any())) doReturn
+            SemanticsWireframe(wireframes = listOf(fakeWireframe), uiContext = null)
+
+        // When
+        val result = testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(result).containsExactly(fakeWireframe)
     }
 
     private fun mockSemanticsNode(role: Role?): SemanticsNode {

@@ -28,6 +28,7 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.compose.DatadogComposeTagPropertyKey
 import com.datadog.android.sessionreplay.compose.ImagePrivacySemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.SessionReplayHidePropertyKey
 import com.datadog.android.sessionreplay.compose.TextInputSemanticsPropertyKey
@@ -404,6 +405,10 @@ internal class SemanticsUtils(
 
     internal fun getTouchPrivacyOverride(semanticsNode: SemanticsNode): TouchPrivacy? {
         return semanticsNode.config.getOrNull(TouchSemanticsPropertyKey)
+    }
+
+    internal fun getDatadogComposeTag(semanticsNode: SemanticsNode): String? {
+        return semanticsNode.config.getOrNull(DatadogComposeTagPropertyKey)
     }
 
     internal fun isNodeHidden(semanticsNode: SemanticsNode): Boolean {

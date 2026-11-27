@@ -8,3 +8,4 @@ fun androidx.compose.ui.Modifier.sessionReplayHide(hide: Boolean): androidx.comp
 fun androidx.compose.ui.Modifier.sessionReplayImagePrivacy(imagePrivacy: com.datadog.android.sessionreplay.ImagePrivacy): androidx.compose.ui.Modifier
 fun androidx.compose.ui.Modifier.sessionReplayTextAndInputPrivacy(textAndInputPrivacy: com.datadog.android.sessionreplay.TextAndInputPrivacy): androidx.compose.ui.Modifier
 fun androidx.compose.ui.Modifier.sessionReplayTouchPrivacy(touchPrivacy: com.datadog.android.sessionreplay.TouchPrivacy): androidx.compose.ui.Modifier
+fun androidx.compose.ui.Modifier.datadogComposeTag(tag: String): androidx.compose.ui.Modifier

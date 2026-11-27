@@ -137,7 +137,7 @@ internal class RootSemanticsNodeMapper(
                 internalLogger = internalLogger
             )
             val currentUiContext = semanticsWireframe?.uiContext ?: parentUiContext
-            semanticsWireframe?.let { wireframes.addAll(it.wireframes) }
+            semanticsWireframe?.let { wireframes.addAll(stampComposeTagIfPresent(semanticsNode, it.wireframes)) }
             semanticsNode.children.forEach {
                 createComposerWireframes(
                     semanticsNode = it,
@@ -217,6 +217,26 @@ internal class RootSemanticsNodeMapper(
                 offset(windowOffset.xPx, windowOffset.yPx)
             }
             touchPrivacyManager.addTouchOverrideArea(viewArea, touchPrivacy)
+        }
+    }
+
+    /**
+     * Stamps `permanentId` on the outermost wireframe of a `datadogComposeTag`-tagged node.
+     *
+     * Only the first wireframe is stamped: a tagged composable can produce several (a background
+     * shape plus its text, for instance), and a duplicated `permanentId` would make the
+     * correlating CSS selector match more than one element.
+     */
+    private fun stampComposeTagIfPresent(
+        semanticsNode: SemanticsNode,
+        wireframes: List<MobileSegment.Wireframe>
+    ): List<MobileSegment.Wireframe> {
+        val tag = semanticsUtils.getDatadogComposeTag(semanticsNode)
+        if (tag.isNullOrBlank() || wireframes.isEmpty()) return wireframes
+
+        val permanentId = composePermanentIdFor(tag)
+        return wireframes.mapIndexed { index, wireframe ->
+            if (index == 0) wireframe.copyWithComposePermanentId(permanentId) else wireframe
         }
     }
 

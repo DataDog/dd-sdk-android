@@ -59,6 +59,22 @@ fun Modifier.sessionReplayTouchPrivacy(touchPrivacy: TouchPrivacy): Modifier {
     }
 }
 
+/**
+ * Tags a composable so Session Replay stamps a stable `permanentId` on its wireframe.
+ *
+ * The wireframe's `permanentId` becomes `compose:<tag>`, which lets a non-replay signal
+ * carrying the same string — for example an APM span tagged `ui.compose.permanent_id` —
+ * be correlated with this element inside a replay snapshot.
+ *
+ * @param tag the caller-chosen identifier for this composable. Must be stable across
+ * recompositions; an empty tag is ignored.
+ */
+fun Modifier.datadogComposeTag(tag: String): Modifier {
+    return this.semantics {
+        this.datadogComposeTag = tag
+    }
+}
+
 internal val SessionReplayHidePropertyKey: SemanticsPropertyKey<Boolean> = SemanticsPropertyKey(
     name = "_dd_session_replay_hide"
 )
@@ -77,7 +93,12 @@ internal val TouchSemanticsPropertyKey: SemanticsPropertyKey<TouchPrivacy> = Sem
     name = "_dd_session_replay_touch_privacy"
 )
 
+internal val DatadogComposeTagPropertyKey: SemanticsPropertyKey<String> = SemanticsPropertyKey(
+    name = "_dd_compose_tag"
+)
+
 private var SemanticsPropertyReceiver.hide by SessionReplayHidePropertyKey
 private var SemanticsPropertyReceiver.imagePrivacy by ImagePrivacySemanticsPropertyKey
 private var SemanticsPropertyReceiver.textInputPrivacy by TextInputSemanticsPropertyKey
 private var SemanticsPropertyReceiver.touchPrivacy by TouchSemanticsPropertyKey
+private var SemanticsPropertyReceiver.datadogComposeTag by DatadogComposeTagPropertyKey

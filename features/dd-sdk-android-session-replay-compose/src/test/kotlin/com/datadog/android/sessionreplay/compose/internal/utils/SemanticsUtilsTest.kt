@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.compose.DatadogComposeTagPropertyKey
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.COLOR_UNSPECIFIED
@@ -57,6 +58,7 @@ import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -1624,6 +1626,32 @@ internal class SemanticsUtilsTest {
 
         // Then
         assertThat(result.textOverflow).isEqualTo(expectedMode)
+    }
+
+    @Test
+    fun `M return tag W getDatadogComposeTag() { tag present }`(
+        @StringForgery fakeTag: String
+    ) {
+        // Given
+        whenever(mockConfig.getOrNull(DatadogComposeTagPropertyKey)) doReturn fakeTag
+
+        // When
+        val result = testedSemanticsUtils.getDatadogComposeTag(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isEqualTo(fakeTag)
+    }
+
+    @Test
+    fun `M return null W getDatadogComposeTag() { no tag }`() {
+        // Given
+        whenever(mockConfig.getOrNull(DatadogComposeTagPropertyKey)) doReturn null
+
+        // When
+        val result = testedSemanticsUtils.getDatadogComposeTag(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isNull()
     }
 
     companion object {
