@@ -238,22 +238,18 @@ internal class FirstFlagsInstallationTest {
     @Test
     fun `M retain cache winner W network replaces before cache completion`() {
         // Given
-        val tested = repository()
         val claimed = CountDownLatch(1)
         val release = CountDownLatch(1)
-        val flags = object : Map<String, PrecomputedFlag> by mapOf(fakeCacheKey to mock<PrecomputedFlag>()) {
-            override val keys: Set<String>
-                get() {
-                    claimed.countDown()
-                    check(release.await(5, TimeUnit.SECONDS))
-                    return setOf(fakeCacheKey)
-                }
+        val tested = repository {
+            claimed.countDown()
+            check(release.await(5, TimeUnit.SECONDS))
+            it.run()
         }
         val executor = Executors.newSingleThreadExecutor()
         try {
             // When
             val loading = executor.submit {
-                disk.onSuccess(DataStoreContent(1, FlagsStateEntry(context, flags, 0)))
+                disk.onSuccess(restored(listOf(fakeCacheKey)))
             }
 
             // Then
@@ -359,14 +355,30 @@ internal class FirstFlagsInstallationTest {
         }
     }
 
-    private fun repository(timeoutMs: Long = 1): DefaultFlagsRepository {
+    private fun repository(
+        timeoutMs: Long = 1,
+        deliverFirstFlags: (Runnable) -> Unit = Runnable::run
+    ): DefaultFlagsRepository {
         whenever(core.internalLogger).thenReturn(logger)
         whenever(core.timeProvider).thenReturn(mock())
+        var requestCount = 0
         doAnswer {
-            disk = it.getArgument(2)
+            val callback = it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+            if (requestCount++ == 0) {
+                callback.onFailure()
+            } else {
+                disk = callback
+            }
             null
         }.whenever(store).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
-        return DefaultFlagsRepository(core, "first", store, null, persistenceLoadTimeoutMs = timeoutMs).also {
+        return DefaultFlagsRepository(
+            core,
+            "first",
+            store,
+            null,
+            persistenceLoadTimeoutMs = timeoutMs,
+            deliverFirstFlags = deliverFirstFlags
+        ).also {
             it.firstFlags.whenComplete { keys -> events.add(keys) }
         }
     }

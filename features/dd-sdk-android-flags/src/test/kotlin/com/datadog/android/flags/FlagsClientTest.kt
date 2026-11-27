@@ -147,9 +147,14 @@ internal class FlagsClientTest {
         whenever(mockCore.createOkHttpCallFactory(any())).thenReturn(mock<Call.Factory>())
         whenever(mockFeatureScope.dataStore).thenReturn(mockDataStore)
         whenever(mockCore.getFeature(FLAGS_FEATURE_NAME)).thenReturn(mockFeatureScope)
-        lateinit var readCallback: DataStoreReadCallback<FlagsStateEntry>
+        lateinit var dependentReadCallback: DataStoreReadCallback<FlagsStateEntry>
+        lateinit var legacyReadCallback: DataStoreReadCallback<FlagsStateEntry>
         doAnswer {
-            readCallback = it.getArgument(2)
+            if (it.getArgument<String>(0).contains("dependent-v1")) {
+                dependentReadCallback = it.getArgument(2)
+            } else {
+                legacyReadCallback = it.getArgument(2)
+            }
             null
         }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
         val configuration = FlagsConfiguration.Builder()
@@ -166,7 +171,8 @@ internal class FlagsClientTest {
         ) as DatadogFlagsClient
 
         // When
-        readCallback.onSuccess(
+        dependentReadCallback.onFailure()
+        legacyReadCallback.onSuccess(
             DataStoreContent(
                 1,
                 FlagsStateEntry(

@@ -121,16 +121,17 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         // Then
         assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES"))
             .isEqualTo("assignment-encoding-flag-key-256-v1")
+        assertThat(request.url.queryParameterValues("cap_dependent-flags-variant-key")).containsExactly("v1")
         assertThat(attributes.has("supported_capabilities")).isFalse()
         assertThat(attributes.getJSONObject("source").getString("sdk_name")).isEqualTo("dd-sdk-android")
         assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(context.sdkVersion)
     }
 
     @Test
-    fun `M omit encoding capability W create() { bridge sources }`(
+    fun `M omit capabilities and use bridge identity W create() { bridge sources }`(
         @Forgery fakeEvaluationContext: EvaluationContext
     ) {
-        for (source in listOf("react-native", "flutter", "unknown")) {
+        for (source in listOf("react-native", "flutter", "unity", "unknown")) {
             // Given
             val context = fakeDatadogContext.copy(source = source)
 
@@ -143,6 +144,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             // Then
             assertThat(attributes.has("supported_capabilities")).isFalse()
             assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES")).isNull()
+            assertThat(request.url.queryParameter("cap_dependent-flags-variant-key")).isNull()
             assertThat(attributes.getJSONObject("source").getString("sdk_name")).isEqualTo(source)
             assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(context.sdkVersion)
         }
@@ -162,7 +164,11 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext, fakeDiagnostics)
+        val request = testedFactory.create(
+            context,
+            fakeDatadogContext.copy(source = "react-native"),
+            fakeDiagnostics
+        )
 
         // Then
         checkNotNull(request)
@@ -228,6 +234,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         // Given
         val fakeCustomEndpoint = "https://custom-proxy.example.com/flags/assignments"
         testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, fakeCustomEndpoint, null)
+        fakeDatadogContext = fakeDatadogContext.copy(source = "react-native")
         val context = EvaluationContext(
             targetingKey = fakeTargetingKey,
             attributes = emptyMap()
@@ -238,6 +245,43 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
         checkNotNull(request)
         assertThat(request.url.toString()).isEqualTo(fakeCustomEndpoint)
+    }
+
+    @Test
+    fun `M replace dependent capability and preserve other query values W create() { native custom endpoint }`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        // Given
+        val customEndpoint = "https://custom.example/assignments?keep=first&" +
+            "cap_dependent-flags-variant-key=stale&keep=second"
+        testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, customEndpoint, null)
+        val context = fakeDatadogContext.copy(source = "android")
+
+        // When
+        val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
+
+        // Then
+        assertThat(request.url.queryParameterValues("keep")).containsExactly("first", "second")
+        assertThat(request.url.queryParameterValues("cap_dependent-flags-variant-key")).containsExactly("v1")
+    }
+
+    @Test
+    fun `M remove dependent capability and preserve other query values W create() { bridge custom endpoint }`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        // Given
+        val customEndpoint = "https://custom.example/assignments?keep=first&" +
+            "cap_dependent-flags-variant-key=stale&keep=second"
+        testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, customEndpoint, null)
+        val context = fakeDatadogContext.copy(source = "react-native")
+
+        // When
+        val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
+
+        // Then
+        assertThat(request.url.queryParameterValues("keep")).containsExactly("first", "second")
+        assertThat(request.url.queryParameter("cap_dependent-flags-variant-key")).isNull()
+        assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES")).isNull()
     }
 
     // endregion

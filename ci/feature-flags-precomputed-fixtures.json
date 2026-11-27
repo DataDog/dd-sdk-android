@@ -5,7 +5,7 @@
       "format": "precomputed-assignments",
       "path": "precomputed-assignments/",
       "destination": "reliability/single-fit/flags/src/test/resources/precomputed",
-      "commit": "f8765f73e41eff57429dbb60289147e7d9c52b2b",
+      "commit": "26f75b6b2009043528828e3d9379b601041445f6",
       "files": {
         "schemas/precomputed-assignment.schema.json": "schema.json",
         "precomputed-assignments/README.md": "README.md",

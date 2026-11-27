@@ -415,7 +415,8 @@ internal class EvaluationsManager(
             context,
             assignments.flags,
             assignments.obfuscation,
-            assignments.observeFullEvaluationData
+            assignments.observeFullEvaluationData,
+            assignments.flagEvaluationErrors
         )
         assignmentAuthorization.onAssignmentsAccepted(request.assignmentAuthorization)
         if (acceptedTimeoutFallback?.request === request) acceptedTimeoutFallback = null

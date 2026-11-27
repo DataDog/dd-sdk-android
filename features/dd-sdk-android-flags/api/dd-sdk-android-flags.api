@@ -130,11 +130,25 @@ public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;)V
 }
 
+public final class com/datadog/android/flags/_FlagsInternalProxy$DeferredDependencyExposure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ZLkotlin/jvm/functions/Function0;)V
+	public final fun getAllocationKey ()Ljava/lang/String;
+	public final fun getFlagKey ()Ljava/lang/String;
+	public final fun getHookFeatures ()Ljava/util/Map;
+	public final fun getRecordExposure ()Lkotlin/jvm/functions/Function0;
+	public final fun getVariantKey ()Ljava/lang/String;
+	public final fun isExposure ()Z
+}
+
 public final class com/datadog/android/flags/_FlagsInternalProxy$DeferredExposureResolution {
 	public fun <init> (Lcom/datadog/android/flags/model/ResolutionDetails;Lcom/datadog/android/flags/model/EvaluationContext;Lkotlin/jvm/functions/Function0;)V
+	public fun <init> (Lcom/datadog/android/flags/model/ResolutionDetails;Lcom/datadog/android/flags/model/EvaluationContext;Lkotlin/jvm/functions/Function0;ZLjava/util/List;)V
+	public synthetic fun <init> (Lcom/datadog/android/flags/model/ResolutionDetails;Lcom/datadog/android/flags/model/EvaluationContext;Lkotlin/jvm/functions/Function0;ZLjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getContext ()Lcom/datadog/android/flags/model/EvaluationContext;
+	public final fun getDependencyExposures ()Ljava/util/List;
 	public final fun getDetails ()Lcom/datadog/android/flags/model/ResolutionDetails;
 	public final fun getRecordExposure ()Lkotlin/jvm/functions/Function0;
+	public final fun isRootExposure ()Z
 }
 
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {

@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.flags.internal.model.DependencyFlagKeyEncryption
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsState
 import com.datadog.android.flags.internal.model.FlagsStateEntry
@@ -20,7 +21,12 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
     override fun serialize(model: FlagsStateEntry): String = try {
         val flags = FlagsState.Flags(
             model.flags.mapValues {
-                FlagsJson.writeAssignment(it.value).toJson()
+                FlagsJson.writeAssignmentJson(it.value)
+            }.toMutableMap()
+        )
+        val flagEvaluationErrors = FlagsState.Flags(
+            model.flagEvaluationErrors.mapValues {
+                FlagsJson.writeEvaluationError(it.value)
             }.toMutableMap()
         )
         val json = FlagsState(
@@ -31,10 +37,24 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
             // Older SDKs must reject encoded caches instead of reading digests as original keys.
             flags = flags.takeIf { model.obfuscation == null },
             encodedFlags = flags.takeIf { model.obfuscation != null },
+            flagEvaluationErrors = flagEvaluationErrors.takeIf {
+                model.obfuscation == null && model.flagEvaluationErrors.isNotEmpty()
+            },
+            encodedFlagEvaluationErrors = flagEvaluationErrors.takeIf {
+                model.obfuscation != null && model.flagEvaluationErrors.isNotEmpty()
+            },
             lastUpdateTimestamp = model.lastUpdateTimestamp,
             observeFullEvaluationData = model.observeFullEvaluationData,
             obfuscated = true.takeIf { model.obfuscation != null },
-            obfuscation = model.obfuscation?.let { FlagsState.Obfuscation(FlagKeyObfuscation.SCHEME, it.salt) },
+            obfuscation = model.obfuscation?.let {
+                FlagsState.Obfuscation(
+                    scheme = FlagKeyObfuscation.SCHEME,
+                    salt = it.salt,
+                    dependencyKeyEncryption = FlagsState.DependencyKeyEncryption(
+                        DependencyFlagKeyEncryption.SCHEME
+                    ).takeIf { _ -> it.dependencyKeyEncryption }
+                )
+            },
             flagSelection = model.flagSelection?.let { FlagsState.FlagSelection(it.tags, it.keyPatterns) }
         ).toJson().toString()
         json.escapeUnpairedSurrogates()

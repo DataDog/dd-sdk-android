@@ -13,6 +13,8 @@
     },
     "flags": { "type": "object", "additionalProperties": true },
     "encodedFlags": { "type": "object", "additionalProperties": true },
+    "flagEvaluationErrors": { "type": "object", "additionalProperties": true },
+    "encodedFlagEvaluationErrors": { "type": "object", "additionalProperties": true },
     "lastUpdateTimestamp": { "type": "integer" },
     "observeFullEvaluationData": { "type": "boolean" },
     "obfuscated": { "type": "boolean" },
@@ -20,7 +22,14 @@
       "type": "object",
       "properties": {
         "scheme": { "type": "string" },
-        "salt": { "type": "string" }
+        "salt": { "type": "string" },
+        "dependencyKeyEncryption": {
+          "type": "object",
+          "properties": {
+            "scheme": { "type": "string" }
+          },
+          "required": ["scheme"]
+        }
       },
       "required": ["scheme", "salt"]
     },

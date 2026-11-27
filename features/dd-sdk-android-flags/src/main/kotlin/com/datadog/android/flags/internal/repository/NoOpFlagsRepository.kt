@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.repository
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.PrecomputedFlagEvaluationError
 import com.datadog.android.flags.model.EvaluationContext
 
 /** Keeps context-operation bookkeeping running when no flag storage is available. */
@@ -19,7 +20,8 @@ internal class NoOpFlagsRepository : FlagsRepository {
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
         obfuscation: FlagKeyObfuscation?,
-        observeFullEvaluationData: Boolean
+        observeFullEvaluationData: Boolean,
+        flagEvaluationErrors: Map<String, PrecomputedFlagEvaluationError>
     ) = FlagsInstallation { onInstalled -> onInstalled() }
 
     override fun waitForPersistenceLoad() = Unit

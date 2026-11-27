@@ -30,7 +30,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
@@ -96,7 +95,8 @@ class FlagsEvaluationTest {
 
         // Then
         val request = stubSdkCore.requestsSent().single()
-        assertThat(request.url.toString()).isEqualTo(fakeFlagEndpoint)
+        assertThat(request.url.toString())
+            .isEqualTo("$fakeFlagEndpoint?cap_dependent-flags-variant-key=v1")
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.header("dd-client-token")).isEqualTo(datadogContext.clientToken)
         val attributes = request.bodyAsJson().getJSONObject("data").getJSONObject("attributes")
@@ -152,29 +152,18 @@ class FlagsEvaluationTest {
     }
 
     @Test
-    fun `M ignore dependent fields W resolve() {legacy client}`(
+    fun `M ignore extra response fields W resolve() {bridge client}`(
         @BoolForgery fakeValue: Boolean
     ) {
         // Given
+        stubSdkCore.stubSource("react-native")
         val response = JSONObject(
             precomputedAssignmentsBody(mapOf(fakeFlagKey to assignment("boolean", fakeValue)))
         )
         val attributes = response.getJSONObject("data").getJSONObject("attributes")
-        val dependencyEvaluation = JSONObject()
-            .put("flagKey", ENCRYPTED_DEPENDENCY_KEY)
-            .put("isPresentInAssignment", true)
+        attributes.put("futureAttribute", JSONObject().put("version", 2))
         attributes.getJSONObject("flags").getJSONObject(fakeFlagKey)
-            .put("dependencyEvaluations", JSONArray().put(dependencyEvaluation))
-        attributes.put(
-            "flagEvaluationErrors",
-            JSONObject().put(
-                "failed-flag",
-                JSONObject()
-                    .put("reason", "ERROR")
-                    .put("errorCode", "GENERAL")
-                    .put("dependencyEvaluations", JSONArray().put(dependencyEvaluation))
-            )
-        )
+            .put("futureAssignmentField", JSONObject().put("enabled", true))
         stubSdkCore.stubNetworkResponses { httpResponse(it, body = response.toString()) }
         val client = enableFlagsAndBuildClient()
         client.setEvaluationContext(EvaluationContext(fakeTargetingKey))
@@ -524,10 +513,6 @@ class FlagsEvaluationTest {
             variationKey = fakeVariationKey,
             allocationKey = fakeAllocationKey
         )
-    }
-
-    private companion object {
-        const val ENCRYPTED_DEPENDENCY_KEY = "Eb_cST-0-FZKdvcpKLHbDDG_CX2hK4Xfrw7h5o-47Gp6GyFntOGTZO3wmLg"
     }
 
     // endregion

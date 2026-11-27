@@ -7,6 +7,7 @@
 package com.datadog.android.flags.openfeature
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.openfeature.internal.exposure.DatadogProviderMetadata
 import com.datadog.android.flags.openfeature.internal.exposure.ExposureDecisions
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -126,6 +127,58 @@ internal class ExposureHookTest {
     }
 
     @Test
+    fun `M report selected dependencies in order before root W finallyAfter() {dependent assignment}`(
+        @StringForgery firstDependencyKey: String,
+        @StringForgery secondDependencyKey: String,
+        @StringForgery dependencyVariant: String,
+        @StringForgery dependencyAllocation: String
+    ) {
+        // Given
+        val metadata = exposureMetadata(provisionalIsRecorded = false)
+        decisions.registerWithDependencies(
+            metadata = metadata,
+            hookFeatures = emptyMap(),
+            context = null,
+            recordExposure = { false },
+            isExposure = true,
+            dependencyExposures = listOf(
+                _FlagsInternalProxy.DeferredDependencyExposure(
+                    firstDependencyKey,
+                    dependencyVariant,
+                    dependencyAllocation,
+                    mapOf("holdout.key" to fakeFeatureValue),
+                    true,
+                    { true }
+                ),
+                _FlagsInternalProxy.DeferredDependencyExposure(
+                    secondDependencyKey,
+                    dependencyVariant,
+                    dependencyAllocation,
+                    emptyMap(),
+                    false,
+                    null
+                )
+            )
+        )
+        val details = FlagEvaluationDetails<Any>(fakeFlagKey, true, fakeVariant, metadata = metadata)
+
+        // When
+        testedHook.finallyAfter(hookContext(), details, emptyMap())
+
+        // Then
+        assertThat(evaluations.map { it.flagKey })
+            .containsExactly(firstDependencyKey, secondDependencyKey, fakeFlagKey)
+        assertThat(evaluations[0].variant).isEqualTo(dependencyVariant)
+        assertThat(evaluations[0].allocationKey).isEqualTo(dependencyAllocation)
+        assertThat(evaluations[0].features).containsEntry("holdout.key", fakeFeatureValue)
+        assertThat(evaluations[0].isExposure).isTrue()
+        assertThat(evaluations[0].isCacheHit).isTrue()
+        assertThat(evaluations[1].isExposure).isFalse()
+        assertThat(evaluations[2].isExposure).isTrue()
+        assertThat(evaluations[2].isCacheHit).isFalse()
+    }
+
+    @Test
     fun `M use the final verdict W finallyAfter() {provisional verdict outdated}`() {
         // Given
         val details = exposureDetails(isRecorded = true, provisionalIsRecorded = false)
@@ -141,11 +194,31 @@ internal class ExposureHookTest {
     fun `M report no exposure W finallyAfter() {failed evaluation}`() {
         // Given
         var recorded = false
+        var dependencyRecorded = false
         val metadata = exposureMetadata(provisionalIsRecorded = false)
-        decisions.register(metadata, emptyMap(), null) {
-            recorded = true
-            false
-        }
+        decisions.registerWithDependencies(
+            metadata,
+            emptyMap(),
+            null,
+            recordExposure = {
+                recorded = true
+                false
+            },
+            isExposure = true,
+            dependencyExposures = listOf(
+                _FlagsInternalProxy.DeferredDependencyExposure(
+                    "dependency",
+                    "variant",
+                    "allocation",
+                    emptyMap(),
+                    true,
+                    {
+                        dependencyRecorded = true
+                        false
+                    }
+                )
+            )
+        )
         val details =
             FlagEvaluationDetails<Any>(
                 fakeFlagKey,
@@ -164,6 +237,8 @@ internal class ExposureHookTest {
         assertThat(evaluation.shouldSend()).isFalse()
         assertThat(evaluation.isCacheHit).isFalse()
         assertThat(recorded).isFalse()
+        assertThat(dependencyRecorded).isFalse()
+        assertThat(evaluations).hasSize(1)
     }
 
     @Test

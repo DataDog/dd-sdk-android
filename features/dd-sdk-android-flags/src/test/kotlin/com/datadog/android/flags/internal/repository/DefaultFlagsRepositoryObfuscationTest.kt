@@ -14,7 +14,9 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
+import com.datadog.android.flags.internal.model.PrecomputedDependencyEvaluation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.PrecomputedFlagEvaluationError
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
@@ -119,8 +121,15 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         encoded: Boolean
     ) {
         // Given
-        var diskCallback: DataStoreReadCallback<FlagsStateEntry>? = null
-        doAnswer { diskCallback = it.getArgument(2) }
+        var dependentCallback: DataStoreReadCallback<FlagsStateEntry>? = null
+        var legacyCallback: DataStoreReadCallback<FlagsStateEntry>? = null
+        doAnswer {
+            if (it.getArgument<String>(0).contains("dependent-v1")) {
+                dependentCallback = it.getArgument(2)
+            } else {
+                legacyCallback = it.getArgument(2)
+            }
+        }
             .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
         whenever(mockSdkCore.source) doReturn source
         val entry = cachedEntry(encoded)
@@ -129,7 +138,8 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         testedRepository.firstFlags.whenComplete { firstFlags.add(it) }
 
         // When
-        checkNotNull(diskCallback).onSuccess(DataStoreContent(0, entry))
+        checkNotNull(dependentCallback).onSuccess(DataStoreContent(0, entry))
+        checkNotNull(legacyCallback).onFailure()
         val result = testedRepository.getEvaluationSnapshot(fakeFlagKey)?.flag
 
         // Then
@@ -166,6 +176,154 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         // Then
         assertThat(firstFlags).containsExactly(emptyList())
         assertThat(testedRepository.getEvaluationSnapshot(fakeFlagKey)?.flag != null).isTrue()
+    }
+
+    @Test
+    fun `M decrypt hash and resolve dependency W getEvaluationSnapshot() {canonical encrypted key}`() {
+        // Given
+        val rootKey = "checkout-redesign"
+        val dependencyKey = "new-payment-flow"
+        val canonicalEncoding = FlagKeyObfuscation.fromSalt(
+            "000102030405060708090a0b0c0d0e0f",
+            dependencyKeyEncryption = true
+        )
+        val root = fakeFlag.copy(
+            dependencyEvaluations = listOf(
+                PrecomputedDependencyEvaluation.Success(
+                    "tATBHdKpF-zxZ2Fr70UGwTMfPcXSdulh78uKYPpNzVBoSlNnB6qMCTtI1o8",
+                    true
+                )
+            )
+        )
+        val encodedRoot = checkNotNull(canonicalEncoding.encode(rootKey))
+        val encodedDependency = checkNotNull(canonicalEncoding.encode(dependencyKey))
+        testedRepository.installFlagsAndContext(
+            fakeContext,
+            mapOf(encodedRoot to root, encodedDependency to fakeFlag),
+            canonicalEncoding
+        ).complete {}
+
+        // When
+        val snapshot = checkNotNull(testedRepository.getEvaluationSnapshot(rootKey))
+
+        // Then
+        assertThat(snapshot.dependencyResolutionError).isNull()
+        val dependency = snapshot.dependencyEvaluations.single()
+        assertThat(dependency.flagKey).isEqualTo(dependencyKey)
+        assertThat(dependency.flag).isEqualTo(fakeFlag)
+        assertThat(dependency.isPresentInAssignment).isTrue()
+    }
+
+    @Test
+    fun `M retain plaintext dependent roots W installFlagsAndContext() {native source}`() {
+        // Given
+        val parentKey = "parent"
+        val rootKey = "root"
+        val errorKey = "failed-root"
+        val parent = fakeFlag.copy(dependencyEvaluations = emptyList())
+        val root = fakeFlag.copy(
+            dependencyEvaluations = listOf(PrecomputedDependencyEvaluation.Success(parentKey, true))
+        )
+        val error = PrecomputedFlagEvaluationError(
+            errorCode = "GENERAL",
+            dependencyEvaluations = listOf(PrecomputedDependencyEvaluation.Success(parentKey, false))
+        )
+
+        // When
+        testedRepository.installFlagsAndContext(
+            fakeContext,
+            mapOf(parentKey to parent, rootKey to root),
+            flagEvaluationErrors = mapOf(errorKey to error)
+        ).complete {}
+
+        // Then
+        assertThat(checkNotNull(testedRepository.getAssignmentsSnapshot()).flags)
+            .containsOnlyKeys(parentKey, rootKey)
+        assertThat(testedRepository.getEvaluationSnapshot(rootKey)?.flag).isEqualTo(root)
+        assertThat(testedRepository.getEvaluationSnapshot(rootKey)?.dependencyEvaluations).hasSize(1)
+        assertThat(testedRepository.getEvaluationSnapshot(errorKey)?.evaluationError).isEqualTo(error)
+    }
+
+    @Test
+    fun `M retain plaintext dependent roots W installFlagsAndContext() {bridge sources}`() {
+        for (source in listOf("react-native", "flutter")) {
+            // Given
+            val parentKey = "parent-$source"
+            val independentKey = "independent-$source"
+            val rootKey = "root-$source"
+            val errorKey = "failed-root-$source"
+            val parent = fakeFlag.copy(dependencyEvaluations = emptyList())
+            val independent = fakeFlag.copy(dependencyEvaluations = emptyList())
+            val root = fakeFlag.copy(
+                dependencyEvaluations = listOf(PrecomputedDependencyEvaluation.Success(parentKey, true))
+            )
+            val error = PrecomputedFlagEvaluationError(
+                errorCode = "GENERAL",
+                dependencyEvaluations = listOf(PrecomputedDependencyEvaluation.Success(parentKey, false))
+            )
+            whenever(mockSdkCore.source) doReturn source
+            testedRepository = DefaultFlagsRepository(mockSdkCore, "$fakeInstanceName-$source", mockDataStore, null)
+
+            // When
+            testedRepository.installFlagsAndContext(
+                fakeContext,
+                mapOf(parentKey to parent, independentKey to independent, rootKey to root),
+                flagEvaluationErrors = mapOf(errorKey to error)
+            ).complete {}
+
+            // Then
+            assertThat(checkNotNull(testedRepository.getAssignmentsSnapshot()).flags)
+                .containsOnlyKeys(parentKey, independentKey, rootKey)
+            assertThat(testedRepository.getEvaluationSnapshot(rootKey)?.flag).isEqualTo(root)
+            assertThat(testedRepository.getEvaluationSnapshot(rootKey)?.dependencyEvaluations).hasSize(1)
+            assertThat(testedRepository.getEvaluationSnapshot(errorKey)?.evaluationError).isEqualTo(error)
+        }
+    }
+
+    @Test
+    fun `M publish all cached flags W DefaultFlagsRepository() {react-native bridge}`() {
+        // Given
+        val parentKey = "cached-parent"
+        val independentKey = "cached-independent"
+        val rootKey = "cached-root"
+        val errorKey = "cached-error"
+        val root = fakeFlag.copy(
+            dependencyEvaluations = listOf(PrecomputedDependencyEvaluation.Success(parentKey, true))
+        )
+        val entry = FlagsStateEntry(
+            evaluationContext = fakeContext,
+            flags = mapOf(parentKey to fakeFlag, independentKey to fakeFlag, rootKey to root),
+            lastUpdateTimestamp = fakeTimestamp,
+            flagEvaluationErrors = mapOf(
+                errorKey to PrecomputedFlagEvaluationError(
+                    errorCode = "GENERAL",
+                    dependencyEvaluations = listOf(PrecomputedDependencyEvaluation.Success(parentKey, false))
+                )
+            )
+        )
+        whenever(mockSdkCore.source) doReturn "react-native"
+        doAnswer {
+            val key = it.getArgument<String>(0)
+            val callback = it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+            if (key.contains("dependent-v1")) {
+                callback.onSuccess(DataStoreContent(0, entry))
+            } else {
+                callback.onFailure()
+            }
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+
+        // When
+        val repository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore, null)
+        val firstFlags = mutableListOf<List<String>>()
+        repository.firstFlags.whenComplete { firstFlags.add(it) }
+
+        // Then
+        assertThat(firstFlags).containsExactly(listOf(parentKey, independentKey, rootKey))
+        assertThat(checkNotNull(repository.getAssignmentsSnapshot()).flags)
+            .containsOnlyKeys(parentKey, independentKey, rootKey)
+        assertThat(repository.getEvaluationSnapshot(rootKey)?.flag).isEqualTo(root.copy(reason = ResolutionReason.CACHED.name))
+        assertThat(repository.getEvaluationSnapshot(errorKey)?.evaluationError)
+            .isEqualTo(entry.flagEvaluationErrors[errorKey])
     }
 
     @Test

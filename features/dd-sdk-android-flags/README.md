@@ -411,6 +411,17 @@ if (result.errorCode != null) {
 
 When the selected split has features for application hooks, `flagMetadata` contains one entry for each of them, with the key `__dd_feature.<feature key>`. For example, a holdout gives `__dd_feature.holdout.key`, `__dd_feature.holdout.assignment_group` and `__dd_feature.holdout.should_include_in_holdout_analysis`. A value is a `String`, `Double` or `Boolean`. Other `__dd_` entries are internal and can change without notice.
 
+##### Prerequisite flags
+
+The native Android SDK supports assignments whose selected allocation depends on evaluations of other flags. When the
+application evaluates such an assignment, the SDK reports evaluation telemetry for its prerequisite evaluations. A
+prerequisite that contributed to the selected allocation also participates in RUM enrichment, exposure tracking, and
+the OpenFeature exposure hook; speculative prerequisite evaluations do not.
+
+Cross-platform bridges, including React Native, Flutter, and Unity, do not support prerequisite assignments in this
+phase. Their requests advertise no capabilities, so the server is responsible for returning a compatible response;
+the Android host does not remove dependency data from a response it receives.
+
 ##### Error codes
 - `FLAG_NOT_FOUND` - The flag could not be found
 - `PARSE_ERROR` - Error parsing the flag value

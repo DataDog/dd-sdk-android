@@ -22,6 +22,8 @@ import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.PrecomputedFlagEvaluationError
+import com.datadog.android.flags.internal.model.ResolvedDependencyEvaluation
 import com.datadog.android.flags.internal.model.SplitFeature
 import com.datadog.android.flags.internal.model.forDestination
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -57,7 +59,7 @@ import org.json.JSONObject
  * @param experimentationOptOut validates the requested context before assignment resolution
  * @param assignmentAuthorization prevents resolving retained assignments for another authorized subject
  */
-@Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
+@Suppress("TooManyFunctions", "LargeClass") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
     internal val featureSdkCore: FeatureSdkCore,
     private val evaluationsManager: EvaluationsManager,
@@ -273,6 +275,7 @@ internal class DatadogFlagsClient(
      * Resolves like [resolve], but leaves the exposure to the caller, which records it with
      * [_FlagsInternalProxy.DeferredExposureResolution.recordExposure] once the evaluation has succeeded.
      */
+    @Suppress("CyclomaticComplexMethod", "LongMethod") // Keeps the ordered deferred graph decision atomic.
     internal fun <T : Any> resolveDeferringExposure(
         flagKey: String,
         defaultValue: T
@@ -287,6 +290,14 @@ internal class DatadogFlagsClient(
         }
         val flag = resolution.flag
         val context = resolution.context
+        trackDependencyTelemetry(
+            resolution.dependencyEvaluations,
+            context,
+            resolution.telemetryOptedOut,
+            resolution.observeFullEvaluationData,
+            resolution.telemetryTargetingKey,
+            rootSucceeded = true
+        )
         trackEvaluationTelemetry(
             flagKey,
             flag,
@@ -298,11 +309,52 @@ internal class DatadogFlagsClient(
         )
         val details = createSuccessResolution(flag, resolution.value, resolution.observeFullEvaluationData)
         val isExposure = flag.doLog && flag.variationKey.isNotBlank() && flag.allocationKey.isNotBlank()
-        return if (isExposure && isCurrentResolutionContext(context)) {
-            _FlagsInternalProxy.DeferredExposureResolution(details, context) {
-                val isCurrent = isCurrentResolutionContext(context)
-                if (isCurrent) exposureProcessor.processEvent(flagKey, context, flag) else null
+        val dependencyExposures = resolution.dependencyEvaluations.mapNotNull { dependency ->
+            val dependencyFlag = dependency.flag
+            if (dependency.isPresentInAssignment != true || dependencyFlag == null) return@mapNotNull null
+            val dependencyIsExposure = dependencyFlag.doLog && dependencyFlag.variationKey.isNotBlank() &&
+                dependencyFlag.allocationKey.isNotBlank()
+            _FlagsInternalProxy.DeferredDependencyExposure(
+                flagKey = dependency.flagKey,
+                variantKey = dependencyFlag.variationKey.takeIf { it.isNotBlank() },
+                allocationKey = dependencyFlag.allocationKey.takeIf { it.isNotBlank() },
+                hookFeatures = hookFeatures(dependencyFlag),
+                isExposure = dependencyIsExposure,
+                recordExposure = if (dependencyIsExposure) {
+                    {
+                        if (isCurrentResolutionContext(context)) {
+                            exposureProcessor.processEvent(dependency.flagKey, context, dependencyFlag)
+                        } else {
+                            null
+                        }
+                    }
+                } else {
+                    null
+                }
+            )
+        }
+        val rootRecordExposure = if (isExposure && isCurrentResolutionContext(context)) {
+            {
+                if (isCurrentResolutionContext(
+                        context
+                    )
+                ) {
+                    exposureProcessor.processEvent(flagKey, context, flag)
+                } else {
+                    null
+                }
             }
+        } else {
+            null
+        }
+        return if (rootRecordExposure != null || dependencyExposures.isNotEmpty()) {
+            _FlagsInternalProxy.DeferredExposureResolution(
+                details,
+                context,
+                recordExposure = rootRecordExposure,
+                isRootExposure = rootRecordExposure != null,
+                dependencyExposures = dependencyExposures
+            )
         } else {
             _FlagsInternalProxy.DeferredExposureResolution(details, context, null)
         }
@@ -387,6 +439,7 @@ internal class DatadogFlagsClient(
             val context: EvaluationContext,
             val observeFullEvaluationData: Boolean = false,
             val telemetryTargetingKey: EvaluationTargetingKey? = null,
+            val dependencyEvaluations: List<ResolvedDependencyEvaluation> = emptyList(),
             override val telemetryOptedOut: Boolean = false
         ) : InternalResolution<T>()
 
@@ -398,6 +451,7 @@ internal class DatadogFlagsClient(
             val context: EvaluationContext? = null,
             val observeFullEvaluationData: Boolean = false,
             val telemetryTargetingKey: EvaluationTargetingKey? = null,
+            val dependencyEvaluations: List<ResolvedDependencyEvaluation> = emptyList(),
             override val telemetryOptedOut: Boolean = false
         ) : InternalResolution<T>()
     }
@@ -408,6 +462,9 @@ internal class DatadogFlagsClient(
         val telemetryOptedOut: Boolean,
         val observeFullEvaluationData: Boolean,
         val telemetryTargetingKey: EvaluationTargetingKey?,
+        val evaluationError: PrecomputedFlagEvaluationError?,
+        val dependencyEvaluations: List<ResolvedDependencyEvaluation>,
+        val dependencyResolutionError: String?,
         val errorCode: ErrorCode?
     )
 
@@ -438,6 +495,9 @@ internal class DatadogFlagsClient(
             evaluationTelemetryOptOutParameterEnabled && isSubjectOptedOut(context?.targetingKey),
             observeFullEvaluationData,
             telemetryTargetingKey,
+            snapshot?.evaluationError,
+            snapshot?.dependencyEvaluations.orEmpty(),
+            snapshot?.dependencyResolutionError,
             policy.errorCode
         )
     }
@@ -448,11 +508,18 @@ internal class DatadogFlagsClient(
         snapshot: EvaluationSnapshot
     ): InternalResolution.Error<T> {
         val ready = snapshot.context != null
-        val error = snapshot.errorCode ?: if (ready) ErrorCode.FLAG_NOT_FOUND else ErrorCode.PROVIDER_NOT_READY
-        val message = when (error) {
-            ErrorCode.GENERAL -> AssignmentAuthorization.AUTHORIZATION_FAILED
-            ErrorCode.INVALID_CONTEXT -> ExperimentationOptOut.INVALID_CONTEXT_MESSAGE
-            ErrorCode.FLAG_NOT_FOUND -> "Flag not found"
+        val error = when {
+            snapshot.errorCode != null -> snapshot.errorCode
+            snapshot.dependencyResolutionError != null -> ErrorCode.PARSE_ERROR
+            snapshot.evaluationError != null -> ErrorCode.GENERAL
+            ready -> ErrorCode.FLAG_NOT_FOUND
+            else -> ErrorCode.PROVIDER_NOT_READY
+        }
+        val message = snapshot.dependencyResolutionError ?: snapshot.evaluationError?.errorMessage ?: when {
+            snapshot.evaluationError != null -> "Flag evaluation failed"
+            error == ErrorCode.GENERAL -> AssignmentAuthorization.AUTHORIZATION_FAILED
+            error == ErrorCode.INVALID_CONTEXT -> ExperimentationOptOut.INVALID_CONTEXT_MESSAGE
+            error == ErrorCode.FLAG_NOT_FOUND -> "Flag not found"
             else -> if (experimentationOptOut.enabled) {
                 "Assignments for the current evaluation context are not available."
             } else {
@@ -467,6 +534,7 @@ internal class DatadogFlagsClient(
             context = snapshot.context,
             observeFullEvaluationData = snapshot.observeFullEvaluationData,
             telemetryTargetingKey = snapshot.telemetryTargetingKey,
+            dependencyEvaluations = snapshot.dependencyEvaluations,
             telemetryOptedOut = snapshot.telemetryOptedOut
         )
     }
@@ -486,7 +554,7 @@ internal class DatadogFlagsClient(
      * @return [InternalResolution.Success] with parsed value and metadata if resolution succeeded,
      *         [InternalResolution.Error] with default value and error details otherwise
      */
-    @Suppress("ReturnCount") // Early returns for improved readability
+    @Suppress("ReturnCount", "ComplexCondition") // Early returns keep failure precedence explicit.
     private fun <T : Any> readAndParseAssignment(
         flagKey: String,
         defaultValue: T
@@ -494,7 +562,9 @@ internal class DatadogFlagsClient(
         val snapshot = evaluationSnapshot(flagKey)
         val context = snapshot.context
         val flag = snapshot.flag
-        if (snapshot.errorCode != null || context == null || flag == null) {
+        if (snapshot.errorCode != null || snapshot.dependencyResolutionError != null || context == null ||
+            flag == null
+        ) {
             return unavailableResolution(flagKey, defaultValue, snapshot)
         }
 
@@ -513,6 +583,7 @@ internal class DatadogFlagsClient(
                     context = context,
                     observeFullEvaluationData = snapshot.observeFullEvaluationData,
                     telemetryTargetingKey = snapshot.telemetryTargetingKey,
+                    dependencyEvaluations = snapshot.dependencyEvaluations,
                     telemetryOptedOut = snapshot.telemetryOptedOut
                 )
             },
@@ -564,6 +635,7 @@ internal class DatadogFlagsClient(
             context = snapshot.context,
             observeFullEvaluationData = snapshot.observeFullEvaluationData,
             telemetryTargetingKey = snapshot.telemetryTargetingKey,
+            dependencyEvaluations = snapshot.dependencyEvaluations,
             telemetryOptedOut = snapshot.telemetryOptedOut
         )
     }
@@ -647,6 +719,12 @@ internal class DatadogFlagsClient(
         return metadata
     }
 
+    private fun hookFeatures(precomputedFlag: PrecomputedFlag): Map<String, Any> = buildMap {
+        precomputedFlag.features.forEach { feature ->
+            if (SplitFeature.DESTINATION_HOOK in feature.destinations) put(feature.key, feature.value)
+        }
+    }
+
     private fun <T : Any> createErrorResolution(
         flagKey: String,
         defaultValue: T,
@@ -681,6 +759,15 @@ internal class DatadogFlagsClient(
     }
 
     private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {
+        trackDependencyTelemetry(
+            resolution.dependencyEvaluations,
+            resolution.context,
+            resolution.telemetryOptedOut,
+            resolution.observeFullEvaluationData,
+            resolution.telemetryTargetingKey,
+            rootSucceeded = true
+        )
+        trackDependencyExposures(resolution.dependencyEvaluations, resolution.context)
         trackResolution(
             resolution.flagKey,
             resolution.flag,
@@ -747,9 +834,15 @@ internal class DatadogFlagsClient(
     }
 
     private fun <T : Any> trackErrorResolution(resolution: InternalResolution.Error<T>) {
-        if (resolution.telemetryOptedOut || !flagsConfiguration.trackEvaluations) {
-            return
-        }
+        trackDependencyTelemetry(
+            resolution.dependencyEvaluations,
+            resolution.context,
+            resolution.telemetryOptedOut,
+            resolution.observeFullEvaluationData,
+            resolution.telemetryTargetingKey,
+            rootSucceeded = false
+        )
+        if (resolution.telemetryOptedOut || !flagsConfiguration.trackEvaluations) return
 
         writeEvaluationEvent(
             flagKey = resolution.flagKey,
@@ -761,6 +854,49 @@ internal class DatadogFlagsClient(
             observeFullEvaluationData = resolution.observeFullEvaluationData,
             preparedTargetingKey = resolution.telemetryTargetingKey
         )
+    }
+
+    private fun trackDependencyTelemetry(
+        dependencies: List<ResolvedDependencyEvaluation>,
+        context: EvaluationContext?,
+        telemetryOptedOut: Boolean,
+        observeFullEvaluationData: Boolean,
+        preparedTargetingKey: EvaluationTargetingKey?,
+        rootSucceeded: Boolean
+    ) {
+        if (telemetryOptedOut) return
+        dependencies.forEach { dependency ->
+            val flag = dependency.flag
+            val selected = rootSucceeded && dependency.isPresentInAssignment == true && flag != null
+            if (selected && flagsConfiguration.rumIntegrationEnabled && flag.variationKey.isNotBlank()) {
+                logEvaluation(dependency.flagKey, flag.variationKey)
+            }
+            if (flagsConfiguration.trackEvaluations) {
+                writeEvaluationEvent(
+                    flagKey = dependency.flagKey,
+                    context = context,
+                    variantKey = flag?.variationKey.takeIf { dependency.errorCode == null },
+                    allocationKey = flag?.allocationKey.takeIf { dependency.errorCode == null },
+                    errorCode = dependency.errorCode,
+                    errorMessage = dependency.errorMessage,
+                    observeFullEvaluationData = observeFullEvaluationData,
+                    preparedTargetingKey = preparedTargetingKey,
+                    flag = flag.takeIf { dependency.errorCode == null }
+                )
+            }
+        }
+    }
+
+    private fun trackDependencyExposures(
+        dependencies: List<ResolvedDependencyEvaluation>,
+        context: EvaluationContext
+    ) {
+        dependencies.forEach { dependency ->
+            val flag = dependency.flag
+            if (dependency.isPresentInAssignment == true && flag != null) {
+                trackFlagExposure(dependency.flagKey, flag, context)
+            }
+        }
     }
 
     // endregion

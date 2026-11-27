@@ -20,6 +20,7 @@ import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.internal.rum.rumContext
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -52,7 +53,7 @@ internal class PrecomputedAssignmentsRequestFactory(
      * @return A fully-formed OkHttp Request ready for execution, or null if the request
      *         cannot be constructed (e.g., invalid endpoint or headers)
      */
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // OkHttp builder inputs are validated above.
     fun create(
         context: EvaluationContext,
         datadogContext: DatadogContext,
@@ -63,13 +64,19 @@ internal class PrecomputedAssignmentsRequestFactory(
             ?: datadogContext.site.getFlagsEndpoint(PREVIEW_CUSTOMER_DOMAIN)
             ?: return null
 
+        val requestUrl = url.toHttpUrlOrNull()?.newBuilder()?.apply {
+            removeAllQueryParameters(DEPENDENT_FLAGS_CAPABILITY_QUERY)
+            if (datadogContext.source == ANDROID_SOURCE) {
+                addQueryParameter(DEPENDENT_FLAGS_CAPABILITY_QUERY, DEPENDENT_FLAGS_CAPABILITY_VERSION)
+            }
+        }?.build() ?: return null
         val headers = buildHeaders(datadogContext, assignmentToken) ?: return null
 
         val body = buildRequestBody(context, datadogContext, diagnostics)
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: inputs validated, caller handles null
         return Request.Builder()
-            .url(url)
+            .url(requestUrl)
             .headers(headers)
             .post(body)
             .build()
@@ -84,7 +91,7 @@ internal class PrecomputedAssignmentsRequestFactory(
                 .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
 
             // Bridge SDKs that consume raw snapshots cannot resolve encoded keys yet.
-            if (datadogContext.source == "android") {
+            if (datadogContext.source == ANDROID_SOURCE) {
                 headersBuilder.add(
                     "X-DD-FEATURE-FLAGS-CAPABILITIES",
                     listOf(FlagKeyObfuscation.CAPABILITY).sorted().joinToString(",")
@@ -155,7 +162,11 @@ internal class PrecomputedAssignmentsRequestFactory(
                     },
                     env = PrecomputedAssignmentsRequest.Env(ddEnv = datadogContext.env),
                     source = PrecomputedAssignmentsRequest.Source(
-                        sdkName = if (datadogContext.source == "android") "dd-sdk-android" else datadogContext.source,
+                        sdkName = if (datadogContext.source == ANDROID_SOURCE) {
+                            "dd-sdk-android"
+                        } else {
+                            datadogContext.source
+                        },
                         sdkVersion = datadogContext.sdkVersion
                     ),
                     subject = PrecomputedAssignmentsRequest.Subject(
@@ -184,5 +195,8 @@ internal class PrecomputedAssignmentsRequestFactory(
         private const val HEADER_CONTENT_TYPE = "Content-Type"
         private const val CONTENT_TYPE_VND_JSON = "application/vnd.api+json"
         private const val PREVIEW_CUSTOMER_DOMAIN = "preview"
+        private const val DEPENDENT_FLAGS_CAPABILITY_QUERY = "cap_dependent-flags-variant-key"
+        private const val DEPENDENT_FLAGS_CAPABILITY_VERSION = "v1"
+        private const val ANDROID_SOURCE = "android"
     }
 }

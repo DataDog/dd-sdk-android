@@ -15,6 +15,7 @@ import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.internal.aggregation.EvaluationPrivacy
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagsStateEntry
+import com.datadog.android.flags.internal.model.PrecomputedDependencyEvaluation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.selection.FlagSelection
@@ -45,6 +46,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -612,6 +614,54 @@ internal class DefaultFlagsRepositoryTest {
             callback = anyOrNull(),
             serializer = any()
         )
+        verify(mockDataStore).removeValue(eq("flags-dependent-v1-state-$fakeInstanceName"), anyOrNull())
+        verify(mockDataStore, never()).setValue<FlagsStateEntry>(
+            key = eq("flags-dependent-v1-state-$fakeInstanceName"),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+    }
+
+    @Test
+    fun `M isolate dependent state from legacy readers W installFlagsAndContext() + complete()`(
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String,
+        forge: Forge
+    ) {
+        // Given
+        val parentKey = forge.anAlphabeticalString()
+        val rootKey = forge.anAlphabeticalString() + parentKey
+        val parent = forge.getForgery<PrecomputedFlag>().copy(dependencyEvaluations = emptyList())
+        val root = forge.getForgery<PrecomputedFlag>().copy(
+            dependencyEvaluations = listOf(PrecomputedDependencyEvaluation.Success(parentKey, true))
+        )
+        testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, fakeInstanceName, mockDataStore, null)
+
+        // When
+        testedRepository.installFlagsAndContext(
+            forge.getForgery(),
+            mapOf(parentKey to parent, rootKey to root)
+        ).complete {}
+
+        // Then
+        inOrder(mockDataStore) {
+            verify(mockDataStore).removeValue(eq("flags-state-$fakeInstanceName"), anyOrNull())
+            verify(mockDataStore).setValue<FlagsStateEntry>(
+                key = eq("flags-dependent-v1-state-$fakeInstanceName"),
+                data = any(),
+                version = any(),
+                callback = anyOrNull(),
+                serializer = any()
+            )
+        }
+        verify(mockDataStore, never()).setValue<FlagsStateEntry>(
+            key = eq("flags-state-$fakeInstanceName"),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
     }
 
     @Test
@@ -645,12 +695,212 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         verify(mockDataStore).value<FlagsStateEntry>(
+            key = eq("flags-dependent-v1-state-$fakeInstanceName"),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        verify(mockDataStore).value<FlagsStateEntry>(
             key = eq("flags-state-$fakeInstanceName"),
             version = anyOrNull(),
             callback = any(),
             deserializer = any()
         )
         verify(mockDataStore).removeValue(eq("flags-selection-state-$fakeInstanceName"), anyOrNull())
+        verify(mockDataStore).removeValue(
+            eq("flags-selection-dependent-v1-state-$fakeInstanceName"),
+            anyOrNull()
+        )
+    }
+
+    @Test
+    fun `M prefer newer dependent cache and remove legacy W init {both keys}`(
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String,
+        forge: Forge
+    ) {
+        // Given
+        val parentKey = forge.anAlphabeticalString()
+        val rootKey = forge.anAlphabeticalString() + parentKey
+        val parent = forge.getForgery<PrecomputedFlag>().copy(dependencyEvaluations = emptyList())
+        val root = forge.getForgery<PrecomputedFlag>().copy(
+            dependencyEvaluations = listOf(PrecomputedDependencyEvaluation.Success(parentKey, true))
+        )
+        val dependentEntry = FlagsStateEntry(
+            evaluationContext = forge.getForgery(),
+            flags = mapOf(parentKey to parent, rootKey to root),
+            lastUpdateTimestamp = 20L
+        )
+        val legacyKey = forge.anAlphabeticalString() + rootKey
+        val legacyEntry = FlagsStateEntry(
+            evaluationContext = forge.getForgery(),
+            flags = mapOf(legacyKey to forge.getForgery()),
+            lastUpdateTimestamp = 10L
+        )
+        doAnswer {
+            val key = it.getArgument<String>(0)
+            val entry = if (key.contains("dependent-v1")) dependentEntry else legacyEntry
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(forge.anInt(), entry))
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+
+        // When
+        testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, fakeInstanceName, mockDataStore, null)
+
+        // Then
+        assertThat(testedRepository.getEvaluationSnapshot(rootKey)?.flag?.reason)
+            .isEqualTo(ResolutionReason.CACHED.name)
+        assertThat(testedRepository.getEvaluationSnapshot(rootKey)?.dependencyEvaluations).hasSize(1)
+        assertThat(testedRepository.getEvaluationSnapshot(legacyKey)?.flag).isNull()
+        verify(mockDataStore).value<FlagsStateEntry>(
+            key = eq("flags-state-$fakeInstanceName"),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        verify(mockDataStore).removeValue(eq("flags-state-$fakeInstanceName"), anyOrNull())
+    }
+
+    @Test
+    fun `M prefer newer legacy cache and remove dependent W init {old SDK updated legacy}`(
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String,
+        forge: Forge
+    ) {
+        // Given
+        val parentKey = forge.anAlphabeticalString()
+        val rootKey = forge.anAlphabeticalString() + parentKey
+        val legacyKey = forge.anAlphabeticalString() + rootKey
+        val dependentEntry = FlagsStateEntry(
+            evaluationContext = forge.getForgery(),
+            flags = mapOf(
+                parentKey to forge.getForgery<PrecomputedFlag>(),
+                rootKey to forge.getForgery<PrecomputedFlag>().copy(
+                    dependencyEvaluations = listOf(PrecomputedDependencyEvaluation.Success(parentKey, true))
+                )
+            ),
+            lastUpdateTimestamp = 10L
+        )
+        val legacyEntry = FlagsStateEntry(
+            evaluationContext = forge.getForgery(),
+            flags = mapOf(legacyKey to forge.getForgery()),
+            lastUpdateTimestamp = 20L
+        )
+        doAnswer {
+            val key = it.getArgument<String>(0)
+            val entry = if (key.contains("dependent-v1")) dependentEntry else legacyEntry
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(forge.anInt(), entry))
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+
+        // When
+        testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, fakeInstanceName, mockDataStore, null)
+
+        // Then
+        assertThat(testedRepository.getEvaluationSnapshot(legacyKey)?.flag?.reason)
+            .isEqualTo(ResolutionReason.CACHED.name)
+        assertThat(testedRepository.getEvaluationSnapshot(rootKey)?.flag).isNull()
+        verify(mockDataStore).removeValue(eq("flags-dependent-v1-state-$fakeInstanceName"), anyOrNull())
+    }
+
+    @Test
+    fun `M fall back to valid legacy cache W init {newer dependent selection is invalid}`(
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String,
+        forge: Forge
+    ) {
+        // Given
+        val legacyKey = forge.anAlphabeticalString()
+        val dependentEntry = FlagsStateEntry(
+            evaluationContext = forge.getForgery(),
+            flags = mapOf(forge.anAlphabeticalString() to forge.getForgery()),
+            lastUpdateTimestamp = 20L,
+            flagSelection = CanonicalFlagSelection(listOf("other"), emptyList())
+        )
+        val legacyEntry = FlagsStateEntry(
+            evaluationContext = forge.getForgery(),
+            flags = mapOf(legacyKey to forge.getForgery()),
+            lastUpdateTimestamp = 10L
+        )
+        doAnswer {
+            val key = it.getArgument<String>(0)
+            val entry = if (key.contains("dependent-v1")) dependentEntry else legacyEntry
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(forge.anInt(), entry))
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+
+        // When
+        testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, fakeInstanceName, mockDataStore, null)
+
+        // Then
+        assertThat(testedRepository.getEvaluationSnapshot(legacyKey)?.flag?.reason)
+            .isEqualTo(ResolutionReason.CACHED.name)
+        verify(mockDataStore).removeValue(eq("flags-dependent-v1-state-$fakeInstanceName"), anyOrNull())
+    }
+
+    @Test
+    fun `M not remove freshly persisted dependent state W stale legacy load completes after network install`(
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String,
+        forge: Forge
+    ) {
+        // Given
+        lateinit var dependentCallback: DataStoreReadCallback<FlagsStateEntry>
+        lateinit var legacyCallback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            if (it.getArgument<String>(0).contains("dependent-v1")) {
+                dependentCallback = it.getArgument(2)
+            } else {
+                legacyCallback = it.getArgument(2)
+            }
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, fakeInstanceName, mockDataStore, null)
+        dependentCallback.onSuccess(
+            DataStoreContent(
+                forge.anInt(),
+                FlagsStateEntry(forge.getForgery(), emptyMap(), lastUpdateTimestamp = 10L)
+            )
+        )
+        val parentKey = forge.anAlphabeticalString()
+        val rootKey = forge.anAlphabeticalString() + parentKey
+        val networkFlags = mapOf(
+            parentKey to forge.getForgery<PrecomputedFlag>(),
+            rootKey to forge.getForgery<PrecomputedFlag>().copy(
+                dependencyEvaluations = listOf(PrecomputedDependencyEvaluation.Success(parentKey, true))
+            )
+        )
+
+        // When
+        testedRepository.installFlagsAndContext(forge.getForgery(), networkFlags).complete {}
+        legacyCallback.onSuccess(
+            DataStoreContent(
+                forge.anInt(),
+                FlagsStateEntry(forge.getForgery(), emptyMap(), lastUpdateTimestamp = 20L)
+            )
+        )
+
+        // Then
+        assertThat(checkNotNull(testedRepository.getAssignmentsSnapshot()).flags).isSameAs(networkFlags)
+        verify(mockDataStore, never()).removeValue(
+            eq("flags-dependent-v1-state-$fakeInstanceName"),
+            anyOrNull()
+        )
     }
 
     @ParameterizedTest
@@ -782,8 +1032,14 @@ internal class DefaultFlagsRepositoryTest {
         flagSelection: CanonicalFlagSelection? = null
     ): DataStoreReadCallback<FlagsStateEntry> {
         lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        var requestCount = 0
         doAnswer {
-            callback = it.getArgument(2)
+            val requestedCallback = it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+            if (requestCount++ == 0) {
+                requestedCallback.onFailure()
+            } else {
+                callback = requestedCallback
+            }
             null
         }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
         testedRepository = DefaultFlagsRepository(
