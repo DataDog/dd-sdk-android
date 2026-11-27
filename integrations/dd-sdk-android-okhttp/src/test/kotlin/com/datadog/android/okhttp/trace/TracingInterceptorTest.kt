@@ -1880,6 +1880,47 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `M merge every existing BAGGAGE field W intercept { sampled, several fields, new baggage injected }`() {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader(BAGGAGE_HEADER, "custom=one").addHeader(BAGGAGE_HEADER, "feature=on")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        mockPropagation.wheneverInjectThenValueToHeaders(BAGGAGE_HEADER, "user.anonymous_id=abc")
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER))
+                .containsExactly("custom=one,feature=on,user.anonymous_id=abc")
+        }
+    }
+
+    @Test
+    fun `M keep valid BAGGAGE W intercept { sampled, later field with malformed member, new baggage injected }`() {
+        // Given
+        fakeRequest = forgeRequest {
+            it.addHeader(BAGGAGE_HEADER, "custom=one").addHeader(BAGGAGE_HEADER, "custom")
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        mockPropagation.wheneverInjectThenValueToHeaders(BAGGAGE_HEADER, "user.id=new")
+        stubChain(mockChain)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER)).containsExactly("custom=one,custom,user.id=new")
+        }
+    }
+
+    @Test
     fun `M keep existing BAGGAGE W intercept { new values != existing values }`(
         @StringForgery existingBaggageKey: String,
         @StringForgery existingBaggageValue: String,

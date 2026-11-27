@@ -26,3 +26,14 @@ internal fun Request.Builder.removeRetainedUserAnonymousIdBaggage(span: DatadogS
     removeHeader(TracingInterceptor.W3C_BAGGAGE_KEY)
     cleanedValues.forEach { addHeader(TracingInterceptor.W3C_BAGGAGE_KEY, it) }
 }
+
+// The W3C baggage specification allows several baggage headers, which must be combined in order.
+internal fun Request.Builder.resolveExistingBaggageHeaderValue(): String? {
+    return try {
+        build().headers(TracingInterceptor.W3C_BAGGAGE_KEY)
+            .reduceOrNull { acc, header -> _TraceInternalProxy.mergeBaggage(acc, header) }
+    } catch (_: IllegalStateException) {
+        // build() only throws when no URL is set, which can't happen for an intercepted request.
+        null
+    }
+}

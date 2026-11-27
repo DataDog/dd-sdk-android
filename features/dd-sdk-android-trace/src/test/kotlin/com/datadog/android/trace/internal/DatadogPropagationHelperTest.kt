@@ -1064,6 +1064,24 @@ internal class DatadogPropagationHelperTest {
         verify(mockRequestModifier, never()).replaceHeader(eq(W3CHttpCodec.BAGGAGE_KEY), any())
     }
 
+    @Test
+    fun `M keep valid baggage W propagateSampledHeaders() {several fields, later malformed member, injection}`() {
+        // Given
+        givenRetainedBaggage(mapOf(W3CHttpCodec.BAGGAGE_KEY to listOf("custom=one", "custom")))
+        setupInjectorCallback(W3CHttpCodec.BAGGAGE_KEY, "user.id=new")
+
+        // When
+        testedHelper.propagateSampledHeaders(
+            mockRequestModifier,
+            mockTracer,
+            mockSpan,
+            setOf(TracingHeaderType.TRACECONTEXT)
+        )
+
+        // Then
+        verify(mockRequestModifier).replaceHeader(W3CHttpCodec.BAGGAGE_KEY, "custom=one,custom,user.id=new")
+    }
+
     private fun givenRetainedBaggage(headers: Map<String, List<String>>) {
         val request = mock<HttpRequestInfo> {
             on { this.headers } doReturn headers
