@@ -47,7 +47,8 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
                 lastUpdateTimestamp = state.lastUpdateTimestamp,
                 obfuscation = obfuscation,
                 observeFullEvaluationData = state.observeFullEvaluationData == true,
-                flagSelection = state.flagSelection?.let { CanonicalFlagSelection(it.tags, it.keyPatterns) }
+                flagSelection = state.flagSelection?.let { CanonicalFlagSelection(it.tags, it.keyPatterns) },
+                responseSigningCacheScope = state.responseSigningCacheScope
             )
         }
     } catch (e: JsonParseException) {

@@ -1,6 +1,7 @@
 interface com.datadog.android.flags.EvaluationContextCallback
   fun onSuccess()
   fun onFailure(error: Throwable)
+annotation com.datadog.android.flags.ExperimentalFlagsApi
 enum com.datadog.android.flags.ExperimentationOptOutMode
   - DISABLED
   - IMMEDIATE
@@ -32,6 +33,8 @@ fun FlagsClient.setEvaluationTelemetryOptOut(optOut: Boolean)
 data class com.datadog.android.flags.FlagsConfiguration
   fun copy(trackExposures: Boolean = this.trackExposures, trackEvaluations: Boolean = this.trackEvaluations, customExposureEndpoint: String? = this.customExposureEndpoint, customEvaluationEndpoint: String? = this.customEvaluationEndpoint, customFlagEndpoint: String? = this.customFlagEndpoint, evaluationFlushIntervalMs: Long = this.evaluationFlushIntervalMs, rumIntegrationEnabled: Boolean = this.rumIntegrationEnabled, gracefulModeEnabled: Boolean = this.gracefulModeEnabled): FlagsConfiguration
   class Builder
+    fun experimentalResponseSigning(mode: ResponseSigningMode): Builder
+    fun expireVerifiedFlags(enabled: Boolean): Builder
     fun trackExposures(enabled: Boolean): Builder
     fun trackEvaluations(enabled: Boolean): Builder
     fun useCustomExposureEndpoint(endpoint: String): Builder
@@ -46,10 +49,27 @@ data class com.datadog.android.flags.FlagsConfiguration
 class com.datadog.android.flags.FlagsContextSupersededException : IllegalStateException
 class com.datadog.android.flags.FlagsInitializationTimeoutException : RuntimeException
 class com.datadog.android.flags.FlagsInvalidContextException : IllegalArgumentException
+class com.datadog.android.flags.FlagsResponseSigningException : RuntimeException
 interface com.datadog.android.flags.FlagsStateListener
   fun onStateChanged(newState: com.datadog.android.flags.model.FlagsClientState)
 interface com.datadog.android.flags.FlagsSubscription
   fun unsubscribe()
+enum com.datadog.android.flags.ResponseSigningFailureReason
+  - UNSUPPORTED_REQUEST
+  - UNAVAILABLE_CRYPTO
+  - MISSING_ANCHOR
+  - MISSING_PROOF
+  - INVALID_PROOF
+  - RESPONSE_TOO_LARGE
+  - INVALID_CERTIFICATE
+  - INVALID_SIGNATURE
+  - EXPIRED_PROOF
+  - UNSUPPORTED_SITE
+  - REVOKED_CERTIFICATE
+enum com.datadog.android.flags.ResponseSigningMode
+  - OFF
+  - OBSERVE
+  - REQUIRED
 interface com.datadog.android.flags.StateObservable
   fun getCurrentState(): com.datadog.android.flags.model.FlagsClientState
   fun addListener(listener: FlagsStateListener)
@@ -59,6 +79,7 @@ class com.datadog.android.flags._FlagsInternalProxy
   fun getInternalLogger(): com.datadog.android.api.InternalLogger
   fun isExperimentationOptOutEnabled(): Boolean
   fun setEvaluationContextWithOutcome(context: com.datadog.android.flags.model.EvaluationContext, telemetryOptedOut: Boolean?, completion: (com.datadog.android.flags.model.FlagsClientState, Throwable?) -> Unit)
+  fun isReportedByContextUpdate(error: Throwable): Boolean
   fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean
   fun getFlagAssignmentsSnapshot(context: com.datadog.android.flags.model.EvaluationContext): Map<String, com.datadog.android.flags.model.UnparsedFlag>?
   fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.UnparsedFlag>

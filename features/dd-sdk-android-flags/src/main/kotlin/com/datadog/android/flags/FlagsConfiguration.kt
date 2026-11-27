@@ -4,9 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags
 
 import com.datadog.android.flags.internal.selection.FlagSelection
+import com.datadog.android.flags.internal.signing.ResponseSigningConfiguration
 import com.datadog.android.flags.model.ErrorCode
 
 private const val DEFAULT_INITIALIZATION_TIMEOUT_MS = 5_000L
@@ -25,6 +28,7 @@ data class FlagsConfiguration internal constructor(
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
     internal val initializationTimeoutMs: Long?,
+    internal val responseSigning: ResponseSigningConfiguration,
     internal val flagSelection: FlagSelection?
 ) {
     /**
@@ -51,12 +55,14 @@ data class FlagsConfiguration internal constructor(
         rumIntegrationEnabled = rumIntegrationEnabled,
         gracefulModeEnabled = gracefulModeEnabled,
         initializationTimeoutMs = initializationTimeoutMs,
+        responseSigning = responseSigning,
         flagSelection = flagSelection
     )
 
     /**
      * A Builder class for a [FlagsConfiguration].
      */
+    @Suppress("TooManyFunctions") // Each public option has one builder method.
     class Builder {
         private var trackExposures: Boolean = true
         private var trackEvaluations: Boolean = true
@@ -67,7 +73,58 @@ data class FlagsConfiguration internal constructor(
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
+        private var responseSigning = ResponseSigningConfiguration()
         private var flagSelection: FlagSelection? = null
+
+        /**
+         * Experimental. Response signing is in preview and works only on the Datadog staging site. The API can change
+         * or be removed in a minor release, based on customer feedback.
+         *
+         * Opts into assignment response verification. Signing is off by default.
+         *
+         * Staging only; production is not supported yet. Signing works only when the SDK targets
+         * [com.datadog.android.DatadogSite.STAGING]. The SDK pins the Datadog staging root and accepts any valid leaf
+         * and intermediate chain under it, so routine certificate rotation needs no SDK update. Production support
+         * comes in a later release. On any other site:
+         * - [ResponseSigningMode.REQUIRED] fails closed. The client logs an error, sends no assignment request, and
+         *   fails every fetch with [FlagsResponseSigningException] and
+         *   [ResponseSigningFailureReason.UNSUPPORTED_SITE].
+         * - [ResponseSigningMode.OBSERVE] has no effect. The client logs a warning and sends unsigned requests, so
+         *   flags are not verified.
+         *
+         * @param mode OFF by default; OBSERVE accepts unverified data, REQUIRED uses verified memory only.
+         * @return this builder.
+         */
+        @ExperimentalFlagsApi
+        fun experimentalResponseSigning(mode: ResponseSigningMode): Builder {
+            responseSigning = responseSigning.copy(mode = mode)
+            return this
+        }
+
+        /**
+         * Experimental. Response signing is in preview and works only on the Datadog staging site. The API can change
+         * or be removed in a minor release, based on customer feedback.
+         *
+         * Sets what happens to verified flags when the proof of the last verified response expires. This option has
+         * an effect only with [ResponseSigningMode.REQUIRED].
+         * - `false` (default): the client keeps serving the last verified flags, and its state changes to
+         *   [com.datadog.android.flags.model.FlagsClientState.Stale]. A network attacker can block refreshes and keep
+         *   the flags at their last verified values. The attacker cannot forge values. The guarantee is "verified
+         *   once", not "fresh".
+         * - `true`: the client stops serving the flags, its state changes to
+         *   [com.datadog.android.flags.model.FlagsClientState.Error], and evaluations return defaults. This gives the
+         *   strict guarantee.
+         *
+         * A new verified response returns the client to [com.datadog.android.flags.model.FlagsClientState.Ready].
+         *
+         * @param enabled `true` to stop serving verified flags at proof expiry.
+         * @return this builder.
+         */
+        @ExperimentalFlagsApi
+        fun expireVerifiedFlags(enabled: Boolean): Builder {
+            responseSigning = responseSigning.copy(expireVerifiedFlags = enabled)
+            return this
+        }
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -254,6 +311,7 @@ data class FlagsConfiguration internal constructor(
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled,
             initializationTimeoutMs = initializationTimeoutMs,
+            responseSigning = responseSigning,
             flagSelection = flagSelection
         )
 

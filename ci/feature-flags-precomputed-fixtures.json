@@ -12,6 +12,20 @@
         "LICENSE": "LICENSE",
         "NOTICE": "NOTICE"
       }
+    },
+    {
+      "name": "response-signing-v1",
+      "format": "tree",
+      "path": "response-signing/v1/",
+      "destination": "features/dd-sdk-android-flags/src/test/resources/response-signing-v1",
+      "commit": "f9eabd7ff0581c405a79aadcfcd3b476d37bf0c7"
+    },
+    {
+      "name": "response-signing-chain",
+      "format": "tree",
+      "path": "response-signing/chain/",
+      "destination": "features/dd-sdk-android-flags/src/test/resources/response-signing-chain",
+      "commit": "f9eabd7ff0581c405a79aadcfcd3b476d37bf0c7"
     }
   ]
 }

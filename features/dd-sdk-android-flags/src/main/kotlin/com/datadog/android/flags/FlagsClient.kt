@@ -4,15 +4,20 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags
 
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
@@ -29,9 +34,16 @@ import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
+import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
+import com.datadog.android.flags.internal.repository.SigningFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.internal.signing.ResponseSigningContext
+import com.datadog.android.flags.internal.signing.ResponseSigningState
+import com.datadog.android.flags.internal.signing.ResponseSigningTelemetry
+import com.datadog.android.flags.internal.signing.ResponseSigningTrustRoots
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
@@ -387,6 +399,17 @@ interface FlagsClient {
      * ensuring thread-safe access and proper lifecycle management.
      */
     companion object {
+        private const val SIGNING_MILLIS_PER_SECOND = 1000
+        private const val RESPONSE_SIGNING_STAGING_ONLY =
+            "Flags response signing is supported only on the Datadog staging site in this SDK version. " +
+                "Production support comes in a later release."
+        internal val RESPONSE_SIGNING_REQUIRED_UNAVAILABLE_MESSAGE =
+            ResponseSigningFailureReason.UNSUPPORTED_SITE.message +
+                " ResponseSigningMode.REQUIRED fails every flag fetch on this site and sends no request." +
+                " Remove ResponseSigningMode.REQUIRED or use ResponseSigningMode.OBSERVE."
+        internal const val RESPONSE_SIGNING_OBSERVE_UNAVAILABLE_MESSAGE = RESPONSE_SIGNING_STAGING_ONLY +
+            " ResponseSigningMode.OBSERVE has no effect on this site: requests are sent without signing," +
+            " and flags are not verified."
         private const val DEFAULT_CLIENT_NAME = "default"
 
         /**
@@ -476,7 +499,19 @@ interface FlagsClient {
             experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
             evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
-            val experimentationOptOut = ExperimentationOptOut(experimentationOptOutMode)
+            val signingMode = configuration.responseSigning.mode
+            // getDatadogContext() waits for the core context executor, so only a client with signing reads it, once.
+            val signingDatadogContext = flagsFeature.signingContext?.let {
+                (featureSdkCore as? InternalSdkCore)?.getDatadogContext()
+            }
+            val signingContext = flagsFeature.signingContext?.takeIf {
+                signingAvailable(featureSdkCore, signingMode, signingDatadogContext?.site)
+            }
+            val unsupportedSigningError = unsupportedSigningError(signingMode, signingContext)
+            val experimentationOptOut = ExperimentationOptOut(
+                experimentationOptOutMode,
+                signingContext?.lock ?: Any()
+            )
             val assignmentAuthorization = AssignmentAuthorization(
                 featureSdkCore.internalLogger,
                 experimentationOptOut.stateLock
@@ -484,29 +519,71 @@ interface FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
+            val signing = signingContext?.let {
+                ResponseSigningState(
+                    configuration.responseSigning,
+                    featureSdkCore.internalLogger,
+                    context = it,
+                    minimumNotBefore = flagsFeature.minimumNotBefore,
+                    telemetry = ResponseSigningTelemetry(
+                        featureSdkCore.internalLogger,
+                        signingDatadogContext?.site?.let { site ->
+                            ResponseSigningTelemetry.siteName(site.intakeEndpoint)
+                        }.orEmpty(),
+                        signingDatadogContext?.sdkVersion.orEmpty()
+                    ),
+                    elapsedRealtimeMillis = { featureSdkCore.timeProvider.getDeviceElapsedRealtimeMillis() }
+                ) {
+                    featureSdkCore.timeProvider.getDeviceTimestampMillis() / SIGNING_MILLIS_PER_SECOND
+                }
+            }
+            val deliverFirstFlags: (Runnable) -> Unit = { delivery ->
+                val worker = featureSdkCore.createSingleThreadExecutorService(FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
+                try {
+                    worker.executeSafe("Deliver first flags", featureSdkCore.internalLogger, delivery)
+                } finally {
+                    worker.shutdown()
+                }
+            }
             val datastore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)
                 ?.dataStore
-            val flagsRepository = if (datastore != null) {
-                DefaultFlagsRepository(
-                    featureSdkCore = featureSdkCore,
-                    dataStore = datastore,
-                    instanceName = name,
-                    flagSelection = flagsFeature.flagSelection,
-                    experimentationOptOutMode = experimentationOptOutMode,
-                    deliverFirstFlags = { delivery ->
-                        val worker = featureSdkCore.createSingleThreadExecutorService(FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
-                        try {
-                            worker.executeSafe("Deliver first flags", featureSdkCore.internalLogger, delivery)
-                        } finally {
-                            worker.shutdown()
-                        }
-                    }
-                )
-            } else {
+            datastore?.let { removeOtherModeEntries(it, name, signingMode) }
+            val ordinaryRepository: (String?, Boolean) -> FlagsRepository = { scope, observeSigning ->
+                if (datastore != null) {
+                    DefaultFlagsRepository(
+                        featureSdkCore = featureSdkCore,
+                        dataStore = datastore,
+                        instanceName = name,
+                        flagSelection = flagsFeature.flagSelection,
+                        experimentationOptOutMode = experimentationOptOutMode,
+                        deliverFirstFlags = deliverFirstFlags,
+                        responseSigningCacheScope = scope,
+                        observeSigning = observeSigning
+                    )
+                } else {
+                    NoOpFlagsRepository()
+                }
+            }
+            val flagsRepository = if (unsupportedSigningError != null) {
                 NoOpFlagsRepository()
+            } else {
+                signing?.let {
+                    SigningFlagsRepository(
+                        { scope -> ordinaryRepository(scope, true) },
+                        it,
+                        deliverFirstFlags
+                    )
+                } ?: ordinaryRepository(null, false)
             }
 
-            val callFactory = featureSdkCore.createOkHttpCallFactory()
+            val callFactory = if (signing == null) {
+                featureSdkCore.createOkHttpCallFactory()
+            } else {
+                featureSdkCore.createOkHttpCallFactory {
+                    followRedirects(false)
+                    followSslRedirects(false)
+                }
+            }
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,
@@ -519,7 +596,8 @@ interface FlagsClient {
                     )
                 } else {
                     flagsFeature.precomputedRequestFactory
-                }
+                },
+                signing = signing
             )
 
             val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger, experimentationOptOutMode)
@@ -541,11 +619,13 @@ interface FlagsClient {
                 flagStateManager = flagStateManager,
                 initializationTimeoutMs = configuration.initializationTimeoutMs,
                 initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler,
+                signing = signing,
                 experimentationOptOut = experimentationOptOut,
                 callbackExecutor = EvaluationCallbackDispatcher(featureSdkCore.internalLogger) {
                     featureSdkCore.createSingleThreadExecutorService(FLAGS_CALLBACK_EXECUTOR_NAME)
                 },
-                assignmentAuthorization = assignmentAuthorization
+                assignmentAuthorization = assignmentAuthorization,
+                unsupportedSigningError = unsupportedSigningError
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
@@ -563,6 +643,62 @@ interface FlagsClient {
                 evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled,
                 assignmentAuthorization = assignmentAuthorization
             )
+        }
+
+        // A mode change must not leave the other mode's persisted targeting data on disk.
+        private fun removeOtherModeEntries(dataStore: DataStoreHandler, name: String, mode: ResponseSigningMode) {
+            listOf(false, true).forEach { observeSigning ->
+                val remove = when (mode) {
+                    ResponseSigningMode.OFF -> observeSigning
+                    ResponseSigningMode.OBSERVE -> false
+                    ResponseSigningMode.REQUIRED -> true
+                }
+                if (!remove) return@forEach
+                ExperimentationOptOutMode.values().forEach { optOut ->
+                    listOf(false, true).forEach { selected ->
+                        dataStore.removeValue(
+                            FlagsPersistenceManager.stateKey(name, optOut, selected, observeSigning)
+                        )
+                    }
+                }
+            }
+        }
+
+        // No production anchor exists yet, so required signing off staging must not accept unsigned flags.
+        private fun unsupportedSigningError(
+            mode: ResponseSigningMode,
+            signingContext: ResponseSigningContext?
+        ): FlagsResponseSigningException? = if (mode == ResponseSigningMode.REQUIRED && signingContext == null) {
+            FlagsResponseSigningException(ResponseSigningFailureReason.UNSUPPORTED_SITE).apply {
+                reportedByContextUpdate = true
+            }
+        } else {
+            null
+        }
+
+        // The staging site is the only site with a pinned anchor. Elsewhere OBSERVE keeps today's requests.
+        private fun signingAvailable(
+            featureSdkCore: FeatureSdkCore,
+            mode: ResponseSigningMode,
+            site: DatadogSite?
+        ): Boolean {
+            val available = ResponseSigningTrustRoots.isAvailable(site)
+            if (!available) {
+                val required = mode == ResponseSigningMode.REQUIRED
+                featureSdkCore.internalLogger.log(
+                    if (required) InternalLogger.Level.ERROR else InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    {
+                        if (required) {
+                            RESPONSE_SIGNING_REQUIRED_UNAVAILABLE_MESSAGE
+                        } else {
+                            RESPONSE_SIGNING_OBSERVE_UNAVAILABLE_MESSAGE
+                        }
+                    },
+                    onlyOnce = true
+                )
+            }
+            return available
         }
 
         private fun createRumEvaluationLogger(featureSdkCore: FeatureSdkCore): RumEvaluationLogger {

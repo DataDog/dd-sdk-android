@@ -4,9 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.internal
 
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.datadog.android.api.InternalLogger
@@ -15,9 +19,11 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.evaluation.InitializationTimeoutScheduler
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
@@ -25,6 +31,10 @@ import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.selection.FlagSelectionCanonicalizer
 import com.datadog.android.flags.internal.selection.FlagSelectionResult
 import com.datadog.android.flags.internal.selection.logDroppedFlagSelection
+import com.datadog.android.flags.internal.signing.InMemoryMinimumNotBeforeStore
+import com.datadog.android.flags.internal.signing.MinimumNotBeforeStore
+import com.datadog.android.flags.internal.signing.ResponseSigningContext
+import com.datadog.android.flags.internal.signing.SharedPreferencesMinimumNotBeforeStore
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
@@ -65,6 +75,16 @@ internal class FlagsFeature(
      * This map stores all clients created for this feature instance.
      */
     private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
+
+    /** Persistent once the feature starts with signing on; shared by this feature's clients. */
+    @Volatile
+    internal var minimumNotBefore: MinimumNotBeforeStore = InMemoryMinimumNotBeforeStore()
+
+    internal val signingContext = if (flagsConfiguration.responseSigning.mode == ResponseSigningMode.OFF) {
+        null
+    } else {
+        ResponseSigningContext()
+    }
 
     // region Storage Feature
 
@@ -133,6 +153,15 @@ internal class FlagsFeature(
         }
         isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         isInitialized = true
+        signingContext?.let {
+            it.start()
+            // Some test or wrapper contexts return no preferences; the floor then lives in memory only.
+            val preferences: SharedPreferences? = appContext.getSharedPreferences(
+                SharedPreferencesMinimumNotBeforeStore.PREFERENCES_NAME,
+                MODE_PRIVATE
+            )
+            if (preferences != null) minimumNotBefore = SharedPreferencesMinimumNotBeforeStore(preferences)
+        }
         (flagSelectionResult as? FlagSelectionResult.Dropped)?.let {
             sdkCore.internalLogger.logDroppedFlagSelection(it.error)
         }
@@ -146,6 +175,7 @@ internal class FlagsFeature(
     }
 
     override fun onStop() {
+        signingContext?.stop()
         dataWriter = NoOpRecordWriter()
         isInitialized = false // Allow re-initialization if feature is restarted
         synchronized(registeredClients) {

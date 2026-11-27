@@ -1,0 +1,6 @@
+# Shared response-signing fixtures, fetched before unit tests from ffe-system-test-data
+# at the commits pinned in ci/feature-flags-precomputed-fixtures.json.
+response-signing-v1/
+response-signing-chain/
+# Staging folders that the fetch script creates and removes; one is left only if the script is killed.
+.precompute-*/

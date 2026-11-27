@@ -3,6 +3,9 @@ public abstract interface class com/datadog/android/flags/EvaluationContextCallb
 	public abstract fun onSuccess ()V
 }
 
+public abstract interface annotation class com/datadog/android/flags/ExperimentalFlagsApi : java/lang/annotation/Annotation {
+}
+
 public final class com/datadog/android/flags/ExperimentationOptOutMode : java/lang/Enum {
 	public static final field DISABLED Lcom/datadog/android/flags/ExperimentationOptOutMode;
 	public static final field FUTURE_EXPERIMENTS_ONLY Lcom/datadog/android/flags/ExperimentationOptOutMode;
@@ -79,6 +82,8 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
 	public final fun evaluationFlushInterval (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun experimentalResponseSigning (Lcom/datadog/android/flags/ResponseSigningMode;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun expireVerifiedFlags (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun flagSelection (Ljava/util/List;Ljava/util/List;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun gracefulModeEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun initializationTimeout (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
@@ -99,12 +104,43 @@ public final class com/datadog/android/flags/FlagsInitializationTimeoutException
 public final class com/datadog/android/flags/FlagsInvalidContextException : java/lang/IllegalArgumentException {
 }
 
+public final class com/datadog/android/flags/FlagsResponseSigningException : java/lang/RuntimeException {
+	public final fun getReason ()Lcom/datadog/android/flags/ResponseSigningFailureReason;
+}
+
 public abstract interface class com/datadog/android/flags/FlagsStateListener {
 	public abstract fun onStateChanged (Lcom/datadog/android/flags/model/FlagsClientState;)V
 }
 
 public abstract interface class com/datadog/android/flags/FlagsSubscription {
 	public abstract fun unsubscribe ()V
+}
+
+public final class com/datadog/android/flags/ResponseSigningFailureReason : java/lang/Enum {
+	public static final field EXPIRED_PROOF Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field INVALID_CERTIFICATE Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field INVALID_PROOF Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field INVALID_SIGNATURE Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field MISSING_ANCHOR Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field MISSING_PROOF Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field RESPONSE_TOO_LARGE Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field REVOKED_CERTIFICATE Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field UNAVAILABLE_CRYPTO Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field UNSUPPORTED_REQUEST Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static final field UNSUPPORTED_SITE Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public final fun getCode ()Ljava/lang/String;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/ResponseSigningFailureReason;
+	public static fun values ()[Lcom/datadog/android/flags/ResponseSigningFailureReason;
+}
+
+public final class com/datadog/android/flags/ResponseSigningMode : java/lang/Enum {
+	public static final field OBSERVE Lcom/datadog/android/flags/ResponseSigningMode;
+	public static final field OFF Lcom/datadog/android/flags/ResponseSigningMode;
+	public static final field REQUIRED Lcom/datadog/android/flags/ResponseSigningMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/ResponseSigningMode;
+	public static fun values ()[Lcom/datadog/android/flags/ResponseSigningMode;
 }
 
 public abstract interface class com/datadog/android/flags/StateObservable {
@@ -120,6 +156,7 @@ public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public final fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
 	public final fun isEvaluationTelemetryOptOutParameterEnabled ()Z
 	public final fun isExperimentationOptOutEnabled ()Z
+	public final fun isReportedByContextUpdate (Ljava/lang/Throwable;)Z
 	public final fun resolveDeferringExposure (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/flags/_FlagsInternalProxy$DeferredExposureResolution;
 	public final fun setEvaluationContextWithOutcome (Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/Boolean;Lkotlin/jvm/functions/Function2;)V
 	public final fun trackFlagEvaluationEvent (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;)V

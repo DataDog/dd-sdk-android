@@ -4,19 +4,25 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalFlagsApi::class)
+
 package com.datadog.android.flags.integration
 
+import com.datadog.android.DatadogSite
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.stub.StubDataStoreHandler
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.integration.FlagsClientTest.Companion.createStubSdkCore
 import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeConfigurator
 import com.datadog.android.flags.integration.tests.utils.CanonicalFixtureMatcher
 import com.datadog.android.flags.integration.tests.utils.httpResponse
+import com.datadog.android.flags.integration.tests.utils.responseSigningWithTestRoots
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionReason
@@ -44,12 +50,16 @@ import java.util.concurrent.ConcurrentLinkedQueue
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class CanonicalPrecomputedTest {
-    @ParameterizedTest(name = "{0}")
+    @ParameterizedTest(name = "{0}, signed={1}")
     @MethodSource("invalidResponseFixtures")
-    fun `M reject the response W setEvaluationContext() { invalid canonical response }`(path: String, forge: Forge) {
+    fun `M reject the response W setEvaluationContext() { invalid canonical response }`(
+        path: String,
+        signed: Boolean,
+        forge: Forge
+    ) {
         // Given
         val fixture = applicableFixture(path)
-        val core = fixtureCore(fixture, forge, StubDataStoreHandler())
+        val core = fixtureCore(fixture, forge, StubDataStoreHandler(), signed)
         val client = FlagsClient.Builder(sdkCore = core).build()
 
         try {
@@ -66,17 +76,18 @@ internal class CanonicalPrecomputedTest {
         }
     }
 
-    @ParameterizedTest(name = "{0}, restored={1}")
+    @ParameterizedTest(name = "{0}, restored={1}, signed={2}")
     @MethodSource("evaluationFixtures")
     fun `M satisfy canonical contract W setEvaluationContext() and resolve()`(
         path: String,
         restored: Boolean,
+        signed: Boolean,
         forge: Forge
     ) {
         // Given
         val fixture = applicableFixture(path)
         val store = StubDataStoreHandler()
-        var core = fixtureCore(fixture, forge, store)
+        var core = fixtureCore(fixture, forge, store, signed)
         var client = FlagsClient.Builder(sdkCore = core).build()
 
         try {
@@ -109,12 +120,27 @@ internal class CanonicalPrecomputedTest {
         return fixture
     }
 
-    private fun fixtureCore(fixture: JsonObject, forge: Forge, store: DataStoreHandler? = null): StubSDKCore {
-        val core = createStubSdkCore(forge)
+    // [signed] serves the fixture as a valid REQUIRED proof from the test CA on the staging site.
+    private fun fixtureCore(
+        fixture: JsonObject,
+        forge: Forge,
+        store: DataStoreHandler? = null,
+        signed: Boolean = false
+    ): StubSDKCore {
+        val core = createStubSdkCore(forge, DatadogSite.STAGING)
         store?.let { core.stubDataStore(Feature.FLAGS_FEATURE_NAME, it) }
-        core.stubNetworkResponses { httpResponse(it, body = fixture["response"].toString()) }
+        val responseBody = fixture["response"].toString()
+        if (signed) core.advanceTimeBy(CanonicalResponseSigner.now * 1000)
+        core.stubNetworkResponses {
+            if (signed) CanonicalResponseSigner.response(it, responseBody) else httpResponse(it, body = responseBody)
+        }
         Flags.enable(
-            FlagsConfiguration.Builder().useCustomFlagEndpoint("https://fixture.test/precompute-assignments").build(),
+            FlagsConfiguration.Builder().useCustomFlagEndpoint("https://fixture.test/precompute-assignments")
+                .apply {
+                    if (signed) {
+                        responseSigningWithTestRoots(ResponseSigningMode.REQUIRED, listOf(CanonicalResponseSigner.root))
+                    }
+                }.build(),
             core
         )
         return core
@@ -237,7 +263,8 @@ internal class CanonicalPrecomputedTest {
 
         @JvmStatic
         fun invalidResponseFixtures(): List<Arguments> =
-            paths().filter { read(it).asJsonObject.has("expectedResponseError") }.map { Arguments.of(it) }
+            paths().filter { read(it).asJsonObject.has("expectedResponseError") }
+                .flatMap { listOf(Arguments.of(it, false), Arguments.of(it, true)) }
 
         // An excluded fixture runs once so that the report lists it; applicable ones also run from the cache.
         @JvmStatic
@@ -245,7 +272,8 @@ internal class CanonicalPrecomputedTest {
             .filterNot { read(it).asJsonObject.has("expectedResponseError") }
             .flatMap { path ->
                 val modes = if (applies(read(path).asJsonObject)) listOf(false, true) else listOf(false)
-                modes.map { Arguments.of(path, it) }
+                // The signed run reads the same fixture through REQUIRED verification.
+                modes.map { Arguments.of(path, it, false) } + Arguments.of(path, false, true)
             }
     }
 }

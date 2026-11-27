@@ -46,6 +46,10 @@ createJsonModelsGenerationTask("generateFlagsInternalModelsFromJson") {
 
 android {
     namespace = "com.datadog.android.flags"
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    sourceSets.getByName("androidTest").assets.srcDir("src/test/resources")
 }
 
 dependencies {
@@ -58,6 +62,10 @@ dependencies {
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
     implementation(libs.androidXCollection)
+
+    androidTestImplementation(libs.androidXTestCore)
+    androidTestImplementation(libs.androidXTestRunner)
+    androidTestImplementation(libs.androidXTestJUnitExt)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
@@ -90,4 +98,13 @@ datadogBuild {
         "The Feature Flags integration feature to use with the Datadog monitoring " +
             "library for Android applications."
     )
+}
+
+// Shared response-signing fixtures are git-ignored. The single-fit task fetches every pinned source, so one task
+// owns the destinations and parallel builds do not write them twice.
+tasks.matching {
+    (it.name.startsWith("process") && it.name.endsWith("UnitTestJavaRes")) ||
+        (it.name.startsWith("merge") && it.name.endsWith("AndroidTestAssets"))
+}.configureEach {
+    dependsOn(":reliability:single-fit:flags:pullFeatureFlagsFixtures")
 }

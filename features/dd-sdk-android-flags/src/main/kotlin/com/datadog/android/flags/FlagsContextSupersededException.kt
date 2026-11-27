@@ -8,6 +8,8 @@ package com.datadog.android.flags
 
 /**
  * Indicates that a later context request replaced this request before its result was processed.
- * Applies when experimentation opt-out or subject-authorization ordering is active.
+ * Applies when experimentation opt-out or subject-authorization ordering is active. With response signing enabled,
+ * it also applies in every opt-out mode to a request that fails admission because a newer request started, unless
+ * its callback has already completed.
  */
 class FlagsContextSupersededException internal constructor(message: String) : IllegalStateException(message)

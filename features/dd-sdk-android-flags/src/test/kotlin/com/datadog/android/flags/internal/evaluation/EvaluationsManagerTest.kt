@@ -15,12 +15,14 @@ import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.ExperimentalFlagsApi
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsAssignmentAuthorizationException
 import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
@@ -40,6 +42,8 @@ import com.datadog.android.flags.internal.repository.FlagsInstallation
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.internal.signing.ResponseSigningConfiguration
+import com.datadog.android.flags.internal.signing.ResponseSigningState
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
@@ -98,6 +102,89 @@ import java.util.concurrent.atomic.AtomicReference
 @ForgeConfiguration(ForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class EvaluationsManagerTest {
+    @OptIn(ExperimentalFlagsApi::class)
+    @ParameterizedTest
+    @EnumSource(ResponseSigningMode::class, names = ["OBSERVE", "REQUIRED"])
+    fun `M recheck persistence only in required mode W signed fetch fails under the policy lock`(
+        mode: ResponseSigningMode,
+        @Mock mockSigning: ResponseSigningState
+    ) {
+        // Given
+        whenever(mockSigning.configuration) doReturn ResponseSigningConfiguration(mode)
+        whenever(mockSigning.begin(any())) doReturn 1L
+        whenever(mockSigning.admit(eq(1L), any())) doAnswer {
+            it.getArgument<() -> Unit>(1).invoke()
+            true
+        }
+        val manager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, mockFlagsRepository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            initializationTimeoutMs = null, initializationTimeoutScheduler = { _, _ -> {} },
+            signing = mockSigning, experimentationOptOut = ExperimentationOptOut()
+        )
+        // When
+        manager.updateEvaluationsForContext(EvaluationContext("subject"))
+        // Then: OBSERVE keeps the context captured before admission, so no persistence wait holds the lock.
+        if (mode == ResponseSigningMode.REQUIRED) {
+            verify(mockFlagsRepository).hasConfiguration()
+        } else {
+            verify(mockFlagsRepository, never()).hasConfiguration()
+        }
+        verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
+    }
+
+    @OptIn(ExperimentalFlagsApi::class)
+    @ParameterizedTest
+    @ValueSource(longs = [0L, 5000L])
+    fun `M not publish Reconciling W signed request superseded before its fetch {initialization timeout}`(
+        timeoutMs: Long,
+        @Mock mockSigning: ResponseSigningState
+    ) {
+        // Given: a newer request took the signing generation after this one registered.
+        whenever(mockSigning.configuration) doReturn ResponseSigningConfiguration(ResponseSigningMode.REQUIRED)
+        whenever(mockSigning.begin(any())) doReturn 1L
+        whenever(mockSigning.admit(eq(1L), any())) doReturn false
+        val manager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, mockFlagsRepository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            initializationTimeoutMs = timeoutMs.takeIf { it > 0 }, initializationTimeoutScheduler = { _, _ -> {} },
+            signing = mockSigning, experimentationOptOut = ExperimentationOptOut()
+        )
+        // When
+        manager.updateEvaluationsForContext(EvaluationContext("subject"))
+        // Then
+        verify(mockFlagsStateManager, never()).updateState(FlagsClientState.Reconciling)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M keep latest signing generation W updatePreparedEvaluations() {registration reordered}`(
+        mode: ExperimentationOptOutMode,
+        @Mock mockSigning: ResponseSigningState,
+        @Mock mockCallback: EvaluationContextCallback
+    ) {
+        // Given
+        val policy = ExperimentationOptOut(mode)
+        val older = policy.prepare(EvaluationContext("older"))
+        val newer = policy.prepare(EvaluationContext("newer"))
+        whenever(mockSigning.begin(newer.context)) doReturn 1L
+        val manager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, mockFlagsRepository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            initializationTimeoutMs = null, initializationTimeoutScheduler = { _, _ -> {} },
+            signing = mockSigning, experimentationOptOut = policy
+        )
+        var finished = false
+        // When
+        manager.updatePreparedEvaluations(newer, null) {}
+        manager.updatePreparedEvaluations(older, mockCallback) { finished = true }
+        // Then
+        verify(mockSigning).begin(newer.context)
+        verify(mockSigning, never()).begin(older.context)
+        verify(mockExecutorService).execute(any())
+        verify(mockCallback).onFailure(isA<FlagsContextSupersededException>())
+        assertThat(finished).isTrue()
+    }
 
     @ParameterizedTest
     @EnumSource(ExperimentationOptOutMode::class)
@@ -138,7 +225,7 @@ internal class EvaluationsManagerTest {
         val manager = EvaluationsManager(
             mockSdkCore, fetchExecutor, mockInternalLogger, mockFlagsRepository,
             mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
-            null, { _, _ -> {} }, ExperimentationOptOut(mode), callbackExecutor
+            null, { _, _ -> {} }, null, ExperimentationOptOut(mode), callbackExecutor
         )
 
         try {
@@ -176,7 +263,7 @@ internal class EvaluationsManagerTest {
         val manager = EvaluationsManager(
             mockSdkCore, fetchExecutor, mockInternalLogger, mockFlagsRepository,
             mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
-            100, { _, action -> timeout = action; {} }, ExperimentationOptOut(mode), callbackExecutor
+            100, { _, action -> timeout = action; {} }, null, ExperimentationOptOut(mode), callbackExecutor
         )
         val callback = object : EvaluationContextCallback {
             override fun onSuccess() = Unit
@@ -468,7 +555,7 @@ internal class EvaluationsManagerTest {
         val states = FlagsStateManager(observedHolder)
         val manager = EvaluationsManager(
             mockSdkCore, mockExecutorService, mockInternalLogger, mockFlagsRepository,
-            mockAssignmentsDownloader, mockPrecomputeMapper, states, null, { _, _ -> {} }, policy
+            mockAssignmentsDownloader, mockPrecomputeMapper, states, null, { _, _ -> {} }, null, policy
         )
         val listener = Thread {
             states.addListener(object : FlagsStateListener {
@@ -512,7 +599,7 @@ internal class EvaluationsManagerTest {
         val manager = EvaluationsManager(
             mockSdkCore, mockExecutorService, mockInternalLogger, repository,
             mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
-            null, { _, _ -> {} }, policy
+            null, { _, _ -> {} }, null, policy
         )
         val completed = mutableListOf<Boolean>()
         fun probe() {
@@ -559,7 +646,7 @@ internal class EvaluationsManagerTest {
         val manager = EvaluationsManager(
             mockSdkCore, mockExecutorService, mockInternalLogger, repository,
             mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
-            null, { _, _ -> {} }, policy
+            null, { _, _ -> {} }, null, policy
         )
         val savedContexts = mutableListOf<EvaluationContext>()
         doAnswer {
@@ -2673,7 +2760,7 @@ internal class EvaluationsManagerTest {
                 timeouts?.add(action)
                 onCancel
             },
-            ExperimentationOptOut(mode)
+            null, ExperimentationOptOut(mode)
         )
     }
     private fun createRepository(): DefaultFlagsRepository {
@@ -2767,7 +2854,7 @@ internal class EvaluationsManagerTest {
         testedManager = EvaluationsManager(
             mockSdkCore, mockExecutorService, mockInternalLogger, mockFlagsRepository,
             mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
-            null, { _, _ -> {} }, ExperimentationOptOut(mode)
+            null, { _, _ -> {} }, null, ExperimentationOptOut(mode)
         )
 
         // When

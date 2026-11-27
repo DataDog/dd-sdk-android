@@ -15,5 +15,6 @@ internal data class FlagsStateEntry(
     val lastUpdateTimestamp: Long,
     val observeFullEvaluationData: Boolean = false,
     val obfuscation: FlagKeyObfuscation? = null,
-    val flagSelection: CanonicalFlagSelection? = null
+    val flagSelection: CanonicalFlagSelection? = null,
+    val responseSigningCacheScope: String? = null
 )

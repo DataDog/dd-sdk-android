@@ -1,0 +1,158 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.flags.integration
+
+import com.datadog.android.flags.integration.tests.utils.httpResponse
+import com.google.gson.JsonParser
+import okhttp3.Headers
+import okhttp3.Request
+import okhttp3.Response
+import okio.Buffer
+import okio.ByteString.Companion.decodeBase64
+import okio.ByteString.Companion.decodeHex
+import okio.ByteString.Companion.toByteString
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
+import java.security.KeyFactory
+import java.security.MessageDigest
+import java.security.Signature
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.security.spec.PKCS8EncodedKeySpec
+
+/** Signs canonical v1 chain response bytes with the test CA fixture key, independently of the SDK verifier. */
+internal object CanonicalResponseSigner {
+    private const val PREFIX = "x-datadog-feature-flags-"
+    const val DEFAULT_CREDENTIAL = "two-intermediates"
+    private const val CONTENT_TYPE_HEADER = "content-type"
+    private const val CONTENT_TYPE = "application/json"
+    private const val SELECTION_IGNORED_HEADER = "dd-flag-selection-ignored"
+
+    /** Another generation under the same test root, with a different leaf and lower intermediate. */
+    const val ROTATED_CREDENTIAL = "rotated-lower-intermediate"
+
+    private fun credential(name: String) = JsonParser.parseString(
+        checkNotNull(javaClass.getResource("/response-signing-chain/$name.json")).readText()
+    ).asJsonObject
+
+    // The shared chain manifest fixes the clock at which every chain credential is valid.
+    val now = JsonParser.parseString(
+        checkNotNull(javaClass.getResource("/response-signing-chain/manifest.json")).readText()
+    ).asJsonObject["now"].asLong
+    val root = checkNotNull(javaClass.getResource("/response-signing-chain/root-a.pem")).readText()
+        .lines().filter { it.isNotBlank() && !it.startsWith("-----") }.joinToString("")
+
+    /**
+     * [minimumNotBefore] adds the draft revocation header, bound into the transcript. The signed response list is the
+     * default edge list; [flagSelectionIgnored] sets its `dd-flag-selection-ignored` value, and
+     * [listSelectionIgnored] false leaves that name out of the list.
+     */
+    fun response(
+        request: Request,
+        body: String,
+        credentialName: String = DEFAULT_CREDENTIAL,
+        issuedAt: Long = now,
+        minimumNotBefore: Long? = null,
+        flagSelectionIgnored: String? = null,
+        listSelectionIgnored: Boolean = true
+    ): Response = httpResponse(request, body = body).newBuilder()
+        .headers(
+            signedHeaders(
+                request,
+                body.toByteArray(Charsets.UTF_8),
+                credentialName,
+                issuedAt,
+                minimumNotBefore,
+                flagSelectionIgnored,
+                listSelectionIgnored
+            )
+        )
+        .build()
+
+    fun notBefore(credentialName: String): Long = (
+        CertificateFactory.getInstance("X.509")
+            .generateCertificate(bytes(leafCertificate(credentialName)).inputStream()) as X509Certificate
+        ).notBefore.time / 1000
+
+    fun leafCertificate(credentialName: String): String =
+        credential(credentialName)["certificate_der_base64"].asString
+
+    private fun signedHeaders(
+        request: Request,
+        body: ByteArray,
+        credentialName: String,
+        issuedAt: Long,
+        minimumNotBefore: Long?,
+        flagSelectionIgnored: String?,
+        listSelectionIgnored: Boolean
+    ): Headers {
+        val credential = credential(credentialName)
+        val leaf = bytes(credential["certificate_der_base64"].asString)
+        val intermediates = credential.getAsJsonArray("intermediates_der_base64").map { it.asString }
+        if (request.header(PREFIX + "request-nonce") == null) return Headers.Builder().build()
+        val output = ByteArrayOutputStream()
+        val transcript = DataOutputStream(output)
+        transcript.write("datadog.feature-flags.precomputed-assignments.v1\u0000".toByteArray())
+        fun lp(bytes: ByteArray) { transcript.writeInt(bytes.size); transcript.write(bytes) }
+        val url = request.url
+        val defaultPort = mapOf("https" to 443, "http" to 80)[url.scheme]
+        val authority = url.host + if (url.port == defaultPort) "" else ":${url.port}"
+        listOf(request.method, url.scheme, authority, url.encodedPath, url.encodedQuery?.let { "?$it" } ?: "")
+            .forEach { lp(it.toByteArray()) }
+        lp(checkNotNull(request.header(PREFIX + "request-nonce")).decodeHex().toByteArray())
+        transcript.write(sha(Buffer().also { request.body?.writeTo(it) }.readByteArray()))
+        transcript.write(sha(checkNotNull(request.header("dd-client-token")).toByteArray()))
+        fun list(entries: List<Pair<String, String?>>) {
+            transcript.writeByte(entries.size)
+            entries.forEach { (name, value) ->
+                lp(name.toByteArray())
+                transcript.writeByte(if (value == null) 0 else 1)
+                lp((value ?: "").toByteArray())
+            }
+        }
+        // The edge writes each listed request header that it received.
+        list(checkNotNull(request.header(PREFIX + "signed-headers")).split(',').map { it to request.header(it) })
+        transcript.writeByte(0)
+        transcript.writeShort(200)
+        transcript.writeLong(issuedAt)
+        transcript.writeLong(issuedAt + 300)
+        transcript.writeLong(body.size.toLong())
+        transcript.write(sha(body)); transcript.write(sha(leaf))
+        transcript.writeByte(intermediates.size)
+        intermediates.forEach { transcript.write(sha(bytes(it))) }
+        val responseHeaders = listOfNotNull(
+            CONTENT_TYPE_HEADER to CONTENT_TYPE,
+            (SELECTION_IGNORED_HEADER to flagSelectionIgnored).takeIf { listSelectionIgnored }
+        )
+        list(responseHeaders)
+        minimumNotBefore?.let {
+            transcript.writeByte(1)
+            transcript.writeLong(it)
+        }
+        val key = KeyFactory.getInstance(
+            "EC"
+        ).generatePrivate(PKCS8EncodedKeySpec(bytes(credential["private_key_pkcs8_der_base64"].asString)))
+        val signature = Signature.getInstance("SHA256withECDSA").apply {
+            initSign(key); update(output.toByteArray())
+        }.sign()
+        return Headers.Builder()
+            .add(PREFIX + "signature-version", "1")
+            .add(PREFIX + "signing-certificate", credential["certificate_der_base64"].asString)
+            .add(PREFIX + "signing-chain", intermediates.joinToString(","))
+            .add(PREFIX + "certificate-id", sha(leaf).toByteString().hex())
+            .add(PREFIX + "issued-at", issuedAt.toString())
+            .add(PREFIX + "expires-at", (issuedAt + 300).toString())
+            .add(PREFIX + "signature", signature.toByteString().base64())
+            .add(PREFIX + "signed-response-headers", responseHeaders.joinToString(",") { it.first })
+            .apply { responseHeaders.forEach { (name, value) -> value?.let { add(name, it) } } }
+            .apply { minimumNotBefore?.let { add(PREFIX + "minimum-leaf-not-before", it.toString()) } }
+            .build()
+    }
+
+    private fun bytes(value: String): ByteArray = checkNotNull(value.decodeBase64()).toByteArray()
+    private fun sha(bytes: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(bytes)
+}

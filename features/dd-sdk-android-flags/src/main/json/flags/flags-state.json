@@ -15,6 +15,7 @@
     "encodedFlags": { "type": "object", "additionalProperties": true },
     "lastUpdateTimestamp": { "type": "integer" },
     "observeFullEvaluationData": { "type": "boolean" },
+    "responseSigningCacheScope": { "type": "string" },
     "obfuscated": { "type": "boolean" },
     "obfuscation": {
       "type": "object",
