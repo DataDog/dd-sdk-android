@@ -20,7 +20,6 @@ import com.datadog.android.trace.coroutines.asyncTraced
 import com.datadog.android.trace.coroutines.awaitTraced
 import com.datadog.android.trace.coroutines.launchTraced
 import com.datadog.android.trace.coroutines.withContextTraced
-import com.datadog.android.trace.withinSpan
 import com.datadog.android.vendor.sample.LocalServer
 import com.launchdarkly.eventsource.EventHandler
 import com.launchdarkly.eventsource.EventSource
@@ -35,8 +34,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withContext
 import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
@@ -78,11 +78,37 @@ internal class TracesViewModel(
     }
 
     fun startAsyncOperation(onProgress: (Int) -> Unit = {}, onDone: () -> Unit = {}) {
-        val parentSpan = GlobalDatadogTracer.get().activeSpan()
+        val tracer = GlobalDatadogTracer.get()
+        val parentSpan = tracer.activeSpan()
         taskScope.launch {
-            runInterruptible(sampleTaskDispatcher) {
-                performAsyncOperation(parentSpan) { progress ->
-                    launch { onProgress(progress) }
+            val count = (Random().nextInt() % BASE_PROGRESS_COUNT) + BASE_PROGRESS_COUNT
+            val span = tracer.buildSpan("AsyncOperation").withParentSpan(parentSpan).start()
+            var actualCount = 0
+
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                span.logErrorMessage("Test error log in async operation")
+                tracer.activateSpan(span).use { asyncLogger.v("Starting Async Operation...") }
+                span.logMessage("Async op loops $count times")
+                for (progress in 0 until count) {
+                    onProgress(progress)
+                    delay(traceProgressDelayMillis(progress).milliseconds)
+                    actualCount++
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                span.logThrowable(e)
+                throw e
+            } finally {
+                try {
+                    if (!isActive) {
+                        span.logMessage("Async operation cancelled")
+                    }
+                    span.logAttributes(mapOf("wanted_count" to count, "actual_count" to actualCount))
+                    tracer.activateSpan(span).use { asyncLogger.v("Finishing Async Operation...") }
+                } finally {
+                    span.finish()
                 }
             }
             onDone()
@@ -123,7 +149,7 @@ internal class TracesViewModel(
                 .backoffResetThreshold(SSE_TIMEOUT)
                 .build()
                 .use { eventSource ->
-                    runInterruptible(sampleTaskDispatcher) { eventSource.start() }
+                    eventSource.start()
                     awaitCancellation()
                 }
         }
@@ -145,8 +171,8 @@ internal class TracesViewModel(
 
         taskScope.launch {
             val response = try {
-                runInterruptible(sampleTaskDispatcher) {
-                    okHttpClient.newCall(request).execute().also {
+                withContext(sampleTaskDispatcher) {
+                    okHttpClient.newCall(request).awaitResponse().also {
                         it.body?.let { body -> Log.d("Response", body.string()) }
                     }
                 }
@@ -158,30 +184,6 @@ internal class TracesViewModel(
                 return@launch
             }
             onResponse(response)
-        }
-    }
-
-    private fun performAsyncOperation(parentSpan: DatadogSpan?, onProgress: (Int) -> Unit) {
-        withinSpan("AsyncOperation", parentSpan) {
-            logErrorMessage("Test error log in async operation")
-            asyncLogger.v("Starting Async Operation...")
-
-            val count = (Random().nextInt() % BASE_PROGRESS_COUNT) + BASE_PROGRESS_COUNT
-            logMessage("Async op loops $count times")
-            var actualCount = 0
-
-            try {
-                for (progress in 0 until count) {
-                    onProgress(progress)
-                    Thread.sleep(traceProgressDelayMillis(progress))
-                    actualCount++
-                }
-            } catch (_: InterruptedException) {
-                logMessage("Async operation cancelled")
-            } finally {
-                logAttributes(mapOf("wanted_count" to count, "actual_count" to actualCount))
-                asyncLogger.v("Finishing Async Operation...")
-            }
         }
     }
 

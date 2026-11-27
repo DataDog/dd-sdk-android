@@ -14,7 +14,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.job
 
 @Suppress("InjectDispatcher")
-internal val sampleTaskDispatcher = Dispatchers.IO.limitedParallelism(1)
+internal val sampleTaskDispatcher = Dispatchers.IO
 
 internal fun ViewModel.sampleTaskScope(): CoroutineScope {
     val context = viewModelScope.coroutineContext

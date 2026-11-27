@@ -46,7 +46,15 @@ internal interface DatadogModule {
                 SyntheticsScenario.SessionReplay,
                 SyntheticsScenario.SessionReplayCompose,
                 SyntheticsScenario.Timeseries -> true
-                else -> false
+
+                SyntheticsScenario.Profiling,
+                SyntheticsScenario.RumManual,
+                SyntheticsScenario.RumAuto,
+                SyntheticsScenario.Trace,
+                SyntheticsScenario.LogsCustom,
+                SyntheticsScenario.LogsHeavyTraffic,
+                SyntheticsScenario.Upload,
+                null -> false
             }
             if (config.run == SyntheticsRun.Baseline && !baselineRequiresRum) {
                 return Datadog.getInstance() // returns NoOpInternalSdkCore under the hood

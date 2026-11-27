@@ -16,7 +16,7 @@ import com.datadog.android.sample.sampleTaskScope
 import com.datadog.android.trace.withinSpan
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withContext
 
 internal class AboutViewModel : ViewModel() {
 
@@ -24,7 +24,7 @@ internal class AboutViewModel : ViewModel() {
 
     fun getAboutText(context: Context, onDone: (String) -> Unit = {}) {
         taskScope.launch {
-            val text = runInterruptible(sampleTaskDispatcher) {
+            val text = withContext(sampleTaskDispatcher) {
                 withinSpan("LoadResource") {
                     context.getRawResAsRumResource(R.raw.about).bufferedReader().use { it.readText() }
                 }
@@ -35,7 +35,7 @@ internal class AboutViewModel : ViewModel() {
 
     fun getLicenseText(context: Context, onDone: (String) -> Unit = {}) {
         taskScope.launch {
-            val text = runInterruptible(sampleTaskDispatcher) {
+            val text = withContext(sampleTaskDispatcher) {
                 withinSpan("LoadAsset") {
                     context.getAssetAsRumResource("license.txt").bufferedReader().use { it.readText() }
                 }

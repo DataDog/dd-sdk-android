@@ -41,22 +41,11 @@ comments:
     excludes:
       - '**/test/**'
       - '**/build/generated/**'
-      - '**/dd-sdk-android/tools/**'
-      - './tools/benchmark/**'
-      - '**/dd-sdk-android/sample/**'
+      - './tools/**'
       - './sample/**'
-      - '**/dd-sdk-android/reliability/**'
-      - '**/dd-sdk-android/instrumented/**'
+      - './reliability/**'
+      - './instrumented/**'
     endOfSentenceFormat: '([.?!][ \t\n\r\f<])|([.?!:]$)'
-  KDocReferencesNonPublicProperty:
-    active: true
-    excludes:
-      - '**/dd-sdk-android/tools/**'
-      - './tools/benchmark/**'
-      - '**/dd-sdk-android/sample/**'
-      - './sample/**'
-      - '**/dd-sdk-android/reliability/**'
-      - '**/dd-sdk-android/instrumented/**'
   OutdatedDocumentation:
     active: true
     matchTypeParameters: true
@@ -75,12 +64,10 @@ comments:
       - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
-      - '**/dd-sdk-android/tools/**'
-      - './tools/benchmark/**'
-      - '**/dd-sdk-android/sample/**'
+      - './tools/**'
       - './sample/**'
-      - '**/dd-sdk-android/reliability/**'
-      - '**/dd-sdk-android/instrumented/**'
+      - './reliability/**'
+      - './instrumented/**'
     searchInNestedClass: true
     searchInInnerClass: true
     searchInInnerObject: true
@@ -93,12 +80,10 @@ comments:
       - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
-      - '**/dd-sdk-android/tools/**'
-      - './tools/benchmark/**'
-      - '**/dd-sdk-android/sample/**'
+      - './tools/**'
       - './sample/**'
-      - '**/dd-sdk-android/reliability/**'
-      - '**/dd-sdk-android/instrumented/**'
+      - './reliability/**'
+      - './instrumented/**'
     searchProtectedFunction: true
   UndocumentedPublicProperty:
     active: true
@@ -107,12 +92,10 @@ comments:
       - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
-      - '**/dd-sdk-android/tools/**'
-      - './tools/benchmark/**'
-      - '**/dd-sdk-android/sample/**'
+      - './tools/**'
       - './sample/**'
-      - '**/dd-sdk-android/reliability/**'
-      - '**/dd-sdk-android/instrumented/**'
+      - './reliability/**'
+      - './instrumented/**'
     searchProtectedProperty: true
 
 complexity:

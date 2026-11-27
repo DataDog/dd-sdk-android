@@ -20,10 +20,12 @@ import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 import io.opentelemetry.context.ContextKey
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class OtelTracesViewModel(
     private val okHttpClient: OkHttpClient,
@@ -50,11 +52,7 @@ internal class OtelTracesViewModel(
             tracer.spanBuilder("Executing Async Operation").setParent(context).startSpan().endAfter { parent ->
                 val parentContext = context.with(parent)
                 tracer.spanBuilder("OnPreExecute").setParent(parentContext).startSpan().end()
-                runInterruptible(sampleTaskDispatcher) {
-                    performAsyncOperation(tracer, parentContext) { progress ->
-                        launch { onProgress(progress) }
-                    }
-                }
+                performAsyncOperation(tracer, parentContext, onProgress)
                 parentContext.makeCurrent().use {
                     tracer.spanBuilder("OnPostExecute").startSpan().endAfter { onDone() }
                 }
@@ -68,9 +66,7 @@ internal class OtelTracesViewModel(
         val url = localServer.getUrl()
         taskScope.launch {
             tracer.spanBuilder("submitForm with chained contexts").setParent(context).startSpan().endAfter { parent ->
-                runInterruptible(sampleTaskDispatcher) {
-                    submitForm(tracer, context.with(parent), url)
-                }
+                submitForm(tracer, context.with(parent), url)
             }
             onDone()
         }
@@ -81,9 +77,7 @@ internal class OtelTracesViewModel(
         val context = Context.current()
         taskScope.launch {
             tracer.spanBuilder("submitForm with linked spans").setParent(context).startSpan().endAfter { parent ->
-                runInterruptible(sampleTaskDispatcher) {
-                    processLinkedSpans(tracer, context.with(parent))
-                }
+                processLinkedSpans(tracer, context.with(parent))
             }
             onDone()
         }
@@ -93,52 +87,59 @@ internal class OtelTracesViewModel(
         taskScope.coroutineContext.cancelChildren()
     }
 
-    private fun performAsyncOperation(tracer: Tracer, parentContext: Context, onProgress: (Int) -> Unit) {
+    private suspend fun performAsyncOperation(tracer: Tracer, parentContext: Context, onProgress: (Int) -> Unit) {
         tracer.spanBuilder("AsyncOperation").setParent(parentContext).startSpan().endAfter {
             asyncLogger.v("Starting Async Operation...")
             for (progress in 0..MAX_PROGRESS) {
                 onProgress(progress)
-                Thread.sleep(traceProgressDelayMillis(progress))
+                delay(traceProgressDelayMillis(progress).milliseconds)
             }
             asyncLogger.v("Finishing Async Operation...")
         }
     }
 
-    private fun submitForm(tracer: Tracer, parentContext: Context, url: String) {
+    private suspend fun submitForm(tracer: Tracer, parentContext: Context, url: String) {
         tracer.spanBuilder("processingForm").setParent(parentContext).startSpan().endAfter { formSpan ->
-            parentContext.with(formSpan).makeCurrent().use {
-                tracer.spanBuilder("formSanitization").startSpan().endAfter {
-                    formLogger.v("Sanitizing email: ${parentContext.get(emailKey)}")
-                    formLogger.v("Sanitizing username: ${parentContext.get(usernameKey)}")
-                    Thread.sleep(FORM_SANITIZATION_DELAY_MS)
+            val formContext = parentContext.with(formSpan)
+            tracer.spanBuilder("formSanitization").setParent(formContext).startSpan().endAfter {
+                formContext.makeCurrent().use {
+                    formLogger.v("Sanitizing email: ${formContext.get(emailKey)}")
+                    formLogger.v("Sanitizing username: ${formContext.get(usernameKey)}")
                 }
-                val request = Request.Builder()
-                    .get()
-                    .url(url)
-                    .addParentSpan(formSpan)
-                    .build()
-                okHttpClient.newCall(request).execute().close()
+                delay(FORM_SANITIZATION_DELAY)
+            }
+            withContext(sampleTaskDispatcher) {
+                val request = formContext.makeCurrent().use {
+                    Request.Builder()
+                        .get()
+                        .url(url)
+                        .addParentSpan(formSpan)
+                        .build()
+                }
+                okHttpClient.newCall(request).awaitResponse().close()
             }
         }
     }
 
-    private fun processLinkedSpans(tracer: Tracer, parentContext: Context) {
+    private suspend fun processLinkedSpans(tracer: Tracer, parentContext: Context) {
         tracer.spanBuilder("processingForm").setParent(parentContext).startSpan().endAfter { formSpan ->
-            parentContext.with(formSpan).makeCurrent().use {
-                val attributes = Attributes.builder()
-                    .put(EMAIL_ATTRIBUTE, EMAIL)
-                    .put(USERNAME_ATTRIBUTE, USERNAME)
-                    .build()
-                tracer.spanBuilder("formSanitization")
-                    .addLink(formSpan.spanContext, attributes)
-                    .startSpan()
-                    .endAfter {
+            val formContext = parentContext.with(formSpan)
+            val attributes = Attributes.builder()
+                .put(EMAIL_ATTRIBUTE, EMAIL)
+                .put(USERNAME_ATTRIBUTE, USERNAME)
+                .build()
+            tracer.spanBuilder("formSanitization")
+                .setParent(formContext)
+                .addLink(formSpan.spanContext, attributes)
+                .startSpan()
+                .endAfter {
+                    formContext.makeCurrent().use {
                         formLogger.v("Sanitizing email")
                         formLogger.v("Sanitizing username")
-                        Thread.sleep(FORM_SANITIZATION_DELAY_MS)
                     }
-                Thread.sleep(LINKED_FORM_PROCESSING_DELAY_MS)
-            }
+                    delay(FORM_SANITIZATION_DELAY)
+                }
+            delay(LINKED_FORM_PROCESSING_DELAY)
         }
     }
 
@@ -159,8 +160,8 @@ internal class OtelTracesViewModel(
         private const val EMAIL = "john.doe@example.com"
         private const val USERNAME = "John Doe"
         private const val MAX_PROGRESS = 100
-        private const val FORM_SANITIZATION_DELAY_MS = 2_000L
-        private const val LINKED_FORM_PROCESSING_DELAY_MS = 5_000L
+        private val FORM_SANITIZATION_DELAY = 2_000.milliseconds
+        private val LINKED_FORM_PROCESSING_DELAY = 5_000.milliseconds
 
         private val emailKey: ContextKey<String> = ContextKey.named(EMAIL_ATTRIBUTE)
         private val usernameKey: ContextKey<String> = ContextKey.named(USERNAME_ATTRIBUTE)

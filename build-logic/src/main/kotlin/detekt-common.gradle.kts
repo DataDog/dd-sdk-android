@@ -4,7 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.android.build.api.dsl.TestedExtension
 import com.android.build.api.variant.AndroidComponentsExtension
 import com.datadog.gradle.config.configureDetekt
 import dev.detekt.gradle.Detekt
@@ -18,18 +17,14 @@ plugins {
 
 configureDetekt()
 
+detekt {
+    // The sample and benchmark modules share Kotlin sources between debug and release.
+    ignoredBuildTypes.add("release")
+}
+
 listOf("com.android.application", "com.android.library").forEach { pluginId ->
     pluginManager.withPlugin(pluginId) {
-        val androidComponents = extensions.getByType(AndroidComponentsExtension::class.java)
-        androidComponents.finalizeDsl { android ->
-            val releaseSources = fileTree("src") {
-                include("release*/**/*.kt", "*Release*/**/*.kt")
-            }
-            if (releaseSources.isEmpty && (android as? TestedExtension)?.testBuildType != "release") {
-                detekt.ignoredBuildTypes.add("release")
-            }
-        }
-        androidComponents.onVariants { variant ->
+        extensions.getByType(AndroidComponentsExtension::class.java).onVariants { variant ->
             variant.components.forEach { configureDetektClasspath(it.name) }
         }
     }

@@ -1,4 +1,8 @@
 # SDK-specific rules loaded together with detekt.yml and the custom rule plugin.
+comments:
+  KDocReferencesNonPublicProperty:
+    active: true
+
 datadog:
   active: true
   excludes:
