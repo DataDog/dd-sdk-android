@@ -131,6 +131,7 @@ object com.datadog.android.internal.network.HttpSpec
     const val MOVED_PERMANENTLY: Int
     const val FOUND: Int
     const val SEE_OTHER: Int
+    const val NOT_MODIFIED: Int
     const val TEMPORARY_REDIRECT: Int
     const val PERMANENT_REDIRECT: Int
     const val BAD_REQUEST: Int

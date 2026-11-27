@@ -35,6 +35,8 @@ object com.datadog.android.rum.RumAttributes
   const val GRAPHQL_ERRORS: String
   const val REQUEST_HEADERS: String
   const val RESPONSE_HEADERS: String
+  const val RESOURCE_DELIVERY_TYPE: String
+  const val RESOURCE_TRANSFER_SIZE: String
   const val ERROR_RESOURCE_METHOD: String
   const val ERROR_RESOURCE_STATUS_CODE: String
   const val ERROR_RESOURCE_URL: String
@@ -191,6 +193,7 @@ class com.datadog.android.rum._RumInternalProxy
     fun setInsightsCollector(builder: com.datadog.android.rum.RumConfiguration.Builder, insightsCollector: com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector): com.datadog.android.rum.RumConfiguration.Builder
     fun createRumNetworkInstrumentation(name: String, libraryType: com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType, configuration: com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration)
     fun toResourceAttributes(extractor: com.datadog.android.rum.resource.ResourceHeadersExtractor, rawRequestHeaders: Map<String, List<String>>, rawResponseHeaders: Map<String, List<String>>, internalLogger: com.datadog.android.api.InternalLogger)
+    fun resolveCacheDeliveryAttributes(responseInfo: com.datadog.android.api.instrumentation.network.HttpResponseInfo): Map<String, Any?>
 class com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
   fun setSdkInstanceName(sdkInstanceName: String)
   fun setRumResourceAttributesProvider(rumResourceAttributesProvider: com.datadog.android.rum.RumResourceAttributesProvider)

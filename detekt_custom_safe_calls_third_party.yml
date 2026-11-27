@@ -67,6 +67,7 @@ datadog:
       - "org.chromium.net.UrlRequest.cancel()"
       - "org.chromium.net.UrlRequest.followRedirect()"
       - "org.chromium.net.UrlRequest.read(java.nio.ByteBuffer?)"
+      - "org.chromium.net.UrlResponseInfo.wasCached()"
       # endregion
       # region Glide
       - "com.bumptech.glide.GlideBuilder.setDiskCacheExecutor(com.bumptech.glide.load.engine.executor.GlideExecutor?)"
@@ -1143,6 +1144,7 @@ datadog:
       - "okhttp3.HttpUrl.topPrivateDomain()"
       - "okhttp3.HttpUrl.url()"
       - "okhttp3.Interceptor.Chain.call()"
+      - "okhttp3.Interceptor.Chain.connection()"
       - "okhttp3.Interceptor.Chain.request()"
       - "okhttp3.MultipartBody.Builder.constructor(kotlin.String)"
       - "okhttp3.MultipartBody.Builder.addFormDataPart(kotlin.String, kotlin.String?, okhttp3.RequestBody)"

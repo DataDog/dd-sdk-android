@@ -21,6 +21,7 @@ import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.internal.graphql.OkHttpGraphQLAdapter
 import com.datadog.android.okhttp.internal.isStreaming
 import com.datadog.android.okhttp.internal.mimeType
+import com.datadog.android.okhttp.internal.toHttpResponseInfo
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
@@ -135,6 +136,17 @@ open class DatadogInterceptor internal constructor(
                 okHttpGraphQLAdapter.convertHeadersToTag(originalRequest, this, internalLogger)
             }
             .safeBuild() ?: originalRequest
+
+        // The chain of an application interceptor never has a connection. A network interceptor gets
+        // neither a cacheResponse nor a networkResponse, so no cache delivery is reported for it.
+        if (chain.connection() != null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { WARN_NETWORK_INTERCEPTOR },
+                onlyOnce = true
+            )
+        }
 
         if (rumFeature != null) {
             val url = request.url.toString()
@@ -260,7 +272,10 @@ open class DatadogInterceptor internal constructor(
             kind,
             attributes +
                 rumResourceAttributesProvider.onProvideAttributes(request, response, null) +
-                resourceHeaderAttributes
+                resourceHeaderAttributes +
+                _RumInternalProxy.resolveCacheDeliveryAttributes(
+                    response.toHttpResponseInfo(sdkCore.internalLogger)
+                )
         )
     }
 
@@ -455,6 +470,12 @@ open class DatadogInterceptor internal constructor(
             "You set up a DatadogInterceptor for %s, but RUM features are disabled. " +
                 "Make sure you initialized the Datadog SDK with a valid Application Id, " +
                 "and that RUM features are enabled."
+
+        internal const val WARN_NETWORK_INTERCEPTOR =
+            "DatadogInterceptor is registered with addNetworkInterceptor(). OkHttp runs its cache " +
+                "before network interceptors, so responses served from the cache are not tracked " +
+                "and no cache status is reported. Each redirect is also tracked as a separate " +
+                "resource. Register DatadogInterceptor with addInterceptor() instead."
 
         internal const val ERROR_NO_RESPONSE =
             "The request ended with no response nor any exception."

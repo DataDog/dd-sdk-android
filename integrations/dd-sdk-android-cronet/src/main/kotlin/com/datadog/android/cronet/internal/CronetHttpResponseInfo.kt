@@ -5,6 +5,8 @@
  */
 package com.datadog.android.cronet.internal
 
+import com.datadog.android.api.instrumentation.network.HttpCacheDelivery
+import com.datadog.android.api.instrumentation.network.HttpCacheInfo
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.internal.network.HttpSpec
 import org.chromium.net.UrlResponseInfo
@@ -15,10 +17,14 @@ import org.chromium.net.UrlResponseInfo
 // and this instance is only built once the request has finished, by which point the chunks are
 // gone. Capturing them would mean copying every chunk of every response up front, at a memory cost
 // paid whether or not a snapshot is ever asked for.
+//
+// metricsReceivedByteCount comes from RequestFinishedInfo.Metrics, which is only available once
+// the request has finished. Instances built before that (e.g. for APM) pass null.
 internal data class CronetHttpResponseInfo(
     private val response: UrlResponseInfo,
-    override val request: CronetHttpRequestInfo?
-) : HttpResponseInfo {
+    override val request: CronetHttpRequestInfo?,
+    private val metricsReceivedByteCount: Long?
+) : HttpResponseInfo, HttpCacheInfo {
 
     override val url: String get() = response.url
     override val statusCode: Int get() = response.httpStatusCode
@@ -55,5 +61,44 @@ internal data class CronetHttpResponseInfo(
                 ?.takeIf { contentLengthHeaderValues.size == 1 }
                 ?.toLongOrNull()
                 ?: response.receivedByteCount.takeIf { it >= 0 }
+        }
+
+    // The Cronet docs contradict each other on whether the metrics byte count includes redirects:
+    // RequestFinishedInfo.getMetrics() says it covers "all redirects and the ultimate response
+    // combined", while RequestFinishedInfo.Metrics.getReceivedByteCount() says it "does not include
+    // any previous redirects". UrlResponseInfo.getReceivedByteCount() is documented to include all
+    // redirects.
+    //
+    // CronetCacheDeliveryTest (instrumented/integration) measures both counters against a real
+    // engine: they are equal in every scenario, redirects included, so getMetrics() describes the
+    // actual behavior. The metrics count therefore can't tell the bytes of a cache validation from
+    // the ones of the redirect hops. After a redirect, the decision is taken from the URL chain
+    // counter alone: only a chain without any network bytes is a local hit, and anything else is a
+    // cached response of unknown reason.
+    //
+    // Known limitation: Cronet exposes no per-hop breakdown of the received bytes once the request
+    // has finished, so after a network redirect an accurate value isn't available. A redirect to a
+    // local hit (only the redirect bytes) and a redirect to a 304 validation (redirect and
+    // validation bytes) look the same, and both are reported as a cached response of unknown
+    // reason, where iOS and OkHttp report a local hit and a validated hit. Telling them apart would
+    // need the byte count recorded at each redirect in the request callback, handed over to the
+    // request-finished listener on another thread: not worth the added complexity.
+    //
+    // A network load reports the URL chain counter, which is available even without metrics. It
+    // includes the redirect hops, where iOS only counts the last transaction.
+    override val cacheDelivery: HttpCacheDelivery
+        get() = when {
+            !response.wasCached() -> HttpCacheDelivery.NetworkLoad(networkBytes = response.receivedByteCount)
+            response.urlChain.size > 1 -> if (response.receivedByteCount == 0L) {
+                HttpCacheDelivery.LocalHit
+            } else {
+                HttpCacheDelivery.CachedUnknownReason
+            }
+            metricsReceivedByteCount == 0L -> HttpCacheDelivery.LocalHit
+            metricsReceivedByteCount != null && metricsReceivedByteCount > 0L -> HttpCacheDelivery.ValidatedHit(
+                networkBytes = metricsReceivedByteCount
+            )
+            // not measured
+            else -> HttpCacheDelivery.CachedUnknownReason
         }
 }

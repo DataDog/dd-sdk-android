@@ -499,6 +499,54 @@ public final class com/datadog/android/api/instrumentation/network/HttpBodySnaps
 public final class com/datadog/android/api/instrumentation/network/HttpBodySnapshot$Companion {
 }
 
+public abstract interface class com/datadog/android/api/instrumentation/network/HttpCacheDelivery {
+}
+
+public final class com/datadog/android/api/instrumentation/network/HttpCacheDelivery$CachedUnknownReason : com/datadog/android/api/instrumentation/network/HttpCacheDelivery {
+	public static final field INSTANCE Lcom/datadog/android/api/instrumentation/network/HttpCacheDelivery$CachedUnknownReason;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/api/instrumentation/network/HttpCacheDelivery$LocalHit : com/datadog/android/api/instrumentation/network/HttpCacheDelivery {
+	public static final field INSTANCE Lcom/datadog/android/api/instrumentation/network/HttpCacheDelivery$LocalHit;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/api/instrumentation/network/HttpCacheDelivery$NetworkLoad : com/datadog/android/api/instrumentation/network/HttpCacheDelivery {
+	public fun <init> (Ljava/lang/Long;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNetworkBytes ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/api/instrumentation/network/HttpCacheDelivery$Unknown : com/datadog/android/api/instrumentation/network/HttpCacheDelivery {
+	public static final field INSTANCE Lcom/datadog/android/api/instrumentation/network/HttpCacheDelivery$Unknown;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/api/instrumentation/network/HttpCacheDelivery$ValidatedHit : com/datadog/android/api/instrumentation/network/HttpCacheDelivery {
+	public fun <init> (Ljava/lang/Long;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNetworkBytes ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/api/instrumentation/network/HttpCacheInfo {
+	public abstract fun getCacheDelivery ()Lcom/datadog/android/api/instrumentation/network/HttpCacheDelivery;
+}
+
+public final class com/datadog/android/api/instrumentation/network/HttpCacheInfoKt {
+	public static final fun getCacheDelivery (Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;)Lcom/datadog/android/api/instrumentation/network/HttpCacheDelivery;
+}
+
 public abstract interface class com/datadog/android/api/instrumentation/network/HttpRequestBody {
 }
 

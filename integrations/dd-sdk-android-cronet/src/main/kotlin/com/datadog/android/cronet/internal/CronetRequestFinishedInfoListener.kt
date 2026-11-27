@@ -52,7 +52,13 @@ internal class CronetRequestFinishedInfoListener(
             }
 
             RequestFinishedInfo.SUCCEEDED -> {
-                val responseInfo = finishedInfo.responseInfo?.let { CronetHttpResponseInfo(it, requestInfo) }
+                val responseInfo = finishedInfo.responseInfo?.let {
+                    CronetHttpResponseInfo(
+                        response = it,
+                        request = requestInfo,
+                        metricsReceivedByteCount = finishedInfo.metrics.receivedByteCount
+                    )
+                }
 
                 if (responseInfo == null) {
                     rumNetworkInstrumentation.stopResourceWithError(

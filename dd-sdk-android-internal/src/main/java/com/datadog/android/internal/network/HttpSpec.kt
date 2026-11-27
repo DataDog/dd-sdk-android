@@ -103,6 +103,9 @@ object HttpSpec {
         /** HTTP 303 See Other status code. */
         const val SEE_OTHER: Int = 303
 
+        /** HTTP 304 Not Modified status code. */
+        const val NOT_MODIFIED: Int = 304
+
         /** HTTP 307 Temporary Redirect status code. */
         const val TEMPORARY_REDIRECT: Int = 307
 
@@ -153,6 +156,7 @@ object HttpSpec {
             MOVED_PERMANENTLY,
             FOUND,
             SEE_OTHER,
+            NOT_MODIFIED,
             TEMPORARY_REDIRECT,
             PERMANENT_REDIRECT,
             BAD_REQUEST,

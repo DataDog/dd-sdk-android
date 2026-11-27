@@ -8,6 +8,8 @@ package com.datadog.android.okhttp.internal
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.instrumentation.network.HttpBodySnapshot
+import com.datadog.android.api.instrumentation.network.HttpCacheDelivery
+import com.datadog.android.api.instrumentation.network.HttpCacheInfo
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.api.instrumentation.network.PeekableBodyInfo
@@ -19,7 +21,7 @@ import java.io.IOException
 internal class OkHttpResponseInfo(
     internal val originalResponse: Response,
     internal val internalLogger: InternalLogger
-) : HttpResponseInfo, PeekableBodyInfo {
+) : HttpResponseInfo, PeekableBodyInfo, HttpCacheInfo {
 
     override val contentType: String?
         get() = originalResponse.body?.contentType()?.mimeType()
@@ -76,6 +78,39 @@ internal class OkHttpResponseInfo(
         }
 
     override val request: HttpRequestInfo get() = OkHttpRequestInfo(originalResponse.request, internalLogger)
+
+    // Only meaningful for an application interceptor: OkHttp runs its cache before network
+    // interceptors, which get neither a cacheResponse nor a networkResponse and so always resolve
+    // to Unknown. configureDatadogInstrumentation always registers the RUM adapter as an
+    // application interceptor; DatadogInterceptor is documented to be added with addInterceptor.
+    // OkHttp exposes no count of the bytes received for the headers, so network bytes are never
+    // measured.
+    //
+    // Known limitation: neither Response nor EventListener gives the size of a 304 validation
+    // exchange, so an accurate value isn't available. A validated hit is reported with the
+    // placeholder transfer size of createCacheDeliveryAttributes (300 bytes) instead of the real
+    // header bytes that iOS and Cronet report. The cache status is the same, since the backend
+    // only checks that the transfer size is positive; Headers.byteCount() would only be an
+    // estimate (HPACK, framing), not a measured value.
+    override val cacheDelivery: HttpCacheDelivery
+        get() {
+            val networkResponse = originalResponse.networkResponse
+            return when {
+                originalResponse.cacheResponse == null -> if (networkResponse == null) {
+                    HttpCacheDelivery.Unknown
+                } else {
+                    HttpCacheDelivery.NetworkLoad(networkBytes = null)
+                }
+                // the payload comes from the final hop only: a redirect that went over the network
+                // before it doesn't validate the cached entry, so this is still a local cache hit
+                networkResponse == null -> HttpCacheDelivery.LocalHit
+                networkResponse.code == HttpSpec.StatusCode.NOT_MODIFIED -> HttpCacheDelivery.ValidatedHit(
+                    networkBytes = null
+                )
+                // the cached entry was stale, and the server sent a new one
+                else -> HttpCacheDelivery.NetworkLoad(networkBytes = null)
+            }
+        }
 
     @WorkerThread
     @Suppress("ReturnCount")
