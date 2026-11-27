@@ -84,6 +84,17 @@ val flagsConfig = FlagsConfiguration.Builder()
 
 With `trackExposures(false)`, the SDK sends no exposure events to Datadog. It still records which exposures it has seen, so that the OpenFeature `ExposureHook` reports correct exposure decisions. See [Exposures in your own data store](../dd-sdk-android-flags-openfeature/README.md#exposures-in-your-own-data-store).
 
+To stop tracking for one client only, for example a client that previews flag values, set the options on its builder:
+
+```kotlin
+val previewClient = FlagsClient.Builder("preview")
+    .trackExposures(false)
+    .trackEvaluations(false)
+    .build()
+```
+
+With `trackExposures(false)`, evaluations through this client are not exposures. The SDK sends no exposure events for them and records nothing for deduplication, so a later evaluation through another client still sends its exposure. With `trackEvaluations(false)`, the client sends no evaluation telemetry and adds no RUM feature flag evaluations. These options can only narrow the `FlagsConfiguration` settings. Set them before you build the client: an existing named client keeps its original options, so use a separate client name for each set of options.
+
 #### Configure custom endpoints
 
 For testing or proxy purposes, you can configure custom endpoints:

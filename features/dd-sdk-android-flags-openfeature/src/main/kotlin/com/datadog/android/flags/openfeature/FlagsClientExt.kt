@@ -36,6 +36,13 @@ import dev.openfeature.kotlin.sdk.FeatureProvider
  *     .build()
  *     .asOpenFeatureProvider()
  *
+ * // Evaluate without exposures or evaluation telemetry, for example to preview a value
+ * val provider = FlagsClient.Builder("preview")
+ *     .trackExposures(false)
+ *     .trackEvaluations(false)
+ *     .build()
+ *     .asOpenFeatureProvider()
+ *
  * // Set it as the OpenFeature provider
  * OpenFeatureAPI.setProviderAndWait(provider)
  *

@@ -55,9 +55,10 @@ import org.json.JSONObject
  * // Named client
  * val client = FlagsClient.Builder("analytics").build()
  *
- * // With custom configuration
- * val client = FlagsClient.Builder("analytics")
- *     .useCustomExposureEndpoint("https://custom.endpoint.com/exposure")
+ * // Without exposures or evaluation telemetry, for example to preview a value
+ * val client = FlagsClient.Builder("preview")
+ *     .trackExposures(false)
+ *     .trackEvaluations(false)
  *     .build()
  * ```
  *
@@ -266,6 +267,8 @@ interface FlagsClient {
         private val sdkCore: FeatureSdkCore
         private var experimentationOptOutMode = ExperimentationOptOutMode.DISABLED
         private var evaluationTelemetryOptOutParameterEnabled: Boolean = false
+        private var trackExposures: Boolean = true
+        private var trackEvaluations: Boolean = true
 
         /**
          * Controls how this client uses the subject's `dd_experimentation_opt_out_at` attribute.
@@ -314,6 +317,40 @@ interface FlagsClient {
          */
         fun enableEvaluationTelemetryOptOutParameter(enabled: Boolean): Builder = apply {
             evaluationTelemetryOptOutParameterEnabled = enabled
+        }
+
+        /**
+         * Sets whether this client tracks exposures.
+         *
+         * Enabled by default. When disabled, evaluations through this client are not exposures: they send no exposure
+         * events and are not recorded for deduplication, so a later evaluation of the same flag and subject through
+         * another client still sends its exposure. Flag values are unchanged. This can only narrow
+         * [FlagsConfiguration.Builder.trackExposures]; it never enables exposures that the feature configuration
+         * disables. Configure this before building the client. An existing named client retains its configuration,
+         * so use a separate client name for each set of tracking options.
+         *
+         * @param enabled whether this client tracks exposures.
+         * @return this [Builder] instance.
+         */
+        fun trackExposures(enabled: Boolean): Builder = apply {
+            trackExposures = enabled
+        }
+
+        /**
+         * Sets whether this client tracks evaluations.
+         *
+         * Enabled by default. When disabled, evaluations through this client send no evaluation telemetry and add no
+         * RUM feature flag evaluations. Flag values and exposures are unchanged. This can only narrow
+         * [FlagsConfiguration.Builder.trackEvaluations] and [FlagsConfiguration.Builder.rumIntegrationEnabled]; it
+         * never enables them when the feature configuration disables them. Configure this before building the client.
+         * An existing named client retains its configuration, so use a separate client name for each set of tracking
+         * options.
+         *
+         * @param enabled whether this client tracks evaluations.
+         * @return this [Builder] instance.
+         */
+        fun trackEvaluations(enabled: Boolean): Builder = apply {
+            trackEvaluations = enabled
         }
 
         /**
@@ -374,7 +411,9 @@ interface FlagsClient {
                     evaluationsFeature = evaluationsFeature,
                     name = name,
                     experimentationOptOutMode = experimentationOptOutMode,
-                    evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled
+                    evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled,
+                    trackExposures = trackExposures,
+                    trackEvaluations = trackEvaluations
                 )
             }
         }
@@ -474,7 +513,9 @@ interface FlagsClient {
             evaluationsFeature: EvaluationsFeature?,
             name: String,
             experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
-            evaluationTelemetryOptOutParameterEnabled: Boolean
+            evaluationTelemetryOptOutParameterEnabled: Boolean,
+            trackExposures: Boolean = true,
+            trackEvaluations: Boolean = true
         ): FlagsClient {
             val experimentationOptOut = ExperimentationOptOut(experimentationOptOutMode)
             val assignmentAuthorization = AssignmentAuthorization(
@@ -554,7 +595,12 @@ interface FlagsClient {
                 featureSdkCore = featureSdkCore,
                 evaluationsManager = evaluationsManager,
                 flagsRepository = flagsRepository,
-                flagsConfiguration = configuration,
+                // Client options only narrow the feature configuration.
+                flagsConfiguration = configuration.copy(
+                    trackEvaluations = configuration.trackEvaluations && trackEvaluations,
+                    rumIntegrationEnabled = configuration.rumIntegrationEnabled && trackEvaluations
+                ),
+                trackExposures = trackExposures,
                 rumEvaluationLogger = rumEvaluationLogger,
                 exposureProcessor = flagsFeature.processor,
                 evaluationsFeature = evaluationsFeature,

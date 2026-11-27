@@ -23,6 +23,8 @@ interface com.datadog.android.flags.FlagsClient
     fun experimentationOptOutMode(mode: ExperimentationOptOutMode): Builder
     constructor(name: String = DEFAULT_CLIENT_NAME, sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun enableEvaluationTelemetryOptOutParameter(enabled: Boolean): Builder
+    fun trackExposures(enabled: Boolean): Builder
+    fun trackEvaluations(enabled: Boolean): Builder
     fun build(): FlagsClient
   companion object 
     fun get(name: String = DEFAULT_CLIENT_NAME, sdkCore: com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient

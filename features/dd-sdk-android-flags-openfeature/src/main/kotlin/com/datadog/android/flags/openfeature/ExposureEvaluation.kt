@@ -22,7 +22,10 @@ import dev.openfeature.kotlin.sdk.EvaluationContext
  * `holdout.key`. Each value is a [String], [Double] or [Boolean]. Empty when the split has none. Every callback
  * receives the same read-only map.
  * @property isExposure true when the evaluation succeeded and selected an allocation that logs exposures,
- * including repeats for this subject.
+ * including repeats for this subject. Always false for a client built with
+ * [com.datadog.android.flags.FlagsClient.Builder.trackExposures] set to false, whose evaluations are not
+ * exposures. Turning exposures off for the whole feature with
+ * [com.datadog.android.flags.FlagsConfiguration.Builder.trackExposures] does not change this value.
  */
 class ExposureEvaluation internal constructor(
     val flagKey: String,

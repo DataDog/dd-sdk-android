@@ -46,6 +46,8 @@ public final class com/datadog/android/flags/FlagsClient$Builder {
 	public final fun build ()Lcom/datadog/android/flags/FlagsClient;
 	public final fun enableEvaluationTelemetryOptOutParameter (Z)Lcom/datadog/android/flags/FlagsClient$Builder;
 	public final fun experimentationOptOutMode (Lcom/datadog/android/flags/ExperimentationOptOutMode;)Lcom/datadog/android/flags/FlagsClient$Builder;
+	public final fun trackEvaluations (Z)Lcom/datadog/android/flags/FlagsClient$Builder;
+	public final fun trackExposures (Z)Lcom/datadog/android/flags/FlagsClient$Builder;
 }
 
 public final class com/datadog/android/flags/FlagsClient$Companion {
