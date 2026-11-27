@@ -200,7 +200,8 @@ class StubSDKCore(
     }
 
     /**
-     * Advances the current time and drains due tasks on all scheduled executors created by this core.
+     * Advances the current time, the elapsed time and the elapsed realtime, then drains due tasks on all
+     * scheduled executors created by this core.
      * @param durationMs the duration to advance in milliseconds
      */
     fun advanceTimeBy(durationMs: Long) {
@@ -261,8 +262,8 @@ class StubSDKCore(
         override fun getDeviceElapsedTimeNanos(): Long = currentNanoTime
         override fun getServerOffsetNanos(): Long = 0L
         override fun getServerOffsetMillis(): Long = 0L
-        override fun getDeviceElapsedRealtimeMillis(): Long = SystemClock.elapsedRealtime()
-        override fun getDeviceElapsedRealtimeNanos(): Long = SystemClock.elapsedRealtimeNanos()
+        override fun getDeviceElapsedRealtimeMillis(): Long = TimeUnit.NANOSECONDS.toMillis(currentNanoTime)
+        override fun getDeviceElapsedRealtimeNanos(): Long = currentNanoTime
         override fun getDeviceUptimeMillis(): Long = SystemClock.uptimeMillis()
     }
 

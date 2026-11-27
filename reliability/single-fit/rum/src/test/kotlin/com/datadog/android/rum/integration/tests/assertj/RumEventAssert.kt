@@ -30,6 +30,11 @@ class RumEventAssert(actual: JsonObject) :
         return this
     }
 
+    fun hasSessionPrecondition(precondition: String): RumEventAssert {
+        hasField("_dd.session.session_precondition", precondition)
+        return this
+    }
+
     fun hasSource(source: String): RumEventAssert {
         hasField("source", source)
         return this
@@ -47,6 +52,11 @@ class RumEventAssert(actual: JsonObject) :
 
     fun hasViewName(viewName: String): RumEventAssert {
         hasField("view.name", viewName)
+        return this
+    }
+
+    fun hasViewId(viewId: String): RumEventAssert {
+        hasField("view.id", viewId)
         return this
     }
 
