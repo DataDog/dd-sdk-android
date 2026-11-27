@@ -2212,10 +2212,7 @@ internal class ProfilingFeatureTest {
         @StringForgery fakeQuotaSessionId: String
     ) {
         // Given
-        val fakeProfilingContext = mutableMapOf<String, Any?>(
-            FeatureContextKeys.PROFILING_QUOTA_REASON to QuotaReason.QUOTA_EXCEEDED,
-            FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to "stale-session"
-        )
+        val fakeProfilingContext = mutableMapOf<String, Any?>()
         whenever(
             mockSdkCore.updateFeatureContext(eq(Feature.PROFILING_FEATURE_NAME), any(), any())
         ) doAnswer {
@@ -2223,6 +2220,11 @@ internal class ProfilingFeatureTest {
         }
         testedFeature.onInitialize(mockContext)
         testedFeature.dispatchRumSession(fakeQuotaSessionId, 100f)
+        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        assertThat(fakeProfilingContext[FeatureContextKeys.PROFILING_QUOTA_REASON])
+            .isEqualTo(QuotaResult.QUOTA_EXCEEDED.reason)
+        assertThat(fakeProfilingContext[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID])
+            .isEqualTo(fakeQuotaSessionId)
 
         // When
         testedFeature.simulateQuotaResult(QuotaResult.FAIL_OPEN)

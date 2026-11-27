@@ -18,7 +18,6 @@ internal data class ProfilingContextState(
     val isAnrEnabled: Boolean,
     val isProfilerRunning: Boolean = false,
     val isOomTriggerRegistered: Boolean = false,
-    // Set only when the quota API denied profiling, for the session the decision was made for.
     val quotaDeniedReason: QuotaReason? = null,
     val quotaDeniedSessionId: String? = null
 ) {

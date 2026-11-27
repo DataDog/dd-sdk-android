@@ -110,8 +110,6 @@ internal class ProfilingFeature(
     // that depend on it being the current session.
     private val quotaSessionLock = Any()
 
-    // Only accessed inside the updateFeatureContext callback, which the SDK core runs under the
-    // feature context write lock: updates are serialized and each one publishes the latest state.
     private var contextState = ProfilingContextState(
         continuousSampleRate = configuration.continuousSampleRate,
         applicationLaunchSampleRate = configuration.applicationLaunchSampleRate,
@@ -153,7 +151,7 @@ internal class ProfilingFeature(
         ProfilingStorage.addProfilingFlag(appContext)
         isLaunchProfilingActive = profiler.isRunning()
         sdkCore.setEventReceiver(name, this)
-        updateContextState { it }
+        publishContextState()
 
         val quotaCallFactory = sdkCore.createOkHttpCallFactory {
             callTimeout(QUOTA_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
@@ -703,6 +701,10 @@ internal class ProfilingFeature(
     private fun dropTriggerProfile(triggerProfile: TriggerProfile, message: String) {
         logToUser(message)
         fileDeleteSafe(triggerProfile.result.resultFilePath, sdkCore.internalLogger)
+    }
+
+    private fun publishContextState() {
+        updateContextState { it }
     }
 
     private fun updateContextState(update: (ProfilingContextState) -> ProfilingContextState) {
