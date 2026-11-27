@@ -808,8 +808,8 @@ class ManualTrackingAlwaysFullViewRumTest {
                 hasUsrId(fakeUserId)
                 hasUsrName(fakeUserName)
                 hasUsrEmail(fakeUserEmail)
-                userAdditionalAttributes.forEach { (key, value) ->
-                    hasUsrAdditionalAttributes(key, value)
+                userAdditionalAttributes.forEach { (attributeKey, value) ->
+                    hasUsrAdditionalAttributes(attributeKey, value)
                 }
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")
@@ -849,8 +849,8 @@ class ManualTrackingAlwaysFullViewRumTest {
                 hasViewName(name)
                 hasAccountId(fakeAccountId)
                 hasAccountName(fakeAccountName)
-                accountExtraInfo.forEach { (key, value) ->
-                    hasAccountExtraInfo(key, value)
+                accountExtraInfo.forEach { (attributeKey, value) ->
+                    hasAccountExtraInfo(attributeKey, value)
                 }
                 hasActionCount(0)
                 doesNotHaveField("feature_flag")

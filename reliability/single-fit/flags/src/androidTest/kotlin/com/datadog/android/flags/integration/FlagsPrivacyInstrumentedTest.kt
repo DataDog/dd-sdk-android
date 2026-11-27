@@ -383,7 +383,7 @@ internal class FlagsPrivacyInstrumentedTest(private val useOpenFeature: Boolean)
 
         @JvmStatic
         @Parameterized.Parameters(name = "openFeature={0}")
-        fun parameters(): List<Array<Boolean>> = listOf(arrayOf(false), arrayOf(true))
+        fun parameters(): List<Boolean> = listOf(false, true)
 
         private fun assignments(consent: Any?): String {
             fun flag(type: String, value: Any) = JSONObject()

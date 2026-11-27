@@ -8,6 +8,7 @@ plugins {
     // Build
     id("org.jetbrains.kotlin.jvm")
     id("datadogBuildConfig")
+    id("detekt-common")
 
     // Analysis tools
     id("ktlint")

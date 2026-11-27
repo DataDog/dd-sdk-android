@@ -81,9 +81,11 @@ internal abstract class ImagePrivacyTestBase<R : Activity> : BaseSessionReplayTe
 
     private fun extractImageWireframesFromRequests(requests: List<HandledRequest>): List<JsonObject> {
         return requests
+            .asSequence()
             .mapNotNull { it.extractSrSegmentAsJson()?.asJsonObject }
             .flatMap { segment ->
                 segment.getAsJsonArray("records")
+                    ?.asSequence()
                     ?.filter { record ->
                         val recordObj = record.asJsonObject
                         recordObj.get("type")?.asString == RECORD_TYPE_FULL_SNAPSHOT.toString()
@@ -99,7 +101,8 @@ internal abstract class ImagePrivacyTestBase<R : Activity> : BaseSessionReplayTe
                             type == WIREFRAME_TYPE_PLACEHOLDER
                     }
                     ?.map { it.asJsonObject }
-                    ?: emptyList()
+                    ?: emptySequence()
             }
+            .toList()
     }
 }

@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.integration.tests.rum
 
+import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
@@ -73,7 +74,7 @@ abstract class BaseRumViewTest {
             )
         )
 
-        Datadog.setVerbosity(android.util.Log.VERBOSE)
+        Datadog.setVerbosity(Log.VERBOSE)
         Datadog.setUserInfo(
             id = "test-user-id",
             name = "Test User",

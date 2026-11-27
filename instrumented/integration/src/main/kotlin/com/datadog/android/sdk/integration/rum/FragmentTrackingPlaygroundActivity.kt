@@ -49,9 +49,7 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
         viewPager = findViewById(R.id.pager)
         btnNext = findViewById(R.id.btn_next)
         btnLast = findViewById(R.id.btn_last)
-        viewPager.apply {
-            adapter = ViewPagerAdapter(supportFragmentManager)
-        }
+        viewPager.adapter = ViewPagerAdapter(supportFragmentManager)
         btnNext.setOnClickListener {
             viewPager.setCurrentItem(viewPager.currentItem + 1, true)
         }
@@ -62,7 +60,7 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
         // attach the fragment view tracking strategy
     }
 
-    internal inner class ViewPagerAdapter(fragmentManager: FragmentManager) :
+    internal class ViewPagerAdapter(fragmentManager: FragmentManager) :
         FragmentPagerAdapter(fragmentManager, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
         override fun getItem(position: Int): Fragment {
             return when (position) {

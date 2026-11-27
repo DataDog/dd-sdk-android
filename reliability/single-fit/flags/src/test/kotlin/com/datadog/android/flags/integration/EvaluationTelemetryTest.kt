@@ -28,6 +28,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.Value
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -41,6 +42,7 @@ import org.json.JSONObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -139,14 +141,13 @@ internal class EvaluationTelemetryTest {
 
         try {
             // When
-            val update = runCatching {
+            assertThrows<CancellationException> {
                 if (initializing) provider.initialize(interleaved) else provider.onContextSet(original, interleaved)
             }
             val result = provider.getBooleanEvaluationWithHooks("enabled", false)
             fixture.flush()
 
             // Then
-            assertThat(update.exceptionOrNull()).isInstanceOf(CancellationException::class.java)
             assertThat(interleavedUpdates).isPositive()
             assertThat(fixture.stubCore.requestsSent()).hasSize(2)
             assertThat(result.value).isTrue()
@@ -197,8 +198,11 @@ internal class EvaluationTelemetryTest {
         val original = context(Value.Boolean(true), "A")
         provider.initialize(original)
         fixture.failAssignments()
-        val refresh = runCatching {
+        val refreshFailure = try {
             provider.onContextSet(original, context(Value.Boolean(false), "B"))
+            null
+        } catch (error: OpenFeatureError.GeneralError) {
+            error
         }
 
         // When
@@ -206,7 +210,7 @@ internal class EvaluationTelemetryTest {
         fixture.flush()
 
         // Then
-        assertThat(refresh.isFailure).isTrue()
+        assertThat(refreshFailure).isNotNull()
         assertThat(result.value).isTrue()
         assertThat(fixture.evaluationCount()).isZero()
         assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).isEmpty()
@@ -451,14 +455,19 @@ internal class EvaluationTelemetryTest {
         val original = context(Value.Boolean(!optedOut))
         provider.initialize(original)
         fixture.failAssignments()
-        val refresh = runCatching { provider.onContextSet(original, context(Value.Boolean(optedOut))) }
+        val refreshFailure = try {
+            provider.onContextSet(original, context(Value.Boolean(optedOut)))
+            null
+        } catch (error: OpenFeatureError.GeneralError) {
+            error
+        }
 
         // When
         val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
-        assertThat(refresh.isFailure).isTrue()
+        assertThat(refreshFailure).isNotNull()
         assertThat(result.value).isTrue()
         assertThat(fixture.evaluationCount()).isEqualTo(if (optedOut) 0 else 1)
         assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(if (optedOut) 0 else 1)

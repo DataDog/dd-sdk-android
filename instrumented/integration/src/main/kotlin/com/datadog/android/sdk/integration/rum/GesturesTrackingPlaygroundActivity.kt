@@ -23,8 +23,8 @@ internal class GesturesTrackingPlaygroundActivity : AppCompatActivity() {
     lateinit var showHide: View
     lateinit var button: Button
     lateinit var recyclerView: RecyclerView
-    private var adapter = Adapter()
-    internal var adapterData: MutableList<String> = MutableList(DATA_COUNT) {
+    private val adapter = Adapter()
+    internal val adapterData: MutableList<String> = MutableList(DATA_COUNT) {
         "Item $it"
     }
 
@@ -102,7 +102,7 @@ internal class GesturesTrackingPlaygroundActivity : AppCompatActivity() {
 
             fun render(model: String) {
                 this.model = model
-                view.findViewById<TextView>(R.id.textView).setText(model)
+                view.findViewById<TextView>(R.id.textView).text = model
             }
         }
     }

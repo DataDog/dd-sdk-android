@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("UnsafeCallOnNullableType")
+
 package com.datadog.tools.unit.assertj
 
 import com.datadog.tools.unit.assertj.JsonArrayAssert.Companion.assertThat
@@ -146,39 +148,6 @@ open class JsonObjectAssert(
                 value
             )
             .isEqualTo(expectedValue)
-        return this
-    }
-
-    /**
-     *  Verifies that the actual jsonObject contains a field with the given name and value matching the given pattern.
-     *  @param name the field name
-     *  @param regex the pattern to match the value
-     */
-    fun hasStringFieldMatching(name: String, regex: String): JsonObjectAssert {
-        val element = getElement(name)
-        assertThat(element)
-            .overridingErrorMessage(
-                "Expected json object to have field $name but couldn't find one"
-            )
-            .isNotNull()
-
-        assertThat((element is JsonPrimitive && element.isString))
-            .overridingErrorMessage(
-                "Expected json object to have field $name with String value " +
-                    "but was ${element!!.javaClass.simpleName}"
-            )
-            .isTrue()
-
-        val value = (element as JsonPrimitive).asString
-        assertThat(value)
-            .overridingErrorMessage(
-                "Expected json object to have field $name with value matching \"%s\" " +
-                    "but was \"%s\"",
-                regex,
-                value
-            )
-            .matches(regex)
-
         return this
     }
 
@@ -568,7 +537,7 @@ open class JsonObjectAssert(
      *  predicates in the given map.
      *  @param expectedValue the Map of predicates to be asserted
      */
-    @SuppressWarnings("FunctionMaxLength")
+    @Suppress("FunctionMaxLength")
     fun containsAttributesMatchingPredicate(expectedValue: Map<String, (JsonElement) -> Boolean>) {
         expectedValue.forEach {
             val predicate = it.value

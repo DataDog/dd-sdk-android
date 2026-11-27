@@ -13,6 +13,7 @@ plugins {
     // Build
     id("com.android.library")
     id("datadogBuildConfig")
+    id("detekt-common")
 
     // Analysis tools
     id("test-pyramid-api-usage")

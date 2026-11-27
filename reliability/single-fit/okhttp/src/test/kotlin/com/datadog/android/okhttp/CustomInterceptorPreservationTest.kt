@@ -43,6 +43,7 @@ import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -297,7 +298,7 @@ class CustomInterceptorPreservationTest {
 
     private fun OkHttpClient.Builder.withMethodUrlAndBodyReplacementInterceptor(
         url: String,
-        body: okhttp3.RequestBody
+        body: RequestBody
     ) = addInterceptor { chain ->
         chain.proceed(chain.request().newBuilder().url(url).method(HttpSpec.Method.POST, body).build())
     }

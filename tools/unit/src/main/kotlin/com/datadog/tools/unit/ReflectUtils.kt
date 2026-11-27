@@ -64,7 +64,7 @@ fun <T> Any.setFieldValue(
         val toSearchIn = classesToSearch.remove()
         try {
             field = toSearchIn.getDeclaredField(fieldName)
-        } catch (e: NoSuchFieldException) {
+        } catch (_: NoSuchFieldException) {
             // do nothing
         }
         classesSearched.add(toSearchIn)
@@ -74,11 +74,7 @@ fun <T> Any.setFieldValue(
             }
         }
     }
-    return if (field != null) {
-        setFieldValue(this, field, fieldValue)
-    } else {
-        false
-    }
+    return field != null && setFieldValue(this, field, fieldValue)
 }
 
 /**
@@ -97,7 +93,7 @@ inline fun <reified T, R : Any> R.getFieldValue(
     return field.get(this) as T
 }
 
-@SuppressWarnings("PrintStackTrace")
+@Suppress("PrintStackTrace")
 private fun <R> setFieldValue(instance: Any?, field: Field, fieldValue: R): Boolean {
     field.isAccessible = true
     try {
@@ -126,8 +122,8 @@ fun <T : Any> createInstance(clazz: Class<T>, vararg params: Any?): T {
         .filter { it.parameterTypes.size == toTypedArray.size }
         .first { constructor ->
             constructor.parameterTypes
-                .mapIndexed { idx, clazz ->
-                    clazz.isAssignableFrom(toTypedArray[idx])
+                .mapIndexed { idx, parameterType ->
+                    parameterType.isAssignableFrom(toTypedArray[idx])
                 }.all { it }
         }
     constructor.isAccessible = true
