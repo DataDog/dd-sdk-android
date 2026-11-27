@@ -60,6 +60,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -987,6 +988,56 @@ internal class RumViewManagerScopeTest {
         assertThat(testedScope.childrenScopes).isEmpty()
     }
 
+    @Test
+    fun `M not start a bg ViewScope W handleEvent { stopped, draining view, event is relevant }`(
+        forge: Forge
+    ) {
+        // Given
+        stopWithDrainingChildScope()
+        val fakeEvent = forge.validBackgroundEvent()
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertThat(testedScope.childrenScopes).containsExactly(mockChildScope)
+        verify(mockSessionEndedMetricDispatcher, never()).onMissedEventTracked(any(), any())
+    }
+
+    @Test
+    fun `M not log missing view W handleEvent { stopped, draining view, event is not relevant }`(
+        forge: Forge
+    ) {
+        // Given
+        stopWithDrainingChildScope()
+        val fakeEvent = forge.anElementFrom(
+            forge.addLongTaskEvent(),
+            forge.stopActionEvent(),
+            forge.stopResourceEvent()
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
+        verify(mockSessionEndedMetricDispatcher, never()).onMissedEventTracked(any(), any())
+    }
+
+    @Test
+    fun `M not report missing view W handleEvent { stopped, draining view, AddViewLoadingTime }`(
+        forge: Forge
+    ) {
+        // Given
+        stopWithDrainingChildScope()
+
+        // When
+        testedScope.handleEvent(forge.addViewLoadingTimeEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
+    }
+
     // endregion
 
     // region AddViewLoadingTime
@@ -1259,5 +1310,20 @@ internal class RumViewManagerScopeTest {
 
     private fun resolveExpectedTimestamp(timestamp: Long): Long {
         return timestamp + fakeTime.serverTimeOffsetMs
+    }
+
+    // The session is stopped while its view still has pending work, so the view manager stays alive
+    private fun stopWithDrainingChildScope() {
+        testedScope.applicationDisplayed = true
+        testedScope.childrenScopes.add(mockChildScope)
+        whenever(mockChildScope.isActive()) doReturn false
+        whenever(mockChildScope.handleEvent(any(), any(), any(), any())) doReturn mockChildScope
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        clearInvocations(mockInternalLogger, mockSessionEndedMetricDispatcher)
     }
 }

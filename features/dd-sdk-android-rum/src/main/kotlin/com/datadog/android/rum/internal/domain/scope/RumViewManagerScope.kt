@@ -138,7 +138,7 @@ internal class RumViewManagerScope(
             lastStoppedViewTime = null
         } else if (event is RumRawEvent.StopSession) {
             stopped = true
-        } else if (childrenScopes.count { it.isActive() } == 0) {
+        } else if (!stopped && childrenScopes.count { it.isActive() } == 0) {
             handleOrphanEvent(event, datadogContext, writeScope, writer)
         }
 
@@ -238,7 +238,7 @@ internal class RumViewManagerScope(
             }
         }
 
-        if (event is RumRawEvent.AddViewLoadingTime && !hasActiveView) {
+        if (event is RumRawEvent.AddViewLoadingTime && !hasActiveView && !stopped) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
