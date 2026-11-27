@@ -77,7 +77,9 @@ internal class BaggageTest {
             Arguments.of("custom=,feature=on", "user.id=a", "custom=,feature=on,user.id=a"),
             Arguments.of("user.id=old;p=v,k=a+b", "user.id=new", "k=a+b,user.id=new"),
             Arguments.of("user%2Eid=old,k=%zz", "user.id=new,session.id=s", "k=%zz,user.id=new,session.id=s"),
-            Arguments.of("user.id=old", "user.id=new", "user.id=new")
+            Arguments.of("user.id=old", "user.id=new", "user.id=new"),
+            Arguments.of("feature=on", "feature", "feature=on,feature"),
+            Arguments.of("feature=on", "feature;p=1", "feature=on,feature;p=1")
         )
 
         @JvmStatic

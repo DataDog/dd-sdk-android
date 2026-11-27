@@ -151,7 +151,7 @@ public final class Baggage {
                 break;
             }
             final String key = memberKey(member);
-            if (!key.isEmpty()) {
+            if (hasKeyValueSeparator(member) && !key.isEmpty()) {
                 kept = removeKey(kept, key);
             }
         }
@@ -162,6 +162,13 @@ public final class Baggage {
             return kept;
         }
         return kept + PAIR_SEPARATOR + newHeader;
+    }
+
+    private static boolean hasKeyValueSeparator(@NonNull final String member) {
+        // The separator must belong to the key/value part, not to a property after ';'.
+        final int kvSeparatorInd = member.indexOf(KEY_VALUE_SEPARATOR);
+        final int propertySeparatorInd = member.indexOf(PROPERTY_SEPARATOR);
+        return kvSeparatorInd != -1 && (propertySeparatorInd == -1 || kvSeparatorInd < propertySeparatorInd);
     }
 
     @NonNull
