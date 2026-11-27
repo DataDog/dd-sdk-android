@@ -82,7 +82,8 @@ internal class RumAutoEpisodesListViewModel(
                 prev
             }
 
-            else -> prev.copy(
+            is RumAutoEpisodesListAction.EpisodesListLoadingFinished,
+            RumAutoEpisodesListAction.EndReached -> prev.copy(
                 episodesListTask = processTask(prev, action),
                 pages = processPages(prev, action)
             )
@@ -120,7 +121,7 @@ internal class RumAutoEpisodesListViewModel(
                 }
             }
 
-            else -> prev.episodesListTask
+            is RumAutoEpisodesListAction.EpisodeClicked -> prev.episodesListTask
         }
     }
 
@@ -142,7 +143,8 @@ internal class RumAutoEpisodesListViewModel(
                 }
             }
 
-            else -> prev.pages
+            RumAutoEpisodesListAction.EndReached,
+            is RumAutoEpisodesListAction.EpisodeClicked -> prev.pages
         }
     }
 

@@ -91,6 +91,8 @@ internal class RumResourceScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ): RumScope? {
+        // New event types default to a no-op at the resource scope.
+        @Suppress("ElseCaseInsteadOfExhaustiveWhen")
         when (event) {
             is RumRawEvent.WaitForResourceTiming -> if (key == event.key) waitForTiming = true
             is RumRawEvent.AddResourceTiming -> onAddResourceTiming(event, datadogContext, writeScope, writer)
@@ -103,9 +105,7 @@ internal class RumResourceScope(
                 writer
             )
 
-            else -> {
-                // Other events are not relevant for RumResourceScope
-            }
+            else -> Unit
         }
 
         return if (sent) null else this

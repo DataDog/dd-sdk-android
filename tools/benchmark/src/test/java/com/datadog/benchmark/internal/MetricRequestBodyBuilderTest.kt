@@ -175,7 +175,9 @@ class MetricRequestBodyBuilderTest {
 
             MetricDataType.LONG_SUM, MetricDataType.DOUBLE_SUM ->
                 MetricType.COUNT
-            else -> MetricType.UNSPECIFIED
+            MetricDataType.SUMMARY,
+            MetricDataType.HISTOGRAM,
+            MetricDataType.EXPONENTIAL_HISTOGRAM -> MetricType.UNSPECIFIED
         }
     }
 
@@ -198,7 +200,7 @@ class MetricRequestBodyBuilderTest {
         val mockData: Data<PointData> = mock()
         val mockResourceAttributes: Attributes = mock()
         val mockResource: Resource = mock()
-        whenever(mockMetricData.type).thenReturn(mock())
+        whenever(mockMetricData.type).thenReturn(forge.aValueFrom(MetricDataType::class.java))
         whenever(mockMetricData.name).thenReturn(forge.aString())
         whenever(mockMetricData.unit).thenReturn(forge.aString())
         whenever(mockResource.attributes).thenReturn(mockResourceAttributes)

@@ -130,7 +130,7 @@ internal class DatadogTracerBuilderAdapter(
             // treats "B3" as an alias for B3MULTI, not B3 single header.
             // We must pass this explicitly to get the correct single-header injector.
             TracingHeaderType.B3 -> "B3SINGLE"
-            else -> name
+            TracingHeaderType.DATADOG, TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT -> name
         }
     }
 }

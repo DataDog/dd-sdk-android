@@ -40,13 +40,16 @@ internal fun OpenFeatureEvaluationContext.toDatadogEvaluationContext(
                 // Preserve invalid typed input as an invalid timestamp for native validation.
                 key to ""
             } else {
-                key to when (value) {
+                // Preserve the string fallback for values supplied by newer OpenFeature SDKs.
+                @Suppress("ElseCaseInsteadOfExhaustiveWhen")
+                val stringValue = when (value) {
                     is Value.String -> value.asString() ?: value.toString()
                     is Value.Boolean -> value.asBoolean()?.toString() ?: value.toString()
                     is Value.Integer -> value.asInteger()?.toString() ?: value.toString()
                     is Value.Double -> value.asDouble()?.toString() ?: value.toString()
                     else -> value.toString()
                 }
+                key to stringValue
             }
         }
         .toMap()

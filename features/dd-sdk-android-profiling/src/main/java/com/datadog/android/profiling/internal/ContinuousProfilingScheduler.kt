@@ -186,9 +186,7 @@ internal class ContinuousProfilingScheduler(
                     }
                 }
 
-                else -> {
-                    /* GRACE_PERIOD / PAUSED_* — ignore */
-                }
+                State.GRACE_PERIOD, State.PAUSED_COOLDOWN, State.PAUSED_AFTER_GRACE, State.PAUSED_IDLE -> Unit
             }
         }
     }
@@ -229,9 +227,7 @@ internal class ContinuousProfilingScheduler(
                     logToUser { LOG_FOREGROUND_AFTER_GRACE }
                 }
 
-                else -> {
-                    /* IDLE / ACTIVE / COOLDOWN — ignore (rapid flicker) */
-                }
+                State.IDLE, State.ACTIVE, State.COOLDOWN -> Unit
             }
         }
     }

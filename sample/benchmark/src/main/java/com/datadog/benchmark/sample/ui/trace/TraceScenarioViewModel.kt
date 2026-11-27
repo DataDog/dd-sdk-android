@@ -140,7 +140,9 @@ internal class TraceScenarioViewModel(
             is TraceScenarioScreenAction.SetIsError -> {
                 prev.copy(isError = action.isError)
             }
-            else -> prev
+            TraceScenarioScreenAction.SendButtonClicked,
+            TraceScenarioScreenAction.CancelButtonClicked,
+            is TraceScenarioScreenAction.FinishTracingTask -> prev
         }
     }
 
@@ -165,7 +167,15 @@ internal class TraceScenarioViewModel(
             is TraceScenarioScreenAction.FinishTracingTask -> {
                 prev.tracingTasksMap - action.task
             }
-            else -> prev.tracingTasksMap
+            is TraceScenarioScreenAction.ChangeSpanOperation,
+            is TraceScenarioScreenAction.ChangeSpanResource,
+            is TraceScenarioScreenAction.SetIsError,
+            TraceScenarioScreenAction.IncreaseChildrenCount,
+            TraceScenarioScreenAction.DecreaseChildrenCount,
+            TraceScenarioScreenAction.IncreaseDepth,
+            TraceScenarioScreenAction.DecreaseDepth,
+            TraceScenarioScreenAction.IncreaseChildDelay,
+            TraceScenarioScreenAction.DecreaseChildDelay -> prev.tracingTasksMap
         }
     }
 

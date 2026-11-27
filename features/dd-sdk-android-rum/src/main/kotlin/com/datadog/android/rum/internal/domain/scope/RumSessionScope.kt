@@ -123,6 +123,7 @@ internal class RumSessionScope(
     // region RumScope
 
     @WorkerThread
+    @Suppress("LongMethod") // The exhaustive dispatch lists each event forwarded to the child scope.
     override fun handleEvent(
         event: RumRawEvent,
         datadogContext: DatadogContext,
@@ -168,9 +169,32 @@ internal class RumSessionScope(
                     )
                 }
             }
-            is RumRawEvent.SdkInit,
-            is RumRawEvent.SessionExpiryCheck -> {}
-            else -> {
+            is RumRawEvent.SdkInit, is RumRawEvent.SessionExpiryCheck -> Unit
+            is RumRawEvent.StartView, is RumRawEvent.StopView,
+            is RumRawEvent.StartAction, is RumRawEvent.StopAction,
+            is RumRawEvent.StartResource, is RumRawEvent.WaitForResourceTiming,
+            is RumRawEvent.AddResourceTiming, is RumRawEvent.StopResource,
+            is RumRawEvent.StopResourceWithError, is RumRawEvent.StopResourceWithStackTrace,
+            is RumRawEvent.AddError,
+            is RumRawEvent.ResourceSent, is RumRawEvent.ActionSent,
+            is RumRawEvent.ErrorSent, is RumRawEvent.LongTaskSent,
+            is RumRawEvent.ResourceDropped, is RumRawEvent.ActionDropped,
+            is RumRawEvent.ErrorDropped, is RumRawEvent.LongTaskDropped,
+            is RumRawEvent.ApplicationStarted,
+            is RumRawEvent.AddCustomTiming,
+            is RumRawEvent.AddViewLoadingTime,
+            is RumRawEvent.AddViewAttributes, is RumRawEvent.RemoveViewAttributes,
+            is RumRawEvent.AddLongTask,
+            is RumRawEvent.SendCustomActionNow,
+            is RumRawEvent.AddFeatureFlagEvaluation,
+            is RumRawEvent.AddFeatureFlagEvaluations,
+            is RumRawEvent.StopSession,
+            is RumRawEvent.UpdatePerformanceMetric, is RumRawEvent.UpdateExternalRefreshRate,
+            is RumRawEvent.SetInternalViewAttribute,
+            is RumRawEvent.SetSyntheticsTestAttribute,
+            is RumRawEvent.WebViewEvent,
+            is RumRawEvent.TelemetryEventWrapper,
+            is RumRawEvent.StartOperation, is RumRawEvent.StopOperation -> {
                 childScope =
                     childScope?.handleEvent(event, datadogContext, writeScope, actualWriter) as? RumViewManagerScope
             }

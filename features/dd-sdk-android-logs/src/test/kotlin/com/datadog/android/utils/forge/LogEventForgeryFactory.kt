@@ -132,7 +132,7 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
             DeviceType.TABLET -> LogEvent.Type.TABLET
             DeviceType.TV -> LogEvent.Type.TV
             DeviceType.DESKTOP -> LogEvent.Type.DESKTOP
-            else -> LogEvent.Type.OTHER
+            DeviceType.GAMING_CONSOLE, DeviceType.BOT, DeviceType.OTHER -> LogEvent.Type.OTHER
         }
     }
 

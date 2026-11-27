@@ -69,7 +69,13 @@ internal class LaunchActivity : BaseBenchmarkActivity() {
 
             SyntheticsScenario.SessionReplayCompose -> SessionReplayComposeScenarioActivity::class.java
             SyntheticsScenario.SessionReplay -> SessionReplayScenarioActivity::class.java
-            else -> DefaultScenarioActivity::class.java
+            SyntheticsScenario.Profiling,
+            SyntheticsScenario.RumManual,
+            SyntheticsScenario.Trace,
+            SyntheticsScenario.LogsCustom,
+            SyntheticsScenario.LogsHeavyTraffic,
+            SyntheticsScenario.Upload,
+            null -> DefaultScenarioActivity::class.java
         }
 
         val intent = Intent(this, activity)

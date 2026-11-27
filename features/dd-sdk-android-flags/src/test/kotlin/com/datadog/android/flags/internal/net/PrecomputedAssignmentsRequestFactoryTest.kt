@@ -359,11 +359,12 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             attributes.getJSONObject("subject").getJSONObject("targeting_attributes")
                 .getString(ExperimentationOptOut.ATTRIBUTE)
         ).isEqualTo("2026-10-01T00:00:00Z")
-        if (mode != ExperimentationOptOutMode.DISABLED) {
-            val expectedMode = when (mode) {
-                ExperimentationOptOutMode.IMMEDIATE -> "immediate"
-                else -> "future_experiments_only"
-            }
+        val expectedMode = when (mode) {
+            ExperimentationOptOutMode.IMMEDIATE -> "immediate"
+            ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY -> "future_experiments_only"
+            ExperimentationOptOutMode.DISABLED -> null
+        }
+        if (expectedMode != null) {
             assertThat(attributes.getJSONObject("evaluation_options").getString("experimentation_opt_out_mode"))
                 .isEqualTo(expectedMode)
         }

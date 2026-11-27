@@ -78,6 +78,8 @@ internal class OpenFeatureFragment :
                     updateProviderState(STATE_ERROR)
                 }
                 .collect { event ->
+                    // Display unrecognized and deprecated provider states by their event names.
+                    @Suppress("ElseCaseInsteadOfExhaustiveWhen")
                     val stateName = when (event) {
                         is OpenFeatureProviderEvents.ProviderReady ->
                             STATE_READY

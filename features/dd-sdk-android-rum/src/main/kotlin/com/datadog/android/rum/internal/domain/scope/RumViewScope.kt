@@ -257,17 +257,28 @@ internal open class RumViewScope(
             is RumRawEvent.StartOperation -> onStartOperation(event, datadogContext, writeScope, writer)
             is RumRawEvent.StopOperation -> onStopOperation(event, datadogContext, writeScope, writer)
 
-            else -> delegateEventToChildren(event, datadogContext, writeScope, writer)
+            is RumRawEvent.StopAction,
+            is RumRawEvent.WaitForResourceTiming,
+            is RumRawEvent.AddResourceTiming,
+            is RumRawEvent.StopResource,
+            is RumRawEvent.StopResourceWithError,
+            is RumRawEvent.StopResourceWithStackTrace,
+            is RumRawEvent.ApplicationStarted,
+            is RumRawEvent.SendCustomActionNow,
+            is RumRawEvent.SetSyntheticsTestAttribute,
+            is RumRawEvent.WebViewEvent,
+            is RumRawEvent.SessionExpiryCheck,
+            is RumRawEvent.TelemetryEventWrapper,
+            is RumRawEvent.SdkInit,
+            is RumRawEvent.AppStartEvent,
+            is RumRawEvent.AppStartTTIDEvent,
+            is RumRawEvent.AppStartTTFDEvent -> delegateEventToChildren(event, datadogContext, writeScope, writer)
         }
 
-        return if (isViewComplete()) {
-            sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME) {
-                it.remove(viewId)
-            }
-            null
-        } else {
-            this
-        }
+        if (!isViewComplete()) return this
+
+        sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME) { it.remove(viewId) }
+        return null
     }
 
     private fun onStartOperation(

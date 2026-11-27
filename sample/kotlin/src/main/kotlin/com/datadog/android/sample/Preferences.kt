@@ -7,6 +7,7 @@
 package com.datadog.android.sample
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sample.datalist.DataSourceType
@@ -101,7 +102,7 @@ internal object Preferences {
                 .getString(PREF_LOCAL_DATA_SOURCE, null)
             return try {
                 DataSourceType.valueOf(source.orEmpty())
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 Timber.e("Error getting pref $PREF_LOCAL_DATA_SOURCE")
                 DataSourceType.ROOM
             }
@@ -113,7 +114,7 @@ internal object Preferences {
                 .getString(PREF_IMAGE_LOADER, null)
             return try {
                 ImageLoaderType.valueOf(source.orEmpty())
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 Timber.e("Error getting pref $PREF_IMAGE_LOADER")
                 ImageLoaderType.GLIDE
             }
@@ -126,12 +127,12 @@ internal object Preferences {
             age: Int
         ) {
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                .edit()
-                .putString(PREF_ACCOUNT_ID, id)
-                .putString(PREF_ACCOUNT_NAME, name)
-                .putString(PREF_ACCOUNT_ROLE, role)
-                .putInt(PREF_USR_AGE, age)
-                .apply()
+                .edit {
+                    putString(PREF_ACCOUNT_ID, id)
+                        .putString(PREF_ACCOUNT_NAME, name)
+                        .putString(PREF_ACCOUNT_ROLE, role)
+                        .putInt(PREF_USR_AGE, age)
+                }
         }
 
         fun setUserCredentials(
@@ -142,45 +143,45 @@ internal object Preferences {
             age: Int
         ) {
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                .edit()
-                .putString(PREF_USR_ID, id)
-                .putString(PREF_USR_NAME, name)
-                .putString(PREF_USR_EMAIL, email)
-                .putString(PREF_USR_GENDER, gender)
-                .putInt(PREF_USR_AGE, age)
-                .apply()
+                .edit {
+                    putString(PREF_USR_ID, id)
+                        .putString(PREF_USR_NAME, name)
+                        .putString(PREF_USR_EMAIL, email)
+                        .putString(PREF_USR_GENDER, gender)
+                        .putInt(PREF_USR_AGE, age)
+                }
         }
 
         fun clearUserCredentials() {
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                .edit()
-                .remove(PREF_USR_ID)
-                .remove(PREF_USR_NAME)
-                .remove(PREF_USR_EMAIL)
-                .remove(PREF_USR_GENDER)
-                .remove(PREF_USR_AGE)
-                .apply()
+                .edit {
+                    remove(PREF_USR_ID)
+                        .remove(PREF_USR_NAME)
+                        .remove(PREF_USR_EMAIL)
+                        .remove(PREF_USR_GENDER)
+                        .remove(PREF_USR_AGE)
+                }
         }
 
         fun setTrackingConsent(consent: TrackingConsent) {
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                .edit()
-                .putInt(PREF_TRACKING_CONSENT, resolveIdFromConsent(consent))
-                .apply()
+                .edit {
+                    putInt(PREF_TRACKING_CONSENT, resolveIdFromConsent(consent))
+                }
         }
 
         fun setLocalDataSource(type: DataSourceType) {
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                .edit()
-                .putString(PREF_LOCAL_DATA_SOURCE, type.name)
-                .apply()
+                .edit {
+                    putString(PREF_LOCAL_DATA_SOURCE, type.name)
+                }
         }
 
         fun setImageLoader(type: ImageLoaderType) {
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                .edit()
-                .putString(PREF_IMAGE_LOADER, type.name)
-                .apply()
+                .edit {
+                    putString(PREF_IMAGE_LOADER, type.name)
+                }
         }
 
         private fun resolveConsentFromId(consentId: Int): TrackingConsent {
@@ -195,7 +196,7 @@ internal object Preferences {
             return when (trackingConsent) {
                 TrackingConsent.PENDING -> CONSENT_PENDING
                 TrackingConsent.GRANTED -> CONSENT_GRANTED
-                else -> CONSENT_NOT_GRANTED
+                TrackingConsent.NOT_GRANTED -> CONSENT_NOT_GRANTED
             }
         }
 

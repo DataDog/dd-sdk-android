@@ -266,7 +266,7 @@ internal class RumViewManagerScopeTest {
     @Test
     fun `M remove children scope W handleEvent child returns null`() {
         // Given
-        val fakeEvent: RumRawEvent = mock()
+        val fakeEvent = RumRawEvent.WebViewEvent(fakeEventTime)
         testedScope.childrenScopes.add(mockChildScope)
         whenever(
             mockChildScope.handleEvent(
@@ -903,7 +903,7 @@ internal class RumViewManagerScopeTest {
         testedScope.applicationDisplayed = true
         testedScope.childrenScopes.add(mockChildScope)
         val stopEvent = RumRawEvent.StopSession(eventTime = fakeEventTime)
-        val fakeEvent: RumRawEvent = mock()
+        val fakeEvent = RumRawEvent.WebViewEvent(fakeEventTime)
         whenever(
             mockChildScope.handleEvent(
                 stopEvent,

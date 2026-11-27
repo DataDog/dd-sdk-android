@@ -165,7 +165,18 @@ internal class RumManualScenarioViewModel(
                     null
                 }
             }
-            else -> prev.sendingTask
+            is RumManualScenarioScreenAction.SelectEventType,
+            is RumManualScenarioScreenAction.ChangeViewName,
+            is RumManualScenarioScreenAction.SelectActionType,
+            is RumManualScenarioScreenAction.ChangeActionUrl,
+            RumManualScenarioScreenAction.IncreaseEventsPerBatch,
+            RumManualScenarioScreenAction.DecreaseEventsPerBatch,
+            RumManualScenarioScreenAction.IncreaseEventsInterval,
+            RumManualScenarioScreenAction.DecreaseEventsInterval,
+            is RumManualScenarioScreenAction.SetIsRepeating,
+            is RumManualScenarioScreenAction.ChangeResourceUrl,
+            is RumManualScenarioScreenAction.ChangeErrorMessage,
+            RumManualScenarioScreenAction.OneEventSent -> prev.sendingTask
         }
     }
 
@@ -192,7 +203,10 @@ internal class RumManualScenarioViewModel(
             is RumManualScenarioScreenAction.SetIsRepeating -> prev.copy(isRepeating = action.isRepeating)
             is RumManualScenarioScreenAction.ChangeResourceUrl -> prev.copy(resourceUrl = action.newResourceUrl)
             is RumManualScenarioScreenAction.ChangeErrorMessage -> prev.copy(errorMessage = action.newErrorMessage)
-            else -> prev
+            RumManualScenarioScreenAction.SendClicked,
+            RumManualScenarioScreenAction.CancelClicked,
+            RumManualScenarioScreenAction.OneEventSent,
+            is RumManualScenarioScreenAction.EventSendingTaskFinished -> prev
         }
     }
 
@@ -282,7 +296,20 @@ internal class RumManualScenarioViewModel(
     ): Int {
         return when (action) {
             is RumManualScenarioScreenAction.OneEventSent -> prev.eventsSent + 1
-            else -> prev.eventsSent
+            is RumManualScenarioScreenAction.SelectEventType,
+            is RumManualScenarioScreenAction.ChangeViewName,
+            is RumManualScenarioScreenAction.SelectActionType,
+            is RumManualScenarioScreenAction.ChangeActionUrl,
+            RumManualScenarioScreenAction.IncreaseEventsPerBatch,
+            RumManualScenarioScreenAction.DecreaseEventsPerBatch,
+            RumManualScenarioScreenAction.IncreaseEventsInterval,
+            RumManualScenarioScreenAction.DecreaseEventsInterval,
+            is RumManualScenarioScreenAction.SetIsRepeating,
+            is RumManualScenarioScreenAction.ChangeResourceUrl,
+            is RumManualScenarioScreenAction.ChangeErrorMessage,
+            RumManualScenarioScreenAction.SendClicked,
+            RumManualScenarioScreenAction.CancelClicked,
+            is RumManualScenarioScreenAction.EventSendingTaskFinished -> prev.eventsSent
         }
     }
 }

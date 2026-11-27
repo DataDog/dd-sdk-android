@@ -193,7 +193,7 @@ Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementat
 - Names and docs of time values state the clock base and the unit: epoch vs. boot or elapsed time, `Ns` vs. `Ms`.
 - Refer to Android versions by API level (`API 34`), not by release name.
 - Prefer the type system: sealed classes or enums over strings, `T : Any` over `T?`, Kotlin function types over `java.util.function.*`.
-- `when` over a sealed type or enum must be exhaustive, without an `else` branch, so that a new subtype fails to compile instead of being silently ignored.
+- List every enum and sealed-type `when` case explicitly outside type-resolved Detekt coverage.
 - Prefer an explicit call over function references in chains: `x?.let { foo(it) }` or a block body, not `x?.let(::foo)`.
 - Use named arguments when the meaning of a value isn't clear at the call site (e.g. several booleans or numbers in a row).
 - Reuse an existing helper instead of writing another copy; extract a shared utility when a second copy appears.

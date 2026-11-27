@@ -114,7 +114,7 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
             DeviceType.TABLET -> SpanEvent.Type.TABLET
             DeviceType.TV -> SpanEvent.Type.TV
             DeviceType.DESKTOP -> SpanEvent.Type.DESKTOP
-            else -> SpanEvent.Type.OTHER
+            DeviceType.GAMING_CONSOLE, DeviceType.BOT, DeviceType.OTHER -> SpanEvent.Type.OTHER
         }
     }
 

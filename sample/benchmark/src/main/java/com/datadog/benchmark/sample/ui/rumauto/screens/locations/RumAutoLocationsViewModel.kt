@@ -100,7 +100,8 @@ internal class RumAutoLocationsViewModel @Inject constructor(
                 prev
             }
 
-            else -> prev.copy(
+            is RumAutoLocationsAction.LocationsPageLoadingFinished,
+            is RumAutoLocationsAction.VisibleItemsChanged -> prev.copy(
                 pageLoadingTask = processTask(prev, action),
                 pages = processPages(prev, action),
                 visibleItems = processVisibleItems(prev, action)
@@ -143,7 +144,7 @@ internal class RumAutoLocationsViewModel @Inject constructor(
                 }
             }
 
-            else -> prev.pageLoadingTask
+            is RumAutoLocationsAction.OnLocationClicked -> prev.pageLoadingTask
         }
     }
 
@@ -163,14 +164,16 @@ internal class RumAutoLocationsViewModel @Inject constructor(
                 }
             }
 
-            else -> prev.pages
+            is RumAutoLocationsAction.OnLocationClicked,
+            is RumAutoLocationsAction.VisibleItemsChanged -> prev.pages
         }
     }
 
     private fun processVisibleItems(prev: RumAutoLocationsState, action: RumAutoLocationsAction): Set<Int> {
         return when (action) {
             is RumAutoLocationsAction.VisibleItemsChanged -> action.itemsSet
-            else -> prev.visibleItems
+            is RumAutoLocationsAction.OnLocationClicked,
+            is RumAutoLocationsAction.LocationsPageLoadingFinished -> prev.visibleItems
         }
     }
 
