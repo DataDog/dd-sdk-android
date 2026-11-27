@@ -7,82 +7,44 @@
 package com.datadog.android.sample.about
 
 import android.content.Context
-import android.os.AsyncTask
 import androidx.lifecycle.ViewModel
 import com.datadog.android.rum.resource.getAssetAsRumResource
 import com.datadog.android.rum.resource.getRawResAsRumResource
 import com.datadog.android.sample.R
+import com.datadog.android.sample.sampleTaskDispatcher
+import com.datadog.android.sample.sampleTaskScope
 import com.datadog.android.trace.withinSpan
-import java.io.BufferedReader
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-@Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
 internal class AboutViewModel : ViewModel() {
 
-    private var asyncAboutTask: AsyncTask<Unit, Unit, String>? = null
-    private var asyncLicenseTask: AsyncTask<Unit, Unit, String>? = null
+    private val taskScope = sampleTaskScope()
 
-    fun getAboutText(
-        context: Context,
-        onDone: (String) -> Unit = {}
-    ) {
-        asyncAboutTask = LoadResourceTask(context, R.raw.about, onDone)
-        asyncAboutTask?.execute()
+    fun getAboutText(context: Context, onDone: (String) -> Unit = {}) {
+        taskScope.launch {
+            val text = withContext(sampleTaskDispatcher) {
+                withinSpan("LoadResource") {
+                    context.getRawResAsRumResource(R.raw.about).bufferedReader().use { it.readText() }
+                }
+            }
+            onDone(text)
+        }
     }
 
-    fun getLicenseText(
-        context: Context,
-        onDone: (String) -> Unit = {}
-    ) {
-        asyncLicenseTask = LoadAssetTask(context, "license.txt", onDone)
-        asyncLicenseTask?.execute()
+    fun getLicenseText(context: Context, onDone: (String) -> Unit = {}) {
+        taskScope.launch {
+            val text = withContext(sampleTaskDispatcher) {
+                withinSpan("LoadAsset") {
+                    context.getAssetAsRumResource("license.txt").bufferedReader().use { it.readText() }
+                }
+            }
+            onDone(text)
+        }
     }
 
     fun stopAsyncOperations() {
-        asyncLicenseTask?.cancel(true)
-        asyncAboutTask?.cancel(true)
-        asyncLicenseTask = null
-        asyncAboutTask = null
-    }
-
-    private class LoadResourceTask(
-        val context: Context,
-        val id: Int,
-        val onDone: (String) -> Unit = {}
-    ) : AsyncTask<Unit, Unit, String>() {
-
-        override fun doInBackground(vararg params: Unit): String {
-            return withinSpan("LoadResource") {
-                val inputStream = context.getRawResAsRumResource(id)
-
-                inputStream.bufferedReader().use(BufferedReader::readText)
-            }
-        }
-
-        override fun onPostExecute(result: String) {
-            if (!isCancelled) {
-                onDone(result)
-            }
-        }
-    }
-
-    private class LoadAssetTask(
-        val context: Context,
-        val fileName: String,
-        val onDone: (String) -> Unit = {}
-    ) : AsyncTask<Unit, Unit, String>() {
-
-        override fun doInBackground(vararg params: Unit): String {
-            return withinSpan("LoadAsset") {
-                val inputStream = context.getAssetAsRumResource(fileName)
-
-                inputStream.bufferedReader().use(BufferedReader::readText)
-            }
-        }
-
-        override fun onPostExecute(result: String) {
-            if (!isCancelled) {
-                onDone(result)
-            }
-        }
+        taskScope.coroutineContext.cancelChildren()
     }
 }

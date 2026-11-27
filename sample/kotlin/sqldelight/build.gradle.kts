@@ -10,6 +10,7 @@ plugins {
     // Keep SQLDelight 1.x code generation outside Android's built-in Kotlin plugin.
     id("org.jetbrains.kotlin.jvm")
     id("datadogBuildConfig")
+    id("detekt-common")
     id("ktlint")
     alias(libs.plugins.sqlDelightGradlePlugin)
 }

@@ -18,30 +18,22 @@ internal class RadioCheckBoxesFragment : Fragment(R.layout.fragment_radio_checkb
         super.onViewCreated(view, savedInstanceState)
         val defaultDisabledChecked = view.findViewById<CheckBox>(R.id.checkbox_disabled_checked)
         val defaultDisabledNotChecked = view.findViewById<CheckBox>(R.id.checkbox_disabled_not_checked)
-        view.findViewById<CheckBox>(R.id.default_checkbox).apply {
-            setOnCheckedChangeListener { _, isChecked ->
-                defaultDisabledChecked.isEnabled = isChecked
-                defaultDisabledNotChecked.isEnabled = isChecked
-            }
+        view.findViewById<CheckBox>(R.id.default_checkbox).setOnCheckedChangeListener { _, isChecked ->
+            defaultDisabledChecked.isEnabled = isChecked
+            defaultDisabledNotChecked.isEnabled = isChecked
         }
         val appCompatDisabledChecked = view.findViewById<CheckBox>(R.id.app_compat_checkbox_disabled_checked)
         val appCompatDisabledNotChecked = view.findViewById<CheckBox>(R.id.app_compat_checkbox_disabled_unchecked)
-        view.findViewById<CheckBox>(R.id.app_compat_checkbox)
-            .apply {
-                setOnCheckedChangeListener { _, isChecked ->
-                    appCompatDisabledChecked.isEnabled = isChecked
-                    appCompatDisabledNotChecked.isEnabled = isChecked
-                }
-            }
+        view.findViewById<CheckBox>(R.id.app_compat_checkbox).setOnCheckedChangeListener { _, isChecked ->
+            appCompatDisabledChecked.isEnabled = isChecked
+            appCompatDisabledNotChecked.isEnabled = isChecked
+        }
 
         val materialDisabledChecked = view.findViewById<CheckBox>(R.id.material_checkbox_disabled_checked)
         val materialDisabledNotChecked = view.findViewById<CheckBox>(R.id.material_checkbox_disabled_not_checked)
-        view.findViewById<CheckBox>(R.id.material_checkbox)
-            .apply {
-                setOnCheckedChangeListener { _, isChecked ->
-                    materialDisabledChecked.isEnabled = isChecked
-                    materialDisabledNotChecked.isEnabled = isChecked
-                }
-            }
+        view.findViewById<CheckBox>(R.id.material_checkbox).setOnCheckedChangeListener { _, isChecked ->
+            materialDisabledChecked.isEnabled = isChecked
+            materialDisabledNotChecked.isEnabled = isChecked
+        }
     }
 }

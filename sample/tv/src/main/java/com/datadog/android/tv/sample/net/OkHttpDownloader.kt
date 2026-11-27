@@ -25,7 +25,7 @@ internal class OkHttpDownloader(
         val headers = request.headers()
         val dataToSend = request.dataToSend()
 
-        var requestBody: RequestBody? = dataToSend?.toRequestBody(null, 0, dataToSend.size)
+        val requestBody: RequestBody? = dataToSend?.toRequestBody(null, 0, dataToSend.size)
 
         val requestBuilder = Request.Builder()
             .method(httpMethod, requestBody)

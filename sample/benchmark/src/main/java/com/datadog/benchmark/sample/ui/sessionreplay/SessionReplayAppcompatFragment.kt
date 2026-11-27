@@ -61,19 +61,14 @@ internal class SessionReplayAppcompatFragment : Fragment() {
             }
 
             val defaultNumberPicker: NumberPicker = findViewById(R.id.default_number_picker)
-            val defaultPickerMinIndex = NUMBER_PICKER_INDEX_MIN
             val defaultPickerMaxIndex = NUMBER_PICKER_INDEX_MAX
-            defaultNumberPicker.minValue = defaultPickerMinIndex
+            defaultNumberPicker.minValue = 0
             defaultNumberPicker.maxValue = defaultPickerMaxIndex
             initTimePicker(this)
-            findViewById<ImageView>(R.id.imageView_remote).apply {
-                loadImage(this)
-            }
+            loadImage(findViewById(R.id.imageView_remote))
 
-            findViewById<Button>(R.id.button_navigation).apply {
-                setOnClickListener {
-                    sessionReplayNavigationManager.navigateToSessionReplayMaterial()
-                }
+            findViewById<Button>(R.id.button_navigation).setOnClickListener {
+                sessionReplayNavigationManager.navigateToSessionReplayMaterial()
             }
         }
     }
@@ -82,8 +77,8 @@ internal class SessionReplayAppcompatFragment : Fragment() {
         val setTimeTextView = rootView.findViewById<EditText>(R.id.set_time_text_view)
         val setDateTextView = rootView.findViewById<EditText>(R.id.set_date_text_view)
 
-        rootView.findViewById<ImageButton>(R.id.set_time_button).setOnClickListener {
-            activity?.supportFragmentManager?.let {
+        rootView.findViewById<ImageButton>(R.id.set_time_button).setOnClickListener { _ ->
+            activity?.supportFragmentManager?.let { fragmentManager ->
                 MaterialTimePicker.Builder().build().apply {
                     addOnPositiveButtonClickListener {
                         val hour = this.hour
@@ -97,16 +92,16 @@ internal class SessionReplayAppcompatFragment : Fragment() {
                             )
                         )
                     }
-                }.show(it, null)
+                }.show(fragmentManager, null)
             }
         }
-        rootView.findViewById<ImageButton>(R.id.set_date_button).setOnClickListener {
-            activity?.supportFragmentManager?.let {
+        rootView.findViewById<ImageButton>(R.id.set_date_button).setOnClickListener { _ ->
+            activity?.supportFragmentManager?.let { fragmentManager ->
                 MaterialDatePicker.Builder.datePicker().build().apply {
                     addOnPositiveButtonClickListener {
                         setDateTextView.setText(this.headerText)
                     }
-                }.show(it, null)
+                }.show(fragmentManager, null)
             }
         }
     }
@@ -128,7 +123,6 @@ internal class SessionReplayAppcompatFragment : Fragment() {
     }
 
     companion object {
-        private const val NUMBER_PICKER_INDEX_MIN = 0
         private const val NUMBER_PICKER_INDEX_MAX = 10
     }
 }

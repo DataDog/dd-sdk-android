@@ -12,6 +12,7 @@ import android.content.UriMatcher
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
+import androidx.core.net.toUri
 import com.datadog.android.sample.data.db.DatadogDbContract
 import com.datadog.android.trace.sqlite.transactionTraced
 
@@ -31,7 +32,7 @@ internal class DatadogContentProvider : ContentProvider() {
     override fun bulkInsert(uri: Uri, values: Array<out ContentValues>): Int {
         return when (uriMatcher.match(uri)) {
             LOGS_MATCHER -> {
-                return insertLogs(sqliteHelper.writableDatabase, values)
+                insertLogs(sqliteHelper.writableDatabase, values)
             }
             else -> 0
         }
@@ -47,7 +48,7 @@ internal class DatadogContentProvider : ContentProvider() {
         return when (uriMatcher.match(uri)) {
             LOGS_MATCHER -> {
                 val db = sqliteHelper.readableDatabase
-                return db.query(
+                db.query(
                     DatadogDbContract.Logs.TABLE_NAME,
                     projection,
                     selection,
@@ -121,6 +122,6 @@ internal class DatadogContentProvider : ContentProvider() {
         private const val LOGS_PATH = "logs"
         private const val LOGS_MATCHER = 1
         private const val SCHEME = "content://"
-        val LOGS_URI = Uri.parse("$SCHEME$CONTENT_PROVIDER_AUTHORITY/$LOGS_PATH")
+        val LOGS_URI: Uri = "$SCHEME$CONTENT_PROVIDER_AUTHORITY/$LOGS_PATH".toUri()
     }
 }

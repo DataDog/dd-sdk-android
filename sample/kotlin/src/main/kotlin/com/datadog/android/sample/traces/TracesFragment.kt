@@ -111,9 +111,6 @@ internal class TracesFragment : Fragment(), View.OnClickListener {
                     },
                     onException = {
                         setCompleteStatus(R.drawable.ic_error_red_24dp)
-                    },
-                    onCancel = {
-                        setCompleteStatus(R.drawable.ic_cancel_red_24dp)
                     }
                 )
             }
@@ -125,9 +122,6 @@ internal class TracesFragment : Fragment(), View.OnClickListener {
                     },
                     onException = {
                         setCompleteStatus(R.drawable.ic_error_red_24dp)
-                    },
-                    onCancel = {
-                        setCompleteStatus(R.drawable.ic_cancel_red_24dp)
                     }
                 )
             }
@@ -160,8 +154,5 @@ internal class TracesFragment : Fragment(), View.OnClickListener {
 
     companion object {
         private const val MANUAL_SPAN_MESSAGE = "Manual span"
-        fun newInstance(): TracesFragment {
-            return TracesFragment()
-        }
     }
 }

@@ -6,11 +6,13 @@
 
 package com.datadog.benchmark.sample.navigation
 
+import androidx.annotation.IdRes
+import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.createGraph
-import androidx.navigation.fragment.fragment
-import androidx.navigation.navigation
+import androidx.navigation.NavGraph
+import androidx.navigation.NavGraphNavigator
+import androidx.navigation.NavigatorProvider
+import androidx.navigation.fragment.FragmentNavigator
 import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityScope
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
@@ -29,14 +31,14 @@ import com.datadog.benchmark.sample.ui.trace.TraceScenarioFragment
 import com.datadog.sample.benchmark.R
 import javax.inject.Inject
 
-@Suppress("DEPRECATION", "TooManyFunctions")
+@Suppress("TooManyFunctions")
 @BenchmarkActivityScope
 internal class NavigationGraphInitializer @Inject constructor() {
 
     fun initialize(navController: NavController, scenario: SyntheticsScenario?) {
-        navController.graph = navController.createGraph(startDestination = createStartDestination(scenario)) {
-            navGraph(scenario = scenario)
-        }
+        val builder = ScenarioGraphBuilder(navController.navigatorProvider, createStartDestination(scenario))
+        builder.navGraph(scenario)
+        navController.graph = builder.graph
     }
 
     private fun createStartDestination(scenario: SyntheticsScenario?): Int {
@@ -56,7 +58,7 @@ internal class NavigationGraphInitializer @Inject constructor() {
         }
     }
 
-    private fun NavGraphBuilder.navGraph(scenario: SyntheticsScenario?) {
+    private fun ScenarioGraphBuilder.navGraph(scenario: SyntheticsScenario?) {
         when (scenario) {
             null,
             SyntheticsScenario.SessionReplay,
@@ -73,78 +75,79 @@ internal class NavigationGraphInitializer @Inject constructor() {
         }
     }
 
-    private fun NavGraphBuilder.navGraphLogsHeavyTraffic() {
-        fragment<LogsHeavyTrafficHostFragment>(R.id.logs_heavy_traffic_fragment) {
-            label = "logs heavy traffic fragment"
-        }
+    private fun ScenarioGraphBuilder.navGraphLogsHeavyTraffic() {
+        fragment<LogsHeavyTrafficHostFragment>(R.id.logs_heavy_traffic_fragment, "logs heavy traffic fragment")
     }
 
-    private fun NavGraphBuilder.navGraphLogs() {
-        fragment<LogsFragment>(R.id.logs_fragment) {
-            label = "logs fragment"
-        }
+    private fun ScenarioGraphBuilder.navGraphLogs() {
+        fragment<LogsFragment>(R.id.logs_fragment, "logs fragment")
     }
 
-    private fun NavGraphBuilder.navGraphSessionReplay() {
-        fragment<SessionReplayMaterialFragment>(R.id.fragment_session_replay_material) {
-            label = "session replay"
-        }
+    private fun ScenarioGraphBuilder.navGraphSessionReplay() {
+        fragment<SessionReplayMaterialFragment>(R.id.fragment_session_replay_material, "session replay")
 
-        fragment<SessionReplayAppcompatFragment>(R.id.fragment_session_replay_appcompat) {
-            label = "session replay"
-        }
+        fragment<SessionReplayAppcompatFragment>(R.id.fragment_session_replay_appcompat, "session replay")
     }
 
-    private fun NavGraphBuilder.navGraphProfilingScenario() {
-        fragment<ProfilingScenarioFragment>(R.id.fragment_profiling) {
-            label = "profiling scenario"
-        }
+    private fun ScenarioGraphBuilder.navGraphProfilingScenario() {
+        fragment<ProfilingScenarioFragment>(R.id.fragment_profiling, "profiling scenario")
     }
 
-    private fun NavGraphBuilder.navGraphTraceScenario() {
-        fragment<TraceScenarioFragment>(R.id.fragment_trace_scenario) {
-            label = "trace scenario"
-        }
+    private fun ScenarioGraphBuilder.navGraphTraceScenario() {
+        fragment<TraceScenarioFragment>(R.id.fragment_trace_scenario, "trace scenario")
     }
 
-    private fun NavGraphBuilder.navGraphRumManualScenario() {
-        fragment<RumManualScenarioFragment>(R.id.fragment_rum_manual_scenario) {
-            label = "rum manual scenario"
-        }
+    private fun ScenarioGraphBuilder.navGraphRumManualScenario() {
+        fragment<RumManualScenarioFragment>(R.id.fragment_rum_manual_scenario, "rum manual scenario")
     }
 
-    private fun NavGraphBuilder.navGraphRumAutoScenario() {
+    private fun ScenarioGraphBuilder.navGraphRumAutoScenario() {
         navigation(R.id.characters_tab_navigation, R.id.characters_tab_fragment) {
-            fragment<RumAutoCharactersFragment>(R.id.characters_tab_fragment) {
-                label = "Characters screen"
-            }
+            fragment<RumAutoCharactersFragment>(R.id.characters_tab_fragment, "Characters screen")
             characterDetailsFragment()
         }
 
         navigation(R.id.locations_tab_navigation, R.id.locations_tab_fragment) {
-            fragment<RumAutoLocationsFragment>(R.id.locations_tab_fragment) {
-                label = "Locations screen"
-            }
-            fragment<RumAutoLocationDetailsFragment>(R.id.location_details_fragment) {
-                label = "Episode detail screen"
-            }
+            fragment<RumAutoLocationsFragment>(R.id.locations_tab_fragment, "Locations screen")
+            fragment<RumAutoLocationDetailsFragment>(R.id.location_details_fragment, "Episode detail screen")
             characterDetailsFragment()
         }
 
         navigation(R.id.episodes_tab_navigation, R.id.episodes_tab_fragment) {
-            fragment<RumAutoEpisodesListFragment>(R.id.episodes_tab_fragment) {
-                label = "Episodes screen"
-            }
-            fragment<RumAutoEpisodeDetailsFragment>(R.id.episode_detail_fragment) {
-                label = "Episode detail screen"
-            }
+            fragment<RumAutoEpisodesListFragment>(R.id.episodes_tab_fragment, "Episodes screen")
+            fragment<RumAutoEpisodeDetailsFragment>(R.id.episode_detail_fragment, "Episode detail screen")
             characterDetailsFragment()
         }
     }
 
-    private fun NavGraphBuilder.characterDetailsFragment() {
-        fragment<RumAutoCharacterDetailFragment>(R.id.character_detail_fragment) {
-            label = "Character detail screen"
+    private fun ScenarioGraphBuilder.characterDetailsFragment() {
+        fragment<RumAutoCharacterDetailFragment>(R.id.character_detail_fragment, "Character detail screen")
+    }
+
+    private class ScenarioGraphBuilder(
+        private val navigators: NavigatorProvider,
+        @IdRes startDestination: Int,
+        @IdRes id: Int = 0
+    ) {
+
+        val graph: NavGraph = navigators.getNavigator(NavGraphNavigator::class.java).createDestination().apply {
+            this.id = id
+            setStartDestination(startDestination)
+        }
+
+        inline fun <reified T : Fragment> fragment(@IdRes id: Int, label: String) {
+            val destination = navigators.getNavigator(FragmentNavigator::class.java).createDestination().apply {
+                this.id = id
+                this.label = label
+                setClassName(T::class.java.name)
+            }
+            graph.addDestination(destination)
+        }
+
+        fun navigation(@IdRes id: Int, @IdRes startDestination: Int, build: ScenarioGraphBuilder.() -> Unit) {
+            val nested = ScenarioGraphBuilder(navigators, startDestination, id)
+            nested.build()
+            graph.addDestination(nested.graph)
         }
     }
 }

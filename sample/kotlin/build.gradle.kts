@@ -22,7 +22,13 @@ plugins {
     alias(libs.plugins.composeCompilerPlugin)
     id("com.google.devtools.ksp")
     id("datadogBuildConfig")
+    id("detekt-common")
     alias(libs.plugins.datadogGradlePlugin)
+}
+
+detekt {
+    // Regions share Kotlin sources and dependencies.
+    ignoredFlavors.addAll(SAMPLE_APP_REGIONS.filter { it != "us1" })
 }
 
 @Suppress("StringLiteralDuplication")

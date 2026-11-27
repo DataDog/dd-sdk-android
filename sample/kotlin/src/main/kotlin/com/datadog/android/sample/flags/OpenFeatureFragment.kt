@@ -180,10 +180,10 @@ internal class OpenFeatureFragment :
         appendLine("Type: $type")
         appendLine("Value: ${details.value}")
 
-        if (details.reason != null) {
+        details.reason?.let { reason ->
             appendLine()
-            appendLine("Reason: ${details.reason}")
-            appendLine("  ${getReasonExplanation(details.reason!!)}")
+            appendLine("Reason: $reason")
+            appendLine("  ${getReasonExplanation(reason)}")
         }
 
         if (details.variant != null) {

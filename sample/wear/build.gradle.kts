@@ -16,6 +16,12 @@ plugins {
     // Build
     id("com.android.application")
     id("datadogBuildConfig")
+    id("detekt-common")
+}
+
+detekt {
+    // Regions share Kotlin sources and dependencies.
+    ignoredFlavors.addAll(SAMPLE_APP_REGIONS.filter { it != "us1" })
 }
 
 android {

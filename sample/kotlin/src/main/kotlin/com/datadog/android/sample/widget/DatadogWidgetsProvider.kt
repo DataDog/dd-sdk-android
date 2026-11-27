@@ -70,15 +70,15 @@ class DatadogWidgetsProvider : AppWidgetProvider() {
         appWidgetId: Int
     ): Intent {
         val loadResourceIntent =
-            Intent(context.applicationContext, WidgetIntentService::class.java)
+            Intent(context.applicationContext, WidgetRequestService::class.java)
                 .apply {
-                    action = WidgetIntentService.LOAD_RANDOM_RESOURCE_ACTION
-                    putExtra(WidgetIntentService.WIDGET_NAME_ARG, "DatadogWidget")
-                    putExtra(WidgetIntentService.WIDGET_ID_ARG, appWidgetId)
+                    action = WidgetRequestService.LOAD_RANDOM_RESOURCE_ACTION
+                    putExtra(WidgetRequestService.WIDGET_NAME_ARG, "DatadogWidget")
+                    putExtra(WidgetRequestService.WIDGET_ID_ARG, appWidgetId)
                     val resources = context.applicationContext.resources
                     val targetName =
                         resources.getResourceEntryName(R.id.perform_http_request_button)
-                    putExtra(WidgetIntentService.WIDGET_CLICKED_TARGET_NAME, targetName)
+                    putExtra(WidgetRequestService.WIDGET_CLICKED_TARGET_NAME, targetName)
                 }
         return loadResourceIntent
     }

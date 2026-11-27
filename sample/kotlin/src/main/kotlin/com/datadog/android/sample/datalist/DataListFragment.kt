@@ -15,7 +15,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -37,11 +39,6 @@ internal class DataListFragment : Fragment() {
     private var firstDataWasLoaded = false
 
     // region Fragment
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
-    }
 
     @OptIn(ExperimentalRumApi::class)
     override fun onCreateView(
@@ -81,34 +78,41 @@ internal class DataListFragment : Fragment() {
         return rootView
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        val currentType = viewModel.getDataSource()
-        inflater.inflate(R.menu.data_list, menu)
-        val disabled = when (currentType) {
-            DataSourceType.ROOM -> R.id.data_source_room
-            DataSourceType.SQLITE -> R.id.data_source_sqlite
-            DataSourceType.SQLDELIGHT -> R.id.data_source_sqldelight
-        }
-        menu.findItem(disabled).isEnabled = false
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        requireActivity().addMenuProvider(dataSourceMenu, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val type = when (item.itemId) {
-            R.id.data_source_room -> DataSourceType.ROOM
-            R.id.data_source_sqlite -> DataSourceType.SQLITE
-            R.id.data_source_sqldelight -> DataSourceType.SQLDELIGHT
-            else -> null
+    private val dataSourceMenu = object : MenuProvider {
+        override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+            val currentType = viewModel.getDataSource()
+            menuInflater.inflate(R.menu.data_list, menu)
+            val disabled = when (currentType) {
+                DataSourceType.ROOM -> R.id.data_source_room
+                DataSourceType.SQLITE -> R.id.data_source_sqlite
+                DataSourceType.SQLDELIGHT -> R.id.data_source_sqldelight
+            }
+            menu.findItem(disabled).isEnabled = false
         }
-        return if (type == null) {
-            super.onOptionsItemSelected(item)
-        } else {
-            viewModel.selectDataSource(type)
-            Toast.makeText(
-                context,
-                "Change will be effective after the application restarts.",
-                Toast.LENGTH_LONG
-            ).show()
-            true
+
+        override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+            val type = when (menuItem.itemId) {
+                R.id.data_source_room -> DataSourceType.ROOM
+                R.id.data_source_sqlite -> DataSourceType.SQLITE
+                R.id.data_source_sqldelight -> DataSourceType.SQLDELIGHT
+                else -> null
+            }
+            return if (type == null) {
+                false
+            } else {
+                viewModel.selectDataSource(type)
+                Toast.makeText(
+                    context,
+                    "Change will be effective after the application restarts.",
+                    Toast.LENGTH_LONG
+                ).show()
+                true
+            }
         }
     }
 

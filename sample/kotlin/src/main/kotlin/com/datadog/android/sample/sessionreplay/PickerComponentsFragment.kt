@@ -29,23 +29,23 @@ internal class PickerComponentsFragment : Fragment() {
         val setTimeTextView = root.findViewById<EditText>(R.id.set_time_text_view)
         val setDateTextView = root.findViewById<EditText>(R.id.set_date_text_view)
         root.findViewById<ImageButton>(R.id.set_time_button).setOnClickListener {
-            activity?.supportFragmentManager?.let {
+            activity?.supportFragmentManager?.let { fragmentManager ->
                 MaterialTimePicker.Builder().build().apply {
                     addOnPositiveButtonClickListener {
                         val hour = this.hour
                         val minute = this.minute
                         setTimeTextView.setText(String.format(Locale.US, "%s : %s", hour, minute))
                     }
-                }.show(it, null)
+                }.show(fragmentManager, null)
             }
         }
         root.findViewById<ImageButton>(R.id.set_date_button).setOnClickListener {
-            activity?.supportFragmentManager?.let {
+            activity?.supportFragmentManager?.let { fragmentManager ->
                 MaterialDatePicker.Builder.datePicker().build().apply {
                     addOnPositiveButtonClickListener {
                         setDateTextView.setText(this.headerText)
                     }
-                }.show(it, null)
+                }.show(fragmentManager, null)
             }
         }
         return root
