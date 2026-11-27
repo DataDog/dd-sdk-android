@@ -4,7 +4,7 @@
 # This product includes software developed at Datadog (https://www.datadoghq.com/).
 # Copyright 2016-Present Datadog, Inc.
 
-"""Run core-it and Flags privacy on all supported APIs, and NDK on the latest API."""
+"""Run core-it, Flags privacy and Compose replay on all APIs, and NDK on the latest API."""
 
 import sys
 
@@ -34,22 +34,27 @@ def main() -> int:
         test_apk_directory="features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug",
         instrumentation_package="com.datadog.android.ndk.test",
     )
+    compose_replay_run = InstrumentationRun(
+        label="compose-replay",
+        test_apk_directory="features/dd-sdk-android-session-replay-compose/build/outputs/apk/androidTest/debug",
+        instrumentation_package="com.datadog.android.sessionreplay.compose.test",
+    )
     return run_instrumented_apks(
         (
             emulator_for_api_level(
                 label="api-23",
                 api_level=23,
-                runs=(core_it_run, flags_privacy_run),
+                runs=(core_it_run, flags_privacy_run, compose_replay_run),
             ),
             emulator_for_api_level(
                 label="api-28",
                 api_level=28,
-                runs=(core_it_run, flags_privacy_run),
+                runs=(core_it_run, flags_privacy_run, compose_replay_run),
             ),
             emulator_for_api_level(
                 label="api-37",
                 api_level=37,
-                runs=(core_it_run, flags_privacy_run, ndk_run),
+                runs=(core_it_run, flags_privacy_run, compose_replay_run, ndk_run),
             ),
         ),
         dry_run_only=arguments.dry_run,
